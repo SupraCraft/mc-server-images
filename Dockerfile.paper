@@ -1,0 +1,42 @@
+FROM eclipse-temurin:25-jre-noble
+
+ARG PAPER_VERSION
+ARG PAPER_BUILD
+ARG PAPER_URL
+ARG PAPER_SHA256
+
+LABEL org.opencontainers.image.title="SupraCraft Paper Server Runtime" \
+      org.opencontainers.image.description="Pinned Paper runtime for SupraCraft RDTE" \
+      org.opencontainers.image.source="https://github.com/SupraCraft/mc-server-images" \
+      org.supracraft.paper.version="${PAPER_VERSION}" \
+      org.supracraft.paper.build="${PAPER_BUILD}"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && test -n "${PAPER_URL}" \
+    && test -n "${PAPER_SHA256}" \
+    && mkdir -p /opt/minecraft /data \
+    && curl --fail --location --retry 3 \
+         --user-agent "SupraCraft-mc-server-images/0.1 (https://github.com/SupraCraft/mc-server-images)" \
+         "${PAPER_URL}" \
+         --output /opt/minecraft/paper.jar \
+    && echo "${PAPER_SHA256}  /opt/minecraft/paper.jar" | sha256sum -c - \
+    && groupadd --gid 10001 minecraft \
+    && useradd --uid 10001 --gid 10001 --home-dir /data --shell /usr/sbin/nologin minecraft \
+    && chown -R minecraft:minecraft /data
+
+COPY paper/entrypoint.sh /usr/local/bin/mc-paper-entrypoint
+RUN chmod 0755 /usr/local/bin/mc-paper-entrypoint
+
+USER 10001:10001
+WORKDIR /data
+VOLUME ["/data"]
+
+ENV EULA="" \
+    ONLINE_MODE="true" \
+    JAVA_OPTS="-Xms1G -Xmx1G"
+
+EXPOSE 25565
+
+ENTRYPOINT ["/usr/local/bin/mc-paper-entrypoint"]
