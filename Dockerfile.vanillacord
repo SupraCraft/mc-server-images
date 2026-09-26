@@ -1,0 +1,40 @@
+FROM eclipse-temurin:25-jre-noble
+
+ARG VANILLACORD_VERSION=2.9.0
+ARG VANILLACORD_URL=https://github.com/SupraCraft/VanillaCord/releases/download/v2.9.0/supracraft-vanillacord-2.9.0.jar
+ARG VANILLACORD_SHA256=24e850a261dbf108e2f7ac412c34651ffae753543665ec47d5e40ff9c8981719
+
+LABEL org.opencontainers.image.title="SupraCraft VanillaCord Runtime Materializer" \
+      org.opencontainers.image.description="Materializes a patched vanilla Minecraft backend into persistent state at runtime" \
+      org.opencontainers.image.source="https://github.com/SupraCraft/mc-server-images" \
+      org.supracraft.vanillacord.version="${VANILLACORD_VERSION}" \
+      org.supracraft.server-artifact.embedded="false"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /opt/vanillacord /data \
+    && curl --fail --location --retry 3 \
+         "${VANILLACORD_URL}" \
+         --output /opt/vanillacord/vanillacord.jar \
+    && echo "${VANILLACORD_SHA256}  /opt/vanillacord/vanillacord.jar" | sha256sum -c - \
+    && groupadd --gid 10001 minecraft \
+    && useradd --uid 10001 --gid 10001 --home-dir /data --shell /usr/sbin/nologin minecraft \
+    && chown -R minecraft:minecraft /data
+
+COPY vanillacord/entrypoint.sh /usr/local/bin/mc-vanillacord-entrypoint
+RUN chmod 0755 /usr/local/bin/mc-vanillacord-entrypoint
+
+USER 10001:10001
+WORKDIR /data
+VOLUME ["/data"]
+
+ENV MINECRAFT_VERSION="26.2" \
+    EULA="" \
+    ONLINE_MODE="false" \
+    FORWARDING="bungeecord" \
+    JAVA_OPTS="-Xms1G -Xmx1G"
+
+EXPOSE 25565
+
+ENTRYPOINT ["/usr/local/bin/mc-vanillacord-entrypoint"]
