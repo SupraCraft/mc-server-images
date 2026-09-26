@@ -1,27 +1,19 @@
 FROM eclipse-temurin:25-jre-noble
 
-ARG PAPER_VERSION
-ARG PAPER_BUILD
-ARG PAPER_URL
-ARG PAPER_SHA256
+ARG PAPER_VERSION=26.2
+ARG PAPER_BUILD=123
 
-LABEL org.opencontainers.image.title="SupraCraft Paper Server Runtime" \
-      org.opencontainers.image.description="Pinned Paper runtime for SupraCraft RDTE" \
+LABEL org.opencontainers.image.title="SupraCraft Paper Runtime Materializer" \
+      org.opencontainers.image.description="Java/tooling image that materializes Paper into persistent state at runtime" \
       org.opencontainers.image.source="https://github.com/SupraCraft/mc-server-images" \
       org.supracraft.paper.version="${PAPER_VERSION}" \
-      org.supracraft.paper.build="${PAPER_BUILD}"
+      org.supracraft.paper.build="${PAPER_BUILD}" \
+      org.supracraft.server-artifact.embedded="false"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && apt-get install -y --no-install-recommends ca-certificates curl jq \
     && rm -rf /var/lib/apt/lists/* \
-    && test -n "${PAPER_URL}" \
-    && test -n "${PAPER_SHA256}" \
-    && mkdir -p /opt/minecraft /data \
-    && curl --fail --location --retry 3 \
-         --user-agent "SupraCraft-mc-server-images/0.1 (https://github.com/SupraCraft/mc-server-images)" \
-         "${PAPER_URL}" \
-         --output /opt/minecraft/paper.jar \
-    && echo "${PAPER_SHA256}  /opt/minecraft/paper.jar" | sha256sum -c - \
+    && mkdir -p /data \
     && groupadd --gid 10001 minecraft \
     && useradd --uid 10001 --gid 10001 --home-dir /data --shell /usr/sbin/nologin minecraft \
     && chown -R minecraft:minecraft /data
@@ -33,9 +25,12 @@ USER 10001:10001
 WORKDIR /data
 VOLUME ["/data"]
 
-ENV EULA="" \
+ENV PAPER_VERSION="${PAPER_VERSION}" \
+    PAPER_BUILD="${PAPER_BUILD}" \
+    EULA="" \
     ONLINE_MODE="true" \
-    JAVA_OPTS="-Xms1G -Xmx1G"
+    JAVA_OPTS="-Xms1G -Xmx1G" \
+    USER_AGENT="SupraCraft-mc-server-images/0.2 (https://github.com/SupraCraft/mc-server-images)"
 
 EXPOSE 25565
 
