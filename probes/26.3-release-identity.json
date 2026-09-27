@@ -17,6 +17,22 @@
     "use_editor": false,
     "world_version": 5023
   },
+  "client_artifact": {
+    "actual_sha1": "e877b6a07acd633fb3bb475002175cec036e7b87",
+    "class_layout": {
+      "classes": {
+        "net/minecraft/client/Minecraft.class": true,
+        "net/minecraft/client/multiplayer/ClientPacketListener.class": true,
+        "net/minecraft/client/player/LocalPlayer.class": true,
+        "net/minecraft/network/protocol/game/ServerboundPunchPacket.class": true
+      },
+      "container": "direct"
+    },
+    "expected_sha1": "e877b6a07acd633fb3bb475002175cec036e7b87",
+    "sha256": "4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d",
+    "size": 41483720,
+    "url": "https://piston-data.mojang.com/v1/objects/e877b6a07acd633fb3bb475002175cec036e7b87/client.jar"
+  },
   "launcher_entry": {
     "metadata_url": "https://piston-meta.mojang.com/v1/packages/bc098d111a72e9f6178801544a42099bdfbb0cf2/26.3.json",
     "releaseTime": "2026-09-15T11:23:02+00:00",
@@ -44,6 +60,14 @@
   "schema": "supracraft-mojang-release-identity/1",
   "server_artifact": {
     "actual_sha1": "33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c",
+    "class_layout": {
+      "classes": {
+        "net/minecraft/network/protocol/game/GameProtocols.class": true,
+        "net/minecraft/network/protocol/game/ServerboundAcceptTeleportationPacket.class": true,
+        "net/minecraft/network/protocol/game/ServerboundPlayerActionPacket.class": true
+      },
+      "container": "META-INF/versions/26.3/server-26.3.jar"
+    },
     "expected_sha1": "33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c",
     "sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64",
     "size": 62294556,
