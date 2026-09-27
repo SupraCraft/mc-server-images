@@ -1,0 +1,52 @@
+{
+  "artifact_version_json": {
+    "build_time": "2026-09-15T11:20:48+00:00",
+    "id": "26.3",
+    "java_component": "java-runtime-epsilon",
+    "java_version": 25,
+    "name": "26.3",
+    "pack_version": {
+      "data_major": 121,
+      "data_minor": 0,
+      "resource_major": 97,
+      "resource_minor": 1
+    },
+    "protocol_version": 777,
+    "series_id": "main",
+    "stable": true,
+    "use_editor": false,
+    "world_version": 5023
+  },
+  "launcher_entry": {
+    "metadata_url": "https://piston-meta.mojang.com/v1/packages/bc098d111a72e9f6178801544a42099bdfbb0cf2/26.3.json",
+    "releaseTime": "2026-09-15T11:23:02+00:00",
+    "time": "2026-09-22T09:53:29+00:00",
+    "type": "release"
+  },
+  "mappings": {
+    "client": {
+      "available": false,
+      "sha1": null,
+      "url": null
+    },
+    "server": {
+      "available": false,
+      "sha1": null,
+      "url": null
+    }
+  },
+  "minecraft_version": "26.3",
+  "provenance": {
+    "launcher_manifest_sha256": "6ea1a62a6df711ed21ae74696566b7407ec537ea363ed6eba85c13a1278f0b3f",
+    "launcher_manifest_url": "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
+    "version_metadata_sha256": "061edddc346be236acf38f51b63c2361b084ae7b0d7ca15367242f99b1596839"
+  },
+  "schema": "supracraft-mojang-release-identity/1",
+  "server_artifact": {
+    "actual_sha1": "33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c",
+    "expected_sha1": "33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c",
+    "sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64",
+    "size": 62294556,
+    "url": "https://piston-data.mojang.com/v1/objects/33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c/server.jar"
+  }
+}
