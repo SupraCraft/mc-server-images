@@ -46,6 +46,67 @@ def read_version_json(jar_bytes: bytes) -> dict[str, Any]:
     raise RuntimeError("version.json not found in server artifact")
 
 
+def inspect_class_layout(jar_bytes: bytes, expected_classes: list[str]) -> dict[str, Any]:
+    """Report whether expected readable class names exist in the effective game JAR."""
+    with zipfile.ZipFile(io.BytesIO(jar_bytes)) as outer:
+        direct = set(outer.namelist())
+        direct_hits = {name: name in direct for name in expected_classes}
+        if any(direct_hits.values()):
+            return {
+                "container": "direct",
+                "classes": direct_hits,
+            }
+
+        for name in sorted(outer.namelist()):
+            if not (name.startswith("META-INF/versions/") and name.endswith(".jar")):
+                continue
+            with zipfile.ZipFile(io.BytesIO(outer.read(name))) as nested:
+                entries = set(nested.namelist())
+                hits = {class_name: class_name in entries for class_name in expected_classes}
+                if any(hits.values()):
+                    return {
+                        "container": name,
+                        "classes": hits,
+                    }
+
+    return {
+        "container": None,
+        "classes": {name: False for name in expected_classes},
+    }
+
+
+def probe_artifact(
+    detail: dict[str, Any],
+    kind: str,
+    expected_classes: list[str],
+) -> tuple[dict[str, Any], bytes]:
+    meta = (detail.get("downloads") or {}).get(kind)
+    if not meta:
+        raise RuntimeError(f"no official {kind} artifact")
+
+    data = fetch(str(meta["url"]), timeout=300)
+    actual_sha1 = sha1(data)
+    expected_sha1 = meta.get("sha1")
+    if expected_sha1 and actual_sha1 != expected_sha1:
+        raise RuntimeError(
+            f"{kind} SHA-1 mismatch: expected {expected_sha1}, got {actual_sha1}"
+        )
+    expected_size = meta.get("size")
+    if expected_size is not None and len(data) != int(expected_size):
+        raise RuntimeError(
+            f"{kind} size mismatch: expected {expected_size}, got {len(data)}"
+        )
+
+    return {
+        "url": meta.get("url"),
+        "expected_sha1": expected_sha1,
+        "actual_sha1": actual_sha1,
+        "sha256": sha256(data),
+        "size": len(data),
+        "class_layout": inspect_class_layout(data, expected_classes),
+    }, data
+
+
 def resolve_entry(index: dict[str, Any], version: str) -> dict[str, Any]:
     for entry in index.get("versions", []):
         if entry.get("id") == version:
@@ -65,22 +126,25 @@ def main() -> int:
 
     detail_raw = fetch(str(entry["url"]))
     detail = json.loads(detail_raw)
-    server_meta = (detail.get("downloads") or {}).get("server")
-    if not server_meta:
-        raise RuntimeError(f"no official server artifact for {args.version}")
-
-    server_bytes = fetch(str(server_meta["url"]), timeout=300)
-    actual_sha1 = sha1(server_bytes)
-    expected_sha1 = server_meta.get("sha1")
-    if expected_sha1 and actual_sha1 != expected_sha1:
-        raise RuntimeError(
-            f"server SHA-1 mismatch: expected {expected_sha1}, got {actual_sha1}"
-        )
-    expected_size = server_meta.get("size")
-    if expected_size is not None and len(server_bytes) != int(expected_size):
-        raise RuntimeError(
-            f"server size mismatch: expected {expected_size}, got {len(server_bytes)}"
-        )
+    server_artifact, server_bytes = probe_artifact(
+        detail,
+        "server",
+        [
+            "net/minecraft/network/protocol/game/GameProtocols.class",
+            "net/minecraft/network/protocol/game/ServerboundAcceptTeleportationPacket.class",
+            "net/minecraft/network/protocol/game/ServerboundPlayerActionPacket.class",
+        ],
+    )
+    client_artifact, _ = probe_artifact(
+        detail,
+        "client",
+        [
+            "net/minecraft/client/player/LocalPlayer.class",
+            "net/minecraft/client/multiplayer/ClientPacketListener.class",
+            "net/minecraft/client/Minecraft.class",
+            "net/minecraft/network/protocol/game/ServerboundPunchPacket.class",
+        ],
+    )
 
     version_info = read_version_json(server_bytes)
     observed_version = version_info.get("id") or version_info.get("name")
@@ -103,13 +167,8 @@ def main() -> int:
             "launcher_manifest_sha256": sha256(index_raw),
             "version_metadata_sha256": sha256(detail_raw),
         },
-        "server_artifact": {
-            "url": server_meta.get("url"),
-            "expected_sha1": expected_sha1,
-            "actual_sha1": actual_sha1,
-            "sha256": sha256(server_bytes),
-            "size": len(server_bytes),
-        },
+        "server_artifact": server_artifact,
+        "client_artifact": client_artifact,
         "artifact_version_json": version_info,
         "mappings": {
             kind: {
