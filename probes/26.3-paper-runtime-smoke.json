@@ -1,0 +1,32 @@
+{
+  "classification": "rdte-nonstable-smoke",
+  "done_log_observed": true,
+  "error_log_count": 0,
+  "expected_protocol": 777,
+  "graceful_stop_exit_code": 0,
+  "java_runtime": "openjdk version \"25.0.4.1\" 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-25.0.4.1+1 (build 25.0.4.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.4.1+1 (build 25.0.4.1+1-LTS, mixed mode, sharing)",
+  "minecraft_version": "26.3",
+  "paper_build": {
+    "channel": "ALPHA",
+    "id": 49,
+    "name": "paper-26.3-49.jar",
+    "sha256": "dd64988a011729e6812f2fff1be32ba5c572ecdc8890e6abc7a56aa91b53f77d",
+    "size": 54017881,
+    "time": "2026-09-26T20:39:03Z",
+    "url": "https://fill-data.papermc.io/v1/objects/dd64988a011729e6812f2fff1be32ba5c572ecdc8890e6abc7a56aa91b53f77d/paper-26.3-49.jar"
+  },
+  "ready_elapsed_seconds": 15.461,
+  "schema": "supracraft-paper-runtime-smoke/1",
+  "server_log_tail": " level 'minecraft:the_end'...\n[04:46:14 INFO]: Loading 0 persistent chunks for level 'minecraft:overworld'...\n[04:46:14 INFO]: Preparing spawn area: 100%\n[04:46:15 INFO]: Prepared spawn area in 3207 ms\n[04:46:15 INFO]: Loading 0 persistent chunks for level 'minecraft:the_nether'...\n[04:46:15 INFO]: Preparing spawn area: 100%\n[04:46:15 INFO]: Prepared spawn area in 643 ms\n[04:46:15 INFO]: Loading 0 persistent chunks for level 'minecraft:the_end'...\n[04:46:15 INFO]: Preparing spawn area: 100%\n[04:46:15 INFO]: Prepared spawn area in 160 ms\n[04:46:15 INFO]: Done preparing level \"world\" (3.430s)\n[04:46:15 INFO]: [spark] Starting background profiler...\n[04:46:15 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld\n[04:46:15 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether\n[04:46:16 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end\n[04:46:16 INFO]: Running delayed init tasks\n[04:46:16 INFO]: Done (11.545s)! For help, type \"help\"\n[04:46:16 INFO]: *************************************************************************************\n[04:46:16 INFO]: This is the first time you're starting this server.\n[04:46:16 INFO]: It's recommended you read our 'Getting Started' documentation for guidance.\n[04:46:16 INFO]: View this and more helpful information here: https://docs.papermc.io/paper/next-steps\n[04:46:16 INFO]: *************************************************************************************\n[04:46:16 INFO]: System chat: Stopping the server\n[04:46:16 INFO]: Stopping server\n[04:46:16 INFO]: Saving players\n[04:46:16 INFO]: Saving worlds\n[04:46:16 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld\n[04:46:16 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:overworld'\n[04:46:16 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:overworld'\n[04:46:16 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:overworld'\n[04:46:16 INFO]: [ChunkHolderManager] Saved 79 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:overworld' in 0.03s\n[04:46:16 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:overworld'\n[04:46:16 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:overworld'\n[04:46:16 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether\n[04:46:16 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_nether'\n[04:46:16 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_nether'\n[04:46:16 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_nether'\n[04:46:16 INFO]: [ChunkHolderManager] Saved 78 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_nether' in 0.02s\n[04:46:16 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_nether'\n[04:46:16 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_nether'\n[04:46:16 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end\n[04:46:16 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_end'\n[04:46:16 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_end'\n[04:46:16 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_end'\n[04:46:16 INFO]: [ChunkHolderManager] Saved 78 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_end' in 0.02s\n[04:46:16 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_end'\n[04:46:16 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_end'\n[04:46:16 INFO]: Waiting for all RegionFile I/O tasks to complete...\n[04:46:16 INFO]: All RegionFile I/O tasks to complete\n[04:46:16 INFO]: [MoonriseCommon] Awaiting termination of worker pool for up to 60s...\n[04:46:16 INFO]: [MoonriseCommon] Awaiting termination of I/O pool for up to 60s...\n",
+  "status_response": {
+    "description": "SupraCraft Paper 26.3 qualification",
+    "players": {
+      "max": 1,
+      "online": 0
+    },
+    "version": {
+      "name": "Paper 26.3",
+      "protocol": 777
+    }
+  }
+}
