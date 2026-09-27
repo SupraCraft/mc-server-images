@@ -1,0 +1,25 @@
+{
+  "expected_protocol": 777,
+  "graceful_stop_exit_code": 0,
+  "java_runtime": "openjdk version \"25.0.4.1\" 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-25.0.4.1+1 (build 25.0.4.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.4.1+1 (build 25.0.4.1+1-LTS, mixed mode, sharing)",
+  "minecraft_version": "26.3",
+  "ready_elapsed_seconds": 12.67,
+  "required_java_version": 25,
+  "schema": "supracraft-vanilla-runtime-smoke/1",
+  "server_artifact": {
+    "sha1": "33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c",
+    "sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64"
+  },
+  "server_log_tail": "raries:org.apache.logging.log4j:log4j-core:2.26.0) to libraries/org/apache/logging/log4j/log4j-core/2.26.0/log4j-core-2.26.0.jar\nUnpacking org/apache/logging/log4j/log4j-slf4j2-impl/2.26.0/log4j-slf4j2-impl-2.26.0.jar (libraries:org.apache.logging.log4j:log4j-slf4j2-impl:2.26.0) to libraries/org/apache/logging/log4j/log4j-slf4j2-impl/2.26.0/log4j-slf4j2-impl-2.26.0.jar\nUnpacking org/joml/joml/1.10.9/joml-1.10.9.jar (libraries:org.joml:joml:1.10.9) to libraries/org/joml/joml/1.10.9/joml-1.10.9.jar\nUnpacking org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar (libraries:org.jspecify:jspecify:1.0.0) to libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar\nUnpacking org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar (libraries:org.slf4j:slf4j-api:2.0.17) to libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar\nStarting net.minecraft.server.Main\nWARNING: A restricted method in java.lang.System has been called\nWARNING: java.lang.System::load has been called by com.sun.jna.Native in an unnamed module (file:/tmp/minecraft-26.3-sj899o7x/libraries/net/java/dev/jna/jna/5.17.0/jna-5.17.0.jar)\nWARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module\nWARNING: Restricted methods will be blocked in a future release unless native access is enabled\n\nWARNING: A terminally deprecated method in sun.misc.Unsafe has been called\nWARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.joml.MemUtil$MemUtilUnsafe (file:/tmp/minecraft-26.3-sj899o7x/libraries/org/joml/joml/1.10.9/joml-1.10.9.jar)\nWARNING: Please consider reporting this to the maintainers of class org.joml.MemUtil$MemUtilUnsafe\nWARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release\n[01:52:20] [ServerMain/INFO]: Environment: Environment[discoveryUrl=https://discovery.minecraftservices.com/minecraft/client, name=PROD]\n[01:52:21] [Worker-Main-3/INFO]: No existing world data, creating new world\n[01:52:21] [Worker-Main-3/ERROR]: No key layers in MapLike[{}]\n[01:52:22] [Worker-Main-1/INFO]: Loaded 1866 advancements\n[01:52:22] [Server thread/INFO]: Starting minecraft server version 26.3\n[01:52:22] [Server thread/INFO]: Loading properties\n[01:52:22] [Server thread/INFO]: Default game type: SURVIVAL\n[01:52:22] [Server thread/INFO]: Generating keypair\n[01:52:22] [Server thread/INFO]: Starting Minecraft server on *:25565\n[01:52:22] [Server thread/WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!\n[01:52:22] [Server thread/WARN]: The server will make no attempt to authenticate usernames. Beware.\n[01:52:22] [Server thread/WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.\n[01:52:22] [Server thread/WARN]: To change this, set \"online-mode\" to \"true\" in the server.properties file.\n[01:52:22] [Server thread/INFO]: Preparing level \"world\"\n[01:52:22] [Server thread/INFO]: Selecting global world spawn...\n[01:52:23] [Server thread/INFO]: Loading 0 persistent chunks...\n[01:52:23] [Server thread/INFO]: Preparing spawn area: 100%\n[01:52:23] [Server thread/INFO]: Time elapsed: 745 ms\n[01:52:23] [Server thread/INFO]: Done (0.885s)! For help, type \"help\"\n[01:52:23] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld\n[01:52:23] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end\n[01:52:23] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether\n[01:52:23] [Server thread/INFO]: System chat: Stopping the server\n[01:52:23] [Server thread/INFO]: Stopping server\n[01:52:23] [Server thread/INFO]: Saving players\n[01:52:23] [Server thread/INFO]: Saving worlds\n[01:52:24] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld\n[01:52:24] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end\n[01:52:24] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether\n",
+  "status_response": {
+    "description": "SupraCraft 26.3 qualification",
+    "players": {
+      "max": 1,
+      "online": 0
+    },
+    "version": {
+      "name": "26.3",
+      "protocol": 777
+    }
+  }
+}
