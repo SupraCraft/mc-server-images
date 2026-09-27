@@ -142,7 +142,6 @@ def main() -> int:
                 [
                     "online-mode=false",
                     "server-port=25565",
-                    "level-type=minecraft:flat",
                     "view-distance=2",
                     "simulation-distance=2",
                     "spawn-protection=0",
@@ -227,6 +226,15 @@ def main() -> int:
 
         if exit_code != 0:
             raise RuntimeError(f"server exited {exit_code} after successful status probe")
+        error_lines = [
+            line for line in server_log.splitlines()
+            if "/ERROR]:" in line or "/ERROR] " in line
+        ]
+        if error_lines:
+            raise RuntimeError(
+                "server emitted ERROR log lines during smoke: "
+                + " | ".join(error_lines[-20:])
+            )
 
     status_version = status.get("version", {}) if status else {}
     if int(status_version.get("protocol", -1)) != protocol:
@@ -245,6 +253,8 @@ def main() -> int:
         "status_response": status,
         "ready_elapsed_seconds": round(ready_elapsed, 3),
         "graceful_stop_exit_code": exit_code,
+        "done_log_observed": "Done (" in server_log,
+        "error_log_count": len(error_lines),
         "server_log_tail": server_log[-4000:],
     }
 
