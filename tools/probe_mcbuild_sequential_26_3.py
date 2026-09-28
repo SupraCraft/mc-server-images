@@ -360,14 +360,15 @@ def main() -> int:
                         )
 
                 try:
-                    worker_stdout, worker_stderr = worker.communicate(timeout=10)
+                    worker_exit = worker.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     worker.kill()
-                    worker_stdout, worker_stderr = worker.communicate(timeout=5)
-                if worker.returncode != 0:
+                    worker_exit = worker.wait(timeout=5)
+                if worker_exit != 0:
+                    diagnostic = peer._diagnostic("worker-exit", None)
                     raise RuntimeError(
-                        f"worker exit {worker.returncode}: "
-                        f"{worker_stderr[-4000:]}"
+                        f"worker exit {worker_exit}: "
+                        + json.dumps(diagnostic, sort_keys=True)
                     )
                 if placed != len(plan["actions"]):
                     raise RuntimeError(
