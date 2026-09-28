@@ -9,6 +9,8 @@ const itemName = process.env.ITEM_NAME
 const expectedBlock = process.env.EXPECTED_BLOCK_NAME
 const expectedState = process.env.EXPECTED_STATE
 const expectedProperties = JSON.parse(process.env.EXPECTED_PROPERTIES_JSON || '{}')
+const botTargetX = Number(process.env.BOT_TARGET_X || '2')
+const botTargetZ = Number(process.env.BOT_TARGET_Z || '0')
 
 if (!readyFile || !resultFile || !itemName || !expectedBlock || !expectedState) {
   throw new Error('BOT_READY_FILE, BOT_RESULT_FILE, ITEM_NAME, EXPECTED_BLOCK_NAME and EXPECTED_STATE are required')
@@ -111,7 +113,7 @@ bot.once('spawn', async () => {
     while (Date.now() < deadline) {
       item = bot.inventory.items().find(candidate => candidate.name === itemName)
       const p = bot.entity.position
-      if (item && Math.abs(p.x - 2) < 1.5 && Math.abs(p.z) < 1.5) break
+      if (item && Math.abs(p.x - botTargetX) < 1.5 && Math.abs(p.z - botTargetZ) < 1.5) break
       await bot.waitForTicks(2)
     }
 
