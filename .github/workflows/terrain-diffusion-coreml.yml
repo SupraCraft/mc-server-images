@@ -1,0 +1,120 @@
+name: Terrain Diffusion CoreML public probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualify/voxel-diffusion-runtime
+    paths:
+      - .github/workflows/terrain-diffusion-coreml.yml
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      TERRAIN_MC_SHA: 23d3f50e5108882bb88a03c3ab048aa63633a02f
+      MODEL_REPO: xandergos/terrain-diffusion-30m-onnx
+      MODEL_REV: ad2df557eca5645f588766101cf3bc3682455c3e
+
+    steps:
+      - name: Fail closed outside a public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::This qualification is authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Capture free M1 runner envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence upstream
+          {
+            uname -a
+            sysctl -n machdep.cpu.brand_string || true
+            sysctl -n hw.memsize || true
+            system_profiler SPHardwareDataType || true
+          } | tee evidence/runner.txt
+
+      - name: Fetch exact Terrain Diffusion Minecraft source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init upstream/terrain-diffusion-mc
+          git -C upstream/terrain-diffusion-mc remote add origin https://github.com/xandergos/terrain-diffusion-mc.git
+          git -C upstream/terrain-diffusion-mc fetch --depth 1 origin "$TERRAIN_MC_SHA"
+          git -C upstream/terrain-diffusion-mc checkout --detach FETCH_HEAD
+          test "$(git -C upstream/terrain-diffusion-mc rev-parse HEAD)" = "$TERRAIN_MC_SHA"
+
+      - name: Record and apply runner-memory compatibility limit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd upstream/terrain-diffusion-mc
+          grep -q "jvmArgs '-Xmx8g'" build.gradle
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("build.gradle")
+          s=p.read_text()
+          s=s.replace("jvmArgs '-Xmx8g'", "jvmArgs '-Xmx6g'")
+          p.write_text(s)
+          PY
+          cat > ../../evidence/upstream-compatibility-shim.json <<'JSON'
+          {
+            "kind": "test-runner-memory-cap-only",
+            "reason": "standard free macos-26 runner exposes 7 GB RAM while upstream PipelineTest declares an 8 GB JVM maximum",
+            "upstream": "-Xmx8g",
+            "qualification": "-Xmx6g",
+            "model_modified": false,
+            "pipeline_algorithm_modified": false
+          }
+          JSON
+
+      - name: Run author's deterministic pipeline test with CPU build / CoreML auto-selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd upstream/terrain-diffusion-mc
+          export GRADLE_OPTS="-Dorg.gradle.daemon=false"
+          ./gradlew pipelineTest -PuseCpu=true --no-daemon --stacktrace 2>&1 | tee ../../evidence/pipeline-test.log
+
+      - name: Capture generated model manifest and provider evidence
+        shell: bash
+        if: always()
+        run: |
+          set -euo pipefail
+          cd upstream/terrain-diffusion-mc
+          if [[ -f build/generated/model-assets/model-assets-manifest.json ]]; then
+            cp build/generated/model-assets/model-assets-manifest.json ../../evidence/model-assets-manifest.json
+          fi
+          {
+            echo "resolved-provider-lines:"
+            grep -E "Terrain diffusion inference:|CoreML|DirectML|CUDA|No GPU provider" ../../evidence/pipeline-test.log || true
+            echo
+            echo "pipeline-result-lines:"
+            grep -E "Pipeline elev|Expected Minecraft Y|PASS:|FAIL:" ../../evidence/pipeline-test.log || true
+            echo
+            echo "model-cache:"
+            find . -type f \( -name '*.onnx' -o -name 'model-assets-manifest.json' \) -maxdepth 8 -print 2>/dev/null || true
+          } | tee ../../evidence/terrain-summary.txt
+
+      - name: Upload compact evidence only
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: terrain-diffusion-coreml-public-evidence
+          path: evidence/
+          retention-days: 14
