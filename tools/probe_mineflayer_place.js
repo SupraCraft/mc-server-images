@@ -5,6 +5,8 @@ const { Vec3 } = require('vec3')
 const port = Number(process.env.MC_PORT || '25567')
 const readyFile = process.env.BOT_READY_FILE
 const resultFile = process.env.BOT_RESULT_FILE
+const itemName = process.env.BOT_ITEM_NAME || 'stone'
+const expectedBlockName = process.env.BOT_EXPECTED_BLOCK_NAME || itemName
 
 if (!readyFile || !resultFile) {
   throw new Error('BOT_READY_FILE and BOT_RESULT_FILE are required')
@@ -19,6 +21,8 @@ const result = {
   support_features: {
     clientTickEndPacket: mineflayer.supportFeature('clientTickEndPacket', '26.3')
   },
+  item_name: itemName,
+  expected_block_name: expectedBlockName,
   placed: false,
   milestones: {},
   packet_count: 0,
@@ -105,17 +109,17 @@ bot.once('spawn', async () => {
 
   try {
     const deadline = Date.now() + 30000
-    let stone = null
+    let probeItem = null
     while (Date.now() < deadline) {
-      stone = bot.inventory.items().find(item => item.name === 'stone')
+      probeItem = bot.inventory.items().find(item => item.name === itemName)
       const p = bot.entity.position
-      if (stone && Math.abs(p.x - 2) < 2 && Math.abs(p.z) < 2) break
+      if (probeItem && Math.abs(p.x - 2) < 2 && Math.abs(p.z) < 2) break
       await bot.waitForTicks(2)
     }
 
-    if (!stone) throw new Error('stone item never appeared in bot inventory')
+    if (!probeItem) throw new Error(itemName + ' item never appeared in bot inventory')
 
-    await bot.equip(stone, 'hand')
+    await bot.equip(probeItem, 'hand')
     await bot.waitForTicks(5)
 
     const reference = bot.blockAt(new Vec3(0, 69, 0))
@@ -132,10 +136,10 @@ bot.once('spawn', async () => {
 
     const after = bot.blockAt(new Vec3(0, 70, 0))
     result.after = after ? after.name : null
-    result.placed = result.after === 'stone'
+    result.placed = result.after === expectedBlockName
 
     if (!result.placed) {
-      throw new Error('Mineflayer placeBlock returned without target becoming stone')
+      throw new Error('Mineflayer placeBlock returned without target becoming ' + expectedBlockName)
     }
 
     saveAndQuit(0)
