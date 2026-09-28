@@ -48,11 +48,12 @@
     },
     {
       "component": "mineflayer",
-      "path": "probes/mineflayer-runtime/patches/mineflayer-tick-end-26.3.patch",
+      "path": "tools/apply_mineflayer_tick_end_26_3.py",
       "upstream_pr": "PrismarineJS/mineflayer#4128",
       "upstream_head_sha": "a0433e0668768bc3f98846dce27af779d4da35f9",
       "purpose": "Integrate the upstream 26.3 client tick-end semantics into the pinned teleport-confirm branch after the live rep reached spawn and was kicked before placement.",
-      "semantic_scope": "client-tick-boundary-and-position-packet-separation"
+      "semantic_scope": "client-tick-boundary-and-position-packet-separation",
+      "integration": "exact-source fail-closed adapter"
     }
   ]
 }
