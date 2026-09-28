@@ -1,0 +1,16 @@
+{
+  "worldgen-public-linux-bootstrap": {
+    "kind": "github-actions",
+    "repository": "SupraCraft/mc-server-images",
+    "workflow": "worldgen-vanilla-bootstrap.yml",
+    "ref": "plan/worldgen-benchmark-agent-dispatch",
+    "capabilities": [
+      "public-minecraft-worldgen",
+      "github-actions",
+      "linux-x64",
+      "java25",
+      "python",
+      "worldgen-bootstrap-control-pair"
+    ]
+  }
+}
