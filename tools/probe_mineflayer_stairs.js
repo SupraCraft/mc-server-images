@@ -40,7 +40,7 @@ try {
   bot = mineflayer.createBot({
     host: '127.0.0.1',
     port,
-    username: 'SupraCraftStairsProbe',
+    username: 'SupraStairProbe',
     auth: 'offline',
     version: '26.3'
   })
