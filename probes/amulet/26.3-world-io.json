@@ -38,11 +38,40 @@
       ]
     },
     "server_roundtrip_target": "minecraft:gold_block",
+    "stateful_roundtrip": [
+      {
+        "amulet_reopen": "minecraft:redstone_lamp[lit=false]",
+        "amulet_reopen_exact": true,
+        "coordinate": [
+          3,
+          70,
+          0
+        ],
+        "expected": "minecraft:redstone_lamp[lit=false]",
+        "server_marker": "minecraft:diamond_block",
+        "server_roundtrip": "minecraft:redstone_lamp[lit=false]",
+        "vanilla_exact_state_verified": true
+      },
+      {
+        "amulet_reopen": "minecraft:lantern[hanging=false]",
+        "amulet_reopen_exact": false,
+        "coordinate": [
+          4,
+          70,
+          0
+        ],
+        "expected": "minecraft:lantern[hanging=false,waterlogged=false]",
+        "server_marker": "minecraft:diamond_block",
+        "server_roundtrip": "minecraft:lantern[hanging=false]",
+        "vanilla_exact_state_verified": true
+      }
+    ],
     "written": "minecraft:gold_block"
   },
   "result": "qualified",
   "schema": "supracraft.amulet-java-world-io/v0.1",
   "translation_support": {
+    "exact_default_property_readback": false,
     "java_26_3": true
   },
   "vanilla": {
