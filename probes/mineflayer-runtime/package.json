@@ -1,0 +1,11 @@
+{
+  "name": "supracraft-mineflayer-qualification-runtime",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "mineflayer": "4.39.0"
+  }
+}
