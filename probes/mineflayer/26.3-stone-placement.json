@@ -1,0 +1,66 @@
+{
+  "fixture": {
+    "bot_teleport": [
+      2,
+      70,
+      0
+    ],
+    "support": {
+      "at": [
+        0,
+        69,
+        0
+      ],
+      "block": "minecraft:stone"
+    },
+    "target": {
+      "at": [
+        0,
+        70,
+        0
+      ],
+      "block": "minecraft:stone"
+    }
+  },
+  "minecraft": {
+    "edition": "java",
+    "protocol": 777,
+    "version": "26.3",
+    "world_version": 5023
+  },
+  "mineflayer": {
+    "after": "stone",
+    "before": "air",
+    "bot_position": [
+      2,
+      70,
+      0
+    ],
+    "end_reason": "probe complete",
+    "last_packet": {
+      "name": "entity_head_rotation",
+      "state": "play"
+    },
+    "milestones": {
+      "connect": 1790597769091,
+      "login": 1790597771894,
+      "spawn": 1790597771978
+    },
+    "minecraft_data_version": "3.117.0",
+    "minecraft_protocol_version": "1.68.0",
+    "mineflayer_version": "4.39.0",
+    "negotiated_version": "26.3",
+    "packet_count": 462,
+    "placed": true,
+    "protocol_version": 777,
+    "requested_version": "26.3",
+    "schema": "supracraft.mineflayer-placement/v0.1",
+    "support_features": {
+      "clientTickEndPacket": true
+    }
+  },
+  "official_server_verified": true,
+  "result": "qualified",
+  "schema": "supracraft.mineflayer-java-placement/v0.1",
+  "status_protocol": 777
+}
