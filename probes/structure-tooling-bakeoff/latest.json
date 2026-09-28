@@ -13,7 +13,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 2062.295,
+      "elapsed_ms": 2214.547,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -45,7 +45,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 2836.923,
+      "elapsed_ms": 4130.708,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -68,7 +68,7 @@
     {
       "available": false,
       "deterministic_input": true,
-      "elapsed_ms": 0.676,
+      "elapsed_ms": 0.557,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -82,7 +82,7 @@
       "geometry_roundtrip": false,
       "headless": true,
       "notes": [
-        "FreeCADCmd/freecadcmd/freecad command not found"
+        "FreeCAD executable not found after package install"
       ],
       "schema": "supracraft.structure-tooling-probe/v0.1",
       "semantic_roundtrip": false,
@@ -101,7 +101,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 248.036,
+      "elapsed_ms": 474.429,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -133,7 +133,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 155.561,
+      "elapsed_ms": 155.425,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -152,6 +152,30 @@
       "semantic_strategy": "scene/node metadata; glTF extras require explicit validation",
       "tool": "trimesh",
       "version": "5.1.0"
+    },
+    {
+      "available": false,
+      "deterministic_input": true,
+      "elapsed_ms": 0.348,
+      "fixture": {
+        "block": "minecraft:stone",
+        "kind": "unit-cube",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "voxel_id": "probe/voxel/0001"
+      },
+      "geometry_roundtrip": false,
+      "headless": true,
+      "notes": [
+        "vengi-voxconvert command not found"
+      ],
+      "schema": "supracraft.structure-tooling-probe/v0.1",
+      "semantic_roundtrip": false,
+      "semantic_strategy": "unknown",
+      "tool": "vengi"
     }
   ],
   "schema": "supracraft.structure-tooling-bakeoff/v0.1"
