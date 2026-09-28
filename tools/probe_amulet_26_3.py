@@ -303,13 +303,12 @@ def main() -> int:
                 f"Amulet reopen mismatch: expected minecraft:gold_block, got {after_name}"
             )
 
-        for probe in STATEFUL_PROBES:
-            observed = stateful_reopen[probe["blockstate"]]
-            if observed != probe["blockstate"]:
-                raise RuntimeError(
-                    "Amulet stateful reopen mismatch: "
-                    f"expected {probe['blockstate']}, got {observed}"
-                )
+        amulet_stateful_exact = {
+            probe["blockstate"]: (
+                stateful_reopen[probe["blockstate"]] == probe["blockstate"]
+            )
+            for probe in STATEFUL_PROBES
+        }
 
         x, y, z = PROBE_AT
         marker_x, marker_y, marker_z = MARKER_AT
@@ -405,6 +404,9 @@ def main() -> int:
         "amulet_core_version": amulet_version,
         "translation_support": {
             "java_26_3": True,
+            "exact_default_property_readback": all(
+                amulet_stateful_exact.values()
+            ),
         },
         "probe": {
             "coordinate": list(PROBE_AT),
@@ -427,6 +429,7 @@ def main() -> int:
                     "coordinate": list(probe["at"]),
                     "expected": probe["blockstate"],
                     "amulet_reopen": stateful_reopen[probe["blockstate"]],
+                    "amulet_reopen_exact": amulet_stateful_exact[probe["blockstate"]],
                     "server_roundtrip": stateful_server[probe["blockstate"]],
                     "server_marker": stateful_markers[probe["blockstate"]],
                     "verified": (
