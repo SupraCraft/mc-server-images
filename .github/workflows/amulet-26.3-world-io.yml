@@ -52,24 +52,28 @@ jobs:
             --output probes/amulet/26.3-world-io.json
 
       - name: Publish evidence
+        if: always()
         shell: bash
         run: |
-          {
-            echo "## Amulet-Core 1.9.49 / Minecraft Java 26.3"
-            echo
-            echo '~~~json'
-            cat probes/amulet/26.3-world-io.json
-            echo '~~~'
-          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f probes/amulet/26.3-world-io.json ]]; then
+            {
+              echo "## Amulet-Core 1.9.49 / Minecraft Java 26.3"
+              echo
+              echo '~~~json'
+              cat probes/amulet/26.3-world-io.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: amulet-26.3-world-io
           path: probes/amulet/26.3-world-io.json
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Retain compact evidence on probe branch
-        if: github.event_name == 'push' && github.ref_name == 'probe/amulet-26.3-world-io'
+        if: always() && github.event_name == 'push' && github.ref_name == 'probe/amulet-26.3-world-io'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
