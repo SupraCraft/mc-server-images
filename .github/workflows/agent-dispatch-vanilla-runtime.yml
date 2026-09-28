@@ -1,0 +1,126 @@
+name: Agent Dispatch vanilla runtime qualification
+run-name: sidecar:${{ inputs.workset_id }}:${{ inputs.delegation_id }}:${{ inputs.assignment_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      workset_id:
+        description: Opaque Agent Dispatch workset correlation id
+        required: true
+        type: string
+      delegation_id:
+        description: Opaque Agent Dispatch delegation correlation id
+        required: true
+        type: string
+      assignment_id:
+        description: Stable bounded Agent Dispatch assignment id
+        required: true
+        type: string
+      version:
+        description: Exact Minecraft Java release id with committed public evidence
+        required: true
+        default: "26.3"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vanilla-runtime-${{ inputs.assignment_id }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Validate bounded correlation inputs
+        shell: bash
+        env:
+          WORKSET_ID: ${{ inputs.workset_id }}
+          DELEGATION_ID: ${{ inputs.delegation_id }}
+          ASSIGNMENT_ID: ${{ inputs.assignment_id }}
+          MC_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re
+          ident = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
+          for name in ("WORKSET_ID", "DELEGATION_ID", "ASSIGNMENT_ID", "MC_VERSION"):
+              value = os.environ[name]
+              if not ident.fullmatch(value):
+                  raise SystemExit(f"invalid {name}")
+          PY
+          test -f "probes/$MC_VERSION-release-identity.json"
+
+      - name: Install JDK 25
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Boot verified vanilla server and query status
+        shell: bash
+        env:
+          MC_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/agent-dispatch"
+          python tools/smoke_vanilla_runtime.py \
+            --evidence "probes/$MC_VERSION-release-identity.json" \
+            --output "$RUNNER_TEMP/agent-dispatch/vanilla-runtime-smoke.json"
+
+      - name: Build bounded Agent Dispatch receipt
+        shell: bash
+        env:
+          WORKSET_ID: ${{ inputs.workset_id }}
+          DELEGATION_ID: ${{ inputs.delegation_id }}
+          ASSIGNMENT_ID: ${{ inputs.assignment_id }}
+          MC_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"]) / "agent-dispatch"
+          smoke = root / "vanilla-runtime-smoke.json"
+          raw = smoke.read_bytes()
+          payload = json.loads(raw)
+          receipt = {
+              "schema": "supracraft-agent-dispatch-vanilla-runtime/1",
+              "workset_id": os.environ["WORKSET_ID"],
+              "delegation_id": os.environ["DELEGATION_ID"],
+              "assignment_id": os.environ["ASSIGNMENT_ID"],
+              "minecraft_version": os.environ["MC_VERSION"],
+              "protocol": payload["expected_protocol"],
+              "server_sha256": payload["server_artifact"]["sha256"],
+              "smoke_sha256": hashlib.sha256(raw).hexdigest(),
+              "runner_os": os.environ.get("RUNNER_OS"),
+              "runner_arch": os.environ.get("RUNNER_ARCH"),
+              "repository": os.environ.get("GITHUB_REPOSITORY"),
+              "repository_sha": os.environ.get("GITHUB_SHA"),
+              "result": "PASS",
+          }
+          (root / "receipt.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload public-safe evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: vanilla-runtime-${{ inputs.assignment_id }}
+          path: |
+            ${{ runner.temp }}/agent-dispatch/vanilla-runtime-smoke.json
+            ${{ runner.temp }}/agent-dispatch/receipt.json
+          if-no-files-found: error
+          retention-days: 7
