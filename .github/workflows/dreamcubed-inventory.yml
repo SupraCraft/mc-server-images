@@ -90,7 +90,7 @@ jobs:
           with urllib.request.urlopen(req, timeout=60) as resp:
               config = json.load(resp)
 
-          ds_url = "https://huggingface.co/api/datasets/SakanaAI/DreamCubed2M?blobs=true"
+          ds_url = "https://huggingface.co/api/models/SakanaAI/DreamCubed2M?blobs=true"
           req = urllib.request.Request(ds_url, headers={"User-Agent": "SupraCraft-public-qualification/1"})
           with urllib.request.urlopen(req, timeout=60) as resp:
               ds = json.load(resp)
