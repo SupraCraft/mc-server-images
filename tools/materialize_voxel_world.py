@@ -74,8 +74,9 @@ def write_datapack(world: Path, pack_format: int, commands: list[str], sites: li
         json.dumps(
             {
                 "pack": {
-                    "pack_format": pack_format,
                     "description": "SupraCraft generated-world qualification and tour controls",
+                    "min_format": [pack_format, 0],
+                    "max_format": [pack_format, 0],
                 }
             },
             indent=2,
