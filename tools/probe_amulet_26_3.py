@@ -33,7 +33,7 @@ from smoke_vanilla_runtime import (
 
 DIMENSION = "minecraft:overworld"
 PROBE_AT = (0, 70, 0)
-GAME_VERSION = ("java", (26, 3))
+GAME_VERSION = ("java", (26, 3, 0))
 PROBE_BLOCK = Block("minecraft", "gold_block")
 
 
@@ -200,9 +200,9 @@ def main() -> int:
                 tuple(version)
                 for version in level.translation_manager.version_numbers("java")
             ]
-            if (26, 3) not in java_versions:
+            if (26, 3, 0) not in java_versions:
                 raise RuntimeError(
-                    "Amulet translation manager does not advertise Java (26, 3); "
+                    "Amulet translation manager does not advertise Java (26, 3, 0); "
                     f"latest={java_versions[-10:]}"
                 )
 
