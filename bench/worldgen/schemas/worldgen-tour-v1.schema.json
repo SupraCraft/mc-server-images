@@ -4,27 +4,100 @@
   "title": "Worldgen Tour v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "run_id", "sites"],
+  "required": [
+    "schema_version",
+    "run_id",
+    "sites",
+    "tour_start_command",
+    "pack_id",
+    "data_pack_major"
+  ],
   "properties": {
-    "schema_version": {"const": 1},
-    "run_id": {"type": "string", "minLength": 3},
+    "schema_version": {
+      "const": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 3
+    },
     "sites": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["site_id", "category", "position", "reason"],
+        "required": [
+          "site_id",
+          "category",
+          "position",
+          "reason"
+        ],
         "properties": {
-          "site_id": {"type": "string", "minLength": 1},
-          "category": {"type": "string", "enum": ["top-interest", "bottom-dull", "representative", "anomaly-defect", "spawn-progression", "ecology-resource", "random-control"]},
-          "position": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
-          "look_at": {"type": ["array", "null"], "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
-          "reason": {"type": "string", "minLength": 1},
-          "teleport": {"type": ["string", "null"]},
-          "metrics_ref": {"type": ["string", "null"]}
+          "site_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "top-interest",
+              "bottom-dull",
+              "representative",
+              "anomaly-defect",
+              "spawn-progression",
+              "ecology-resource",
+              "random-control"
+            ]
+          },
+          "position": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number"
+            }
+          },
+          "look_at": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number"
+            }
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "teleport": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metrics_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       }
+    },
+    "tour_start_command": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pack_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data_pack_major": {
+      "type": "integer",
+      "minimum": 1
     }
   }
 }
