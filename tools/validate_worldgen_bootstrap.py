@@ -63,8 +63,9 @@ def main() -> int:
             world_entries = zf.namelist()
         if "world/level.dat" not in world_entries:
             errors.append("world.zip lacks world/level.dat")
-        if not any(name.startswith("world/region/") and name.endswith(".mca") for name in world_entries):
-            errors.append("world.zip lacks overworld region data")
+        overworld_region_prefix = "world/dimensions/minecraft/overworld/region/"
+        if not any(name.startswith(overworld_region_prefix) and name.endswith(".mca") for name in world_entries):
+            errors.append("world.zip lacks 26.3 overworld region data")
         if "world/SUPRACRAFT-TOUR.json" not in world_entries:
             errors.append("world.zip lacks embedded SupraCraft tour manifest")
         if "world/datapacks/supracraft_benchmark/pack.mcmeta" not in world_entries:
@@ -85,7 +86,7 @@ def main() -> int:
             "minecraft_26_3": receipt.get("minecraft_version") == "26.3",
             "qualified_server_sha256": provenance.get("server_artifact_sha256") == release["server_artifact"]["sha256"],
             "world_level_dat": "world/level.dat" in world_entries,
-            "world_region_data": any(name.startswith("world/region/") and name.endswith(".mca") for name in world_entries),
+            "world_region_data": any(name.startswith("world/dimensions/minecraft/overworld/region/") and name.endswith(".mca") for name in world_entries),
             "embedded_tour_manifest": "world/SUPRACRAFT-TOUR.json" in world_entries,
             "embedded_tour_datapack": "world/datapacks/supracraft_benchmark/pack.mcmeta" in world_entries,
             "terrain_probe_nonempty": terrain.get("observed_count", 0) > 0,
