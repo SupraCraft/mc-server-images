@@ -130,8 +130,7 @@ def main() -> int:
 
                 send(server, "forceload add 0 0")
                 send(server, "setworldspawn 0 70 0")
-                # Keep the stair fixture isolated from neighbor-derived shape
-                # changes while giving the bot stable footing.
+                # Keep the support/target isolated while giving the bot stable footing.
                 send(server, "fill -1 69 -1 1 71 1 minecraft:air")
                 send(server, "setblock 0 69 0 minecraft:stone")
                 send(server, "setblock 2 69 0 minecraft:stone")
