@@ -68,6 +68,9 @@ jobs:
             --expected-block chest \
             --expected-state 'minecraft:chest[facing=south,type=single,waterlogged=false]' \
             --expected-properties-json '{"facing":"south","type":"single","waterlogged":"false"}' \
+            --bot-x 0 \
+            --bot-y 70 \
+            --bot-z 2 \
             --bot-yaw 180 \
             --require-block-entity \
             --output probes/mineflayer/26.3-chest-south-single.json
