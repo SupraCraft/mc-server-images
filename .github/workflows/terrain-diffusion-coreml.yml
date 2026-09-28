@@ -67,17 +67,52 @@ jobs:
           grep -q "jvmArgs '-Xmx8g'" build.gradle
           python3 - <<'PY'
           from pathlib import Path
+
+          # The upstream standalone PipelineTest runs outside a Fabric lifecycle.
+          # Preserve the game/mod path when Fabric is present, but permit an explicit
+          # disposable qualification model directory when this system property is set.
+          mp=Path("src/main/java/com/github/xandergos/terraindiffusionmc/pipeline/ModelAssetManager.java")
+          s=mp.read_text()
+          old='''    private static final Path MODEL_DIRECTORY = FabricLoader.getInstance()
+            .getGameDir()
+            .resolve("terrain-diffusion-models");'''
+          new='''    private static final Path MODEL_DIRECTORY =
+            System.getProperty("supracraft.model.dir") != null
+                ? Path.of(System.getProperty("supracraft.model.dir"))
+                : FabricLoader.getInstance().getGameDir().resolve("terrain-diffusion-models");'''
+          if old not in s:
+              raise SystemExit("expected ModelAssetManager path expression not found")
+          mp.write_text(s.replace(old,new))
+
           p=Path("build.gradle")
           s=p.read_text()
           s=s.replace("jvmArgs '-Xmx8g'", "jvmArgs '-Xmx6g'")
-          p.write_text(s)
+          needle="""task pipelineTest(type: JavaExec, dependsOn: compileJava) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.github.xandergos.terraindiffusionmc.pipeline.PipelineTest'
+    jvmArgs '-Xmx6g'
+}"""
+          repl="""task pipelineTest(type: JavaExec, dependsOn: compileJava) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.github.xandergos.terraindiffusionmc.pipeline.PipelineTest'
+    jvmArgs '-Xmx6g'
+    systemProperty 'supracraft.model.dir', new File(System.getenv('RUNNER_TEMP'), 'terrain-diffusion-models').absolutePath
+}"""
+          if needle not in s:
+              raise SystemExit("expected pipelineTest block not found")
+          p.write_text(s.replace(needle,repl))
           PY
           cat > ../../evidence/upstream-compatibility-shim.json <<'JSON'
           {
-            "kind": "test-runner-memory-cap-only",
-            "reason": "standard free macos-26 runner exposes 7 GB RAM while upstream PipelineTest declares an 8 GB JVM maximum",
-            "upstream": "-Xmx8g",
-            "qualification": "-Xmx6g",
+            "kind": "standalone-harness-path-and-memory",
+            "reasons": [
+              "upstream PipelineTest initializes ModelAssetManager before FabricLoader gameDir is available",
+              "standard free macos-26 runner exposes 7 GB RAM while upstream PipelineTest declares an 8 GB JVM maximum"
+            ],
+            "changes": {
+              "model_directory": "explicit RUNNER_TEMP override for standalone test only; Fabric gameDir path remains default",
+              "jvm_max_heap": "-Xmx6g"
+            },
             "model_modified": false,
             "pipeline_algorithm_modified": false
           }
