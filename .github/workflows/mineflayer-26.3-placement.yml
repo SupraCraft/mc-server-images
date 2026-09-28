@@ -26,6 +26,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: experimental-prismarine-26-3-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   qualify:
     runs-on: ubuntu-latest
