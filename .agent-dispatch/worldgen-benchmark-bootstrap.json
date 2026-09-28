@@ -1,0 +1,471 @@
+{
+  "workset_id": "worldgen-benchmark-bootstrap-001",
+  "locator": "github-file:SupraCraft/mc-server-images@plan/worldgen-benchmark-agent-dispatch:.agent-dispatch/worldgen-benchmark-bootstrap.json",
+  "intent": "Prove the smallest autonomous public/free world-generator benchmark loop: Agent Dispatch projects one bounded implementation/execution increment, binds only zero-cost public resources, executes and validates vanilla/control world generation, and returns reconstructible evidence without using private GitHub Actions minutes.",
+  "state": {
+    "design-authority": "The benchmark dimensions, red/blue findings, hybrid-generator policy, ecology/playability requirements, and human-review policy are durable in SupraCraft/mc-structure-foundry-private#6.",
+    "worldgen-oracle-authority": "Minecraft 26.3 source/resource-derived worldgen recovery is tracked independently in SupraCraft/mc-reversing-lab-private#196.",
+    "public-execution-authority": "SupraCraft/mc-server-images#11 owns the public/free benchmark harness and all GitHub-hosted execution for this effort.",
+    "public-only-policy": "Benchmark GitHub-hosted execution is authorized only in public repositories using standard runner classes. Private hosted Actions and paid/larger runners are prohibited.",
+    "runner-evidence": "Public Ubuntu/Docker and public macOS 26 ARM64 are observed/qualified execution primitives in Agent Dispatch runner-census evidence; Terrain Diffusion has already completed on the free public macOS/CoreML lane.",
+    "learned-baselines": "Dream-Cubed DP4 author-config CPU generation and Terrain Diffusion CoreML pipeline have completed successfully in the public benchmark repository; Build-with-Bombs CPU ONNX execution has also completed.",
+    "no-scheduler": "Agent Dispatch remains a bounded actuator/observer. The bootstrap must not add a queue, scheduler, retry engine, database, or generic workflow service."
+  },
+  "unknowns": {
+    "generic-contract-fit": "Whether one small adapter/run/analysis contract can cover vanilla and the first non-vanilla generators without generator-specific semantic leakage.",
+    "materializer-26.3": "Whether the generic playable-world materializer can be repaired and qualified for Minecraft 26.3 datapack/pack-loading semantics.",
+    "agent-dispatch-public-binding": "Whether the deployed Sidecar can bind an approved mc-server-images public benchmark workflow with the required capabilities and observe its canonical terminal result.",
+    "metric-controls": "Whether the first static metrics distinguish vanilla from deliberately bad controls without producing misleading aesthetic conclusions."
+  },
+  "bounds": {
+    "scope_allowed": [
+      "read public benchmark repository state",
+      "modify public benchmark code/contracts on a bounded branch",
+      "dispatch approved public benchmark workflows",
+      "run deterministic validation in public standard GitHub-hosted Actions",
+      "use public upstream generator/model artifacts consistent with their licenses",
+      "record public benchmark evidence"
+    ],
+    "scope_prohibited": [
+      "execute benchmark workloads in private GitHub-hosted Actions",
+      "use paid or larger GitHub-hosted runners",
+      "merge or publish releases",
+      "change repository or provider secrets",
+      "expose private project material to public runners",
+      "introduce a scheduler, queue, database, retry engine, or generic compute proxy",
+      "weaken validators to accept a candidate",
+      "silently substitute a different generator/model/version/runner"
+    ],
+    "authority_delegable": [
+      "read public repository",
+      "write bounded public benchmark candidate",
+      "dispatch approved public workflow",
+      "run validation",
+      "record public evidence"
+    ],
+    "authority_reserved": [
+      "merge",
+      "publish release",
+      "change secrets",
+      "spend money",
+      "use private hosted Actions",
+      "expand architectural scope",
+      "enable recursive delegation"
+    ]
+  },
+  "delegations": {
+    "bootstrap-orchestrator": {
+      "responsibilities": [
+        "decompose the bootstrap into bounded depth-1 implementation/execution cells",
+        "select only READY cells whose prerequisites are satisfied",
+        "reconcile child results against public GitHub canonical evidence and independent validators",
+        "update durable frontier/evidence without human prompt/result shuttling"
+      ],
+      "state_refs": [
+        "design-authority",
+        "worldgen-oracle-authority",
+        "public-execution-authority",
+        "public-only-policy",
+        "runner-evidence",
+        "learned-baselines",
+        "no-scheduler"
+      ],
+      "unknown_refs": [
+        "generic-contract-fit",
+        "materializer-26.3",
+        "agent-dispatch-public-binding",
+        "metric-controls"
+      ],
+      "scope": {
+        "allowed": [
+          "read public benchmark repository state",
+          "dispatch approved public benchmark workflows",
+          "record public benchmark evidence"
+        ],
+        "prohibited": [
+          "merge or publish releases",
+          "change repository or provider secrets"
+        ]
+      },
+      "authority": {
+        "grants": [
+          "read public repository",
+          "dispatch approved public workflow",
+          "record public evidence"
+        ],
+        "reserved": [
+          "write bounded public benchmark candidate",
+          "run validation",
+          "merge",
+          "spend money"
+        ]
+      },
+      "capabilities": {
+        "required": [
+          "repository-read",
+          "agent-dispatch",
+          "result-reconciliation"
+        ],
+        "may_acquire_free_tools": true,
+        "may_build_tools": false,
+        "may_delegate": true
+      },
+      "resources": [
+        {
+          "kind": "money",
+          "limit": 0,
+          "unit": "USD",
+          "enforcement": "hard"
+        },
+        {
+          "kind": "delegation-depth",
+          "limit": 1,
+          "unit": "level",
+          "enforcement": "hard"
+        }
+      ],
+      "constraints": [
+        "Only depth-1 child delegations are authorized.",
+        "Do not create a scheduler or automatic retry service; the orchestrating actor owns planning/reconciliation.",
+        "Do not treat a child actor's completion claim as acceptance without canonical workflow/project evidence."
+      ],
+      "acceptance": {
+        "criteria": [
+          "The orchestrator advances READY bootstrap work without routine human relay.",
+          "All child work remains within the public-only and USD 0 envelope.",
+          "Each accepted child result is linked to canonical repository/workflow evidence.",
+          "No recursive delegation or new orchestration service is introduced."
+        ],
+        "evidence_refs": [
+          "docs/worldgen-benchmark-implementation-plan.md",
+          "https://github.com/SupraCraft/mc-server-images/issues/11"
+        ]
+      },
+      "frontier": "Delegate the first READY leaf: implement and validate the public benchmark contract/guard surface, then reconcile before opening generator-expansion cells."
+    },
+    "contract-and-guard-leaf": {
+      "parent_delegation_id": "bootstrap-orchestrator",
+      "responsibilities": [
+        "implement versioned generator-adapter, pipeline, run, analysis, and tour schemas or the smallest subset needed for the bootstrap",
+        "implement a deterministic public-only/standard-runner policy checker",
+        "add dependency-light schema/guard tests"
+      ],
+      "state_refs": [
+        "public-execution-authority",
+        "public-only-policy",
+        "no-scheduler"
+      ],
+      "unknown_refs": [
+        "generic-contract-fit"
+      ],
+      "scope": {
+        "allowed": [
+          "read public benchmark repository state",
+          "modify public benchmark code/contracts on a bounded branch",
+          "run deterministic validation in public standard GitHub-hosted Actions"
+        ],
+        "prohibited": [
+          "dispatch learned-model generation",
+          "modify private repositories",
+          "change secrets"
+        ]
+      },
+      "authority": {
+        "grants": [
+          "read public repository",
+          "write bounded public benchmark candidate",
+          "run validation"
+        ],
+        "reserved": [
+          "dispatch approved public workflow",
+          "merge",
+          "publish release"
+        ]
+      },
+      "capabilities": {
+        "required": [
+          "public-repository-code-edit",
+          "python",
+          "yaml-json-schema"
+        ],
+        "may_acquire_free_tools": true,
+        "may_build_tools": true,
+        "may_delegate": false
+      },
+      "resources": [
+        {
+          "kind": "money",
+          "limit": 0,
+          "unit": "USD",
+          "enforcement": "hard"
+        },
+        {
+          "kind": "elapsed-time",
+          "limit": 90,
+          "unit": "minutes",
+          "enforcement": "soft"
+        }
+      ],
+      "constraints": [
+        "Do not create a second task database or scheduler.",
+        "Keep project semantics generator-neutral and runner-neutral.",
+        "Public workflow guards must fail closed for private repositories and disallowed runner classes."
+      ],
+      "acceptance": {
+        "criteria": [
+          "Contract/guard tests pass on a standard public Ubuntu runner.",
+          "A negative fixture representing a private repository or billed runner is rejected.",
+          "Schemas are sufficient for vanilla/control bootstrap without embedding provider-specific fields."
+        ],
+        "evidence_refs": [
+          "docs/worldgen-benchmark-implementation-plan.md",
+          "https://github.com/SupraCraft/mc-server-images/issues/11"
+        ]
+      },
+      "frontier": "Implement the minimum schema and public-only guard surface needed to admit the vanilla/control execution leaf."
+    },
+    "vanilla-control-execution-leaf": {
+      "parent_delegation_id": "bootstrap-orchestrator",
+      "responsibilities": [
+        "generate one bounded vanilla 26.3 world and one negative/control world under the common adapter contract",
+        "emit canonical provenance/run receipts and downloadable world artifacts",
+        "run the initial static feasibility/geometry checks"
+      ],
+      "state_refs": [
+        "public-execution-authority",
+        "public-only-policy",
+        "runner-evidence",
+        "no-scheduler"
+      ],
+      "unknown_refs": [
+        "generic-contract-fit",
+        "metric-controls"
+      ],
+      "scope": {
+        "allowed": [
+          "read public benchmark repository state",
+          "dispatch approved public benchmark workflows",
+          "run deterministic validation in public standard GitHub-hosted Actions",
+          "record public benchmark evidence"
+        ],
+        "prohibited": [
+          "use learned-model generation",
+          "modify private repositories",
+          "change secrets"
+        ]
+      },
+      "authority": {
+        "grants": [
+          "read public repository",
+          "dispatch approved public workflow",
+          "run validation",
+          "record public evidence"
+        ],
+        "reserved": [
+          "write bounded public benchmark candidate",
+          "merge",
+          "publish release"
+        ]
+      },
+      "capabilities": {
+        "required": [
+          "public-minecraft-worldgen",
+          "github-actions",
+          "java25",
+          "python"
+        ],
+        "may_acquire_free_tools": false,
+        "may_build_tools": false,
+        "may_delegate": false
+      },
+      "resources": [
+        {
+          "kind": "workflow-dispatches",
+          "limit": 2,
+          "unit": "dispatch",
+          "enforcement": "hard"
+        },
+        {
+          "kind": "money",
+          "limit": 0,
+          "unit": "USD",
+          "enforcement": "hard"
+        }
+      ],
+      "constraints": [
+        "Use only standard public GitHub-hosted runners.",
+        "No automatic retry or redispatch.",
+        "Use the exact qualified Minecraft 26.3 official server identity."
+      ],
+      "acceptance": {
+        "criteria": [
+          "Vanilla and control worlds reach terminal public workflow states.",
+          "Canonical receipts include seed/config/artifact hashes/runner realization.",
+          "At least one downloadable world opens under the qualified Minecraft 26.3 runtime.",
+          "The initial analyzer distinguishes the intentionally bad control on at least one hard/structural dimension without an opaque overall score."
+        ],
+        "evidence_refs": [
+          "probes/26.3-release-identity.json",
+          "https://github.com/SupraCraft/mc-server-images/issues/11"
+        ]
+      },
+      "frontier": "After contract/guard acceptance, dispatch exactly the bounded vanilla/control pair and normalize terminal evidence."
+    },
+    "materializer-tour-leaf": {
+      "parent_delegation_id": "bootstrap-orchestrator",
+      "responsibilities": [
+        "repair and qualify generic Minecraft 26.3 playable-world materialization",
+        "emit Creative/Spectator teleport affordances and a versioned tour manifest",
+        "produce the first camera-tour artifact or a bounded blocker receipt"
+      ],
+      "state_refs": [
+        "public-execution-authority",
+        "public-only-policy",
+        "learned-baselines"
+      ],
+      "unknown_refs": [
+        "materializer-26.3"
+      ],
+      "scope": {
+        "allowed": [
+          "read public benchmark repository state",
+          "modify public benchmark code/contracts on a bounded branch",
+          "run deterministic validation in public standard GitHub-hosted Actions",
+          "record public benchmark evidence"
+        ],
+        "prohibited": [
+          "change private repos or secrets",
+          "use paid rendering/inference"
+        ]
+      },
+      "authority": {
+        "grants": [
+          "read public repository",
+          "write bounded public benchmark candidate",
+          "run validation",
+          "record public evidence"
+        ],
+        "reserved": [
+          "merge",
+          "publish release",
+          "spend money"
+        ]
+      },
+      "capabilities": {
+        "required": [
+          "public-repository-code-edit",
+          "minecraft-26.3-runtime",
+          "world-packaging",
+          "ffmpeg-or-tour-renderer"
+        ],
+        "may_acquire_free_tools": true,
+        "may_build_tools": true,
+        "may_delegate": false
+      },
+      "resources": [
+        {
+          "kind": "money",
+          "limit": 0,
+          "unit": "USD",
+          "enforcement": "hard"
+        },
+        {
+          "kind": "elapsed-time",
+          "limit": 120,
+          "unit": "minutes",
+          "enforcement": "soft"
+        }
+      ],
+      "constraints": [
+        "Tour selection must include non-showcase control categories, not only attractive sites.",
+        "Do not claim a video path is qualified unless it records a real generated world through the declared camera/runtime path."
+      ],
+      "acceptance": {
+        "criteria": [
+          "A generated world zip opens on Minecraft 26.3.",
+          "Creative/Spectator inspection and named teleports work.",
+          "Tour manifest records site category and selection reason.",
+          "Camera/video path succeeds or returns a specific capability blocker without paid fallback."
+        ],
+        "evidence_refs": [
+          "tools/materialize_voxel_world.py",
+          "https://github.com/SupraCraft/mc-server-images/issues/11"
+        ]
+      },
+      "frontier": "Repair 26.3 materialization first; then qualify the reusable camera/tour path against a canonical world artifact."
+    },
+    "independent-bootstrap-validator": {
+      "parent_delegation_id": "bootstrap-orchestrator",
+      "responsibilities": [
+        "independently verify public-only spend/resource invariants",
+        "verify canonical receipts and artifact hashes against GitHub workflow evidence",
+        "falsify bootstrap acceptance using the negative/control world"
+      ],
+      "state_refs": [
+        "public-only-policy",
+        "no-scheduler"
+      ],
+      "unknown_refs": [
+        "metric-controls",
+        "agent-dispatch-public-binding"
+      ],
+      "scope": {
+        "allowed": [
+          "read public benchmark repository state",
+          "run deterministic validation in public standard GitHub-hosted Actions"
+        ],
+        "prohibited": [
+          "modify candidate code",
+          "weaken acceptance criteria",
+          "dispatch replacement generation"
+        ]
+      },
+      "authority": {
+        "grants": [
+          "read public repository",
+          "run validation"
+        ],
+        "reserved": [
+          "write bounded public benchmark candidate",
+          "dispatch approved public workflow",
+          "merge"
+        ]
+      },
+      "capabilities": {
+        "required": [
+          "repository-read",
+          "independent-validation",
+          "github-actions-observation"
+        ],
+        "may_acquire_free_tools": true,
+        "may_build_tools": false,
+        "may_delegate": false
+      },
+      "resources": [
+        {
+          "kind": "money",
+          "limit": 0,
+          "unit": "USD",
+          "enforcement": "hard"
+        }
+      ],
+      "constraints": [
+        "Do not reuse the generating actor as the sole independent validator when another free validation path exists.",
+        "Do not infer success from an actor report when canonical GitHub evidence is available."
+      ],
+      "acceptance": {
+        "criteria": [
+          "No private Actions or billed runner is present in accepted evidence.",
+          "Artifacts/receipts reconcile to exact workflow runs and hashes.",
+          "The bad control triggers expected hard/structural findings.",
+          "Any unmet condition is reported as blocked/failed rather than normalized away."
+        ],
+        "evidence_refs": [
+          "docs/worldgen-benchmark-implementation-plan.md",
+          "https://github.com/SupraCraft/mc-server-images/issues/11"
+        ]
+      },
+      "frontier": "Validate each candidate tranche only after its canonical public workflow evidence exists."
+    }
+  }
+}
