@@ -7,6 +7,8 @@ on:
       - plan/worldgen-benchmark-agent-dispatch
     paths:
       - 'tools/generate_vanilla_worldgen_bootstrap.py'
+      - 'tools/worldgen_tour_pack.py'
+      - 'tools/validate_worldgen_bootstrap.py'
       - 'tools/check_worldgen_public_policy.py'
       - 'probes/26.3-release-identity.json'
       - '.github/workflows/worldgen-vanilla-bootstrap.yml'
@@ -100,6 +102,20 @@ jobs:
           path: runs
           merge-multiple: false
 
+      - name: Independently validate both canonical world artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p validations
+          python tools/validate_worldgen_bootstrap.py \
+            --run-dir runs/worldgen-bootstrap-normal \
+            --release-evidence probes/26.3-release-identity.json \
+            --output validations/normal.json
+          python tools/validate_worldgen_bootstrap.py \
+            --run-dir runs/worldgen-bootstrap-flat-null-control \
+            --release-evidence probes/26.3-release-identity.json \
+            --output validations/flat-null-control.json
+
       - name: Falsify the bootstrap terrain metric against the low-complexity control
         shell: bash
         run: |
@@ -138,6 +154,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: worldgen-bootstrap-control-comparison
-          path: comparison.json
+          name: worldgen-bootstrap-validation-and-comparison
+          path: |
+            comparison.json
+            validations/
           retention-days: 14
