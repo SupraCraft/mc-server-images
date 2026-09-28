@@ -1,0 +1,254 @@
+name: worldgen camera compatibility and tour
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/worldgen_camera_probe.js'
+      - '.github/workflows/worldgen-camera-tour.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  camera:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      SOURCE_WORLD_RUN_ID: "36410070247"
+      SOURCE_ANALYSIS_RUN_ID: "36410381854"
+      RCON_PASSWORD: supracraft-local-only
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - name: Download accepted canonical normal world
+        uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_WORLD_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: worldgen-bootstrap-normal
+          path: source-world
+
+      - name: Download accepted multiscale tour manifest
+        uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_ANALYSIS_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: worldgen-multiscale-normal
+          path: source-analysis
+
+      - name: Prepare exact Minecraft 26.3 server and canonical world
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p server camera-output evidence
+          unzip -q source-world/world.zip -d server
+          python - <<'PY'
+          import hashlib, json, pathlib, urllib.request
+          evidence=json.loads(pathlib.Path("probes/26.3-release-identity.json").read_text())
+          info=evidence["server_artifact"]
+          out=pathlib.Path("server/server.jar")
+          with urllib.request.urlopen(info["url"], timeout=300) as r, out.open("wb") as f:
+              while True:
+                  b=r.read(1024*1024)
+                  if not b: break
+                  f.write(b)
+          data=out.read_bytes()
+          sha1=hashlib.sha1(data).hexdigest()
+          sha256=hashlib.sha256(data).hexdigest()
+          assert sha1 == info["expected_sha1"], (sha1, info["expected_sha1"])
+          assert sha256 == info["sha256"], (sha256, info["sha256"])
+          pathlib.Path("evidence/server-identity.json").write_text(json.dumps({
+              "minecraft_version":"26.3",
+              "protocol":evidence["artifact_version_json"]["protocol_version"],
+              "sha1":sha1,
+              "sha256":sha256
+          },indent=2)+"\n")
+          PY
+          cat > server/eula.txt <<'EOF'
+          eula=true
+          EOF
+          cat > server/server.properties <<EOF
+          online-mode=false
+          server-port=25571
+          enable-rcon=true
+          rcon.port=25572
+          rcon.password=$RCON_PASSWORD
+          broadcast-rcon-to-ops=false
+          view-distance=6
+          simulation-distance=4
+          spawn-protection=0
+          max-players=2
+          allow-flight=true
+          gamemode=spectator
+          force-gamemode=true
+          difficulty=peaceful
+          spawn-monsters=false
+          spawn-animals=false
+          level-name=world
+          motd=SupraCraft public camera qualification
+          EOF
+
+      - name: Start 26.3 server
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd server
+            java -Xms512M -Xmx3G -jar server.jar nogui > server.log 2>&1
+          ) &
+          echo $! > server.pid
+          for i in {1..180}; do
+            if grep -q "Done (" server/server.log 2>/dev/null; then
+              echo "SERVER_READY=1" >> "$GITHUB_ENV"
+              break
+            fi
+            if ! kill -0 "$(cat server.pid)" 2>/dev/null; then
+              tail -200 server/server.log || true
+              exit 1
+            fi
+            sleep 1
+          done
+          test "${SERVER_READY:-}" = "1" || { tail -200 server/server.log; exit 1; }
+
+      - name: Pin and install Mineflayer protocol probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p camera-runtime
+          cd camera-runtime
+          npm init -y >/dev/null
+          npm install --save-exact mineflayer@4.39.0 2>&1 | tee ../evidence/npm-mineflayer.log
+          npm ls --json > ../evidence/npm-probe-tree.json
+          cd ..
+          cp tools/worldgen_camera_probe.js camera-runtime/
+
+      - name: Qualify Mineflayer against Minecraft 26.3 protocol 777
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd camera-runtime
+            node worldgen_camera_probe.js               --host 127.0.0.1               --port 25571               --mode probe               --output-dir ../camera-output
+          )
+          cp camera-output/camera-receipt.json evidence/connection-receipt.json
+          cat evidence/connection-receipt.json
+
+      - name: Install headless renderer only after real bot spawn
+        id: renderer_deps
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(python -c 'import json; print(json.load(open("evidence/connection-receipt.json"))["status"])')"
+          if [[ "$status" != "success" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "Mineflayer did not spawn on 26.3; preserving blocker without installing renderer dependencies."
+            exit 0
+          fi
+
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq             ffmpeg xvfb             libxi-dev libxext-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev             libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev             > evidence/apt-renderer.log 2>&1
+
+          cd camera-runtime
+          set +e
+          npm install --save-exact             prismarine-viewer@1.33.0             rcon-client@4.2.5             "github:PrismarineJS/node-canvas-webgl#c183e0a8e5ad8bdc2f1e4f3c1ba0b2592ad952f0"             > ../evidence/npm-renderer.log 2>&1
+          rc=$?
+          set -e
+          if [[ $rc -ne 0 ]]; then
+            python - <<'PY'
+          import json, pathlib
+          connection=json.loads(pathlib.Path("../evidence/connection-receipt.json").read_text())
+          out={**connection,
+               "status":"blocked",
+               "mode":"render",
+               "blocker":"renderer-dependency-install-failed"}
+          pathlib.Path("../camera-output/camera-receipt.json").write_text(json.dumps(out,indent=2)+"\n")
+          PY
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          npm ls --json > ../evidence/npm-render-tree.json
+          cd ..
+
+      - name: Render multi-site headless MP4
+        if: steps.renderer_deps.outputs.eligible == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f camera-output/camera-receipt.json
+          (
+            cd camera-runtime
+            xvfb-run -a node worldgen_camera_probe.js               --host 127.0.0.1               --port 25571               --mode render               --rcon-password "$RCON_PASSWORD"               --manifest ../source-analysis/tour/manifest.json               --output-dir ../camera-output
+          )
+          cat camera-output/camera-receipt.json
+
+      - name: Preserve connection-only blocker if render was ineligible
+        if: steps.renderer_deps.outputs.eligible != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f camera-output/camera-receipt.json ]]; then
+            cp evidence/connection-receipt.json camera-output/camera-receipt.json
+          fi
+
+      - name: Capture server and artifact evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp server/server.log evidence/server.log || true
+          cp source-analysis/tour/manifest.json evidence/source-tour-manifest.json || true
+          if [[ -f camera-output/tour.mp4 ]]; then
+            sha256sum camera-output/tour.mp4 > evidence/tour-sha256.txt
+            ffprobe -v error -show_entries format=duration,size -of json camera-output/tour.mp4               > evidence/tour-ffprobe.json || true
+          fi
+          if [[ -f camera-output/camera-receipt.json ]]; then
+            cat camera-output/camera-receipt.json
+          fi
+          if [[ -f server.pid ]]; then
+            kill "$(cat server.pid)" 2>/dev/null || true
+          fi
+
+      - name: Upload camera qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-camera-26.3-qualification
+          path: |
+            camera-output/
+            evidence/
+          retention-days: 14
