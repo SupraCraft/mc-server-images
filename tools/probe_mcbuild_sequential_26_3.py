@@ -7,7 +7,9 @@ import argparse
 import hashlib
 import json
 import os
-import selectors
+import queue
+import threading
+from collections import deque
 import subprocess
 import tempfile
 import time
@@ -74,41 +76,104 @@ def wait_server(
 
 class JsonLinePeer:
     def __init__(self, process: subprocess.Popen[str]) -> None:
-        if process.stdout is None or process.stdin is None:
+        if (
+            process.stdout is None
+            or process.stdin is None
+            or process.stderr is None
+        ):
             raise RuntimeError("worker pipes unavailable")
         self.process = process
         self.stdout = process.stdout
         self.stdin = process.stdin
-        self.selector = selectors.DefaultSelector()
-        self.selector.register(self.stdout, selectors.EVENT_READ)
+        self.stderr = process.stderr
+        self.messages: queue.Queue[dict[str, Any]] = queue.Queue()
+        self.last_control_message: dict[str, Any] | None = None
+        self.reader_error: str | None = None
+        self.stderr_tail: deque[str] = deque(maxlen=200)
+        self.stderr_lock = threading.Lock()
+        self.stdout_thread = threading.Thread(
+            target=self._read_stdout,
+            name="mcbuild-worker-stdout",
+            daemon=True,
+        )
+        self.stderr_thread = threading.Thread(
+            target=self._read_stderr,
+            name="mcbuild-worker-stderr",
+            daemon=True,
+        )
+        self.stdout_thread.start()
+        self.stderr_thread.start()
 
-    def recv(self, timeout: float = 30.0) -> dict[str, Any]:
+    def _read_stdout(self) -> None:
+        try:
+            for line in self.stdout:
+                try:
+                    value = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(value, dict):
+                    self.messages.put(value)
+        except Exception as exc:
+            self.reader_error = repr(exc)
+
+    def _read_stderr(self) -> None:
+        try:
+            for line in self.stderr:
+                with self.stderr_lock:
+                    self.stderr_tail.append(line)
+        except Exception as exc:
+            with self.stderr_lock:
+                self.stderr_tail.append(
+                    f"<stderr reader error: {exc!r}>\\n"
+                )
+
+    def _diagnostic(
+        self,
+        phase: str,
+        action_id: str | None,
+    ) -> dict[str, Any]:
+        with self.stderr_lock:
+            stderr_tail = "".join(list(self.stderr_tail))[-4000:]
+        return {
+            "phase": phase,
+            "action_id": action_id,
+            "worker_poll": self.process.poll(),
+            "reader_error": self.reader_error,
+            "last_control_message": self.last_control_message,
+            "queued_control_messages": self.messages.qsize(),
+            "stderr_tail": stderr_tail,
+        }
+
+    def recv(
+        self,
+        timeout: float = 30.0,
+        *,
+        phase: str,
+        action_id: str | None = None,
+    ) -> dict[str, Any]:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if self.process.poll() is not None:
-                tail = ""
-                if self.process.stderr is not None:
-                    tail = self.process.stderr.read()[-4000:]
-                raise RuntimeError(
-                    f"worker exited {self.process.returncode}: {tail}"
-                )
             remaining = max(0.05, deadline - time.monotonic())
-            events = self.selector.select(min(0.5, remaining))
-            if not events:
-                continue
-            line = self.stdout.readline()
-            if not line:
-                continue
             try:
-                value = json.loads(line)
-            except json.JSONDecodeError:
+                value = self.messages.get(timeout=min(0.5, remaining))
+            except queue.Empty:
+                if self.process.poll() is not None:
+                    diagnostic = self._diagnostic(phase, action_id)
+                    raise RuntimeError(
+                        "worker exited before control message: "
+                        + json.dumps(diagnostic, sort_keys=True)
+                    )
                 continue
-            if isinstance(value, dict):
-                return value
-        raise RuntimeError("timeout waiting for worker control message")
+            self.last_control_message = value
+            return value
+        diagnostic = self._diagnostic(phase, action_id)
+        raise RuntimeError(
+            "timeout waiting for worker control message: "
+            + json.dumps(diagnostic, sort_keys=True)
+        )
 
     def send(self, value: dict[str, Any]) -> None:
-        self.stdin.write(json.dumps(value, sort_keys=True) + "\n")
+        self.stdin.write(json.dumps(value, sort_keys=True) + "\\n")
         self.stdin.flush()
 
 
@@ -218,7 +283,7 @@ def main() -> int:
                 )
                 peer = JsonLinePeer(worker)
 
-                ready = peer.recv(40)
+                ready = peer.recv(40, phase="await-ready")
                 if (
                     ready.get("type") != "ready"
                     or int(ready.get("protocol", -1)) != protocol
@@ -228,9 +293,15 @@ def main() -> int:
                 send_server(server, f"gamemode survival {BOT_NAME}")
                 controller_receipts: list[dict[str, Any]] = []
                 placed = 0
+                wait_phase = "await-prepare"
+                wait_action_id: str | None = plan["actions"][0]["id"]
 
                 while True:
-                    msg = peer.recv(40)
+                    msg = peer.recv(
+                        40,
+                        phase=wait_phase,
+                        action_id=wait_action_id,
+                    )
                     kind = msg.get("type")
                     if kind == "prepare":
                         index = int(msg["index"])
@@ -253,6 +324,8 @@ def main() -> int:
                         )
                         time.sleep(0.25)
                         peer.send({"type": "prepared", "id": action["id"]})
+                        wait_phase = "await-placement-result"
+                        wait_action_id = action["id"]
                         controller_receipts.append(
                             {
                                 "index": index,
@@ -263,7 +336,18 @@ def main() -> int:
                             }
                         )
                     elif kind == "placed":
+                        expected = plan["actions"][placed]["id"]
+                        if msg.get("id") != expected:
+                            raise RuntimeError(
+                                "worker placed/action identity mismatch"
+                            )
                         placed += 1
+                        if placed < len(plan["actions"]):
+                            wait_phase = "await-prepare"
+                            wait_action_id = plan["actions"][placed]["id"]
+                        else:
+                            wait_phase = "await-complete"
+                            wait_action_id = None
                     elif kind == "complete":
                         break
                     elif kind == "error":
