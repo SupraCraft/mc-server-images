@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.metadata
+import hashlib
 import json
 import subprocess
 import tempfile
@@ -34,9 +35,20 @@ from smoke_vanilla_runtime import (
 DIMENSION = "minecraft:overworld"
 PROBE_AT = (0, 70, 0)
 MARKER_AT = (1, 200, 0)
+CONTROL_AT = (2, 200, 0)
 GAME_VERSION = ("java", (26, 3, 0))
 PROBE_BLOCK = Block("minecraft", "gold_block")
 
+
+
+def file_sha256(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 def write_server_config(root: Path, port: int) -> None:
     (root / "eula.txt").write_text("eula=true\n", "utf-8")
@@ -201,6 +213,8 @@ def main() -> int:
         world_path = root / "world"
         if not (world_path / "level.dat").exists():
             raise RuntimeError("vanilla server did not create world/level.dat")
+        region_path = world_path / "region" / "r.0.0.mca"
+        region_before_amulet = file_sha256(region_path)
 
         level = amulet.load_level(str(world_path))
         try:
@@ -231,6 +245,8 @@ def main() -> int:
         finally:
             level.close()
 
+        region_after_amulet = file_sha256(region_path)
+
         level = amulet.load_level(str(world_path))
         try:
             after, _ = level.get_version_block(
@@ -249,7 +265,10 @@ def main() -> int:
 
         x, y, z = PROBE_AT
         marker_x, marker_y, marker_z = MARKER_AT
+        control_x, control_y, control_z = CONTROL_AT
         command = (
+            "forceload add 0 0\n"
+            f"setblock {control_x} {control_y} {control_z} minecraft:diamond_block\n"
             f"execute if block {x} {y} {z} minecraft:gold_block "
             f"run setblock {marker_x} {marker_y} {marker_z} minecraft:diamond_block"
         )
@@ -261,8 +280,11 @@ def main() -> int:
             command_after_ready=command,
         )
 
-        # Cross-direction oracle: the vanilla server places this marker only
-        # when it independently observes the Amulet-written gold block.
+        region_after_server = file_sha256(region_path)
+
+        # Cross-direction oracle: the vanilla server places the conditional
+        # marker only if it independently observes the Amulet-written target.
+        # A separate unconditional control proves the server command path ran.
         level = amulet.load_level(str(world_path))
         try:
             marker_block, _ = level.get_version_block(
@@ -270,16 +292,28 @@ def main() -> int:
                 DIMENSION,
                 GAME_VERSION,
             )
+            control_block, _ = level.get_version_block(
+                *CONTROL_AT,
+                DIMENSION,
+                GAME_VERSION,
+            )
+            server_target, _ = level.get_version_block(
+                *PROBE_AT,
+                DIMENSION,
+                GAME_VERSION,
+            )
             marker_name = block_name(marker_block)
+            control_name = block_name(control_block)
+            server_target_name = block_name(server_target)
         finally:
             level.close()
 
-        server_verified = marker_name == "minecraft:diamond_block"
-        if not server_verified:
-            raise RuntimeError(
-                "official Minecraft 26.3 server did not create the conditional "
-                f"marker; observed {marker_name} at {MARKER_AT}"
-            )
+        control_verified = control_name == "minecraft:diamond_block"
+        server_verified = (
+            control_verified
+            and marker_name == "minecraft:diamond_block"
+            and server_target_name == "minecraft:gold_block"
+        )
 
     result = {
         "schema": "supracraft.amulet-java-world-io/v0.1",
@@ -299,9 +333,20 @@ def main() -> int:
             "written": "minecraft:gold_block",
             "amulet_reopen": after_name,
             "official_server_verified": server_verified,
+            "server_roundtrip_target": server_target_name,
             "server_conditional_marker": {
                 "coordinate": list(MARKER_AT),
                 "block": marker_name,
+            },
+            "server_command_control": {
+                "coordinate": list(CONTROL_AT),
+                "block": control_name,
+                "verified": control_verified,
+            },
+            "region_sha256": {
+                "before_amulet": region_before_amulet,
+                "after_amulet": region_after_amulet,
+                "after_server": region_after_server,
             },
         },
         "vanilla": {
@@ -309,7 +354,7 @@ def main() -> int:
             "second_boot_done": "Done (" in second_log,
             "status_protocol": int(status.get("version", {}).get("protocol", -1)),
         },
-        "result": "qualified",
+        "result": "qualified" if server_verified else "unqualified",
     }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -318,7 +363,7 @@ def main() -> int:
         "utf-8",
     )
     print(json.dumps(result, indent=2, sort_keys=True))
-    return 0
+    return 0 if server_verified else 3
 
 
 if __name__ == "__main__":
