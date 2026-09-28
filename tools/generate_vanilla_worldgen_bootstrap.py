@@ -15,6 +15,8 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from worldgen_tour_pack import PACK_NAME, write_tour_pack
+
 PROFILES = {
     "normal": {
         "level_type": "minecraft:normal",
@@ -153,8 +155,39 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix=f"worldgen-{args.profile}-") as td:
         root = Path(td)
         world = root / "world"
+        world.mkdir(parents=True, exist_ok=True)
         server = root / "server.jar"
         download_server(evidence, server)
+
+        tour_sites = [
+            {
+                "site_id": "spawn_overview",
+                "category": "spawn-progression",
+                "position": [0, 160, -32],
+                "look_at": [0, 64, 0],
+                "reason": "Origin/spawn-region overview for the bootstrap world.",
+            },
+            {
+                "site_id": "representative",
+                "category": "representative",
+                "position": [48, 128, 48],
+                "look_at": [24, 64, 24],
+                "reason": "Representative in-budget inspection site; not saliency-selected.",
+            },
+            {
+                "site_id": "random_control",
+                "category": "random-control",
+                "position": [-48, 128, -48],
+                "look_at": [-24, 64, -24],
+                "reason": "Fixed control viewpoint retained independently of visual-interest ranking.",
+            },
+        ]
+        tour_manifest = write_tour_pack(
+            world,
+            int(evidence["artifact_version_json"]["pack_version"]["data_major"]),
+            f"bootstrap-{args.profile}-{args.seed}",
+            tour_sites,
+        )
 
         (root / "eula.txt").write_text("eula=true\n", "utf-8")
         props = {
@@ -174,6 +207,8 @@ def main() -> int:
             "level-type": profile["level_type"],
             "generate-structures": profile["generate_structures"],
             "generator-settings": profile["generator_settings"],
+            "initial-enabled-packs": f"vanilla,file/{PACK_NAME}",
+            "initial-disabled-packs": "",
             "motd": f"SupraCraft worldgen benchmark {args.profile}",
         }
         (root / "server.properties").write_text(
@@ -197,6 +232,8 @@ def main() -> int:
             command(process, "forceload add -64 -64 64 64")
             command(process, "save-all flush")
             time.sleep(20)
+            command(process, "function supracraft:tour/start")
+            time.sleep(2)
 
             # Coarse terrain probe. Emit a log marker for every sampled non-air block.
             for x in XZS:
@@ -226,6 +263,8 @@ def main() -> int:
             raise RuntimeError(
                 "server emitted ERROR lines: " + " | ".join(error_lines[-20:])
             )
+        if "SUPRACRAFT_TOUR_PACK_OK" not in server_log:
+            raise RuntimeError("26.3 server did not execute the generated SupraCraft tour datapack")
 
         terrain = parse_probe(server_log)
         terrain["profile"] = args.profile
@@ -258,10 +297,17 @@ def main() -> int:
         json.dumps(provenance, indent=2, sort_keys=True) + "\n", "utf-8"
     )
 
+    tour_dir = args.output_dir / "tour"
+    tour_dir.mkdir(exist_ok=True)
+    (tour_dir / "manifest.json").write_text(
+        json.dumps(tour_manifest, indent=2, sort_keys=True) + "\n", "utf-8"
+    )
+
     artifacts = []
     for kind, path in [
         ("minecraft-world-zip", args.output_dir / "world.zip"),
         ("terrain-analysis", analysis_dir / "terrain.json"),
+        ("tour-manifest", tour_dir / "manifest.json"),
         ("provenance", args.output_dir / "provenance.json"),
     ]:
         artifacts.append({"kind": kind, "path": str(path.relative_to(args.output_dir)), "sha256": digest(path, "sha256")})
