@@ -1,0 +1,52 @@
+name: worldgen public contract guard
+
+on:
+  pull_request:
+    paths:
+      - 'bench/worldgen/**'
+      - 'tools/check_worldgen_public_policy.py'
+      - 'tests/test_worldgen_contracts.py'
+      - '.github/workflows/worldgen-*.yml'
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'bench/worldgen/**'
+      - 'tools/check_worldgen_public_policy.py'
+      - 'tests/test_worldgen_contracts.py'
+      - '.github/workflows/worldgen-*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - name: Run dependency-light contract tests
+        run: python -m unittest -v tests.test_worldgen_contracts
