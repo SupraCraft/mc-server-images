@@ -5,7 +5,9 @@ on:
     paths:
       - 'bench/worldgen/**'
       - 'tools/check_worldgen_public_policy.py'
+      - 'tools/worldgen_tour_pack.py'
       - 'tests/test_worldgen_contracts.py'
+      - 'tests/test_worldgen_tour_pack.py'
       - '.github/workflows/worldgen-*.yml'
   push:
     branches:
@@ -13,7 +15,9 @@ on:
     paths:
       - 'bench/worldgen/**'
       - 'tools/check_worldgen_public_policy.py'
+      - 'tools/worldgen_tour_pack.py'
       - 'tests/test_worldgen_contracts.py'
+      - 'tests/test_worldgen_tour_pack.py'
       - '.github/workflows/worldgen-*.yml'
   workflow_dispatch:
 
@@ -48,5 +52,5 @@ jobs:
         run: |
           python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
 
-      - name: Run dependency-light contract tests
-        run: python -m unittest -v tests.test_worldgen_contracts
+      - name: Run dependency-light contract and tour-pack tests
+        run: python -m unittest -v tests.test_worldgen_contracts tests.test_worldgen_tour_pack
