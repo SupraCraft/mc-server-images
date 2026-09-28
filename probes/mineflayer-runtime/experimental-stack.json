@@ -1,0 +1,35 @@
+{
+  "schema": "supracraft.prismarine-experimental-stack/v0.1",
+  "purpose": "Minecraft Java 26.3 physical placement qualification",
+  "components": {
+    "minecraft-data-source": {
+      "repository": "DallasCarraher/minecraft-data",
+      "sha": "924e26d6b3bb8f97a5d1e73d6190b09879c2e1e2",
+      "upstream_pr": "PrismarineJS/minecraft-data#1301"
+    },
+    "node-minecraft-data": {
+      "repository": "PrismarineJS/node-minecraft-data",
+      "sha": "94b717a14e167afdbcdfe708f40f7eed8917fe08"
+    },
+    "minecraft-protocol": {
+      "repository": "DallasCarraher/node-minecraft-protocol",
+      "sha": "a1a33809c49553e544a7efd3d8bc03eb0867f4ab",
+      "upstream_pr": "PrismarineJS/node-minecraft-protocol#1538"
+    },
+    "prismarine-chunk": {
+      "repository": "DallasCarraher/prismarine-chunk",
+      "sha": "7382b4fef1c56290524665e7b9af58b7d1f34791",
+      "upstream_pr": "PrismarineJS/prismarine-chunk#334"
+    },
+    "mineflayer": {
+      "repository": "maebahesioru/mineflayer",
+      "sha": "741ddeb9b707000b6103bd23361c34fc39f82c68",
+      "upstream_pr": "PrismarineJS/mineflayer#4130"
+    }
+  },
+  "notes": [
+    "The source minecraft-data repository is not itself an npm package; it is injected into a pinned node-minecraft-data checkout before data.js generation.",
+    "Local file dependencies are used so npm resolves the experimental components as one coherent stack rather than silently falling back to released packages.",
+    "Additional 26.3 Mineflayer PRs are intentionally excluded from the first placement rep unless the bounded placement test demonstrates they are required."
+  ]
+}
