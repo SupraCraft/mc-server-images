@@ -1,0 +1,83 @@
+name: Free PyTorch MPS probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualify/voxel-diffusion-runtime
+    paths:
+      - .github/workflows/pytorch-mps-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - name: Fail closed outside a public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Public repository required."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install PyTorch
+        run: python -m pip install --upgrade pip torch
+
+      - name: Exercise MPS tensor and 3D operators
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python - <<'PY'
+          import json, platform, time, torch
+
+          out = {
+              "torch_version": torch.__version__,
+              "python_arch": platform.machine(),
+              "mps_built": bool(torch.backends.mps.is_built()),
+              "mps_available": bool(torch.backends.mps.is_available()),
+          }
+
+          if out["mps_available"]:
+              device = torch.device("mps")
+              t0 = time.perf_counter()
+              x = torch.randn((1, 8, 16, 16, 16), device=device)
+              conv = torch.nn.Conv3d(8, 16, 3, padding=1).to(device)
+              y = conv(x)
+              y = torch.softmax(y, dim=1)
+              torch.mps.synchronize()
+              out.update({
+                  "device": str(device),
+                  "conv3d_softmax_ok": True,
+                  "shape": list(y.shape),
+                  "elapsed_seconds": time.perf_counter() - t0,
+                  "finite": bool(torch.isfinite(y).all().item()),
+              })
+          else:
+              out["conv3d_softmax_ok"] = False
+
+          with open("evidence/pytorch-mps.json", "w") as f:
+              json.dump(out, f, indent=2, sort_keys=True)
+          print(json.dumps(out, indent=2, sort_keys=True))
+          if not out["mps_available"] or not out["conv3d_softmax_ok"]:
+              raise SystemExit(2)
+          PY
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: free-pytorch-mps-evidence
+          path: evidence/pytorch-mps.json
+          retention-days: 7
