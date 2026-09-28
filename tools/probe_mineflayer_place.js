@@ -16,6 +16,9 @@ const result = {
   minecraft_data_version: require('minecraft-data/package.json').version,
   minecraft_protocol_version: require('minecraft-protocol/package.json').version,
   requested_version: '26.3',
+  support_features: {
+    clientTickEndPacket: mineflayer.supportFeature('clientTickEndPacket', '26.3')
+  },
   placed: false,
   milestones: {},
   packet_count: 0,
@@ -66,7 +69,11 @@ bot.on('error', (err) => {
 })
 
 bot.on('kicked', (reason) => {
-  result.kicked = String(reason)
+  try {
+    result.kicked = JSON.parse(JSON.stringify(reason))
+  } catch {
+    result.kicked = String(reason)
+  }
   writeResult()
 })
 
