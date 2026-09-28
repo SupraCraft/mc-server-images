@@ -45,6 +45,14 @@
       "path": "probes/mineflayer-runtime/patches/mineflayer-admit-26.3.patch",
       "purpose": "Extend Mineflayer's testedVersions admission guard to 26.3 only after the pinned experimental minecraft-data layer resolves protocol 777.",
       "semantic_scope": "version-admission-only"
+    },
+    {
+      "component": "mineflayer",
+      "path": "probes/mineflayer-runtime/patches/mineflayer-tick-end-26.3.patch",
+      "upstream_pr": "PrismarineJS/mineflayer#4128",
+      "upstream_head_sha": "a0433e0668768bc3f98846dce27af779d4da35f9",
+      "purpose": "Integrate the upstream 26.3 client tick-end semantics into the pinned teleport-confirm branch after the live rep reached spawn and was kicked before placement.",
+      "semantic_scope": "client-tick-boundary-and-position-packet-separation"
     }
   ]
 }
