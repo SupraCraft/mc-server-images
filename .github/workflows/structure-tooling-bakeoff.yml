@@ -31,6 +31,7 @@ jobs:
           - openscad
           - blender
           - freecad
+          - vengi
 
     steps:
       - uses: actions/checkout@v5
@@ -72,6 +73,29 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y freecad
+
+      - name: Install vengi voxconvert
+        if: matrix.tool == 'vengi'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://github.com/vengi-voxel/vengi/releases/download/v0.6.0/linux-debian.zip"
+          curl -fL "$url" -o /tmp/vengi-linux-debian.zip
+          echo "6a3be6fef7c6b3385c7f47d12d389395a56f226442d39a34a699d1643500d501  /tmp/vengi-linux-debian.zip" | sha256sum -c -
+          rm -rf /tmp/vengi-dist
+          mkdir -p /tmp/vengi-dist
+          unzip -q /tmp/vengi-linux-debian.zip -d /tmp/vengi-dist
+          mapfile -t debs < <(find /tmp/vengi-dist -type f -name '*.deb' | sort)
+          if [[ "${#debs[@]}" -gt 0 ]]; then
+            sudo apt-get update
+            sudo apt-get install -y "${debs[@]}"
+          fi
+          command -v vengi-voxconvert || true
+          found="$(find /tmp/vengi-dist /usr /opt -type f -name 'vengi-voxconvert' -perm -111 2>/dev/null | head -n1 || true)"
+          if [[ -n "$found" ]]; then
+            echo "VENGI_VOXCONVERT=$found" >> "$GITHUB_ENV"
+          fi
 
       - name: Run public-safe primitive probe
         shell: bash
