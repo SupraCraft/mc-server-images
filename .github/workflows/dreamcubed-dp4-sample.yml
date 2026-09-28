@@ -1,0 +1,241 @@
+name: Dream-Cubed DP4 exact public sample
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualify/voxel-diffusion-runtime
+    paths:
+      - .github/workflows/dreamcubed-dp4-sample.yml
+
+permissions:
+  contents: read
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DREAMCUBED_CODE_SHA: 84d9274ca5367f99f483dd7dc53e0b2458c913ed
+      MODEL_REPO: SakanaAI/DreamCubedDP4
+      MODEL_REV: 980d30e34ef1b74fc232b4f4e33d9b2f88ca5464
+      MODEL_SHA256: 79d2e1c1b0ba32ffa26ee45fa011fcb518841a141453f484b5d187bdee3d07f0
+      DATA_REPO: SakanaAI/DreamCubed2M
+      DATA_REV: cf0d9b5391143f25ba6e580f7ef29ed8abd51b3e
+      MAPPING_PATH: balanced_dataset/32_biome_parts_dir_balanced_cc_oh_mappings.pt
+      MAPPING_SHA256: 544e84aea38e7aa9aba9bf379077724e71b23885584e4e4b900d371e89be4f74
+      SAMPLE_SEED: "260928"
+      SAMPLE_BIOME: village
+
+    steps:
+      - name: Fail closed outside a public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::This model qualification is authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Capture runner resource envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence output upstream
+          {
+            echo "uname:"
+            uname -a
+            echo
+            echo "cpu:"
+            lscpu
+            echo
+            echo "memory:"
+            free -h
+            echo
+            echo "disk:"
+            df -h .
+          } | tee evidence/runner.txt
+
+      - name: Fetch exact Dream-Cubed source revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init upstream/DreamCubed
+          git -C upstream/DreamCubed remote add origin https://github.com/SakanaAI/DreamCubed.git
+          git -C upstream/DreamCubed fetch --depth 1 origin "$DREAMCUBED_CODE_SHA"
+          git -C upstream/DreamCubed checkout --detach FETCH_HEAD
+          test "$(git -C upstream/DreamCubed rev-parse HEAD)" = "$DREAMCUBED_CODE_SHA"
+
+      - name: Fetch exact config, checkpoint, and token mapping
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p model data
+          curl --fail --location --retry 3             "https://huggingface.co/$MODEL_REPO/resolve/$MODEL_REV/config.json"             -o model/config.json
+          curl --fail --location --retry 3             "https://huggingface.co/$MODEL_REPO/resolve/$MODEL_REV/inference_weights/model_best_weights.pt"             -o model/model_best_weights.pt
+          curl --fail --location --retry 3             "https://huggingface.co/$DATA_REPO/resolve/$DATA_REV/$MAPPING_PATH"             -o data/mappings.pt
+
+          printf '%s  %s\n' "$MODEL_SHA256" model/model_best_weights.pt | sha256sum -c -
+          printf '%s  %s\n' "$MAPPING_SHA256" data/mappings.pt | sha256sum -c -
+          sha256sum model/config.json model/model_best_weights.pt data/mappings.pt | tee evidence/input-sha256.txt
+
+      - name: Apply recorded upstream packaging compatibility shim
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd upstream/DreamCubed
+          test -f assets/block_types_updated.json
+          test ! -e assets/block_types.json
+          cp assets/block_types_updated.json assets/block_types.json
+          cat > ../../evidence/upstream-compatibility-shim.json <<'JSON'
+          {
+            "kind": "filename-compatibility-copy",
+            "reason": "DreamCubed data_utils.py defaults to assets/block_types.json but the pinned upstream tree publishes assets/block_types_updated.json",
+            "source": "assets/block_types_updated.json",
+            "target": "assets/block_types.json",
+            "algorithm_modified": false,
+            "weights_modified": false
+          }
+          JSON
+
+      - name: Install inference dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install             torch torchvision             numpy scipy einops accelerate ema-pytorch transformers             tqdm wandb pyvista matplotlib pillow denoising-diffusion-pytorch
+          python - <<'PY' | tee evidence/python-environment.txt
+          import platform, torch, numpy, scipy, accelerate, transformers, einops
+          print("python", platform.python_version())
+          print("platform", platform.platform())
+          print("torch", torch.__version__)
+          print("numpy", numpy.__version__)
+          print("scipy", scipy.__version__)
+          print("accelerate", accelerate.__version__)
+          print("transformers", transformers.__version__)
+          print("einops", einops.__version__)
+          print("torch_num_threads", torch.get_num_threads())
+          PY
+
+      - name: Load exact DP4 checkpoint and generate one author-config village sample
+        shell: bash
+        env:
+          WANDB_MODE: disabled
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -euo pipefail
+          cd upstream/DreamCubed
+          /usr/bin/time -v python - <<'PY' 2>../../evidence/sample-time.txt | tee ../../evidence/sample.log
+          import hashlib
+          import json
+          import os
+          import random
+          import time
+          from pathlib import Path
+
+          import numpy as np
+          import torch
+          from accelerate import Accelerator
+
+          from inference import load_model_from_file, generate_samples_for_class
+
+          seed = int(os.environ["SAMPLE_SEED"])
+          random.seed(seed)
+          np.random.seed(seed)
+          torch.manual_seed(seed)
+          torch.set_num_threads(max(1, os.cpu_count() or 1))
+
+          root = Path("../..").resolve()
+          loaded = load_model_from_file(
+              str(root / "model/model_best_weights.pt"),
+              config_path=str(root / "model/config.json"),
+              mappings_path=str(root / "data/mappings.pt"),
+              device="cpu",
+              use_ema_if_available=True,
+          )
+
+          biome = os.environ["SAMPLE_BIOME"]
+          class_index = int(loaded["converter"].biome_to_index[biome])
+          accelerator = Accelerator(cpu=True, mixed_precision="no")
+
+          t0 = time.perf_counter()
+          blocks = generate_samples_for_class(
+              loaded,
+              1,
+              class_index=class_index,
+              output_path=str(root / "output/dreamcubed-dp4-village.pt"),
+              accelerator=accelerator,
+              cond_scale=4.0,
+              progress=True,
+              chunk_size=1,
+          )
+          elapsed = time.perf_counter() - t0
+
+          b = blocks[0].detach().cpu().numpy()
+          unique, counts = np.unique(b, return_counts=True)
+          block_to_str = loaded["converter"].block_to_str or {}
+          histogram = [
+              {
+                  "block_id": int(i),
+                  "block_name": block_to_str.get(int(i), "UNKNOWN"),
+                  "count": int(n),
+              }
+              for i, n in sorted(zip(unique.tolist(), counts.tolist()), key=lambda x: -x[1])
+          ]
+
+          np.savez_compressed(root / "output/dreamcubed-dp4-village.npz", voxels=b)
+
+          manifest = {
+              "schema": "supracraft-diffusion-generation-receipt-v0",
+              "generator": "Dream-Cubed MD4 DP4",
+              "code_revision": os.environ["DREAMCUBED_CODE_SHA"],
+              "model_repository": os.environ["MODEL_REPO"],
+              "model_revision": os.environ["MODEL_REV"],
+              "model_sha256": os.environ["MODEL_SHA256"],
+              "mapping_repository": os.environ["DATA_REPO"],
+              "mapping_revision": os.environ["DATA_REV"],
+              "mapping_path": os.environ["MAPPING_PATH"],
+              "mapping_sha256": os.environ["MAPPING_SHA256"],
+              "model_artifact_foundry_logical_id": "voxel/dreamcubed/md4-patch4",
+              "seed": seed,
+              "biome": biome,
+              "class_index": class_index,
+              "image_size": int(loaded["image_size"]),
+              "reverse_steps": int(loaded["reverse_steps"]),
+              "sampling_timesteps": loaded["sampling_timesteps"],
+              "guidance_scale": 4.0,
+              "device": "cpu",
+              "elapsed_seconds": elapsed,
+              "shape": list(b.shape),
+              "block_histogram": histogram,
+          }
+
+          with open(root / "output/generation-receipt.json", "w") as f:
+              json.dump(manifest, f, indent=2, sort_keys=True)
+          print(json.dumps(manifest, indent=2, sort_keys=True))
+          PY
+
+      - name: Hash generated outputs
+        shell: bash
+        if: always()
+        run: |
+          set -euo pipefail
+          if compgen -G "output/*" > /dev/null; then
+            sha256sum output/* | tee evidence/output-sha256.txt
+          fi
+
+      - name: Upload generation and evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dreamcubed-dp4-village-exact
+          path: |
+            output/
+            evidence/
+          retention-days: 14
