@@ -1,0 +1,98 @@
+name: Mineflayer Java 26.3 physical placement
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - probe/mineflayer-26.3-placement
+    paths:
+      - .github/workflows/mineflayer-26.3-placement.yml
+      - tools/probe_mineflayer_26_3.py
+      - tools/probe_mineflayer_place.js
+      - probes/mineflayer-runtime/package.json
+      - probes/mineflayer-runtime/package-lock.json
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/mineflayer-26.3-placement.yml
+      - tools/probe_mineflayer_26_3.py
+      - tools/probe_mineflayer_place.js
+      - probes/mineflayer-runtime/package.json
+      - probes/mineflayer-runtime/package-lock.json
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Install pinned Mineflayer runtime
+        shell: bash
+        run: |
+          cd probes/mineflayer-runtime
+          if [[ -f package-lock.json ]]; then
+            npm ci
+          else
+            npm install
+          fi
+          node -e 'const p=require("./node_modules/mineflayer/package.json"); if(p.version!=="4.39.0") process.exit(2)'
+          echo "NODE_PATH=$GITHUB_WORKSPACE/probes/mineflayer-runtime/node_modules" >> "$GITHUB_ENV"
+
+      - name: Run physical placement qualification
+        shell: bash
+        run: |
+          mkdir -p probes/mineflayer
+          python tools/probe_mineflayer_26_3.py \
+            --evidence probes/26.3-release-identity.json \
+            --output probes/mineflayer/26.3-stone-placement.json
+
+      - name: Publish evidence
+        shell: bash
+        run: |
+          {
+            echo "## Mineflayer 4.39.0 / Minecraft Java 26.3 physical placement"
+            echo
+            echo '~~~json'
+            cat probes/mineflayer/26.3-stone-placement.json
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mineflayer-26.3-stone-placement
+          path: probes/mineflayer/26.3-stone-placement.json
+          if-no-files-found: error
+
+      - name: Retain evidence and dependency lock
+        if: always() && github.event_name == 'push' && github.ref_name == 'probe/mineflayer-26.3-placement'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/mineflayer-runtime/package-lock.json
+          if [[ -f probes/mineflayer/26.3-stone-placement.json ]]; then
+            git add probes/mineflayer/26.3-stone-placement.json
+          fi
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "probe: record Mineflayer 26.3 placement"
+          git push origin "HEAD:$GITHUB_REF_NAME"
