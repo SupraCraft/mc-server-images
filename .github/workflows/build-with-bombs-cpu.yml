@@ -1,0 +1,243 @@
+name: Build-with-Bombs CPU ONNX public probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualify/voxel-diffusion-runtime
+    paths:
+      - .github/workflows/build-with-bombs-cpu.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      BWB_SOURCE_SHA: be399baeff07dd79b9d98645a424f9b04d16715c
+      BWB_RELEASE: v0.2.1
+      BWB_ASSET_ID: "248261122"
+      BWB_ASSET_URL: https://github.com/timothy-barnes-2357/Build-with-Bombs/releases/download/v0.2.1/ddim_single_update.onnx
+      SAMPLE_SEED: "260928"
+
+    steps:
+      - name: Fail closed outside a public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Public repository required."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Fetch exact upstream source tag and release model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p upstream model evidence output
+          git init upstream/Build-with-Bombs
+          git -C upstream/Build-with-Bombs remote add origin https://github.com/timothy-barnes-2357/Build-with-Bombs.git
+          git -C upstream/Build-with-Bombs fetch --depth 1 origin "$BWB_SOURCE_SHA"
+          git -C upstream/Build-with-Bombs checkout --detach FETCH_HEAD
+          test "$(git -C upstream/Build-with-Bombs rev-parse HEAD)" = "$BWB_SOURCE_SHA"
+
+          curl --fail --location --retry 3 "$BWB_ASSET_URL" -o model/ddim_single_update.onnx
+          sha256sum model/ddim_single_update.onnx | tee evidence/model-sha256.txt
+          stat -c '%s bytes' model/ddim_single_update.onnx | tee evidence/model-size.txt
+
+      - name: Install CPU ONNX Runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install numpy onnx onnxruntime
+          python - <<'PY' | tee evidence/runtime.txt
+          import platform, numpy, onnx, onnxruntime as ort
+          print("python", platform.python_version())
+          print("platform", platform.platform())
+          print("numpy", numpy.__version__)
+          print("onnx", onnx.__version__)
+          print("onnxruntime", ort.__version__)
+          print("providers", ort.get_available_providers())
+          PY
+
+      - name: Reproduce denoising loop through CPU ONNX Runtime
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "4"
+        run: |
+          set -euo pipefail
+          /usr/bin/time -v python - <<'PY' 2>evidence/time.txt | tee evidence/probe.log
+          import json
+          import math
+          import os
+          import time
+          from pathlib import Path
+
+          import numpy as np
+          import onnx
+          import onnxruntime as ort
+
+          model_path = "model/ddim_single_update.onnx"
+          model = onnx.load(model_path, load_external_data=False)
+          onnx.checker.check_model(model)
+
+          so = ort.SessionOptions()
+          so.intra_op_num_threads = max(1, min(4, os.cpu_count() or 1))
+          so.inter_op_num_threads = 1
+          so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+          session = ort.InferenceSession(model_path, sess_options=so, providers=["CPUExecutionProvider"])
+
+          input_meta = [
+              {"name": x.name, "shape": x.shape, "type": x.type}
+              for x in session.get_inputs()
+          ]
+          output_meta = [
+              {"name": x.name, "shape": x.shape, "type": x.type}
+              for x in session.get_outputs()
+          ]
+          print(json.dumps({"inputs": input_meta, "outputs": output_meta}, indent=2))
+
+          W = 16
+          C = 3
+          N_T = 1000
+          N_U = 5
+          seed = int(os.environ["SAMPLE_SEED"])
+          rng = np.random.default_rng(seed)
+
+          # Author's schedule from inference_main.cpp.
+          beta = np.linspace(math.sqrt(1e-4), math.sqrt(0.02), N_T, dtype=np.float32) ** 2
+          alpha = (1.0 - beta).astype(np.float32)
+          alpha_bar = np.cumprod(alpha, dtype=np.float32)
+
+          x_t = rng.normal(0.0, 1.0, size=(1, C, W, W, W)).astype(np.float32)
+          context = np.zeros((1, C, W, W, W), dtype=np.float32)
+          mask = np.zeros((1, 1, W, W, W), dtype=np.float32)
+
+          def scalar_for(meta, value, dtype):
+              shape = meta.shape
+              concrete = []
+              for dim in shape:
+                  if isinstance(dim, int):
+                      concrete.append(dim)
+                  else:
+                      concrete.append(1)
+              if len(concrete) == 0:
+                  return np.asarray(value, dtype=dtype)
+              return np.full(concrete, value, dtype=dtype)
+
+          metas={x.name:x for x in session.get_inputs()}
+
+          # Benchmark one call before committing to 5000.
+          def run_step(t, x):
+              feed = {
+                  "t": scalar_for(metas["t"], t, np.int32),
+                  "x_t": x,
+                  "context": context,
+                  "mask": mask,
+                  "alpha_t": scalar_for(metas["alpha_t"], alpha[t], np.float32),
+                  "alpha_bar_t": scalar_for(metas["alpha_bar_t"], alpha_bar[t], np.float32),
+                  "beta_t": scalar_for(metas["beta_t"], beta[t], np.float32),
+              }
+              return session.run(["x_out"], feed)[0]
+
+          t0=time.perf_counter()
+          probe=run_step(N_T-1, x_t)
+          one=time.perf_counter()-t0
+          estimated=one*N_T*N_U
+          print(json.dumps({"first_step_seconds":one,"estimated_full_seconds":estimated},indent=2))
+          # Fail closed on pathological CPU cost instead of silently reducing author steps.
+          if estimated > 5200:
+              Path("output/resource-limit.json").write_text(json.dumps({
+                  "status":"not-run-full",
+                  "reason":"single-step benchmark projects author-faithful 5000-call loop beyond bounded free-runner budget",
+                  "first_step_seconds":one,
+                  "estimated_full_seconds":estimated,
+                  "required_calls":N_T*N_U
+              },indent=2))
+              raise SystemExit(0)
+
+          x_t=probe
+          calls=1
+          start=time.perf_counter()
+          for t in range(N_T-1, -1, -1):
+              u0 = 1 if t == N_T-1 else 0
+              for u in range(u0, N_U):
+                  x_t=run_step(t,x_t)
+                  calls += 1
+              if t % 100 == 0:
+                  print(f"t={t} calls={calls} elapsed={time.perf_counter()-start:.2f}s", flush=True)
+
+          embeddings=np.asarray([
+              [-1.2866,  1.1751, -0.8010],
+              [-1.8017, -1.0700,  1.3250],
+              [-1.2621, -0.8203, -1.5511],
+              [-2.8842,  0.5518,  1.2331],
+              [-0.4029,  0.7936,  1.0392],
+              [-1.5447, -0.2308,  1.0306],
+              [ 0.4594,  1.0078, -1.3730],
+              [ 0.1986,  0.7988, -1.2612],
+              [-0.8719, -0.1313, -1.0217],
+              [ 0.6193, -0.0406, -1.6704],
+              [-1.5885,  0.7414,  0.6155],
+              [ 0.0386,  2.0070,  1.4273],
+              [-0.8261, -0.5659,  0.7283],
+              [-0.7039,  0.5625,  0.1835],
+              [ 0.0673, -0.7331, -1.1119],
+              [ 0.0218, -0.3002,  0.3819]
+          ],dtype=np.float32)
+
+          field=np.moveaxis(x_t[0],0,-1)
+          dist=((field[...,None,:]-embeddings[None,None,None,:,:])**2).sum(axis=-1)
+          blocks=dist.argmin(axis=-1).astype(np.uint8)
+          np.savez_compressed("output/build-with-bombs-v021-air.npz", voxels=blocks)
+
+          unique,counts=np.unique(blocks,return_counts=True)
+          elapsed=time.perf_counter()-start
+          receipt={
+              "schema":"supracraft-diffusion-generation-receipt-v0",
+              "generator":"Build-with-Bombs v0.2.1",
+              "source_revision":os.environ["BWB_SOURCE_SHA"],
+              "release":os.environ["BWB_RELEASE"],
+              "release_asset_id":os.environ["BWB_ASSET_ID"],
+              "seed":seed,
+              "n_t":N_T,
+              "n_u":N_U,
+              "onnx_calls":calls,
+              "context":"all-air",
+              "execution_provider":"CPUExecutionProvider",
+              "elapsed_seconds":elapsed,
+              "shape":list(blocks.shape),
+              "block_histogram":[{"block_id":int(i),"count":int(n)} for i,n in zip(unique,counts)],
+              "foundry_reference":"SemperSupra/model-artifact-foundry-private#21"
+          }
+          Path("output/generation-receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True))
+          print(json.dumps(receipt,indent=2,sort_keys=True))
+          PY
+
+      - name: Hash outputs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if compgen -G "output/*" > /dev/null; then
+            sha256sum output/* | tee evidence/output-sha256.txt
+          fi
+
+      - name: Upload evidence and generated voxel tensor
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-with-bombs-cpu-onnx
+          path: |
+            evidence/
+            output/
+          retention-days: 14
