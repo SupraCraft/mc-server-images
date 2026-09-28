@@ -26,6 +26,8 @@ def write_server_config(root: Path) -> None:
         "\n".join(
             [
                 "online-mode=false",
+                "white-list=false",
+                "enforce-whitelist=false",
                 f"server-port={PORT}",
                 "view-distance=3",
                 "simulation-distance=2",
@@ -126,6 +128,7 @@ def main() -> int:
                 # Build a deterministic, reachable placement fixture and make
                 # its chunk a spawn chunk so the independent server oracle can
                 # still evaluate it after the bot disconnects.
+                send(server, "forceload add 0 0")
                 send(server, "setworldspawn 0 70 0")
                 send(server, "setblock 0 69 0 minecraft:stone")
                 send(server, "setblock 0 70 0 minecraft:air")
