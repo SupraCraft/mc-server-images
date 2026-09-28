@@ -292,7 +292,12 @@ def main() -> int:
 
                 send_server(server, f"gamemode survival {BOT_NAME}")
                 controller_receipts: list[dict[str, Any]] = []
+                controller_receipt_by_id: dict[str, dict[str, Any]] = {}
+                prepare_received_ns: dict[str, int] = {}
+                prepared_sent_ns: dict[str, int] = {}
                 placed = 0
+                active_plan_started_ns: int | None = None
+                active_plan_elapsed_ms: float | None = None
                 wait_phase = "await-prepare"
                 wait_action_id: str | None = plan["actions"][0]["id"]
 
@@ -302,8 +307,11 @@ def main() -> int:
                         phase=wait_phase,
                         action_id=wait_action_id,
                     )
+                    message_received_ns = time.perf_counter_ns()
                     kind = msg.get("type")
                     if kind == "prepare":
+                        if active_plan_started_ns is None:
+                            active_plan_started_ns = message_received_ns
                         index = int(msg["index"])
                         action = plan["actions"][index]
                         if msg.get("id") != action["id"]:
@@ -324,23 +332,47 @@ def main() -> int:
                         )
                         time.sleep(0.25)
                         peer.send({"type": "prepared", "id": action["id"]})
+                        prepared_ns = time.perf_counter_ns()
+                        prepare_received_ns[action["id"]] = message_received_ns
+                        prepared_sent_ns[action["id"]] = prepared_ns
                         wait_phase = "await-placement-result"
                         wait_action_id = action["id"]
-                        controller_receipts.append(
-                            {
-                                "index": index,
-                                "id": action["id"],
-                                "item_provisioned": action["item"],
-                                "position_requested": pos,
-                                "yaw_requested": yaw,
-                            }
-                        )
+                        controller_receipt = {
+                            "index": index,
+                            "id": action["id"],
+                            "item_provisioned": action["item"],
+                            "position_requested": pos,
+                            "yaw_requested": yaw,
+                            "controller_prepare_ms": round(
+                                (prepared_ns - message_received_ns) / 1_000_000,
+                                3,
+                            ),
+                        }
+                        controller_receipts.append(controller_receipt)
+                        controller_receipt_by_id[action["id"]] = controller_receipt
                     elif kind == "placed":
                         expected = plan["actions"][placed]["id"]
                         if msg.get("id") != expected:
                             raise RuntimeError(
                                 "worker placed/action identity mismatch"
                             )
+                        receipt = controller_receipt_by_id[expected]
+                        receipt["prepared_to_placed_ms"] = round(
+                            (
+                                message_received_ns
+                                - prepared_sent_ns[expected]
+                            )
+                            / 1_000_000,
+                            3,
+                        )
+                        receipt["prepare_to_placed_total_ms"] = round(
+                            (
+                                message_received_ns
+                                - prepare_received_ns[expected]
+                            )
+                            / 1_000_000,
+                            3,
+                        )
                         placed += 1
                         if placed < len(plan["actions"]):
                             wait_phase = "await-prepare"
@@ -349,6 +381,16 @@ def main() -> int:
                             wait_phase = "await-complete"
                             wait_action_id = None
                     elif kind == "complete":
+                        if active_plan_started_ns is None:
+                            raise RuntimeError("complete before first prepare")
+                        active_plan_elapsed_ms = round(
+                            (
+                                message_received_ns
+                                - active_plan_started_ns
+                            )
+                            / 1_000_000,
+                            3,
+                        )
                         break
                     elif kind == "error":
                         raise RuntimeError(
@@ -466,6 +508,27 @@ def main() -> int:
             "positioning": "server-console-teleport",
             "inventory_provisioning": "server-console-clear-and-give",
             "receipts": controller_receipts,
+        },
+        "timing": {
+            "clock": "time.perf_counter_ns",
+            "active_plan_ms": active_plan_elapsed_ms,
+            "controller_prepare_ms": [
+                receipt["controller_prepare_ms"]
+                for receipt in controller_receipts
+            ],
+            "prepared_to_placed_ms": [
+                receipt["prepared_to_placed_ms"]
+                for receipt in controller_receipts
+            ],
+            "prepare_to_placed_total_ms": [
+                receipt["prepare_to_placed_total_ms"]
+                for receipt in controller_receipts
+            ],
+            "prepared_to_placed_semantics": (
+                "controller prepared acknowledgement through worker qualified "
+                "placement receipt; includes IPC, worker convergence/equip, "
+                "placeBlock, settle and bot-side observation"
+            ),
         },
         "worker": bot_result,
         "official_server_verified_actions": len(plan["actions"]),
