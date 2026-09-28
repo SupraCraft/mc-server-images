@@ -1,0 +1,335 @@
+{
+  "client_visual_coverage": {
+    "block_model_json_files": 2883,
+    "block_texture_png_files": 1300,
+    "blocks_using_multipart": 104,
+    "blocks_using_variants": 1182,
+    "blockstate_json_files": 1288,
+    "blockstate_parse_failures": [],
+    "non_minecraft_namespace_model_refs": [],
+    "referenced_models_missing_from_client_jar": [],
+    "runtime_blocks_without_matching_blockstate_json": [],
+    "unique_referenced_models": 2599
+  },
+  "minecraft": {
+    "data_pack_major": 121,
+    "edition": "java",
+    "protocol": 777,
+    "resource_pack_major": 97,
+    "version": "26.3",
+    "world_version": 5023
+  },
+  "provenance": {
+    "blocks_report_sha256": "7a0de8aaf7b04d00c40b8ffdc4cfe75184cff2e821d336a020573201867105a4",
+    "client_sha256": "4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d",
+    "generator": "java -DbundlerMainClass=net.minecraft.data.Main -jar server.jar --reports",
+    "registries_report_sha256": "51f62d56f8bd0e9134ee88dd9226b64e9e56cf6a32377540d44291bf47ecdac6",
+    "server_sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64"
+  },
+  "result": "qualified",
+  "retention_policy": {
+    "derived_summary_only": true,
+    "mojang_asset_payloads_retained": false
+  },
+  "runtime_catalog": {
+    "block_registry_entries": 1286,
+    "blocks": 1286,
+    "blocks_with_multiple_states": 884,
+    "property_max_value_count": {
+      "age": 26,
+      "attached": 2,
+      "attachment": 4,
+      "axis": 3,
+      "berries": 2,
+      "bites": 7,
+      "bloom": 2,
+      "bottom": 2,
+      "can_summon": 2,
+      "candles": 4,
+      "charges": 5,
+      "conditional": 2,
+      "copper_golem_pose": 4,
+      "cracked": 2,
+      "crafting": 2,
+      "creaking_heart_state": 3,
+      "delay": 4,
+      "disarmed": 2,
+      "distance": 8,
+      "down": 2,
+      "drag": 2,
+      "dusted": 4,
+      "east": 3,
+      "eggs": 4,
+      "enabled": 2,
+      "extended": 2,
+      "eye": 2,
+      "face": 3,
+      "facing": 6,
+      "flower_amount": 4,
+      "half": 2,
+      "hanging": 2,
+      "has_book": 2,
+      "has_bottle_0": 2,
+      "has_bottle_1": 2,
+      "has_bottle_2": 2,
+      "has_record": 2,
+      "hatch": 3,
+      "hinge": 2,
+      "honey_level": 6,
+      "hydration": 4,
+      "in_wall": 2,
+      "instrument": 27,
+      "inverted": 2,
+      "layers": 8,
+      "leaves": 3,
+      "level": 16,
+      "lit": 2,
+      "locked": 2,
+      "mode": 4,
+      "moisture": 8,
+      "natural": 2,
+      "north": 3,
+      "note": 25,
+      "occupied": 2,
+      "ominous": 2,
+      "open": 2,
+      "orientation": 12,
+      "part": 2,
+      "persistent": 2,
+      "pickles": 4,
+      "potent_sulfur_state": 5,
+      "power": 16,
+      "powered": 2,
+      "rotation": 16,
+      "sculk_sensor_phase": 3,
+      "segment_amount": 4,
+      "shape": 10,
+      "short": 2,
+      "shrieking": 2,
+      "side_chain": 4,
+      "signal_fire": 2,
+      "slot_0_occupied": 2,
+      "slot_1_occupied": 2,
+      "slot_2_occupied": 2,
+      "slot_3_occupied": 2,
+      "slot_4_occupied": 2,
+      "slot_5_occupied": 2,
+      "snowy": 2,
+      "south": 3,
+      "stage": 2,
+      "thickness": 5,
+      "tilt": 4,
+      "tip": 2,
+      "trial_spawner_state": 6,
+      "triggered": 2,
+      "type": 3,
+      "unstable": 2,
+      "up": 2,
+      "vault_state": 4,
+      "vertical_direction": 2,
+      "waterlogged": 2,
+      "west": 3
+    },
+    "state_ids_contiguous_from_zero": true,
+    "state_ids_observed": 35723,
+    "states": 35723,
+    "top_stateful_blocks": [
+      {
+        "block": "minecraft:note_block",
+        "state_count": 1350
+      },
+      {
+        "block": "minecraft:redstone_wire",
+        "state_count": 1296
+      },
+      {
+        "block": "minecraft:fire",
+        "state_count": 512
+      },
+      {
+        "block": "minecraft:calibrated_sculk_sensor",
+        "state_count": 384
+      },
+      {
+        "block": "minecraft:andesite_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:blackstone_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:cinnabar_brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:cinnabar_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:cobbled_deepslate_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:cobblestone_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:deepslate_brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:deepslate_tile_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:diorite_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:end_stone_brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:granite_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:mossy_cobblestone_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:mossy_stone_brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:mud_brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:nether_brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:polished_blackstone_brick_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:polished_blackstone_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:polished_cinnabar_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:polished_deepslate_wall",
+        "state_count": 324
+      },
+      {
+        "block": "minecraft:polished_sulfur_wall",
+        "state_count": 324
+      }
+    ],
+    "unique_property_names": [
+      "age",
+      "attached",
+      "attachment",
+      "axis",
+      "berries",
+      "bites",
+      "bloom",
+      "bottom",
+      "can_summon",
+      "candles",
+      "charges",
+      "conditional",
+      "copper_golem_pose",
+      "cracked",
+      "crafting",
+      "creaking_heart_state",
+      "delay",
+      "disarmed",
+      "distance",
+      "down",
+      "drag",
+      "dusted",
+      "east",
+      "eggs",
+      "enabled",
+      "extended",
+      "eye",
+      "face",
+      "facing",
+      "flower_amount",
+      "half",
+      "hanging",
+      "has_book",
+      "has_bottle_0",
+      "has_bottle_1",
+      "has_bottle_2",
+      "has_record",
+      "hatch",
+      "hinge",
+      "honey_level",
+      "hydration",
+      "in_wall",
+      "instrument",
+      "inverted",
+      "layers",
+      "leaves",
+      "level",
+      "lit",
+      "locked",
+      "mode",
+      "moisture",
+      "natural",
+      "north",
+      "note",
+      "occupied",
+      "ominous",
+      "open",
+      "orientation",
+      "part",
+      "persistent",
+      "pickles",
+      "potent_sulfur_state",
+      "power",
+      "powered",
+      "rotation",
+      "sculk_sensor_phase",
+      "segment_amount",
+      "shape",
+      "short",
+      "shrieking",
+      "side_chain",
+      "signal_fire",
+      "slot_0_occupied",
+      "slot_1_occupied",
+      "slot_2_occupied",
+      "slot_3_occupied",
+      "slot_4_occupied",
+      "slot_5_occupied",
+      "snowy",
+      "south",
+      "stage",
+      "thickness",
+      "tilt",
+      "tip",
+      "trial_spawner_state",
+      "triggered",
+      "type",
+      "unstable",
+      "up",
+      "vault_state",
+      "vertical_direction",
+      "waterlogged",
+      "west"
+    ]
+  },
+  "schema": "supracraft.minecraft-block-catalog-summary/v0.1"
+}
