@@ -13,20 +13,34 @@ if (!readyFile || !resultFile) {
 const result = {
   schema: 'supracraft.mineflayer-placement/v0.1',
   mineflayer_version: require('mineflayer/package.json').version,
+  minecraft_data_version: require('minecraft-data/package.json').version,
+  minecraft_protocol_version: require('minecraft-protocol/package.json').version,
   requested_version: '26.3',
   placed: false
 }
 
-const bot = mineflayer.createBot({
-  host: '127.0.0.1',
-  port,
-  username: 'SupraCraftProbe',
-  auth: 'offline',
-  version: '26.3'
-})
+let bot
+
+function writeResult () {
+  fs.writeFileSync(resultFile, JSON.stringify(result, null, 2) + '\n')
+}
+
+try {
+  bot = mineflayer.createBot({
+    host: '127.0.0.1',
+    port,
+    username: 'SupraCraftProbe',
+    auth: 'offline',
+    version: '26.3'
+  })
+} catch (err) {
+  result.error = String(err && err.stack ? err.stack : err)
+  writeResult()
+  process.exit(1)
+}
 
 function saveAndQuit (exitCode = 0) {
-  fs.writeFileSync(resultFile, JSON.stringify(result, null, 2) + '\n')
+  writeResult()
   try {
     bot.quit('probe complete')
   } catch {}
