@@ -53,6 +53,10 @@ popd >/dev/null
 clone_exact minecraft-protocol "$ROOT/src/node-minecraft-protocol"
 clone_exact prismarine-chunk "$ROOT/src/prismarine-chunk"
 clone_exact mineflayer "$ROOT/src/mineflayer"
+git -C "$ROOT/src/mineflayer" apply \
+  "$REPO_ROOT/probes/mineflayer-runtime/patches/mineflayer-admit-26.3.patch"
+git -C "$ROOT/src/mineflayer" diff --check
+grep -F "'26.1', '26.3'" "$ROOT/src/mineflayer/lib/version.js" >/dev/null
 
 python - "$ROOT/runtime/package.json" <<'PY'
 import json, pathlib, sys
