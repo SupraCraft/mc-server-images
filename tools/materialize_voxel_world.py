@@ -197,6 +197,8 @@ def main() -> int:
     commands, counts = build_commands(voxels, origin)
     sx, sy, sz = map(int, voxels.shape)
     cx, cy, cz = origin[0] + sx // 2, origin[1] + sy // 2, origin[2] + sz // 2
+    center_id = int(voxels[sx // 2, sy // 2, sz // 2])
+    center_block = BWB_BLOCKS[center_id]
 
     sites = [
         {
@@ -281,7 +283,7 @@ def main() -> int:
             console(process, "function supracraft:materialize")
             console(process, "save-all flush")
             time.sleep(12)
-            console(process, f"execute if block {cx} {cy} {cz} minecraft:stone_bricks run say SUPRACRAFT_CENTER_STONE_BRICKS")
+            console(process, f"execute if block {cx} {cy} {cz} {center_block} run say SUPRACRAFT_CENTER_MATCH")
             console(process, "save-all flush")
             time.sleep(3)
             console(process, "stop")
@@ -322,7 +324,8 @@ def main() -> int:
             "tour_start_command": "/function supracraft:tour/start",
             "materialization_function": "supracraft:materialize",
             "server_artifact_sha256": release["server_artifact"]["sha256"],
-            "server_log_center_probe_observed": "SUPRACRAFT_CENTER_STONE_BRICKS" in log_text,
+            "center_expected_block": center_block,
+            "server_log_center_probe_observed": "SUPRACRAFT_CENTER_MATCH" in log_text,
         }
         (world / "SUPRACRAFT-TOUR.txt").write_text(
             "SupraCraft generated-world tour\n\n"
