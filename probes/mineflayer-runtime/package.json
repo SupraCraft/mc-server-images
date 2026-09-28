@@ -5,12 +5,5 @@
   "engines": {
     "node": ">=22"
   },
-  "dependencies": {
-    "mineflayer": "github:maebahesioru/mineflayer#741ddeb9b707000b6103bd23361c34fc39f82c68"
-  },
-  "overrides": {
-    "minecraft-data": "github:DallasCarraher/minecraft-data#924e26d6b3bb8f97a5d1e73d6190b09879c2e1e2",
-    "minecraft-protocol": "github:DallasCarraher/node-minecraft-protocol#a1a33809c49553e544a7efd3d8bc03eb0867f4ab",
-    "prismarine-chunk": "github:DallasCarraher/prismarine-chunk#7382b4fef1c56290524665e7b9af58b7d1f34791"
-  }
+  "description": "Manifest-driven experimental Prismarine Java 26.3 qualification runtime; see experimental-stack.json."
 }
