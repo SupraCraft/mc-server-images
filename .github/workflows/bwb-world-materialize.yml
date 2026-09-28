@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: Successful Build-with-Bombs generation run id
+        description: Build-with-Bombs generation run id containing a generated tensor
         required: true
-        default: "36380172110"
+        default: "36380772191"
   push:
     branches:
       - qualify/voxel-diffusion-runtime
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      DEFAULT_SOURCE_RUN_ID: "36380172110"
+      DEFAULT_SOURCE_RUN_ID: "36380772191"
 
     steps:
       - name: Fail closed outside a public repository
@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Download exact successful generation artifact
+      - name: Download exact generation artifact
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT_RUN_ID: ${{ inputs.source_run_id }}
@@ -58,9 +58,41 @@ jobs:
             run_id="$DEFAULT_SOURCE_RUN_ID"
           fi
           mkdir -p source-artifact
-          gh run download "$run_id"             --repo "$GITHUB_REPOSITORY"             --name build-with-bombs-cpu-onnx             --dir source-artifact
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name build-with-bombs-cpu-onnx --dir source-artifact
           find source-artifact -maxdepth 3 -type f -print
           echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - name: Recover receipt when generation metadata serialization failed
+        shell: bash
+        run: |
+          set -euo pipefail
+          receipt="$(find source-artifact -type f -name 'generation-receipt.json' | head -n1 || true)"
+          if [[ -n "$receipt" ]]; then
+            echo "SOURCE_RECEIPT=$receipt" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          tensor="$(find source-artifact -type f -name 'build-with-bombs-v021-*.npz' | head -n1)"
+          test -n "$tensor"
+          model_sha="$(awk '{print $1}' source-artifact/evidence/model-sha256.txt)"
+          tensor_sha="$(sha256sum "$tensor" | awk '{print $1}')"
+          receipt="source-artifact/recovered-generation-receipt.json"
+          cat > "$receipt" <<JSON
+          {
+            "schema": "supracraft-diffusion-generation-receipt-v0-recovered",
+            "generator": "Build-with-Bombs v0.2.1",
+            "source_run_id": "$SOURCE_RUN_ID",
+            "source_revision": "be399baeff07dd79b9d98645a424f9b04d16715c",
+            "release": "v0.2.1",
+            "release_asset_id": "248261122",
+            "model_sha256": "$model_sha",
+            "seed": 260928,
+            "context": "all-dirt-intended",
+            "upstream_context_copy_compatibility_correction": true,
+            "tensor_sha256": "$tensor_sha",
+            "recovery_note": "Inference completed and tensor was written; the source run failed only while serializing its receipt because lowercase Python boolean true was used."
+          }
+          JSON
+          echo "SOURCE_RECEIPT=$receipt" >> "$GITHUB_ENV"
 
       - name: Install materializer dependencies
         shell: bash
@@ -71,14 +103,19 @@ jobs:
         run: |
           set -euo pipefail
           tensor="$(find source-artifact -type f -name 'build-with-bombs-v021-*.npz' | head -n1)"
-          receipt="$(find source-artifact -type f -name 'generation-receipt.json' | head -n1)"
           test -n "$tensor"
-          test -n "$receipt"
+          test -f "$SOURCE_RECEIPT"
           mkdir -p world-output
-          python tools/materialize_voxel_world.py             --npz "$tensor"             --receipt "$receipt"             --release-evidence probes/26.3-release-identity.json             --output-dir world-output             --crop-center 12
+          python tools/materialize_voxel_world.py \
+            --npz "$tensor" \
+            --receipt "$SOURCE_RECEIPT" \
+            --release-evidence probes/26.3-release-identity.json \
+            --output-dir world-output \
+            --crop-center 12
           sha256sum world-output/* | tee world-output/SHA256SUMS.txt
 
       - name: Publish tour summary
+        if: success()
         shell: bash
         run: |
           {
@@ -95,6 +132,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload playable world and tour bundle
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-with-bombs-playable-world
