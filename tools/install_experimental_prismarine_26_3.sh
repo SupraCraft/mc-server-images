@@ -56,8 +56,11 @@ clone_exact prismarine-physics "$ROOT/src/prismarine-physics"
 clone_exact mineflayer "$ROOT/src/mineflayer"
 git -C "$ROOT/src/mineflayer" apply \
   "$REPO_ROOT/probes/mineflayer-runtime/patches/mineflayer-admit-26.3.patch"
+git -C "$ROOT/src/mineflayer" apply \
+  "$REPO_ROOT/probes/mineflayer-runtime/patches/mineflayer-tick-end-26.3.patch"
 git -C "$ROOT/src/mineflayer" diff --check
 grep -F "'26.1', '26.3'" "$ROOT/src/mineflayer/lib/version.js" >/dev/null
+grep -F "bot._client.write('tick_end', {})" "$ROOT/src/mineflayer/lib/plugins/physics.js" >/dev/null
 
 python - "$ROOT/runtime/package.json" <<'PY'
 import json, pathlib, sys
