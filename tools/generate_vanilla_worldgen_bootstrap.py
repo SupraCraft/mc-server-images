@@ -212,10 +212,17 @@ def main() -> int:
             exit_code = process.wait(timeout=60)
 
         server_log = log_path.read_text("utf-8", errors="replace")
+        shutil.copy2(log_path, args.output_dir / "server.log")
         if exit_code != 0:
-            raise RuntimeError(f"server exited with {exit_code}")
-        if "/ERROR]:" in server_log or "/ERROR] " in server_log:
-            raise RuntimeError("server emitted ERROR lines")
+            raise RuntimeError(f"server exited with {exit_code}; tail={server_log[-8000:]!r}")
+        error_lines = [
+            line for line in server_log.splitlines()
+            if "/ERROR]:" in line or "/ERROR] " in line
+        ]
+        if error_lines:
+            raise RuntimeError(
+                "server emitted ERROR lines: " + " | ".join(error_lines[-20:])
+            )
 
         terrain = parse_probe(server_log)
         terrain["profile"] = args.profile
@@ -226,7 +233,6 @@ def main() -> int:
 
         world_zip = args.output_dir / "world.zip"
         zip_world(world, world_zip)
-        shutil.copy2(log_path, args.output_dir / "server.log")
 
     elapsed = time.monotonic() - started
     provenance = {
