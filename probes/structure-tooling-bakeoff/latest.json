@@ -13,7 +13,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 2277.472,
+      "elapsed_ms": 2011.548,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -45,7 +45,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 1909.041,
+      "elapsed_ms": 1687.431,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -68,7 +68,7 @@
     {
       "available": false,
       "deterministic_input": true,
-      "elapsed_ms": 0.591,
+      "elapsed_ms": 0.799,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -101,7 +101,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 235.142,
+      "elapsed_ms": 347.704,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -133,7 +133,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 163.827,
+      "elapsed_ms": 149.801,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
