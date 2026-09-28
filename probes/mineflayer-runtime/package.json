@@ -1,0 +1,9 @@
+{
+  "name": "supracraft-mineflayer-qualification-runtime",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "Manifest-driven experimental Prismarine Java 26.3 qualification runtime; see experimental-stack.json."
+}

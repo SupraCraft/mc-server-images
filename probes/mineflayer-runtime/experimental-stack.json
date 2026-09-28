@@ -1,0 +1,59 @@
+{
+  "schema": "supracraft.prismarine-experimental-stack/v0.1",
+  "purpose": "Minecraft Java 26.3 physical placement qualification",
+  "components": {
+    "minecraft-data-source": {
+      "repository": "DallasCarraher/minecraft-data",
+      "sha": "924e26d6b3bb8f97a5d1e73d6190b09879c2e1e2",
+      "upstream_pr": "PrismarineJS/minecraft-data#1301"
+    },
+    "node-minecraft-data": {
+      "repository": "PrismarineJS/node-minecraft-data",
+      "sha": "94b717a14e167afdbcdfe708f40f7eed8917fe08"
+    },
+    "minecraft-protocol": {
+      "repository": "DallasCarraher/node-minecraft-protocol",
+      "sha": "a1a33809c49553e544a7efd3d8bc03eb0867f4ab",
+      "upstream_pr": "PrismarineJS/node-minecraft-protocol#1538"
+    },
+    "prismarine-chunk": {
+      "repository": "DallasCarraher/prismarine-chunk",
+      "sha": "7382b4fef1c56290524665e7b9af58b7d1f34791",
+      "upstream_pr": "PrismarineJS/prismarine-chunk#334"
+    },
+    "mineflayer": {
+      "repository": "maebahesioru/mineflayer",
+      "sha": "741ddeb9b707000b6103bd23361c34fc39f82c68",
+      "upstream_pr": "PrismarineJS/mineflayer#4130"
+    },
+    "prismarine-physics": {
+      "repository": "DallasCarraher/prismarine-physics",
+      "sha": "935f9e6580af7f7740ea1225bbc95c278390770b",
+      "upstream_pr": "PrismarineJS/prismarine-physics#145"
+    }
+  },
+  "notes": [
+    "The source minecraft-data repository is not itself an npm package; it is injected into a pinned node-minecraft-data checkout before data.js generation.",
+    "Local file dependencies are used so npm resolves the experimental components as one coherent stack rather than silently falling back to released packages.",
+    "Additional 26.3 Mineflayer PRs are intentionally excluded from the first placement rep unless the bounded placement test demonstrates they are required.",
+    "The Mineflayer 26.3 admission patch is local harness provenance, not an upstream support claim; all runtime behavior remains subject to the physical-placement oracle.",
+    "Prismarine Physics PR #145 is included because the preceding live rep reached Mineflayer injection and failed exactly on the missing 26.3 proportionalLiquidGravity table entry."
+  ],
+  "harness_patches": [
+    {
+      "component": "mineflayer",
+      "path": "probes/mineflayer-runtime/patches/mineflayer-admit-26.3.patch",
+      "purpose": "Extend Mineflayer's testedVersions admission guard to 26.3 only after the pinned experimental minecraft-data layer resolves protocol 777.",
+      "semantic_scope": "version-admission-only"
+    },
+    {
+      "component": "mineflayer",
+      "path": "tools/apply_mineflayer_tick_end_26_3.py",
+      "upstream_pr": "PrismarineJS/mineflayer#4128",
+      "upstream_head_sha": "a0433e0668768bc3f98846dce27af779d4da35f9",
+      "purpose": "Integrate the upstream 26.3 client tick-end semantics into the pinned teleport-confirm branch after the live rep reached spawn and was kicked before placement.",
+      "semantic_scope": "client-tick-boundary-and-position-packet-separation",
+      "integration": "exact-source fail-closed adapter"
+    }
+  ]
+}
