@@ -73,8 +73,12 @@ def wait_file(path: Path, process: subprocess.Popen[str], timeout: int) -> None:
         if path.exists():
             return
         if process.poll() is not None:
+            output = ""
+            if process.stdout is not None:
+                output = process.stdout.read()[-4000:]
             raise RuntimeError(
-                f"bot exited before {path.name} appeared: exit={process.returncode}"
+                f"bot exited before {path.name} appeared: "
+                f"exit={process.returncode}; stdout={output!r}"
             )
         time.sleep(0.2)
     raise RuntimeError(f"timeout waiting for {path.name}")
