@@ -15,7 +15,7 @@ from typing import Any
 from smoke_vanilla_runtime import download_verified_server, status_query
 
 
-BOT_NAME = "SupraCraftStairsProbe"
+BOT_NAME = "SupraStairProbe"
 PORT = 25568
 MARKER = "SUPRACRAFT_MINEFLAYER_STAIRS_OK"
 EXPECTED_STATE = (
@@ -167,7 +167,34 @@ def main() -> int:
                     text=True,
                 )
 
-                wait_file(ready, bot, 30)
+                try:
+                    wait_file(ready, bot, 30)
+                except RuntimeError as exc:
+                    if bot.poll() is None:
+                        bot.terminate()
+                        try:
+                            bot_stdout, _ = bot.communicate(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            bot.kill()
+                            bot_stdout, _ = bot.communicate(timeout=5)
+                    else:
+                        bot_stdout = ""
+                        if bot.stdout is not None:
+                            bot_stdout = bot.stdout.read()
+                    diagnostic = None
+                    if bot_result_path.exists():
+                        diagnostic = json.loads(
+                            bot_result_path.read_text("utf-8")
+                        )
+                    log.flush()
+                    server_tail = log_path.read_text(
+                        "utf-8", errors="replace"
+                    )[-5000:]
+                    raise RuntimeError(
+                        f"{exc}; bot_result={diagnostic!r}; "
+                        f"bot_stdout={bot_stdout[-4000:]!r}; "
+                        f"server_tail={server_tail!r}"
+                    ) from exc
 
                 send(server, f"gamemode survival {BOT_NAME}")
                 send(server, f"give {BOT_NAME} minecraft:oak_stairs 1")
