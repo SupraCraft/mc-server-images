@@ -25,6 +25,9 @@ jobs:
       RCON_PASSWORD: supracraft-local-only
       DISPLAY: ":99"
       LIBGL_ALWAYS_SOFTWARE: "1"
+      MESA_LOADER_DRIVER_OVERRIDE: llvmpipe
+      SDL_VIDEODRIVER: x11
+      SDL_VIDEO_X11_FORCE_EGL: "1"
 
     steps:
       - name: Fail closed outside public standard runners
