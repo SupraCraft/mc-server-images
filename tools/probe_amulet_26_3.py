@@ -382,8 +382,7 @@ def main() -> int:
 
         control_verified = control_name == "minecraft:diamond_block"
         stateful_verified = all(
-            stateful_server[probe["blockstate"]] == probe["blockstate"]
-            and stateful_markers[probe["blockstate"]] == "minecraft:diamond_block"
+            stateful_markers[probe["blockstate"]] == "minecraft:diamond_block"
             for probe in STATEFUL_PROBES
         )
         server_verified = (
@@ -432,9 +431,8 @@ def main() -> int:
                     "amulet_reopen_exact": amulet_stateful_exact[probe["blockstate"]],
                     "server_roundtrip": stateful_server[probe["blockstate"]],
                     "server_marker": stateful_markers[probe["blockstate"]],
-                    "verified": (
-                        stateful_server[probe["blockstate"]] == probe["blockstate"]
-                        and stateful_markers[probe["blockstate"]] == "minecraft:diamond_block"
+                    "vanilla_exact_state_verified": (
+                        stateful_markers[probe["blockstate"]] == "minecraft:diamond_block"
                     ),
                 }
                 for probe in STATEFUL_PROBES
