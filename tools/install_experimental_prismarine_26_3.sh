@@ -54,27 +54,54 @@ clone_exact minecraft-protocol "$ROOT/src/node-minecraft-protocol"
 clone_exact prismarine-chunk "$ROOT/src/prismarine-chunk"
 clone_exact mineflayer "$ROOT/src/mineflayer"
 
-python - "$MANIFEST" "$ROOT/runtime/package.json" "$ROOT/src" <<'PY'
+python - "$ROOT/runtime/package.json" <<'PY'
 import json, pathlib, sys
-manifest=json.load(open(sys.argv[1],encoding="utf-8"))
-src=pathlib.Path(sys.argv[3]).resolve()
 package={
   "name":"supracraft-prismarine-26-3-runtime",
   "private":True,
   "version":"0.0.0",
   "engines":{"node":">=22"},
   "dependencies":{
-    "minecraft-data":"file:"+str(src/"node-minecraft-data"),
-    "minecraft-protocol":"file:"+str(src/"node-minecraft-protocol"),
-    "prismarine-chunk":"file:"+str(src/"prismarine-chunk"),
-    "mineflayer":"file:"+str(src/"mineflayer")
+    "minecraft-data":"3.117.0",
+    "minecraft-protocol":"1.68.0",
+    "prismarine-chunk":"1.41.0",
+    "mineflayer":"4.39.0"
   }
 }
-pathlib.Path(sys.argv[2]).write_text(json.dumps(package,indent=2)+"\n",encoding="utf-8")
+pathlib.Path(sys.argv[1]).write_text(json.dumps(package,indent=2)+"\n",encoding="utf-8")
 PY
 
 pushd "$ROOT/runtime" >/dev/null
+# Resolve and lock the ordinary transitive dependency graph first. The four
+# direct packages are replaced below by exact experimental source commits.
 npm install --ignore-scripts=false
+popd >/dev/null
+
+python - "$ROOT/src" "$ROOT/runtime/node_modules" <<'PY'
+import pathlib, shutil, sys
+src=pathlib.Path(sys.argv[1])
+dst=pathlib.Path(sys.argv[2])
+mapping={
+  "minecraft-data":src/"node-minecraft-data",
+  "minecraft-protocol":src/"node-minecraft-protocol",
+  "prismarine-chunk":src/"prismarine-chunk",
+  "mineflayer":src/"mineflayer",
+}
+for name, source in mapping.items():
+    target=dst/name
+    if target.exists() or target.is_symlink():
+        if target.is_symlink() or target.is_file():
+            target.unlink()
+        else:
+            shutil.rmtree(target)
+    shutil.copytree(
+        source,
+        target,
+        ignore=shutil.ignore_patterns(".git", "node_modules"),
+    )
+PY
+
+pushd "$ROOT/runtime" >/dev/null
 node - <<'NODE'
 const names=['mineflayer','minecraft-data','minecraft-protocol','prismarine-chunk']
 const versions={}
