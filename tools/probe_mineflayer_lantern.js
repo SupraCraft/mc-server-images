@@ -21,7 +21,7 @@ const result = {
   minecraft_data_version: require('minecraft-data/package.json').version,
   minecraft_protocol_version: require('minecraft-protocol/package.json').version,
   requested_version: '26.3',
-  requested_state: 'minecraft:lantern[facing=west,half=bottom,shape=straight,waterlogged=false]',
+  requested_state: 'minecraft:lantern[hanging=false,waterlogged=false]',
   placed: false,
   milestones: {},
   packet_count: 0,
