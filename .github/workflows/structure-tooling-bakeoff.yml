@@ -1,0 +1,150 @@
+name: Structure tooling headless bake-off
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - probe/structure-tooling-bakeoff
+    paths:
+      - .github/workflows/structure-tooling-bakeoff.yml
+      - tools/probe_structure_tooling.py
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+          - trimesh
+          - cadquery
+          - openscad
+          - blender
+          - freecad
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install common probe dependencies
+        shell: bash
+        run: python -m pip install --disable-pip-version-check trimesh numpy
+
+      - name: Install CadQuery
+        if: matrix.tool == 'cadquery'
+        continue-on-error: true
+        shell: bash
+        run: python -m pip install --disable-pip-version-check cadquery
+
+      - name: Install OpenSCAD
+        if: matrix.tool == 'openscad'
+        continue-on-error: true
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad
+
+      - name: Install Blender
+        if: matrix.tool == 'blender'
+        continue-on-error: true
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+
+      - name: Install FreeCAD
+        if: matrix.tool == 'freecad'
+        continue-on-error: true
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y freecad
+
+      - name: Run public-safe primitive probe
+        shell: bash
+        run: |
+          mkdir -p "probe-results"
+          python tools/probe_structure_tooling.py "${{ matrix.tool }}" \
+            --output "probe-results/${{ matrix.tool }}.json"
+
+      - name: Publish individual result
+        shell: bash
+        run: |
+          {
+            echo "## ${{ matrix.tool }}"
+            echo
+            echo '~~~json'
+            cat "probe-results/${{ matrix.tool }}.json"
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: structure-tooling-${{ matrix.tool }}
+          path: probe-results/${{ matrix.tool }}.json
+          if-no-files-found: error
+
+  aggregate:
+    if: always()
+    needs: probe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: structure-tooling-*
+          path: collected
+          merge-multiple: true
+
+      - name: Normalize combined evidence
+        shell: bash
+        run: |
+          mkdir -p probes/structure-tooling-bakeoff
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows = []
+          for path in sorted(Path("collected").glob("*.json")):
+              rows.append(json.loads(path.read_text(encoding="utf-8")))
+          result = {
+              "schema": "supracraft.structure-tooling-bakeoff/v0.1",
+              "fixture": "synthetic-public-unit-cube",
+              "results": sorted(rows, key=lambda row: row["tool"]),
+          }
+          out = Path("probes/structure-tooling-bakeoff/latest.json")
+          out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(out.read_text(encoding="utf-8"))
+          PY
+
+      - name: Publish aggregate result
+        shell: bash
+        run: |
+          {
+            echo "## Structure tooling bake-off"
+            echo
+            echo '~~~json'
+            cat probes/structure-tooling-bakeoff/latest.json
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain evidence on probe branch
+        if: github.event_name == 'push' && github.ref_name == 'probe/structure-tooling-bakeoff'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/structure-tooling-bakeoff/latest.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "probe: record structure tooling bake-off"
+          git push origin "HEAD:$GITHUB_REF_NAME"
