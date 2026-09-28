@@ -77,9 +77,56 @@ jobs:
           print(json.dumps(out, indent=2, sort_keys=True))
           PY
 
+      - name: Inspect exact DP4 config and dataset metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.request
+
+          rev = "980d30e34ef1b74fc232b4f4e33d9b2f88ca5464"
+          config_url = f"https://huggingface.co/SakanaAI/DreamCubedDP4/resolve/{rev}/config.json"
+          req = urllib.request.Request(config_url, headers={"User-Agent": "SupraCraft-public-qualification/1"})
+          with urllib.request.urlopen(req, timeout=60) as resp:
+              config = json.load(resp)
+
+          ds_url = "https://huggingface.co/api/datasets/SakanaAI/DreamCubed2M?blobs=true"
+          req = urllib.request.Request(ds_url, headers={"User-Agent": "SupraCraft-public-qualification/1"})
+          with urllib.request.urlopen(req, timeout=60) as resp:
+              ds = json.load(resp)
+
+          siblings = []
+          for s in ds.get("siblings", []):
+              lfs = s.get("lfs") or {}
+              size = s.get("size")
+              if size is None:
+                  size = lfs.get("size")
+              siblings.append({
+                  "name": s.get("rfilename"),
+                  "size": size,
+                  "lfs_sha256": lfs.get("sha256"),
+              })
+
+          interesting = [x for x in siblings if any(k in (x["name"] or "").lower() for k in ("mapping", "biome", "block", "manifest", "config"))]
+
+          out = {
+              "model_revision": rev,
+              "config": config,
+              "dataset_sha": ds.get("sha"),
+              "dataset_lastModified": ds.get("lastModified"),
+              "dataset_interesting_files": interesting,
+              "dataset_file_count": len(siblings),
+          }
+          with open("evidence/dreamcubed-prereqs.json", "w") as fp:
+              json.dump(out, fp, indent=2, sort_keys=True)
+          print(json.dumps(out, indent=2, sort_keys=True))
+          PY
+
       - name: Upload inventory
         uses: actions/upload-artifact@v4
         with:
           name: dreamcubed-model-inventory
-          path: evidence/dreamcubed-model-inventory.json
+          path: |
+            evidence/dreamcubed-model-inventory.json
+            evidence/dreamcubed-prereqs.json
           retention-days: 7
