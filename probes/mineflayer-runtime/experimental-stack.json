@@ -30,6 +30,15 @@
   "notes": [
     "The source minecraft-data repository is not itself an npm package; it is injected into a pinned node-minecraft-data checkout before data.js generation.",
     "Local file dependencies are used so npm resolves the experimental components as one coherent stack rather than silently falling back to released packages.",
-    "Additional 26.3 Mineflayer PRs are intentionally excluded from the first placement rep unless the bounded placement test demonstrates they are required."
+    "Additional 26.3 Mineflayer PRs are intentionally excluded from the first placement rep unless the bounded placement test demonstrates they are required.",
+    "The Mineflayer 26.3 admission patch is local harness provenance, not an upstream support claim; all runtime behavior remains subject to the physical-placement oracle."
+  ],
+  "harness_patches": [
+    {
+      "component": "mineflayer",
+      "path": "probes/mineflayer-runtime/patches/mineflayer-admit-26.3.patch",
+      "purpose": "Extend Mineflayer's testedVersions admission guard to 26.3 only after the pinned experimental minecraft-data layer resolves protocol 777.",
+      "semantic_scope": "version-admission-only"
+    }
   ]
 }
