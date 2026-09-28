@@ -1,0 +1,82 @@
+{
+  "amulet_core_version": "1.9.49",
+  "minecraft": {
+    "edition": "java",
+    "protocol": 777,
+    "version": "26.3",
+    "world_version": 5023
+  },
+  "probe": {
+    "amulet_reopen": "minecraft:gold_block",
+    "before": "minecraft:stone",
+    "coordinate": [
+      0,
+      70,
+      0
+    ],
+    "official_server_verified": true,
+    "region_sha256": {
+      "after_amulet": null,
+      "after_server": null,
+      "before_amulet": null
+    },
+    "server_command_control": {
+      "block": "minecraft:diamond_block",
+      "coordinate": [
+        2,
+        200,
+        0
+      ],
+      "verified": true
+    },
+    "server_conditional_marker": {
+      "block": "minecraft:diamond_block",
+      "coordinate": [
+        1,
+        200,
+        0
+      ]
+    },
+    "server_roundtrip_target": "minecraft:gold_block",
+    "stateful_roundtrip": [
+      {
+        "amulet_reopen": "minecraft:redstone_lamp[lit=false]",
+        "amulet_reopen_exact": true,
+        "coordinate": [
+          3,
+          70,
+          0
+        ],
+        "expected": "minecraft:redstone_lamp[lit=false]",
+        "server_marker": "minecraft:diamond_block",
+        "server_roundtrip": "minecraft:redstone_lamp[lit=false]",
+        "vanilla_exact_state_verified": true
+      },
+      {
+        "amulet_reopen": "minecraft:lantern[hanging=false]",
+        "amulet_reopen_exact": false,
+        "coordinate": [
+          4,
+          70,
+          0
+        ],
+        "expected": "minecraft:lantern[hanging=false,waterlogged=false]",
+        "server_marker": "minecraft:diamond_block",
+        "server_roundtrip": "minecraft:lantern[hanging=false]",
+        "vanilla_exact_state_verified": true
+      }
+    ],
+    "written": "minecraft:gold_block"
+  },
+  "result": "qualified",
+  "schema": "supracraft.amulet-java-world-io/v0.1",
+  "translation_support": {
+    "exact_default_property_readback": false,
+    "java_26_3": true
+  },
+  "vanilla": {
+    "first_boot_done": true,
+    "second_boot_done": true,
+    "status_protocol": 777
+  }
+}
