@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify one Mineflayer 4.39.0 physical placement against official Java 26.3."""
+"""Qualify one pinned Prismarine physical placement against official Java 26.3."""
 
 from __future__ import annotations
 
@@ -90,7 +90,16 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--item-name", default="minecraft:stone")
+    parser.add_argument("--target-blockstate", default="minecraft:stone")
     args = parser.parse_args()
+
+    if not args.item_name.startswith("minecraft:"):
+        raise RuntimeError("--item-name must be a minecraft namespaced id")
+    if not args.target_blockstate.startswith("minecraft:"):
+        raise RuntimeError("--target-blockstate must be a minecraft namespaced state")
+    bot_item_name = args.item_name.split(":", 1)[1]
+    target_block_name = args.target_blockstate.split(":", 1)[1].split("[", 1)[0]
 
     evidence = json.loads(args.evidence.read_text("utf-8"))
     info = evidence["artifact_version_json"]
@@ -143,6 +152,8 @@ def main() -> int:
                         "MC_PORT": str(PORT),
                         "BOT_READY_FILE": str(ready),
                         "BOT_RESULT_FILE": str(bot_result_path),
+                        "BOT_ITEM_NAME": bot_item_name,
+                        "BOT_EXPECTED_BLOCK_NAME": target_block_name,
                     }
                 )
                 bot = subprocess.Popen(
@@ -184,7 +195,7 @@ def main() -> int:
                     ) from exc
 
                 send(server, f"gamemode survival {BOT_NAME}")
-                send(server, f"give {BOT_NAME} minecraft:stone 1")
+                send(server, f"give {BOT_NAME} {args.item_name} 1")
                 send(server, f"tp {BOT_NAME} 2 70 0 90 0")
 
                 try:
@@ -219,7 +230,7 @@ def main() -> int:
                 # stone at the target, the server itself emits a marker.
                 send(
                     server,
-                    "execute if block 0 70 0 minecraft:stone "
+                    f"execute if block 0 70 0 {args.target_blockstate} "
                     f"run say {MARKER}",
                 )
                 time.sleep(2)
@@ -271,9 +282,13 @@ def main() -> int:
         "mineflayer": bot_result,
         "fixture": {
             "support": {"at": [0, 69, 0], "block": "minecraft:stone"},
-            "target": {"at": [0, 70, 0], "block": "minecraft:stone"},
+            "target": {
+                "at": [0, 70, 0],
+                "blockstate": args.target_blockstate,
+            },
             "bot_teleport": [2, 70, 0],
         },
+        "item_name": args.item_name,
         "official_server_verified": server_verified,
         "status_protocol": int(status.get("version", {}).get("protocol", -1)),
         "result": "qualified",
