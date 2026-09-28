@@ -73,16 +73,20 @@ jobs:
           # disposable qualification model directory when this system property is set.
           mp=Path("src/main/java/com/github/xandergos/terraindiffusionmc/pipeline/ModelAssetManager.java")
           s=mp.read_text()
-          old='''    private static final Path MODEL_DIRECTORY = FabricLoader.getInstance()
-            .getGameDir()
-            .resolve("terrain-diffusion-models");'''
-          new='''    private static final Path MODEL_DIRECTORY =
+          import re
+          pat = re.compile(
+              r'private static final Path MODEL_DIRECTORY\s*=\s*FabricLoader\.getInstance\(\)\s*'
+              r'\.getGameDir\(\)\s*\.resolve\("terrain-diffusion-models"\);',
+              re.MULTILINE,
+          )
+          repl = '''private static final Path MODEL_DIRECTORY =
             System.getProperty("supracraft.model.dir") != null
                 ? Path.of(System.getProperty("supracraft.model.dir"))
                 : FabricLoader.getInstance().getGameDir().resolve("terrain-diffusion-models");'''
-          if old not in s:
+          s2, n = pat.subn(repl, s, count=1)
+          if n != 1:
               raise SystemExit("expected ModelAssetManager path expression not found")
-          mp.write_text(s.replace(old,new))
+          mp.write_text(s2)
 
           p=Path("build.gradle")
           s=p.read_text()
