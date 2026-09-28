@@ -1,10 +1,10 @@
-name: Experimental Prismarine Java 26.3 physical placement
+name: Experimental Prismarine Java 26.3 standing-lantern placement
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - probe/mineflayer-26.3-experimental-stack
+      - probe/mineflayer-26.3-lantern
     paths:
       - .github/workflows/mineflayer-26.3-placement.yml
       - tools/probe_mineflayer_26_3.py
@@ -28,7 +28,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: experimental-prismarine-26-3-${{ github.ref }}
+  group: experimental-prismarine-26-3-lantern-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -66,27 +66,29 @@ jobs:
           mkdir -p probes/mineflayer
           python tools/probe_mineflayer_26_3.py \
             --evidence probes/26.3-release-identity.json \
-            --output probes/mineflayer/26.3-stone-placement.json
+            --item-name minecraft:lantern \
+            --target-blockstate 'minecraft:lantern[hanging=false,waterlogged=false]' \
+            --output probes/mineflayer/26.3-standing-lantern-placement.json
 
       - name: Publish evidence
         shell: bash
         run: |
           {
-            echo "## Experimental Prismarine stack / Minecraft Java 26.3 physical placement"
+            echo "## Experimental Prismarine stack / Minecraft Java 26.3 standing-lantern placement"
             echo
             echo '~~~json'
-            cat probes/mineflayer/26.3-stone-placement.json
+            cat probes/mineflayer/26.3-standing-lantern-placement.json
             echo '~~~'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: experimental-prismarine-26.3-stone-placement
-          path: probes/mineflayer/26.3-stone-placement.json
+          name: experimental-prismarine-26.3-standing-lantern-placement
+          path: probes/mineflayer/26.3-standing-lantern-placement.json
           if-no-files-found: error
 
       - name: Retain evidence and dependency lock
-        if: always() && github.event_name == 'push' && github.ref_name == 'probe/mineflayer-26.3-experimental-stack'
+        if: always() && github.event_name == 'push' && github.ref_name == 'probe/mineflayer-26.3-lantern'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -94,11 +96,11 @@ jobs:
           if [[ -f probes/mineflayer-runtime/experimental-package-lock.json ]]; then
             git add probes/mineflayer-runtime/experimental-package-lock.json
           fi
-          if [[ -f probes/mineflayer/26.3-stone-placement.json ]]; then
-            git add probes/mineflayer/26.3-stone-placement.json
+          if [[ -f probes/mineflayer/26.3-standing-lantern-placement.json ]]; then
+            git add probes/mineflayer/26.3-standing-lantern-placement.json
           fi
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "probe: record experimental Prismarine 26.3 placement"
+          git commit -m "probe: record Java 26.3 standing-lantern placement"
           git push origin "HEAD:$GITHUB_REF_NAME"
