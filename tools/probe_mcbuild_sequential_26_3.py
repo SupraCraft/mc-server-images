@@ -124,7 +124,7 @@ class JsonLinePeer:
         except Exception as exc:
             with self.stderr_lock:
                 self.stderr_tail.append(
-                    f"<stderr reader error: {exc!r}>\\n"
+                    f"<stderr reader error: {exc!r}>\n"
                 )
 
     def _diagnostic(
@@ -173,7 +173,7 @@ class JsonLinePeer:
         )
 
     def send(self, value: dict[str, Any]) -> None:
-        self.stdin.write(json.dumps(value, sort_keys=True) + "\\n")
+        self.stdin.write(json.dumps(value, sort_keys=True) + "\n")
         self.stdin.flush()
 
 
