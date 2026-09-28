@@ -1,0 +1,82 @@
+{
+  "schema": "supracraft.mineflayer-oriented-placement/v0.1",
+  "minecraft": {
+    "edition": "java",
+    "protocol": 777,
+    "version": "26.3",
+    "world_version": 5023
+  },
+  "requested_state": "minecraft:oak_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]",
+  "fixture": {
+    "bot_teleport": [
+      2,
+      70,
+      0
+    ],
+    "bot_yaw_degrees": 90,
+    "expected_facing": "west",
+    "support": {
+      "at": [
+        0,
+        69,
+        0
+      ],
+      "block": "minecraft:stone"
+    },
+    "target": {
+      "at": [
+        0,
+        70,
+        0
+      ],
+      "block": "minecraft:oak_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    }
+  },
+  "mineflayer": {
+    "schema": "supracraft.mineflayer-oriented-stairs/v0.1",
+    "mineflayer_version": "4.39.0",
+    "minecraft_data_version": "3.117.0",
+    "minecraft_protocol_version": "1.68.0",
+    "requested_version": "26.3",
+    "negotiated_version": "26.3",
+    "protocol_version": 777,
+    "requested_state": "minecraft:oak_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]",
+    "before": "air",
+    "after": "oak_stairs",
+    "after_state_id": 5514,
+    "after_properties": {
+      "facing": "west",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": false
+    },
+    "after_properties_normalized": {
+      "facing": "west",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    },
+    "bot_position": [
+      2.5,
+      70,
+      0.5
+    ],
+    "bot_yaw": 1.5707963267948966,
+    "bot_pitch": 0,
+    "packet_count": 359,
+    "placed": true,
+    "end_reason": "oriented stairs probe complete",
+    "last_packet": {
+      "name": "entity_velocity",
+      "state": "play"
+    }
+  },
+  "official_server_verified": true,
+  "status_protocol": 777,
+  "result": "qualified",
+  "provenance": {
+    "github_actions_run_id": 36429203967,
+    "workflow_artifact_id": 10972568294,
+    "artifact_zip_sha256": "6b4b27ad34e092c9fcd639fb0b55dc35a02247b73617b70d58506ac1681c7c12"
+  }
+}
