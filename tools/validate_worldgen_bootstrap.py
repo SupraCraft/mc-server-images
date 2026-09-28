@@ -46,7 +46,7 @@ def main() -> int:
         errors.append("server artifact SHA-256 does not match qualified 26.3 evidence")
 
     artifact_map = {item["path"]: item for item in receipt.get("artifacts", [])}
-    for rel in ("world.zip", "analysis/terrain.json", "provenance.json"):
+    for rel in ("world.zip", "analysis/terrain.json", "tour/manifest.json", "provenance.json"):
         path = args.run_dir / rel
         if not path.exists():
             errors.append(f"missing artifact {rel}")
@@ -65,6 +65,10 @@ def main() -> int:
             errors.append("world.zip lacks world/level.dat")
         if not any(name.startswith("world/region/") and name.endswith(".mca") for name in world_entries):
             errors.append("world.zip lacks overworld region data")
+        if "world/SUPRACRAFT-TOUR.json" not in world_entries:
+            errors.append("world.zip lacks embedded SupraCraft tour manifest")
+        if "world/datapacks/supracraft_benchmark/pack.mcmeta" not in world_entries:
+            errors.append("world.zip lacks SupraCraft tour datapack")
 
     if terrain.get("observed_count", 0) <= 0:
         errors.append("terrain probe observed no non-air samples")
@@ -82,6 +86,8 @@ def main() -> int:
             "qualified_server_sha256": provenance.get("server_artifact_sha256") == release["server_artifact"]["sha256"],
             "world_level_dat": "world/level.dat" in world_entries,
             "world_region_data": any(name.startswith("world/region/") and name.endswith(".mca") for name in world_entries),
+            "embedded_tour_manifest": "world/SUPRACRAFT-TOUR.json" in world_entries,
+            "embedded_tour_datapack": "world/datapacks/supracraft_benchmark/pack.mcmeta" in world_entries,
             "terrain_probe_nonempty": terrain.get("observed_count", 0) > 0,
         },
     }
