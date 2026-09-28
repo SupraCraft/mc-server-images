@@ -87,17 +87,21 @@ jobs:
           p=Path("build.gradle")
           s=p.read_text()
           s=s.replace("jvmArgs '-Xmx8g'", "jvmArgs '-Xmx6g'")
-          needle="""task pipelineTest(type: JavaExec, dependsOn: compileJava) {
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.github.xandergos.terraindiffusionmc.pipeline.PipelineTest'
-    jvmArgs '-Xmx6g'
-}"""
-          repl="""task pipelineTest(type: JavaExec, dependsOn: compileJava) {
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.github.xandergos.terraindiffusionmc.pipeline.PipelineTest'
-    jvmArgs '-Xmx6g'
-    systemProperty 'supracraft.model.dir', new File(System.getenv('RUNNER_TEMP'), 'terrain-diffusion-models').absolutePath
-}"""
+          needle = "\n".join([
+              "task pipelineTest(type: JavaExec, dependsOn: compileJava) {",
+              "    classpath = sourceSets.main.runtimeClasspath",
+              "    mainClass = 'com.github.xandergos.terraindiffusionmc.pipeline.PipelineTest'",
+              "    jvmArgs '-Xmx6g'",
+              "}"
+          ])
+          repl = "\n".join([
+              "task pipelineTest(type: JavaExec, dependsOn: compileJava) {",
+              "    classpath = sourceSets.main.runtimeClasspath",
+              "    mainClass = 'com.github.xandergos.terraindiffusionmc.pipeline.PipelineTest'",
+              "    jvmArgs '-Xmx6g'",
+              "    systemProperty 'supracraft.model.dir', new File(System.getenv('RUNNER_TEMP'), 'terrain-diffusion-models').absolutePath",
+              "}"
+          ])
           if needle not in s:
               raise SystemExit("expected pipelineTest block not found")
           p.write_text(s.replace(needle,repl))
