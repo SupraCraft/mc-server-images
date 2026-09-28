@@ -1,0 +1,102 @@
+name: Materialize Build-with-Bombs playable world
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful Build-with-Bombs generation run id
+        required: true
+        default: "36380172110"
+  push:
+    branches:
+      - qualify/voxel-diffusion-runtime
+    paths:
+      - .github/workflows/bwb-world-materialize.yml
+      - tools/materialize_voxel_world.py
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  world:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DEFAULT_SOURCE_RUN_ID: "36380172110"
+
+    steps:
+      - name: Fail closed outside a public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Public repository required."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Download exact successful generation artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          if [[ -z "$run_id" ]]; then
+            run_id="$DEFAULT_SOURCE_RUN_ID"
+          fi
+          mkdir -p source-artifact
+          gh run download "$run_id"             --repo "$GITHUB_REPOSITORY"             --name build-with-bombs-cpu-onnx             --dir source-artifact
+          find source-artifact -maxdepth 3 -type f -print
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - name: Install materializer dependencies
+        shell: bash
+        run: python -m pip install numpy nbtlib
+
+      - name: Materialize, boot, verify, and package Minecraft 26.3 world
+        shell: bash
+        run: |
+          set -euo pipefail
+          tensor="$(find source-artifact -type f -name 'build-with-bombs-v021-*.npz' | head -n1)"
+          receipt="$(find source-artifact -type f -name 'generation-receipt.json' | head -n1)"
+          test -n "$tensor"
+          test -n "$receipt"
+          mkdir -p world-output
+          python tools/materialize_voxel_world.py             --npz "$tensor"             --receipt "$receipt"             --release-evidence probes/26.3-release-identity.json             --output-dir world-output             --crop-center 12
+          sha256sum world-output/* | tee world-output/SHA256SUMS.txt
+
+      - name: Publish tour summary
+        shell: bash
+        run: |
+          {
+            echo "## Playable generated world"
+            echo
+            echo "- generator source run: $SOURCE_RUN_ID"
+            echo "- Minecraft: 26.3"
+            echo "- tour: `/function supracraft:tour/start`"
+            echo "- modes: Creative + Spectator"
+            echo
+            echo '~~~json'
+            cat world-output/world-receipt.json
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload playable world and tour bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-with-bombs-playable-world
+          path: world-output/
+          retention-days: 14
