@@ -151,7 +151,18 @@ def main() -> int:
                     text=True,
                 )
 
-                wait_file(ready, bot, 30)
+                try:
+                    wait_file(ready, bot, 30)
+                except RuntimeError as exc:
+                    diagnostic = None
+                    if bot_result_path.exists():
+                        diagnostic = json.loads(
+                            bot_result_path.read_text("utf-8")
+                        )
+                    raise RuntimeError(
+                        f"{exc}; bot_result={diagnostic!r}"
+                    ) from exc
+
                 send(server, f"gamemode survival {BOT_NAME}")
                 send(server, f"give {BOT_NAME} minecraft:stone 1")
                 send(server, f"tp {BOT_NAME} 2 70 0 90 0")
