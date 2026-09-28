@@ -1,0 +1,81 @@
+{
+  "schema": "supracraft.mineflayer-top-face-placement/v0.1",
+  "qualification_name": "redstone-lamp-unlit",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3",
+    "protocol": 777,
+    "world_version": 5023
+  },
+  "requested_state": "minecraft:redstone_lamp[lit=false]",
+  "expected_properties": {
+    "lit": "false"
+  },
+  "block_entity_required": false,
+  "fixture": {
+    "support": {
+      "at": [
+        0,
+        69,
+        0
+      ],
+      "block": "minecraft:stone"
+    },
+    "target": {
+      "at": [
+        0,
+        70,
+        0
+      ],
+      "block": "minecraft:redstone_lamp[lit=false]"
+    },
+    "bot_teleport": [
+      2,
+      70,
+      0
+    ],
+    "bot_yaw_degrees": 0,
+    "support_relation": "top-face"
+  },
+  "mineflayer": {
+    "schema": "supracraft.mineflayer-top-face-placement/v0.1",
+    "mineflayer_version": "4.39.0",
+    "minecraft_data_version": "3.117.0",
+    "minecraft_protocol_version": "1.68.0",
+    "requested_version": "26.3",
+    "negotiated_version": "26.3",
+    "protocol_version": 777,
+    "item_name": "redstone_lamp",
+    "requested_state": "minecraft:redstone_lamp[lit=false]",
+    "expected_properties": {
+      "lit": "false"
+    },
+    "before": "air",
+    "after": "redstone_lamp",
+    "after_state_id": 11214,
+    "after_properties": {
+      "lit": false
+    },
+    "after_properties_normalized": {
+      "lit": "false"
+    },
+    "bot_position": [
+      2,
+      70,
+      0
+    ],
+    "bot_yaw": 3.141592653589793,
+    "bot_pitch": 0,
+    "packet_count": 746,
+    "placed": true,
+    "end_reason": "top-face placement probe complete"
+  },
+  "official_server_verified": true,
+  "status_protocol": 777,
+  "result": "qualified",
+  "provenance": {
+    "github_actions_run_id": 36434960182,
+    "workflow_artifact_id": 10974873505,
+    "artifact_zip_sha256": "d85638eceff74172743ad377a8759312166d29382da4a2419c9bd679158ba498"
+  }
+}
