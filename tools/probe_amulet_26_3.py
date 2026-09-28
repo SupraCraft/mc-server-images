@@ -33,6 +33,7 @@ from smoke_vanilla_runtime import (
 
 DIMENSION = "minecraft:overworld"
 PROBE_AT = (0, 70, 0)
+MARKER_AT = (1, 100, 0)
 GAME_VERSION = ("java", (26, 3, 0))
 PROBE_BLOCK = Block("minecraft", "gold_block")
 
@@ -188,7 +189,11 @@ def main() -> int:
         write_server_config(root, 25566)
 
         _, first_log = boot_until_ready(
-            root, server_jar, protocol, 25566
+            root,
+            server_jar,
+            protocol,
+            25566,
+            command_after_ready="setworldspawn 0 70 0",
         )
         world_path = root / "world"
         if not (world_path / "level.dat").exists():
@@ -239,11 +244,11 @@ def main() -> int:
                 f"Amulet reopen mismatch: expected minecraft:gold_block, got {after_name}"
             )
 
-        marker = "SUPRACRAFT_AMULET_26_3_OK"
         x, y, z = PROBE_AT
+        marker_x, marker_y, marker_z = MARKER_AT
         command = (
             f"execute if block {x} {y} {z} minecraft:gold_block "
-            f"run say {marker}"
+            f"run setblock {marker_x} {marker_y} {marker_z} minecraft:diamond_block"
         )
         status, second_log = boot_until_ready(
             root,
@@ -252,10 +257,25 @@ def main() -> int:
             25566,
             command_after_ready=command,
         )
-        server_verified = marker in second_log
+
+        # Cross-direction oracle: the vanilla server places this marker only
+        # when it independently observes the Amulet-written gold block.
+        level = amulet.load_level(str(world_path))
+        try:
+            marker_block, _ = level.get_version_block(
+                *MARKER_AT,
+                DIMENSION,
+                GAME_VERSION,
+            )
+            marker_name = block_name(marker_block)
+        finally:
+            level.close()
+
+        server_verified = marker_name == "minecraft:diamond_block"
         if not server_verified:
             raise RuntimeError(
-                "official Minecraft 26.3 server did not observe the Amulet-written gold block"
+                "official Minecraft 26.3 server did not create the conditional "
+                f"marker; observed {marker_name} at {MARKER_AT}"
             )
 
     result = {
@@ -276,6 +296,10 @@ def main() -> int:
             "written": "minecraft:gold_block",
             "amulet_reopen": after_name,
             "official_server_verified": server_verified,
+            "server_conditional_marker": {
+                "coordinate": list(MARKER_AT),
+                "block": marker_name,
+            },
         },
         "vanilla": {
             "first_boot_done": "Done (" in first_log,
