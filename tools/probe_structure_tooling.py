@@ -181,12 +181,38 @@ Path({str(report)!r}).write_text(json.dumps(result), encoding="utf-8")
 
 def probe_freecad(work):
     r = base("freecad")
-    command = shutil.which("FreeCADCmd") or shutil.which("freecadcmd") or shutil.which("freecad") or shutil.which("FreeCAD")
+    candidates = [
+        shutil.which("FreeCADCmd"),
+        shutil.which("freecadcmd"),
+        shutil.which("freecad"),
+        shutil.which("FreeCAD"),
+        "/usr/lib/freecad/bin/freecadcmd-python3",
+        "/usr/lib/freecad/bin/freecad-python3",
+        "/usr/lib/freecad/bin/FreeCADCmd",
+        "/usr/lib/freecad/bin/FreeCAD",
+    ]
+    command = next(
+        (str(Path(candidate)) for candidate in candidates
+         if candidate and Path(candidate).exists()),
+        None,
+    )
     if not command:
-        r["notes"].append("FreeCADCmd/freecadcmd/freecad command not found")
+        r["notes"].append("FreeCAD executable not found after package install")
         return r
     r["available"] = True
-    r["version"] = cmd_version(os.path.basename(command), ["--version"])
+    try:
+        vp = subprocess.run(
+            [command, "--version"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+        )
+        lines = (vp.stdout or "").strip().splitlines()
+        r["version"] = lines[0][:300] if lines else command
+    except Exception as exc:
+        r["version"] = f"version-error:{type(exc).__name__}"
     report = work / "freecad-inner.json"
     fcstd = work / "cube.FCStd"
     py = work / "freecad_probe.py"
@@ -208,7 +234,8 @@ open({str(report)!r},"w",encoding="utf-8").write(json.dumps(result))
 """, encoding="utf-8")
     try:
         argv = [command, str(py)]
-        if os.path.basename(command).lower() == "freecad":
+        lower_name = os.path.basename(command).lower()
+        if lower_name in ("freecad", "freecad-python3"):
             argv = [command, "--console", str(py)]
         p = subprocess.run(argv, text=True, stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, timeout=180, check=False)
@@ -225,12 +252,80 @@ open({str(report)!r},"w",encoding="utf-8").write(json.dumps(result))
     return r
 
 
+def probe_vengi(work):
+    r = base("vengi")
+    candidates = [
+        shutil.which("vengi-voxconvert"),
+        os.environ.get("VENGI_VOXCONVERT"),
+    ]
+    command = next(
+        (str(Path(candidate)) for candidate in candidates
+         if candidate and Path(candidate).exists()),
+        None,
+    )
+    if not command:
+        r["notes"].append("vengi-voxconvert command not found")
+        return r
+
+    r["available"] = True
+    r["semantic_strategy"] = (
+        "voxel-format conversion bridge; Minecraft semantic fidelity must be "
+        "qualified per source/target format"
+    )
+    try:
+        vp = subprocess.run(
+            [command, "--version"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+        )
+        lines = (vp.stdout or "").strip().splitlines()
+        r["version"] = lines[0][:300] if lines else "vengi-voxconvert"
+    except Exception as exc:
+        r["version"] = f"version-error:{type(exc).__name__}"
+
+    try:
+        p = subprocess.run(
+            [command, "--print-formats"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=60,
+            check=False,
+        )
+        output = p.stdout or ""
+        lower = output.lower()
+        r["capabilities"] = {
+            "minecraft_schematic": "schematic" in lower,
+            "blockbench_bbmodel": "bbmodel" in lower or "blockbench" in lower,
+            "gltf_or_glb": "gltf" in lower or "glb" in lower,
+            "minecraft_region_or_world": (
+                "minecraft region" in lower
+                or "mca" in lower
+                or "mcworld" in lower
+            ),
+        }
+        r["format_probe_exit_code"] = p.returncode
+        if p.returncode != 0:
+            r["notes"].append(output[-1500:])
+        # L0/L1-capability discovery only. A semantic round trip is a later gate.
+        r["geometry_roundtrip"] = False
+        r["semantic_roundtrip"] = False
+    except Exception as exc:
+        r["notes"].append(f"{type(exc).__name__}: {exc}")
+
+    return r
+
+
 PROBES = {
     "trimesh": probe_trimesh,
     "cadquery": probe_cadquery,
     "openscad": probe_openscad,
     "blender": probe_blender,
     "freecad": probe_freecad,
+    "vengi": probe_vengi,
 }
 
 
