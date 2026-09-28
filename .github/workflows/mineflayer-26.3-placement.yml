@@ -12,6 +12,7 @@ on:
       - probes/mineflayer-runtime/package.json
       - probes/mineflayer-runtime/experimental-stack.json
       - tools/install_experimental_prismarine_26_3.sh
+      - tools/apply_mineflayer_tick_end_26_3.py
   pull_request:
     branches:
       - main
