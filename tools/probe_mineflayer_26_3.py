@@ -202,11 +202,17 @@ def main() -> int:
                     )
                 bot_result = json.loads(bot_result_path.read_text("utf-8"))
                 if bot.returncode != 0 or not bot_result.get("placed"):
+                    log.flush()
+                    server_tail = log_path.read_text(
+                        "utf-8", errors="replace"
+                    )[-5000:]
                     raise RuntimeError(
                         "Mineflayer placement failed: "
                         + json.dumps(bot_result, sort_keys=True)
                         + " stdout="
                         + bot_stdout[-4000:]
+                        + " server_tail="
+                        + repr(server_tail)
                     )
 
                 # Independent server-side condition: if the bot really left
