@@ -202,6 +202,10 @@ def marker(index: int) -> str:
     return f"SUPRACRAFT_MCBUILD_ACTION_{index:02d}_OK"
 
 
+def support_marker(index: int) -> str:
+    return f"SUPRACRAFT_MCBUILD_SUPPORT_{index:02d}_CLEARED"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--evidence", type=Path, required=True)
@@ -320,6 +324,16 @@ def main() -> int:
                         pos = action["bot_position"]
                         yaw = float(action.get("bot_yaw", 0))
                         pitch = float(action.get("bot_pitch", 0))
+                        support_at = [
+                            int(pos[0]),
+                            int(pos[1]) - 1,
+                            int(pos[2]),
+                        ]
+                        send_server(
+                            server,
+                            f"setblock {support_at[0]} {support_at[1]} "
+                            f"{support_at[2]} minecraft:barrier",
+                        )
                         send_server(server, f"clear {BOT_NAME}")
                         send_server(
                             server,
@@ -330,7 +344,6 @@ def main() -> int:
                             f"tp {BOT_NAME} {pos[0]} {pos[1]} {pos[2]} "
                             f"{yaw} {pitch}",
                         )
-                        time.sleep(0.25)
                         peer.send({"type": "prepared", "id": action["id"]})
                         prepared_ns = time.perf_counter_ns()
                         prepare_received_ns[action["id"]] = message_received_ns
@@ -343,6 +356,8 @@ def main() -> int:
                             "item_provisioned": action["item"],
                             "position_requested": pos,
                             "yaw_requested": yaw,
+                            "fixture_support_at": support_at,
+                            "fixture_support": "minecraft:barrier",
                             "controller_prepare_ms": round(
                                 (prepared_ns - message_received_ns) / 1_000_000,
                                 3,
@@ -373,6 +388,13 @@ def main() -> int:
                             / 1_000_000,
                             3,
                         )
+                        support_at = receipt["fixture_support_at"]
+                        send_server(
+                            server,
+                            f"setblock {support_at[0]} {support_at[1]} "
+                            f"{support_at[2]} minecraft:air",
+                        )
+                        receipt["fixture_support_cleanup_requested"] = True
                         placed += 1
                         if placed < len(plan["actions"]):
                             wait_phase = "await-prepare"
@@ -435,6 +457,15 @@ def main() -> int:
                         f"execute if block {x} {y} {z} "
                         f"{action['desired_state']} run say {marker(index)}",
                     )
+                    support_at = controller_receipts[index][
+                        "fixture_support_at"
+                    ]
+                    send_server(
+                        server,
+                        f"execute if block {support_at[0]} "
+                        f"{support_at[1]} {support_at[2]} minecraft:air "
+                        f"run say {support_marker(index)}",
+                    )
                     if action.get("require_block_entity"):
                         send_server(
                             server,
@@ -475,10 +506,16 @@ def main() -> int:
             if action.get("require_block_entity")
             and f"SUPRACRAFT_MCBUILD_BE_{index:02d}_OK" not in server_log
         ]
-        if missing_markers or missing_be:
+        missing_support_cleanup = [
+            support_marker(index)
+            for index in range(len(plan["actions"]))
+            if support_marker(index) not in server_log
+        ]
+        if missing_markers or missing_be or missing_support_cleanup:
             raise RuntimeError(
                 f"independent server oracle failed: "
-                f"states={missing_markers}, block_entities={missing_be}"
+                f"states={missing_markers}, block_entities={missing_be}, "
+                f"fixture_support_cleanup={missing_support_cleanup}"
             )
 
         errors = [
@@ -505,8 +542,11 @@ def main() -> int:
             "actions": len(plan["actions"]),
         },
         "controller": {
-            "positioning": "server-console-teleport",
+            "positioning": (
+                "server-console-teleport-with-temporary-barrier-support"
+            ),
             "inventory_provisioning": "server-console-clear-and-give",
+            "fixture_support_cleanup": "server-console-setblock-air",
             "receipts": controller_receipts,
         },
         "timing": {
@@ -535,6 +575,9 @@ def main() -> int:
         "official_server_verified_block_entities": sum(
             1 for action in plan["actions"]
             if action.get("require_block_entity")
+        ),
+        "official_server_verified_fixture_support_cleanup": len(
+            plan["actions"]
         ),
         "status_protocol": int(
             status.get("version", {}).get("protocol", -1)
