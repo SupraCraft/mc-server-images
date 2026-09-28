@@ -13,7 +13,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 2011.548,
+      "elapsed_ms": 2062.295,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -45,7 +45,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 1687.431,
+      "elapsed_ms": 2836.923,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -68,7 +68,7 @@
     {
       "available": false,
       "deterministic_input": true,
-      "elapsed_ms": 0.799,
+      "elapsed_ms": 0.676,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -82,7 +82,7 @@
       "geometry_roundtrip": false,
       "headless": true,
       "notes": [
-        "FreeCADCmd/freecadcmd command not found"
+        "FreeCADCmd/freecadcmd/freecad command not found"
       ],
       "schema": "supracraft.structure-tooling-probe/v0.1",
       "semantic_roundtrip": false,
@@ -101,7 +101,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 347.704,
+      "elapsed_ms": 248.036,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
@@ -133,7 +133,7 @@
       },
       "available": true,
       "deterministic_input": true,
-      "elapsed_ms": 149.801,
+      "elapsed_ms": 155.561,
       "fixture": {
         "block": "minecraft:stone",
         "kind": "unit-cube",
