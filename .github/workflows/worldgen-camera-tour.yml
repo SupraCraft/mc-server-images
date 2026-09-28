@@ -131,9 +131,10 @@ jobs:
             java -Xms512M -Xmx3G -jar server.jar nogui > server.log 2>&1
           ) &
           echo $! > server.pid
+          ready=0
           for i in {1..180}; do
             if grep -q "Done (" server/server.log 2>/dev/null; then
-              echo "SERVER_READY=1" >> "$GITHUB_ENV"
+              ready=1
               break
             fi
             if ! kill -0 "$(cat server.pid)" 2>/dev/null; then
@@ -142,7 +143,8 @@ jobs:
             fi
             sleep 1
           done
-          test "${SERVER_READY:-}" = "1" || { tail -200 server/server.log; exit 1; }
+          [[ "$ready" == "1" ]] || { tail -200 server/server.log; exit 1; }
+          echo "SERVER_READY=1" >> "$GITHUB_ENV"
 
       - name: Pin and install Mineflayer protocol probe
         shell: bash
