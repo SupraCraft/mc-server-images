@@ -38,6 +38,19 @@ MARKER_AT = (1, 200, 0)
 CONTROL_AT = (2, 200, 0)
 GAME_VERSION = ("java", (26, 3, 0))
 PROBE_BLOCK = Block("minecraft", "gold_block")
+STATEFUL_PROBES = [
+    {
+        "at": (3, 70, 0),
+        "blockstate": "minecraft:redstone_lamp[lit=false]",
+        "marker": (3, 200, 0),
+    },
+    {
+        "at": (4, 70, 0),
+        "blockstate": "minecraft:lantern[hanging=false,waterlogged=false]",
+        "marker": (4, 200, 0),
+        "support": (4, 69, 0),
+    },
+]
 
 
 
@@ -168,6 +181,13 @@ def boot_until_ready(
     return status, server_log
 
 
+def block_state(block: Any) -> str:
+    value = getattr(block, "blockstate", None)
+    if isinstance(value, str):
+        return value
+    return block_name(block)
+
+
 def block_name(block: Any) -> str:
     for attr in ("namespaced_name",):
         value = getattr(block, attr, None)
@@ -207,7 +227,12 @@ def main() -> int:
             25566,
             command_after_ready=(
                 "setworldspawn 0 70 0\n"
-                "setblock 1 200 0 minecraft:air"
+                "setblock 1 200 0 minecraft:air\n"
+                "setblock 3 200 0 minecraft:air\n"
+                "setblock 4 200 0 minecraft:air\n"
+                "setblock 3 70 0 minecraft:air\n"
+                "setblock 4 69 0 minecraft:stone\n"
+                "setblock 4 70 0 minecraft:air"
             ),
         )
         world_path = root / "world"
@@ -241,6 +266,13 @@ def main() -> int:
                 GAME_VERSION,
                 PROBE_BLOCK,
             )
+            for probe in STATEFUL_PROBES:
+                level.set_version_block(
+                    *probe["at"],
+                    DIMENSION,
+                    GAME_VERSION,
+                    Block.from_string_blockstate(probe["blockstate"]),
+                )
             level.save()
         finally:
             level.close()
@@ -255,6 +287,14 @@ def main() -> int:
                 GAME_VERSION,
             )
             after_name = block_name(after)
+            stateful_reopen = {}
+            for probe in STATEFUL_PROBES:
+                stateful_block, _ = level.get_version_block(
+                    *probe["at"],
+                    DIMENSION,
+                    GAME_VERSION,
+                )
+                stateful_reopen[probe["blockstate"]] = block_state(stateful_block)
         finally:
             level.close()
 
@@ -263,15 +303,33 @@ def main() -> int:
                 f"Amulet reopen mismatch: expected minecraft:gold_block, got {after_name}"
             )
 
+        for probe in STATEFUL_PROBES:
+            observed = stateful_reopen[probe["blockstate"]]
+            if observed != probe["blockstate"]:
+                raise RuntimeError(
+                    "Amulet stateful reopen mismatch: "
+                    f"expected {probe['blockstate']}, got {observed}"
+                )
+
         x, y, z = PROBE_AT
         marker_x, marker_y, marker_z = MARKER_AT
         control_x, control_y, control_z = CONTROL_AT
-        command = (
-            "forceload add 0 0\n"
-            f"setblock {control_x} {control_y} {control_z} minecraft:diamond_block\n"
-            f"execute if block {x} {y} {z} minecraft:gold_block "
-            f"run setblock {marker_x} {marker_y} {marker_z} minecraft:diamond_block"
-        )
+        commands = [
+            "forceload add 0 0",
+            f"setblock {control_x} {control_y} {control_z} minecraft:diamond_block",
+            (
+                f"execute if block {x} {y} {z} minecraft:gold_block "
+                f"run setblock {marker_x} {marker_y} {marker_z} minecraft:diamond_block"
+            ),
+        ]
+        for probe in STATEFUL_PROBES:
+            px, py, pz = probe["at"]
+            mx, my, mz = probe["marker"]
+            commands.append(
+                f"execute if block {px} {py} {pz} {probe['blockstate']} "
+                f"run setblock {mx} {my} {mz} minecraft:diamond_block"
+            )
+        command = "\n".join(commands)
         status, second_log = boot_until_ready(
             root,
             server_jar,
@@ -305,14 +363,35 @@ def main() -> int:
             marker_name = block_name(marker_block)
             control_name = block_name(control_block)
             server_target_name = block_name(server_target)
+            stateful_server = {}
+            stateful_markers = {}
+            for probe in STATEFUL_PROBES:
+                target_block, _ = level.get_version_block(
+                    *probe["at"],
+                    DIMENSION,
+                    GAME_VERSION,
+                )
+                marker_block, _ = level.get_version_block(
+                    *probe["marker"],
+                    DIMENSION,
+                    GAME_VERSION,
+                )
+                stateful_server[probe["blockstate"]] = block_state(target_block)
+                stateful_markers[probe["blockstate"]] = block_name(marker_block)
         finally:
             level.close()
 
         control_verified = control_name == "minecraft:diamond_block"
+        stateful_verified = all(
+            stateful_server[probe["blockstate"]] == probe["blockstate"]
+            and stateful_markers[probe["blockstate"]] == "minecraft:diamond_block"
+            for probe in STATEFUL_PROBES
+        )
         server_verified = (
             control_verified
             and marker_name == "minecraft:diamond_block"
             and server_target_name == "minecraft:gold_block"
+            and stateful_verified
         )
 
     result = {
@@ -343,6 +422,20 @@ def main() -> int:
                 "block": control_name,
                 "verified": control_verified,
             },
+            "stateful_roundtrip": [
+                {
+                    "coordinate": list(probe["at"]),
+                    "expected": probe["blockstate"],
+                    "amulet_reopen": stateful_reopen[probe["blockstate"]],
+                    "server_roundtrip": stateful_server[probe["blockstate"]],
+                    "server_marker": stateful_markers[probe["blockstate"]],
+                    "verified": (
+                        stateful_server[probe["blockstate"]] == probe["blockstate"]
+                        and stateful_markers[probe["blockstate"]] == "minecraft:diamond_block"
+                    ),
+                }
+                for probe in STATEFUL_PROBES
+            ],
             "region_sha256": {
                 "before_amulet": region_before_amulet,
                 "after_amulet": region_after_amulet,
