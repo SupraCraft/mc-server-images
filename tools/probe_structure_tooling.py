@@ -268,6 +268,7 @@ def probe_vengi(work):
         return r
 
     r["available"] = True
+    r["distribution"] = os.environ.get("VENGI_DISTRIBUTION", "unknown")
     r["semantic_strategy"] = (
         "voxel-format conversion bridge; Minecraft semantic fidelity must be "
         "qualified per source/target format"
