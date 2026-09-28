@@ -1,10 +1,10 @@
-name: Mineflayer Java 26.3 physical placement
+name: Experimental Prismarine Java 26.3 physical placement
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - probe/mineflayer-26.3-placement
+      - probe/mineflayer-26.3-experimental-stack
     paths:
       - .github/workflows/mineflayer-26.3-placement.yml
       - tools/probe_mineflayer_26_3.py
@@ -44,17 +44,21 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Install pinned Mineflayer runtime
+      - name: Install pinned experimental Prismarine stack
         shell: bash
         run: |
           cd probes/mineflayer-runtime
-          if [[ -f package-lock.json ]]; then
-            npm ci
-          else
-            npm install
-          fi
-          node -e 'const p=require("./node_modules/mineflayer/package.json"); if(p.version!=="4.39.0") process.exit(2)'
+          rm -f package-lock.json
+          npm install --ignore-scripts=false
+          node - <<'NODE'
+          const fs = require('fs')
+          for (const name of ['mineflayer','minecraft-data','minecraft-protocol','prismarine-chunk']) {
+            const p = require('./node_modules/' + name + '/package.json')
+            console.log(name, p.version)
+          }
+          NODE
           echo "NODE_PATH=$GITHUB_WORKSPACE/probes/mineflayer-runtime/node_modules" >> "$GITHUB_ENV"
+          echo "PROVIDER_VARIANT=experimental-prismarine-26.3-stack" >> "$GITHUB_ENV"
 
       - name: Run physical placement qualification
         shell: bash
@@ -68,7 +72,7 @@ jobs:
         shell: bash
         run: |
           {
-            echo "## Mineflayer 4.39.0 / Minecraft Java 26.3 physical placement"
+            echo "## Experimental Prismarine stack / Minecraft Java 26.3 physical placement"
             echo
             echo '~~~json'
             cat probes/mineflayer/26.3-stone-placement.json
@@ -77,12 +81,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: mineflayer-26.3-stone-placement
+          name: experimental-prismarine-26.3-stone-placement
           path: probes/mineflayer/26.3-stone-placement.json
           if-no-files-found: error
 
       - name: Retain evidence and dependency lock
-        if: always() && github.event_name == 'push' && github.ref_name == 'probe/mineflayer-26.3-placement'
+        if: always() && github.event_name == 'push' && github.ref_name == 'probe/mineflayer-26.3-experimental-stack'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -94,5 +98,5 @@ jobs:
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "probe: record Mineflayer 26.3 placement"
+          git commit -m "probe: record experimental Prismarine 26.3 placement"
           git push origin "HEAD:$GITHUB_REF_NAME"
