@@ -10,7 +10,8 @@ on:
       - tools/probe_mineflayer_26_3.py
       - tools/probe_mineflayer_place.js
       - probes/mineflayer-runtime/package.json
-      - probes/mineflayer-runtime/package-lock.json
+      - probes/mineflayer-runtime/experimental-stack.json
+      - tools/install_experimental_prismarine_26_3.sh
   pull_request:
     branches:
       - main
@@ -19,7 +20,8 @@ on:
       - tools/probe_mineflayer_26_3.py
       - tools/probe_mineflayer_place.js
       - probes/mineflayer-runtime/package.json
-      - probes/mineflayer-runtime/package-lock.json
+      - probes/mineflayer-runtime/experimental-stack.json
+      - tools/install_experimental_prismarine_26_3.sh
 
 permissions:
   contents: write
@@ -44,20 +46,13 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Install pinned experimental Prismarine stack
+      - name: Assemble pinned experimental Prismarine stack
         shell: bash
         run: |
-          cd probes/mineflayer-runtime
-          rm -f package-lock.json
-          npm install --ignore-scripts=false
-          node - <<'NODE'
-          const fs = require('fs')
-          for (const name of ['mineflayer','minecraft-data','minecraft-protocol','prismarine-chunk']) {
-            const p = require('./node_modules/' + name + '/package.json')
-            console.log(name, p.version)
-          }
-          NODE
-          echo "NODE_PATH=$GITHUB_WORKSPACE/probes/mineflayer-runtime/node_modules" >> "$GITHUB_ENV"
+          runtime_root="/tmp/supracraft-prismarine-26.3"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          cp "$runtime_root/runtime/package-lock.json" probes/mineflayer-runtime/experimental-package-lock.json
+          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
           echo "PROVIDER_VARIANT=experimental-prismarine-26.3-stack" >> "$GITHUB_ENV"
 
       - name: Run physical placement qualification
@@ -91,7 +86,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add probes/mineflayer-runtime/package-lock.json
+          if [[ -f probes/mineflayer-runtime/experimental-package-lock.json ]]; then
+            git add probes/mineflayer-runtime/experimental-package-lock.json
+          fi
           if [[ -f probes/mineflayer/26.3-stone-placement.json ]]; then
             git add probes/mineflayer/26.3-stone-placement.json
           fi
