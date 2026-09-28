@@ -1,4 +1,4 @@
-name: Build-with-Bombs CPU ONNX public probe
+name: Build-with-Bombs intended-context CPU ONNX probe
 
 on:
   workflow_dispatch:
@@ -119,8 +119,15 @@ jobs:
           alpha_bar = np.cumprod(alpha, dtype=np.float32)
 
           x_t = rng.normal(0.0, 1.0, size=(1, C, W, W, W)).astype(np.float32)
-          context = np.zeros((1, C, W, W, W), dtype=np.float32)
-          mask = np.zeros((1, 1, W, W, W), dtype=np.float32)
+          # Upstream standalone test intends job 0 to be fully dirt-conditioned.
+          # The released C++ worker copies mask but omits the matching context copy,
+          # then clears the host context. This rep supplies the intended context
+          # directly to the unmodified ONNX graph and records that compatibility correction.
+          dirt_embedding = np.asarray([-1.8017, -1.0700, 1.3250], dtype=np.float32)
+          context = np.empty((1, C, W, W, W), dtype=np.float32)
+          for dim, value in enumerate(dirt_embedding):
+              context[:, dim, :, :, :] = value
+          mask = np.ones((1, 1, W, W, W), dtype=np.float32)
 
           def scalar_for(meta, value, dtype):
               shape = meta.shape
@@ -198,7 +205,8 @@ jobs:
           field=np.moveaxis(x_t[0],0,-1)
           dist=((field[...,None,:]-embeddings[None,None,None,:,:])**2).sum(axis=-1)
           blocks=dist.argmin(axis=-1).astype(np.uint8)
-          np.savez_compressed("output/build-with-bombs-v021-air.npz", voxels=blocks)
+          np.savez_compressed("output/build-with-bombs-v021-dirt-intended-full.npz", voxels=blocks)
+          np.savez_compressed("output/build-with-bombs-v021-dirt-intended-center12.npz", voxels=blocks[2:14,2:14,2:14])
 
           unique,counts=np.unique(blocks,return_counts=True)
           elapsed=time.perf_counter()-start
@@ -212,7 +220,9 @@ jobs:
               "n_t":N_T,
               "n_u":N_U,
               "onnx_calls":calls,
-              "context":"all-air",
+              "context":"all-dirt-intended",
+              "upstream_context_copy_compatibility_correction": true,
+              "compatibility_note":"released C++ worker comments require copying context+mask but only copies mask before clearing host context; this rep passes the intended dirt context directly to the unchanged ONNX graph",
               "execution_provider":"CPUExecutionProvider",
               "elapsed_seconds":elapsed,
               "shape":list(blocks.shape),
