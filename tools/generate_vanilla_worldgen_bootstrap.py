@@ -19,11 +19,13 @@ PROFILES = {
     "normal": {
         "level_type": "minecraft:normal",
         "generate_structures": "true",
+        "generator_settings": "{}",
         "expected_role": "reference",
     },
     "flat-null-control": {
         "level_type": "minecraft:flat",
         "generate_structures": "false",
+        "generator_settings": "{\"biome\":\"minecraft:plains\",\"layers\":[{\"block\":\"minecraft:bedrock\",\"height\":1},{\"block\":\"minecraft:dirt\",\"height\":2},{\"block\":\"minecraft:grass_block\",\"height\":1}]}",
         "expected_role": "low-complexity-control",
     },
 }
@@ -171,6 +173,7 @@ def main() -> int:
             "level-seed": str(args.seed),
             "level-type": profile["level_type"],
             "generate-structures": profile["generate_structures"],
+            "generator-settings": profile["generator_settings"],
             "motd": f"SupraCraft worldgen benchmark {args.profile}",
         }
         (root / "server.properties").write_text(
@@ -243,6 +246,7 @@ def main() -> int:
         "seed": str(args.seed),
         "level_type": profile["level_type"],
         "generate_structures": profile["generate_structures"] == "true",
+        "generator_settings": profile["generator_settings"],
         "bounded_forceload_block_range": [-64, -64, 64, 64],
         "minecraft_release_identity_sha256": digest(args.evidence, "sha256"),
         "server_artifact_sha1": evidence["server_artifact"]["expected_sha1"],
