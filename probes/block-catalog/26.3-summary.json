@@ -11,6 +11,32 @@
     "runtime_blocks_without_matching_blockstate_json": [],
     "unique_referenced_models": 2599
   },
+  "fixture_state_checks": [
+    {
+      "block": "minecraft:chest",
+      "properties": {
+        "facing": "south",
+        "type": "single",
+        "waterlogged": "false"
+      },
+      "state_id": 5550
+    },
+    {
+      "block": "minecraft:redstone_lamp",
+      "properties": {
+        "lit": "false"
+      },
+      "state_id": 11214
+    },
+    {
+      "block": "minecraft:lantern",
+      "properties": {
+        "hanging": "false",
+        "waterlogged": "false"
+      },
+      "state_id": 24197
+    }
+  ],
   "minecraft": {
     "data_pack_major": 121,
     "edition": "java",
