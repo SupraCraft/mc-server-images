@@ -98,6 +98,9 @@ def main() -> int:
     parser.add_argument("--expected-state", required=True)
     parser.add_argument("--expected-properties-json", default="{}")
     parser.add_argument("--bot-yaw", type=float, default=0.0)
+    parser.add_argument("--bot-x", type=float, default=2.0)
+    parser.add_argument("--bot-y", type=float, default=70.0)
+    parser.add_argument("--bot-z", type=float, default=0.0)
     parser.add_argument("--require-block-entity", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -166,6 +169,8 @@ def main() -> int:
                             expected_properties,
                             sort_keys=True,
                         ),
+                        "BOT_TARGET_X": str(args.bot_x),
+                        "BOT_TARGET_Z": str(args.bot_z),
                     }
                 )
                 bot = subprocess.Popen(
@@ -215,7 +220,11 @@ def main() -> int:
 
                 send(server, f"gamemode survival {BOT_NAME}")
                 send(server, f"give {BOT_NAME} minecraft:{args.item} 1")
-                send(server, f"tp {BOT_NAME} 2 70 0 {args.bot_yaw} 0")
+                send(
+                    server,
+                    f"tp {BOT_NAME} {args.bot_x} {args.bot_y} {args.bot_z} "
+                    f"{args.bot_yaw} 0",
+                )
 
                 try:
                     bot_stdout, _ = bot.communicate(timeout=60)
@@ -326,7 +335,7 @@ def main() -> int:
         "fixture": {
             "support": {"at": [0, 69, 0], "block": "minecraft:stone"},
             "target": {"at": [0, 70, 0], "block": args.expected_state},
-            "bot_teleport": [2, 70, 0],
+            "bot_teleport": [args.bot_x, args.bot_y, args.bot_z],
             "bot_yaw_degrees": args.bot_yaw,
             "support_relation": "top-face",
         },
