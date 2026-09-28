@@ -78,6 +78,31 @@ def normalized_model_path(model: str) -> str | None:
     return f"assets/minecraft/models/{name}.json"
 
 
+
+def exact_state_id(
+    blocks: dict[str, Any],
+    block_id: str,
+    properties: dict[str, str],
+) -> int:
+    record = blocks.get(block_id)
+    if not isinstance(record, dict):
+        raise RuntimeError(f"missing fixture block {block_id}")
+    matches = []
+    for state in record.get("states", []):
+        if not isinstance(state, dict):
+            continue
+        state_properties = state.get("properties", {})
+        if state_properties is None:
+            state_properties = {}
+        if state_properties == properties:
+            matches.append(int(state["id"]))
+    if len(matches) != 1:
+        raise RuntimeError(
+            f"expected exactly one legal state for {block_id}{properties}, "
+            f"found {matches}"
+        )
+    return matches[0]
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--evidence", type=Path, required=True)
@@ -259,6 +284,49 @@ def main() -> int:
                     "-jar server.jar --reports"
                 ),
             },
+            "fixture_state_checks": [
+                {
+                    "block": "minecraft:chest",
+                    "properties": {
+                        "facing": "south",
+                        "type": "single",
+                        "waterlogged": "false",
+                    },
+                    "state_id": exact_state_id(
+                        blocks,
+                        "minecraft:chest",
+                        {
+                            "facing": "south",
+                            "type": "single",
+                            "waterlogged": "false",
+                        },
+                    ),
+                },
+                {
+                    "block": "minecraft:redstone_lamp",
+                    "properties": {"lit": "false"},
+                    "state_id": exact_state_id(
+                        blocks,
+                        "minecraft:redstone_lamp",
+                        {"lit": "false"},
+                    ),
+                },
+                {
+                    "block": "minecraft:lantern",
+                    "properties": {
+                        "hanging": "false",
+                        "waterlogged": "false",
+                    },
+                    "state_id": exact_state_id(
+                        blocks,
+                        "minecraft:lantern",
+                        {
+                            "hanging": "false",
+                            "waterlogged": "false",
+                        },
+                    ),
+                },
+            ],
             "runtime_catalog": {
                 "blocks": len(blocks),
                 "states": state_count,
