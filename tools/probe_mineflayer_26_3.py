@@ -154,13 +154,30 @@ def main() -> int:
                 try:
                     wait_file(ready, bot, 30)
                 except RuntimeError as exc:
+                    if bot.poll() is None:
+                        bot.terminate()
+                        try:
+                            bot_stdout, _ = bot.communicate(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            bot.kill()
+                            bot_stdout, _ = bot.communicate(timeout=5)
+                    else:
+                        bot_stdout = ""
+                        if bot.stdout is not None:
+                            bot_stdout = bot.stdout.read()
                     diagnostic = None
                     if bot_result_path.exists():
                         diagnostic = json.loads(
                             bot_result_path.read_text("utf-8")
                         )
+                    log.flush()
+                    server_tail = log_path.read_text(
+                        "utf-8", errors="replace"
+                    )[-5000:]
                     raise RuntimeError(
-                        f"{exc}; bot_result={diagnostic!r}"
+                        f"{exc}; bot_result={diagnostic!r}; "
+                        f"bot_stdout={bot_stdout[-4000:]!r}; "
+                        f"server_tail={server_tail!r}"
                     ) from exc
 
                 send(server, f"gamemode survival {BOT_NAME}")
