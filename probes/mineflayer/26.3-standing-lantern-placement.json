@@ -1,0 +1,69 @@
+{
+  "fixture": {
+    "bot_teleport": [
+      2,
+      70,
+      0
+    ],
+    "support": {
+      "at": [
+        0,
+        69,
+        0
+      ],
+      "block": "minecraft:stone"
+    },
+    "target": {
+      "at": [
+        0,
+        70,
+        0
+      ],
+      "blockstate": "minecraft:lantern[hanging=false,waterlogged=false]"
+    }
+  },
+  "item_name": "minecraft:lantern",
+  "minecraft": {
+    "edition": "java",
+    "protocol": 777,
+    "version": "26.3",
+    "world_version": 5023
+  },
+  "mineflayer": {
+    "after": "lantern",
+    "before": "air",
+    "bot_position": [
+      2,
+      70,
+      0
+    ],
+    "end_reason": "probe complete",
+    "expected_block_name": "lantern",
+    "item_name": "lantern",
+    "last_packet": {
+      "name": "entity_head_rotation",
+      "state": "play"
+    },
+    "milestones": {
+      "connect": 1790598097762,
+      "login": 1790598100256,
+      "spawn": 1790598100317
+    },
+    "minecraft_data_version": "3.117.0",
+    "minecraft_protocol_version": "1.68.0",
+    "mineflayer_version": "4.39.0",
+    "negotiated_version": "26.3",
+    "packet_count": 595,
+    "placed": true,
+    "protocol_version": 777,
+    "requested_version": "26.3",
+    "schema": "supracraft.mineflayer-placement/v0.1",
+    "support_features": {
+      "clientTickEndPacket": true
+    }
+  },
+  "official_server_verified": true,
+  "result": "qualified",
+  "schema": "supracraft.mineflayer-java-placement/v0.1",
+  "status_protocol": 777
+}
