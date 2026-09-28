@@ -1,0 +1,79 @@
+{
+  "schema": "supracraft.mineflayer-top-face-placement/v0.1",
+  "qualification_name": "grass-default",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3",
+    "protocol": 777,
+    "world_version": 5023
+  },
+  "requested_state": "minecraft:grass_block[snowy=false]",
+  "expected_properties": {
+    "snowy": "false"
+  },
+  "fixture": {
+    "support": {
+      "at": [
+        0,
+        69,
+        0
+      ],
+      "block": "minecraft:stone"
+    },
+    "target": {
+      "at": [
+        0,
+        70,
+        0
+      ],
+      "block": "minecraft:grass_block[snowy=false]"
+    },
+    "bot_teleport": [
+      2,
+      70,
+      0
+    ],
+    "support_relation": "top-face"
+  },
+  "mineflayer": {
+    "schema": "supracraft.mineflayer-top-face-placement/v0.1",
+    "mineflayer_version": "4.39.0",
+    "minecraft_data_version": "3.117.0",
+    "minecraft_protocol_version": "1.68.0",
+    "requested_version": "26.3",
+    "negotiated_version": "26.3",
+    "protocol_version": 777,
+    "item_name": "grass_block",
+    "requested_state": "minecraft:grass_block[snowy=false]",
+    "expected_properties": {
+      "snowy": "false"
+    },
+    "before": "air",
+    "after": "grass_block",
+    "after_state_id": 9,
+    "after_properties": {
+      "snowy": false
+    },
+    "after_properties_normalized": {
+      "snowy": "false"
+    },
+    "bot_position": [
+      2.5,
+      70,
+      0.5
+    ],
+    "bot_yaw": 3.141592653589793,
+    "bot_pitch": 0,
+    "packet_count": 508,
+    "placed": true,
+    "end_reason": "top-face placement probe complete"
+  },
+  "official_server_verified": true,
+  "status_protocol": 777,
+  "result": "qualified",
+  "provenance": {
+    "github_actions_run_id": 36433558575,
+    "workflow_artifact_id": 10974329528,
+    "artifact_zip_sha256": "f9039ac9c25c67655ff12f393ddcd39dc4f9dc99abca76804e315f855bf204b6"
+  }
+}
