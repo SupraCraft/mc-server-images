@@ -52,6 +52,7 @@ popd >/dev/null
 
 clone_exact minecraft-protocol "$ROOT/src/node-minecraft-protocol"
 clone_exact prismarine-chunk "$ROOT/src/prismarine-chunk"
+clone_exact prismarine-physics "$ROOT/src/prismarine-physics"
 clone_exact mineflayer "$ROOT/src/mineflayer"
 git -C "$ROOT/src/mineflayer" apply \
   "$REPO_ROOT/probes/mineflayer-runtime/patches/mineflayer-admit-26.3.patch"
@@ -69,6 +70,7 @@ package={
     "minecraft-data":"3.117.0",
     "minecraft-protocol":"1.68.0",
     "prismarine-chunk":"1.41.0",
+    "prismarine-physics":"1.11.1",
     "mineflayer":"4.39.0"
   }
 }
@@ -89,6 +91,7 @@ mapping={
   "minecraft-data":src/"node-minecraft-data",
   "minecraft-protocol":src/"node-minecraft-protocol",
   "prismarine-chunk":src/"prismarine-chunk",
+  "prismarine-physics":src/"prismarine-physics",
   "mineflayer":src/"mineflayer",
 }
 for name, source in mapping.items():
@@ -107,7 +110,7 @@ PY
 
 pushd "$ROOT/runtime" >/dev/null
 node - <<'NODE'
-const names=['mineflayer','minecraft-data','minecraft-protocol','prismarine-chunk']
+const names=['mineflayer','minecraft-data','minecraft-protocol','prismarine-chunk','prismarine-physics']
 const versions={}
 for (const name of names) {
   const p=require('./node_modules/'+name+'/package.json')
