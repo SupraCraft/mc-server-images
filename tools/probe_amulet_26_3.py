@@ -33,7 +33,7 @@ from smoke_vanilla_runtime import (
 
 DIMENSION = "minecraft:overworld"
 PROBE_AT = (0, 70, 0)
-MARKER_AT = (1, 100, 0)
+MARKER_AT = (1, 200, 0)
 GAME_VERSION = ("java", (26, 3, 0))
 PROBE_BLOCK = Block("minecraft", "gold_block")
 
@@ -193,7 +193,10 @@ def main() -> int:
             server_jar,
             protocol,
             25566,
-            command_after_ready="setworldspawn 0 70 0",
+            command_after_ready=(
+                "setworldspawn 0 70 0\n"
+                "setblock 1 200 0 minecraft:air"
+            ),
         )
         world_path = root / "world"
         if not (world_path / "level.dat").exists():
