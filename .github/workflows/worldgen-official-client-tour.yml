@@ -1,0 +1,325 @@
+name: worldgen official 26.3 client tour
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/prepare_official_minecraft_client.py'
+      - 'tools/rcon_worldgen_tour.py'
+      - '.github/workflows/worldgen-official-client-tour.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  camera:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      SOURCE_WORLD_RUN_ID: "36410070247"
+      SOURCE_ANALYSIS_RUN_ID: "36410381854"
+      RCON_PASSWORD: supracraft-local-only
+      DISPLAY: ":99"
+      LIBGL_ALWAYS_SOFTWARE: "1"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - name: Download accepted canonical normal world
+        uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_WORLD_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: worldgen-bootstrap-normal
+          path: source-world
+
+      - name: Download accepted multiscale tour manifest
+        uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_ANALYSIS_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: worldgen-multiscale-normal
+          path: source-analysis
+
+      - name: Install software rendering/capture prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence camera-output
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq             xvfb ffmpeg xdotool mesa-utils             libgl1-mesa-dri libglx-mesa0 libx11-6 libxext6 libxrandr2 libxinerama1             libxcursor1 libxi6 libxxf86vm1 libasound2t64 libopenal1             > evidence/apt-official-client.log 2>&1
+
+      - name: Start software X server and record GL capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          Xvfb :99 -screen 0 640x360x24 -ac +extension GLX +render -noreset             > evidence/xvfb.log 2>&1 &
+          echo $! > xvfb.pid
+          sleep 2
+          glxinfo -B | tee evidence/glxinfo.txt
+
+      - name: Hydrate exact official Minecraft 26.3 client runtime
+        id: hydrate
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          python tools/prepare_official_minecraft_client.py             --release-evidence probes/26.3-release-identity.json             --runtime-dir client-runtime             --evidence-dir evidence/client             --username SupraCraftTourBot             --server 127.0.0.1:25571             --width 640             --height 360             > evidence/client-hydration.log 2>&1
+          rc=$?
+          set -e
+          if [[ $rc -ne 0 ]]; then
+            python - <<'PY'
+          import json, pathlib
+          pathlib.Path("camera-output/camera-receipt.json").write_text(json.dumps({
+              "schema":"supracraft-worldgen-official-client-camera/1",
+              "status":"blocked",
+              "blocker":"official-client-hydration-failed"
+          },indent=2)+"\n")
+          PY
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+          cat evidence/client/client-runtime.json
+
+      - name: Prepare exact 26.3 server with canonical world
+        if: steps.hydrate.outputs.eligible == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p server
+          unzip -q source-world/world.zip -d server
+          python - <<'PY'
+          import hashlib, json, pathlib, urllib.request
+          e=json.loads(pathlib.Path("probes/26.3-release-identity.json").read_text())
+          info=e["server_artifact"]
+          out=pathlib.Path("server/server.jar")
+          with urllib.request.urlopen(info["url"], timeout=300) as r, out.open("wb") as f:
+              while True:
+                  b=r.read(1024*1024)
+                  if not b: break
+                  f.write(b)
+          data=out.read_bytes()
+          assert hashlib.sha1(data).hexdigest()==info["expected_sha1"]
+          assert hashlib.sha256(data).hexdigest()==info["sha256"]
+          PY
+          cat > server/eula.txt <<'EOF'
+          eula=true
+          EOF
+          cat > server/server.properties <<EOF
+          online-mode=false
+          server-port=25571
+          enable-rcon=true
+          rcon.port=25572
+          rcon.password=$RCON_PASSWORD
+          broadcast-rcon-to-ops=false
+          view-distance=8
+          simulation-distance=4
+          spawn-protection=0
+          max-players=2
+          allow-flight=true
+          gamemode=spectator
+          force-gamemode=true
+          difficulty=peaceful
+          spawn-monsters=false
+          spawn-animals=false
+          level-name=world
+          motd=SupraCraft official-client camera qualification
+          EOF
+
+      - name: Start exact 26.3 server
+        id: server
+        if: steps.hydrate.outputs.eligible == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd server
+            java -Xms512M -Xmx3G -jar server.jar nogui > server.log 2>&1
+          ) &
+          echo $! > server.pid
+          ready=0
+          for i in {1..180}; do
+            if grep -q "Done (" server/server.log 2>/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$(cat server.pid)" 2>/dev/null; then
+              tail -200 server/server.log || true
+              exit 1
+            fi
+            sleep 1
+          done
+          [[ "$ready" == "1" ]] || { tail -200 server/server.log; exit 1; }
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Launch exact official 26.3 client and wait for server join
+        id: client
+        if: steps.server.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          cmd=json.loads(pathlib.Path("client-runtime/launch-command.json").read_text())
+          log=open("evidence/official-client.log","w")
+          p=subprocess.Popen(
+              cmd,
+              cwd="client-runtime/game",
+              env=os.environ.copy(),
+              stdout=log,
+              stderr=subprocess.STDOUT,
+              start_new_session=True,
+          )
+          pathlib.Path("client.pid").write_text(str(p.pid))
+          PY
+
+          joined=0
+          for i in {1..180}; do
+            if grep -q "SupraCraftTourBot.*joined the game" server/server.log 2>/dev/null; then
+              joined=1
+              break
+            fi
+            if [[ -f client.pid ]] && ! kill -0 "$(cat client.pid)" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "$joined" != "1" ]]; then
+            python - <<'PY'
+          import json, pathlib
+          pathlib.Path("camera-output/camera-receipt.json").write_text(json.dumps({
+              "schema":"supracraft-worldgen-official-client-camera/1",
+              "status":"blocked",
+              "blocker":"official-client-did-not-join-server"
+          },indent=2)+"\n")
+          PY
+            echo "joined=false" >> "$GITHUB_OUTPUT"
+            tail -200 evidence/official-client.log || true
+            tail -200 server/server.log || true
+            exit 0
+          fi
+
+          echo "joined=true" >> "$GITHUB_OUTPUT"
+          xdotool search --onlyvisible --name "Minecraft" getwindowname %@ > evidence/minecraft-windows.txt 2>&1 || true
+          xwininfo -root -tree > evidence/xwininfo.txt 2>&1 || true
+
+      - name: Record official-client multi-site tour
+        if: steps.client.outputs.joined == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ffmpeg -y             -f x11grab -video_size 640x360 -framerate 30 -i :99.0             -t 24             -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p             camera-output/tour.mp4             > evidence/ffmpeg.log 2>&1 &
+          echo $! > ffmpeg.pid
+
+          sleep 2
+          set +e
+          python tools/rcon_worldgen_tour.py             --manifest source-analysis/tour/manifest.json             --username SupraCraftTourBot             --host 127.0.0.1             --port 25572             --password "$RCON_PASSWORD"             --seconds-per-site 3             --wait-player-seconds 20             --receipt camera-output/rcon-tour.json             > evidence/rcon-tour.log 2>&1
+          tour_rc=$?
+          set -e
+
+          wait "$(cat ffmpeg.pid)"
+          ffmpeg_rc=$?
+
+          if [[ $tour_rc -eq 0 && $ffmpeg_rc -eq 0 && -s camera-output/tour.mp4 ]]; then
+            sha256sum camera-output/tour.mp4 > evidence/tour-sha256.txt
+            ffprobe -v error -show_entries format=duration,size -of json camera-output/tour.mp4               > evidence/tour-ffprobe.json
+            python - <<'PY'
+          import hashlib, json, pathlib
+          video=pathlib.Path("camera-output/tour.mp4")
+          rcon=json.loads(pathlib.Path("camera-output/rcon-tour.json").read_text())
+          data=video.read_bytes()
+          receipt={
+              "schema":"supracraft-worldgen-official-client-camera/1",
+              "status":"success",
+              "minecraft_version":"26.3",
+              "protocol":777,
+              "client_sha256":"4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d",
+              "video":"tour.mp4",
+              "video_sha256":hashlib.sha256(data).hexdigest(),
+              "video_bytes":len(data),
+              "visited_sites":rcon.get("visited_sites",[])
+          }
+          pathlib.Path("camera-output/camera-receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          PY
+          else
+            python - <<PY
+          import json, pathlib
+          pathlib.Path("camera-output/camera-receipt.json").write_text(json.dumps({
+              "schema":"supracraft-worldgen-official-client-camera/1",
+              "status":"blocked",
+              "blocker":"official-client-tour-capture-failed",
+              "rcon_exit":$tour_rc,
+              "ffmpeg_exit":$ffmpeg_rc
+          },indent=2)+"\n")
+          PY
+          fi
+
+      - name: Preserve blocker when client lane was ineligible
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f camera-output/camera-receipt.json ]]; then
+            python - <<'PY'
+          import json, pathlib
+          pathlib.Path("camera-output").mkdir(exist_ok=True)
+          pathlib.Path("camera-output/camera-receipt.json").write_text(json.dumps({
+              "schema":"supracraft-worldgen-official-client-camera/1",
+              "status":"blocked",
+              "blocker":"official-client-camera-did-not-reach-receipt-stage"
+          },indent=2)+"\n")
+          PY
+          fi
+          cat camera-output/camera-receipt.json
+          cp server/server.log evidence/server.log 2>/dev/null || true
+          cp source-analysis/tour/manifest.json evidence/source-tour-manifest.json 2>/dev/null || true
+
+      - name: Stop disposable processes
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          [[ -f client.pid ]] && kill "$(cat client.pid)" 2>/dev/null
+          [[ -f server.pid ]] && kill "$(cat server.pid)" 2>/dev/null
+          [[ -f xvfb.pid ]] && kill "$(cat xvfb.pid)" 2>/dev/null
+          exit 0
+
+      - name: Upload official-client camera evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-official-client-26.3-tour
+          path: |
+            camera-output/
+            evidence/
+          retention-days: 14
