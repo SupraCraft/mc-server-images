@@ -263,6 +263,8 @@ def main() -> int:
                     "max-players=1",
                     "enable-rcon=false",
                     "enable-query=false",
+                    "initial-enabled-packs=vanilla,file/supracraft_generated",
+                    "initial-disabled-packs=",
                     "motd=SupraCraft generated world qualification",
                     "",
                 ]
