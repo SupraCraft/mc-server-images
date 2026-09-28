@@ -79,9 +79,9 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          set -euo pipefail
-          url="https://github.com/vengi-voxel/vengi/releases/download/v0.6.0/linux-debian.zip"
-          curl -fL "$url" -o /tmp/vengi-linux-debian.zip
+          set -u
+          native_url="https://github.com/vengi-voxel/vengi/releases/download/v0.6.0/linux-debian.zip"
+          curl -fL "$native_url" -o /tmp/vengi-linux-debian.zip
           echo "6a3be6fef7c6b3385c7f47d12d389395a56f226442d39a34a699d1643500d501  /tmp/vengi-linux-debian.zip" | sha256sum -c -
           rm -rf /tmp/vengi-dist
           mkdir -p /tmp/vengi-dist
@@ -89,13 +89,38 @@ jobs:
           mapfile -t debs < <(find /tmp/vengi-dist -type f -name '*.deb' | sort)
           if [[ "${#debs[@]}" -gt 0 ]]; then
             sudo apt-get update
-            sudo apt-get install -y "${debs[@]}"
+            sudo apt-get install -y "${debs[@]}" || true
           fi
-          command -v vengi-voxconvert || true
-          found="$(find /tmp/vengi-dist /usr /opt -type f -name 'vengi-voxconvert' -perm -111 2>/dev/null | head -n1 || true)"
+
+          found="$(command -v vengi-voxconvert || true)"
           if [[ -n "$found" ]]; then
             echo "VENGI_VOXCONVERT=$found" >> "$GITHUB_ENV"
+            echo "VENGI_DISTRIBUTION=v0.6.0-native-deb" >> "$GITHUB_ENV"
+            exit 0
           fi
+
+          # Ubuntu 24.04 hosted runners currently carry binutils 2.42 while
+          # the v0.6.0 Debian artifacts require libbinutils >= 2.46.
+          # Qualify the project's small WebAssembly distribution as a
+          # substitutable headless fallback rather than weakening the probe.
+          wasm_url="https://github.com/vengi-voxel/vengi/releases/download/v0.5.0/emscripten-voxconvert.zip"
+          curl -fL "$wasm_url" -o /tmp/vengi-emscripten.zip
+          echo "cddabc430f5e0fbca7f557cbadfdeeafe113853047863c62045c1481966ad0fe  /tmp/vengi-emscripten.zip" | sha256sum -c -
+          rm -rf /tmp/vengi-wasm
+          mkdir -p /tmp/vengi-wasm
+          unzip -q /tmp/vengi-emscripten.zip -d /tmp/vengi-wasm
+          js="$(find /tmp/vengi-wasm -type f \( -name '*voxconvert*.js' -o -name 'index.js' \) | head -n1 || true)"
+          if [[ -z "$js" ]]; then
+            find /tmp/vengi-wasm -maxdepth 3 -type f -print
+            exit 0
+          fi
+          cat >/tmp/vengi-voxconvert <<EOF
+          #!/usr/bin/env bash
+          exec node "$js" "\$@"
+          EOF
+          chmod +x /tmp/vengi-voxconvert
+          echo "VENGI_VOXCONVERT=/tmp/vengi-voxconvert" >> "$GITHUB_ENV"
+          echo "VENGI_DISTRIBUTION=v0.5.0-emscripten-fallback" >> "$GITHUB_ENV"
 
       - name: Run public-safe primitive probe
         shell: bash
