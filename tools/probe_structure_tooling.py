@@ -181,9 +181,9 @@ Path({str(report)!r}).write_text(json.dumps(result), encoding="utf-8")
 
 def probe_freecad(work):
     r = base("freecad")
-    command = shutil.which("FreeCADCmd") or shutil.which("freecadcmd")
+    command = shutil.which("FreeCADCmd") or shutil.which("freecadcmd") or shutil.which("freecad") or shutil.which("FreeCAD")
     if not command:
-        r["notes"].append("FreeCADCmd/freecadcmd command not found")
+        r["notes"].append("FreeCADCmd/freecadcmd/freecad command not found")
         return r
     r["available"] = True
     r["version"] = cmd_version(os.path.basename(command), ["--version"])
@@ -207,7 +207,10 @@ result={{"dims":[round(bb.XLength,6),round(bb.YLength,6),round(bb.ZLength,6)],
 open({str(report)!r},"w",encoding="utf-8").write(json.dumps(result))
 """, encoding="utf-8")
     try:
-        p = subprocess.run([command, str(py)], text=True, stdout=subprocess.PIPE,
+        argv = [command, str(py)]
+        if os.path.basename(command).lower() == "freecad":
+            argv = [command, "--console", str(py)]
+        p = subprocess.run(argv, text=True, stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, timeout=180, check=False)
         if p.returncode != 0 or not report.exists():
             r["notes"].append((p.stdout or "")[-1500:])
