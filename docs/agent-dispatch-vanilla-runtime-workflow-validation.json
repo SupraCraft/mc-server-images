@@ -1,0 +1,75 @@
+{
+  "validator": "JULES VALIDATOR",
+  "task": "Falsify Agent Dispatch vanilla runtime workflow",
+  "parent": "#13",
+  "candidate_pr": "#14",
+  "exact_head_sha": "b4b4f80ae665fc06a781cf79552536cee6bd6a02",
+  "disposition": "PASS",
+  "workflow_file": ".github/workflows/agent-dispatch-vanilla-runtime.yml",
+  "checks": {
+    "workflow_dispatch_only": {
+      "pass": true,
+      "details": "The workflow triggers exclusively on workflow_dispatch with bounded inputs."
+    },
+    "bounded_inputs": {
+      "pass": true,
+      "details": "workset_id, delegation_id, assignment_id, and version are bounded inputs validated in step 2 against regex ^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$ via environment variables."
+    },
+    "run_name_correlation": {
+      "pass": true,
+      "details": "run-name uses sidecar:${{ inputs.workset_id }}:${{ inputs.delegation_id }}:${{ inputs.assignment_id }} matching the three Agent Dispatch correlation fields."
+    },
+    "permissions_read_only": {
+      "pass": true,
+      "details": "Workflow declares permissions: contents: read explicitly."
+    },
+    "no_repository_write_push": {
+      "pass": true,
+      "details": "No steps perform git push, commit, or repository mutation."
+    },
+    "no_secret_credential_exposure": {
+      "pass": true,
+      "details": "No secret tokens or private repository credentials are referenced or exposed. Checkout sets persist-credentials: false."
+    },
+    "ubuntu_24_04_public_runner": {
+      "pass": true,
+      "details": "runs-on is set to ubuntu-24.04 standard public runner."
+    },
+    "bounded_timeout": {
+      "pass": true,
+      "details": "timeout-minutes is set to 10."
+    },
+    "action_shas_pinned": {
+      "pass": true,
+      "details": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287, and actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 are pinned to immutable SHAs."
+    },
+    "release_identity_required": {
+      "pass": true,
+      "details": "Step 2 requires existence of probes/$MC_VERSION-release-identity.json before starting the runtime."
+    },
+    "reuses_existing_runtime_script": {
+      "pass": true,
+      "details": "Reuses existing tools/smoke_vanilla_runtime.py without code duplication."
+    },
+    "real_evidence_included": {
+      "pass": true,
+      "details": "Smoke output captures real status handshake, expected protocol version, and server artifact SHA-256."
+    },
+    "correlation_receipt_hashing": {
+      "pass": true,
+      "details": "Receipt calculates smoke_sha256 over full smoke output JSON and records GITHUB_SHA, GITHUB_REPOSITORY, RUNNER_OS, and RUNNER_ARCH."
+    },
+    "public_safe_artifact_upload": {
+      "pass": true,
+      "details": "Artifact upload is public-safe, uploading only vanilla-runtime-smoke.json and receipt.json from runner temp."
+    },
+    "malicious_input_falsification": {
+      "pass": true,
+      "details": "Challenged injection, path traversal, newline, and length overflow input shapes against the regex validation step; all invalid shapes were rejected."
+    },
+    "syntax_and_heredoc_correctness": {
+      "pass": true,
+      "details": "YAML structure, GitHub Actions expressions, and python heredocs (<<'PY') were validated for correct syntax and variable suppression."
+    }
+  }
+}
