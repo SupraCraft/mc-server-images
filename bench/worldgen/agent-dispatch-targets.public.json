@@ -1,16 +1,14 @@
 {
-  "worldgen-public-linux-bootstrap": {
+  "worldgen-public-vanilla-runtime": {
     "kind": "github-actions",
     "repository": "SupraCraft/mc-server-images",
-    "workflow": "worldgen-vanilla-bootstrap.yml",
-    "ref": "plan/worldgen-benchmark-agent-dispatch",
+    "workflow": "agent-dispatch-vanilla-runtime.yml",
+    "ref": "main",
     "capabilities": [
-      "public-minecraft-worldgen",
-      "github-actions",
-      "linux-x64",
-      "java25",
-      "python",
-      "worldgen-bootstrap-control-pair"
-    ]
+      "minecraft-vanilla-runtime-smoke"
+    ],
+    "public_workflow_inputs": {
+      "version": "26.3"
+    }
   }
 }
