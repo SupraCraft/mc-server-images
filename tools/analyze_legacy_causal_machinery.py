@@ -99,7 +99,20 @@ COMMAND_ROLE = {
     "time": ["actuator"],
     "weather": ["actuator"],
     "spreadplayers": ["actuator"],
+    "blockdata": ["semantic_state", "actuator"],
+    "entitydata": ["semantic_state", "actuator"],
+    "gamerule": ["semantic_state"],
+    "spawnpoint": ["semantic_state", "actuator"],
+    "xp": ["actuator"],
+    "difficulty": ["semantic_state", "actuator"],
     "function": ["orchestrator"],
+}
+
+KNOWN_LEGACY_VANILLA_VERBS = set(COMMAND_ROLE) | {
+    "achievement", "ban", "ban-ip", "banlist", "debug", "defaultgamemode",
+    "deop", "enchant", "help", "kick", "list", "me", "op", "pardon",
+    "pardon-ip", "publish", "save-all", "save-off", "save-on", "seed",
+    "setidletimeout", "stop", "whitelist", "worldborder"
 }
 
 ABS_INT = re.compile(r"^-?\d+$")
@@ -453,6 +466,8 @@ def analyze(world: Path):
     }
 
     command_counts = Counter()
+    unknown_command_counts = Counter()
+    unknown_command_nodes = []
     command_role_counts = Counter()
     scoreboard_ops = Counter()
     explicit_target_edges = []
@@ -468,6 +483,12 @@ def analyze(world: Path):
         command = str(plain(te.get("Command", "")))
         verb, parts = normalize_command(command)
         command_counts[verb or "<empty>"] += 1
+        if not verb:
+            unknown_command_counts["<empty>"] += 1
+            unknown_command_nodes.append({"node_id":node_id(pos),"verb":None,"sha256":hashlib.sha256(command.encode("utf-8")).hexdigest(),"reason":"empty_command"})
+        elif verb not in KNOWN_LEGACY_VANILLA_VERBS:
+            unknown_command_counts[verb] += 1
+            unknown_command_nodes.append({"node_id":node_id(pos),"verb":verb,"sha256":hashlib.sha256(command.encode("utf-8")).hexdigest(),"reason":"unknown_or_nonvanilla_verb"})
         roles = COMMAND_ROLE.get(verb, [])
         for role in roles:
             command_role_counts[role] += 1
@@ -681,6 +702,8 @@ def analyze(world: Path):
         "role_counts": dict(sorted(role_counts.items())),
         "command_semantics": {
             "verb_counts": dict(command_counts.most_common()),
+            "unknown_or_empty_verb_counts": dict(unknown_command_counts.most_common()),
+            "unknown_or_empty_nodes": unknown_command_nodes,
             "role_counts": dict(sorted(command_role_counts.items())),
             "scoreboard_operation_counts": dict(scoreboard_ops.most_common()),
             "world_target_edge_count": len(explicit_target_edges),
@@ -721,6 +744,7 @@ def analyze(world: Path):
             "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
             "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
             "Static structure cannot establish whether a player perceived or understood the mechanism.",
+            "Unknown command verbs may be malformed, map-specific, plugin-provided, or version-specific; they are evidence candidates, not automatically defects.",
             "No human feedback labels are loaded by this analyzer."
         ]
     }
