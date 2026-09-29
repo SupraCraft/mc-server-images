@@ -1,0 +1,123 @@
+name: worldgen CORE paired runtime mechanism probes
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE original intake run
+        required: true
+        default: "36559943983"
+      selection_run_id:
+        description: Accepted feedback-blind runtime probe selection
+        required: true
+        default: "36582932126"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/probe_legacy_reference_mechanisms.py'
+      - '.github/workflows/worldgen-reference-core-paired-runtime-probes.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+      DEFAULT_SELECTION_RUN_ID: "36582932126"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Resolve source runs
+        shell: bash
+        env:
+          INPUT_SOURCE: ${{ inputs.source_run_id }}
+          INPUT_SELECTION: ${{ inputs.selection_run_id }}
+        run: |
+          set -euo pipefail
+          source_run="$INPUT_SOURCE"
+          selection_run="$INPUT_SELECTION"
+          [[ -n "$source_run" ]] || source_run="$DEFAULT_SOURCE_RUN_ID"
+          [[ -n "$selection_run" ]] || selection_run="$DEFAULT_SELECTION_RUN_ID"
+          echo "SOURCE_RUN_ID=$source_run" >> "$GITHUB_ENV"
+          echo "SELECTION_RUN_ID=$selection_run" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SELECTION_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-runtime-probe-selection
+          path: selection
+
+      - name: Run paired control versus activated probes on exact 1.8.8
+        run: |
+          mkdir -p out
+          python tools/probe_legacy_reference_mechanisms.py             --version 1.8.8             --world-zip source/original-world.zip             --selection selection/probe-selection.json             --limit 3             --output out/paired-probes.json
+
+      - name: Validate paired design and preserve negative results
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/paired-probes.json").read_text())
+          assert d["paired_control_design"] is True
+          assert d["minecraft_version"]=="1.8.8"
+          assert 1 <= d["probe_count"] <= 3
+          for row in d["results"]:
+              assert row["probe"]["family"] in {"lever","stone_button","wooden_button"}
+              assert "runtime_effect_observed" in row["evidence"]
+          print(json.dumps({
+              "probe_count":d["probe_count"],
+              "results":[{
+                "node_id":x["probe"]["node_id"],
+                "family":x["probe"]["family"],
+                "runtime_effect_observed":x["evidence"]["runtime_effect_observed"],
+                "command_block_change_count":x["evidence"]["command_block_change_count"],
+                "scoreboard_change_count":x["evidence"]["scoreboard_change_count"]
+              } for x in d["results"]]
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-paired-runtime-probes
+          path: out/
+          retention-days: 14
