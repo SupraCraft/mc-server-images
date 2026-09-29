@@ -42,7 +42,11 @@
     "research.game_world.boredom",
     "research.game_world.frustration",
     "research.game_world.fun_enjoyment",
-    "research.game_world.perceived_polish"
+    "research.game_world.perceived_polish",
+    "research.game_world.environmental_adaptation",
+    "research.game_world.embodied_functionality",
+    "research.game_world.evocative_environmental_narrative",
+    "research.game_world.visual_design_coherence"
   ],
   "language_lanes": [
     "en",
@@ -54,5 +58,8 @@
     "ko",
     "es",
     "pt"
+  ],
+  "source_benchmark_refs": [
+    "https://gendesignmc.wikidot.com/wiki:evaluation"
   ]
 }
