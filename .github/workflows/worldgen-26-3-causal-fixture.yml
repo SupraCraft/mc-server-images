@@ -9,6 +9,7 @@ on:
       - 'tools/generate_26_3_causal_fixture.py'
       - 'tools/analyze_modern_causal_machinery.py'
       - 'tools/analyze_datapack_causal_semantics.py'
+      - 'tools/merge_causal_graphs.py'
       - 'tools/analyze_causal_path_recoverability.py'
       - 'probes/26.3-release-identity.json'
       - '.github/workflows/worldgen-26-3-causal-fixture.yml'
@@ -71,10 +72,17 @@ jobs:
             --world-zip out/world.zip \
             --output out/datapack-causal.json
 
+      - name: Merge physical and datapack graph layers
+        run: |
+          python tools/merge_causal_graphs.py \
+            --graph out/causal-machinery.json \
+            --graph out/datapack-causal.json \
+            --output out/combined-causal-graph.json
+
       - name: Analyze structural causal-path recoverability
         run: |
           python tools/analyze_causal_path_recoverability.py \
-            --graph out/causal-machinery.json \
+            --graph out/combined-causal-graph.json \
             --output out/causal-paths.json
 
       - name: Verify fixture semantics survived materialization
@@ -102,6 +110,7 @@ jobs:
           assert paths["trusted_path_metrics"]["sensor_to_actuator"]["covered_count"] >= 1
           assert paths["trusted_path_metrics"]["sensor_to_feedback"]["covered_count"] >= 1
           assert paths["analysis_kind"]=="structural_causal_evidence_not_quality_score"
+          combined=json.loads(pathlib.Path("out/combined-causal-graph.json").read_text())
           assert dp["function_count"] >= 2
           assert dp["verb_counts"].get("scoreboard",0) >= 2
           assert dp["verb_counts"].get("data",0) >= 1
@@ -110,6 +119,11 @@ jobs:
           assert "function_schedule" in dp_edges
           assert "scoreboard_write" in dp_edges
           assert "storage_write" in dp_edges
+          combined_edges={e.get("edge_type") for e in combined["edges"]}
+          assert "command_function_call" in combined_edges
+          assert combined["unresolved_edge_count"] >= 0
+          assert paths["trusted_path_metrics"]["sensor_to_state"]["covered_count"] >= 1
+          assert paths["trusted_path_metrics"]["sensor_to_feedback"]["covered_count"] >= 1
           print(json.dumps({
             "family_counts":f,
             "edge_counts":e,
@@ -118,7 +132,8 @@ jobs:
             "role_counts":d["role_counts"],
             "causal_path_trusted":paths["trusted_path_metrics"],
             "causal_path_candidate":paths["candidate_path_metrics"],
-            "datapack":{"function_count":dp["function_count"],"edge_count":dp["edge_count"],"verb_counts":dp["verb_counts"],"role_counts":dp["role_counts"]}
+            "datapack":{"function_count":dp["function_count"],"edge_count":dp["edge_count"],"verb_counts":dp["verb_counts"],"role_counts":dp["role_counts"]},
+            "combined_graph":{"node_count":combined["node_count"],"edge_count":combined["edge_count"],"resolved_edge_count":combined["resolved_edge_count"],"unresolved_edge_count":combined["unresolved_edge_count"]}
           },indent=2,sort_keys=True))
           print("MODERN-CAUSAL-FIXTURE-PASS")
           PY
