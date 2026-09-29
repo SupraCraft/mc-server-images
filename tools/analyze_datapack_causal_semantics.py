@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import tempfile
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -307,14 +308,9 @@ def analyze(world: Path):
         ]
     }
 
-def main():
-    ap=argparse.ArgumentParser()
-    ap.add_argument("--world",type=Path,required=True)
-    ap.add_argument("--output",type=Path,required=True)
-    args=ap.parse_args()
-    result=analyze(args.world)
-    args.output.parent.mkdir(parents=True,exist_ok=True)
-    args.output.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+def emit(result, output):
+    output.parent.mkdir(parents=True,exist_ok=True)
+    output.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     print(json.dumps({
         "pack_file_count":result["pack_file_count"],
         "function_count":result["function_count"],
@@ -325,6 +321,34 @@ def main():
         "verb_counts":result["verb_counts"],
         "unresolved_reference_counts":result["unresolved_reference_counts"],
     },indent=2,sort_keys=True))
+
+
+def main():
+    ap=argparse.ArgumentParser()
+    src=ap.add_mutually_exclusive_group(required=True)
+    src.add_argument("--world",type=Path)
+    src.add_argument("--world-zip",type=Path)
+    ap.add_argument("--output",type=Path,required=True)
+    args=ap.parse_args()
+
+    if args.world is not None:
+        result=analyze(args.world)
+        emit(result,args.output)
+        return
+
+    with tempfile.TemporaryDirectory(prefix="datapack-causal-") as td:
+        root=Path(td)
+        with zipfile.ZipFile(args.world_zip) as zf:
+            bad=zf.testzip()
+            if bad is not None:
+                raise RuntimeError(f"source zip failed CRC at {bad}")
+            zf.extractall(root)
+        world=root/"world"
+        if not world.exists():
+            raise RuntimeError("world zip does not contain world/ root")
+        result=analyze(world)
+    emit(result,args.output)
+
 
 if __name__=="__main__":
     main()
