@@ -184,6 +184,21 @@ def analyze(world:Path):
                 target=f"scoreboard_objective::{ref['objective']}"
                 semantic_nodes[ref["objective"]]=target
                 edges.append({"source":nid(pos),"target":target,"edge_type":f"scoreboard_{ref['access']}","certainty":"strong"})
+
+            if verb=="function" and len(parts)>=2:
+                edges.append({
+                  "source":nid(pos),
+                  "target":f"function::{parts[1]}",
+                  "edge_type":"command_function_call",
+                  "certainty":"strong"
+                })
+            elif verb=="schedule" and len(parts)>=3 and parts[1]=="function":
+                edges.append({
+                  "source":nid(pos),
+                  "target":f"function::{parts[2]}",
+                  "edge_type":"command_function_schedule",
+                  "certainty":"strong"
+                })
             for t in command_targets(parts,pos):
                 tp=t["position"]
                 bp=tuple(int(v) for v in tp) if all(float(v).is_integer() for v in tp) else None
