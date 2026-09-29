@@ -97,7 +97,7 @@ def legacy_block_states_at(world: Path, positions):
     return found
 
 
-def snapshot(world: Path, center, radius=96):
+def snapshot(world: Path, center, target_command_ids=None, radius=96):
     d=analyze_machinery(world)
     cx,cy,cz=center
     nodes=[]
@@ -113,6 +113,8 @@ def snapshot(world: Path, center, radius=96):
                   "command":n.get("command"),
                 })
     local_command_ids={n["node_id"] for n in nodes}
+    target_command_ids=set(target_command_ids or local_command_ids)
+    target_source_scope=local_command_ids & target_command_ids
     target_specs=[]
     target_positions=[]
     for edge in d.get("edges",{}).get("command_world_targets",[]):
@@ -154,6 +156,7 @@ def snapshot(world: Path, center, radius=96):
       "command_blocks":nodes,
       "scoreboard_scores":objective_scores,
       "world_targets":world_targets,
+      "world_target_source_scope":sorted(target_source_scope),
       "machinery_node_count":d["node_count"],
     }
 
@@ -246,7 +249,16 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
     text=log_path.read_text("utf-8",errors="replace")
     if rc!=0 or "Exception in server tick loop" in text:
         raise RuntimeError(f"trial failed activate={activate} rc={rc}")
-    snap=snapshot(world,probe["position"])
+    target_command_ids={
+        row.get("node_id")
+        for row in probe.get("candidate_component_commands",[])
+        if row.get("node_id")
+    }
+    snap=snapshot(
+        world,
+        probe["position"],
+        target_command_ids=target_command_ids or None,
+    )
     return {"ready_seconds":round(ready,3),"snapshot":snap}
 
 def main():
@@ -301,6 +313,7 @@ def main():
         "Activation uses server-side block-state mutation as an actuator surrogate, not a real player's click packet.",
         "Hashed LastOutput changes can prove command execution/failure without retaining map text, but do not identify the message semantics.",
         "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
+        "World-target sampling is scoped to the feedback-blind command set in the selected probe component; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
         "Only lever/button sensors are included in this phase.",
         "A missing observed delta does not prove no mechanism effect; entity effects, unresolved/dynamic command targets, and world changes outside captured target positions may be missed.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
