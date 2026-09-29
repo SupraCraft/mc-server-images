@@ -2,7 +2,7 @@
   "schema_version": 1,
   "corpus_id": "reference.core.v1.4.human-feedback-v0",
   "world_ref": "reference.core.v1.4",
-  "artifact_version_ref": "original_sha256:pending-link-to-intake-receipt-run-36559943983",
+  "artifact_version_ref": "sha256:61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998",
   "metrics_frozen_ref": "github-actions:SupraCraft/mc-server-images/36560410515",
   "coding_status": "initial_source-grounded_non_exhaustive",
   "authority_refs": [
