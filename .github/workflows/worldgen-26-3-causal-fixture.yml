@@ -1,0 +1,100 @@
+name: worldgen 26.3 causal fixture
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/generate_26_3_causal_fixture.py'
+      - 'tools/analyze_modern_causal_machinery.py'
+      - 'probes/26.3-release-identity.json'
+      - '.github/workflows/worldgen-26-3-causal-fixture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Generate exact 26.3 causal fixture
+        run: |
+          python tools/generate_26_3_causal_fixture.py \
+            --evidence probes/26.3-release-identity.json \
+            --output-dir out
+
+      - name: Analyze modern machinery graph
+        run: |
+          python tools/analyze_modern_causal_machinery.py \
+            --world-zip out/world.zip \
+            --output out/causal-machinery.json
+
+      - name: Verify fixture semantics survived materialization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/causal-machinery.json").read_text())
+          f=d["family_counts"]
+          e=d["edge_counts"]
+          assert f.get("minecraft:command_block",0) >= 1
+          assert f.get("minecraft:chain_command_block",0) >= 2
+          assert f.get("minecraft:trapped_chest",0) >= 2
+          assert f.get("minecraft:comparator",0) >= 1
+          assert f.get("minecraft:repeater",0) >= 1
+          assert d["scoreboard"]["objective_count"] >= 1
+          assert d["entity_surface_node_count"] >= 2
+          assert e.get("scoreboard_write",0) >= 1
+          assert e.get("command_world_target",0) >= 1
+          assert e.get("container_inventory_signal_read",0) >= 1
+          assert e.get("open_emits_redstone_power_candidate",0) >= 1
+          print(json.dumps({
+            "family_counts":f,
+            "edge_counts":e,
+            "scoreboard":d["scoreboard"],
+            "entity_surface_node_count":d["entity_surface_node_count"],
+            "role_counts":d["role_counts"]
+          },indent=2,sort_keys=True))
+          print("MODERN-CAUSAL-FIXTURE-PASS")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-26.3-causal-fixture
+          path: out/
+          retention-days: 14
