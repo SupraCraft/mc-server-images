@@ -156,7 +156,7 @@ def section_y(section) -> int:
     return int(section.get("Y", section.get("y", 0)))
 
 
-def analyze_world(world: Path) -> dict:
+def analyze_world(world: Path, chunk_radius: int = 4) -> dict:
     spawn_x, spawn_y, spawn_z = read_level_spawn(world)
     block_counts = Counter()
     biome_counts = Counter()
@@ -177,6 +177,8 @@ def analyze_world(world: Path) -> dict:
             chunk = root
             cx = int(chunk.get("xPos", chunk.get("x_pos", 0)))
             cz = int(chunk.get("zPos", chunk.get("z_pos", 0)))
+            if abs(cx) > chunk_radius or abs(cz) > chunk_radius:
+                continue
             chunks_seen.add((cx, cz))
             sections = chunk.get("sections", chunk.get("Sections", []))
             for section in sections:
@@ -246,7 +248,11 @@ def analyze_world(world: Path) -> dict:
 
     return {
         "schema": "supracraft-worldgen-resource-biome-static/1",
-        "spawn": [spawn_x, spawn_y, spawn_z],
+        "spawn_reference": {
+            "position": [spawn_x, spawn_y, spawn_z],
+            "source": "level.dat SpawnX/SpawnY/SpawnZ when present; legacy defaults otherwise",
+        },
+        "bounded_chunk_box": [-chunk_radius, -chunk_radius, chunk_radius, chunk_radius],
         "chunks_seen": len(chunks_seen),
         "sections_seen": sections_seen,
         "resource_counts": dict(sorted(resource_counts.items())),
@@ -275,6 +281,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--world-zip", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--chunk-radius", type=int, default=4)
     args = ap.parse_args()
 
     with tempfile.TemporaryDirectory(prefix="worldgen-region-analysis-") as td:
@@ -284,7 +291,7 @@ def main() -> int:
         world = root / "world"
         if not (world / "level.dat").exists():
             raise SystemExit("world.zip does not contain world/level.dat")
-        result = analyze_world(world)
+        result = analyze_world(world, chunk_radius=args.chunk_radius)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", "utf-8")
