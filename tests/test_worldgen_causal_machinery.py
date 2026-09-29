@@ -50,5 +50,28 @@ class CausalMachineryPrimitiveTests(unittest.TestCase):
         self.assertEqual([{"objective":"keys","access":"write"}],causal.scoreboard_refs(set_parts))
         self.assertEqual([{"objective":"keys","access":"read"}],causal.scoreboard_refs(test_parts))
 
+    def test_direct_legacy_dust_edges_keep_sensor_direction(self):
+        machinery={
+            (0,0,0):{"family":"lever"},
+            (1,0,0):{"family":"redstone_wire"},
+            (2,0,0):{"family":"redstone_wire"},
+            (3,0,0):{"family":"command_block"},
+        }
+        edges=causal.legacy_direct_redstone_edges(machinery)
+        triples={(e["source"],e["target"],e["edge_type"]) for e in edges}
+        self.assertIn(("0,0,0","1,0,0","legacy_sensor_direct_dust_power"),triples)
+        self.assertIn(("1,0,0","2,0,0","legacy_dust_horizontal_connection"),triples)
+        self.assertIn(("2,0,0","3,0,0","legacy_dust_direct_component_power"),triples)
+        self.assertNotIn(("1,0,0","0,0,0","legacy_sensor_direct_dust_power"),triples)
+
+    def test_repeater_and_comparator_are_not_bypassed_as_generic_wire_sinks(self):
+        machinery={
+            (0,0,0):{"family":"redstone_wire"},
+            (1,0,0):{"family":"repeater_off"},
+            (0,0,1):{"family":"comparator_off"},
+        }
+        edges=causal.legacy_direct_redstone_edges(machinery)
+        self.assertEqual([],edges)
+
 if __name__=="__main__":
     unittest.main()
