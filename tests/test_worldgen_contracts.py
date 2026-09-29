@@ -25,6 +25,7 @@ class WorldgenSchemaSmokeTests(unittest.TestCase):
             "worldgen-tour-v1.schema.json",
             "human-feedback-annotation-v1.schema.json",
             "persona-trace-v1.schema.json",
+            "structured-human-benchmark-v1.schema.json",
         }
         self.assertEqual(expected, {p.name for p in SCHEMA_DIR.glob("*.schema.json")})
         for path in SCHEMA_DIR.glob("*.schema.json"):
