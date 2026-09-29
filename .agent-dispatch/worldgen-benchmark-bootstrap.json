@@ -9,12 +9,13 @@
     "public-only-policy": "Benchmark GitHub-hosted execution is authorized only in public repositories using standard runner classes. Private hosted Actions and paid/larger runners are prohibited.",
     "runner-evidence": "Public Ubuntu/Docker and public macOS 26 ARM64 are observed/qualified execution primitives in Agent Dispatch runner-census evidence; Terrain Diffusion has already completed on the free public macOS/CoreML lane.",
     "learned-baselines": "Dream-Cubed DP4 author-config CPU generation and Terrain Diffusion CoreML pipeline have completed successfully in the public benchmark repository; Build-with-Bombs CPU ONNX execution has also completed.",
-    "no-scheduler": "Agent Dispatch remains a bounded actuator/observer. The bootstrap must not add a queue, scheduler, retry engine, database, or generic workflow service."
+    "no-scheduler": "Agent Dispatch remains a bounded actuator/observer. The bootstrap must not add a queue, scheduler, retry engine, database, or generic workflow service.",
+    "agent-dispatch-host-gate": "Live trusted-host Sidecar target/grant mutation is deliberately deferred by Human-in-Command authority recorded in SemperSupra/agent-dispatch-private#381; public-side contracts remain ready but live dispatch must not be attempted until durable reactivation."
   },
   "unknowns": {
     "generic-contract-fit": "Whether one small adapter/run/analysis contract can cover vanilla and the first non-vanilla generators without generator-specific semantic leakage.",
     "materializer-26.3": "Whether the generic playable-world materializer can be repaired and qualified for Minecraft 26.3 datapack/pack-loading semantics.",
-    "agent-dispatch-public-binding": "Whether the deployed Sidecar can bind an approved mc-server-images public benchmark workflow with the required capabilities and observe its canonical terminal result.",
+    "agent-dispatch-public-binding": "Public workflow/target/workset semantics are prepared; live projection/plan/dispatch/observe remains intentionally blocked by deferred trusted-host admission authority in agent-dispatch-private#381.",
     "metric-controls": "Whether the first static metrics distinguish vanilla from deliberately bad controls without producing misleading aesthetic conclusions."
   },
   "bounds": {
@@ -529,6 +530,7 @@
         }
       ],
       "constraints": [
+        "Do not attempt live projection/plan/dispatch while SemperSupra/agent-dispatch-private#381 remains durably deferred.",
         "Use only the already-accepted public mc-server-images Agent Dispatch vanilla runtime workflow on standard ubuntu-24.04.",
         "Do not retry or redispatch automatically.",
         "Do not modify repository state, secrets, target bindings, or client grants from this leaf.",
@@ -548,7 +550,7 @@
           "https://github.com/SupraCraft/mc-server-images/issues/15"
         ]
       },
-      "frontier": "After exact Sidecar client admission and target convergence, plan and dispatch assignment worldgen-runtime-proof-001 once, then observe and reconcile."
+      "frontier": "WAIT: host admission is intentionally deferred by agent-dispatch-private#381. After durable reactivation, plan and dispatch assignment worldgen-runtime-proof-001 once, then observe and reconcile."
     }
   }
 }
