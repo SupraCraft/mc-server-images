@@ -130,7 +130,7 @@ def snapshot(world: Path, center, sensor_node_id=None, target_command_ids=None, 
     target_specs=[]
     target_positions=[]
     for edge in d.get("edges",{}).get("command_world_targets",[]):
-        if edge.get("source") not in local_command_ids:
+        if edge.get("source") not in target_source_scope:
             continue
         pos=edge.get("target_position")
         if not isinstance(pos,list) or len(pos)!=3:
@@ -298,8 +298,16 @@ def main():
             control=run_trial(server,args.world_zip,probe,control_dir,False)
             active=run_trial(server,args.world_zip,probe,active_dir,True)
             diff=delta(control["snapshot"],active["snapshot"])
+            control_scope=control["snapshot"].get("world_target_source_scope",[])
+            active_scope=active["snapshot"].get("world_target_source_scope",[])
+            if control_scope != active_scope:
+                raise RuntimeError(
+                    f"world-target source scope changed across paired trials: "
+                    f"control={control_scope} activated={active_scope}"
+                )
             results.append({
               "probe":probe,
+              "world_target_source_scope":control_scope,
               "control_ready_seconds":control["ready_seconds"],
               "activated_ready_seconds":active["ready_seconds"],
               "delta":diff,

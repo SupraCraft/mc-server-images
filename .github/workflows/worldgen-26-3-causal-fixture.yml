@@ -1,5 +1,5 @@
 name: worldgen 26.3 causal fixture
-# tip revalidation: causal fixture semantics unchanged; rerun at branch tip after backwards-compatible exact-1.8.8 receipt scoping
+# tip revalidation: causal fixture semantics unchanged; rerun at branch tip after fail-closed exact-1.8.8 receipt scoping
 
 on:
   workflow_dispatch:

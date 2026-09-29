@@ -107,6 +107,12 @@ jobs:
               assert "world_target_change_count" in row["evidence"]
               assert "world_target_actuation_observed" in row["evidence"]
               assert isinstance(row["delta"].get("world_target_changes"),list)
+              scope=set(row.get("world_target_source_scope",[]))
+              assert scope
+              assert all(
+                  change.get("source") in scope
+                  for change in row["delta"]["world_target_changes"]
+              )
           print(json.dumps({
               "probe_count":d["probe_count"],
               "results":[{
@@ -116,7 +122,8 @@ jobs:
                 "command_block_change_count":x["evidence"]["command_block_change_count"],
                 "scoreboard_change_count":x["evidence"]["scoreboard_change_count"],
                 "world_target_change_count":x["evidence"]["world_target_change_count"],
-                "world_target_actuation_observed":x["evidence"]["world_target_actuation_observed"]
+                "world_target_actuation_observed":x["evidence"]["world_target_actuation_observed"],
+                "world_target_source_scope":x["world_target_source_scope"]
               } for x in d["results"]]
           },indent=2,sort_keys=True))
           PY
