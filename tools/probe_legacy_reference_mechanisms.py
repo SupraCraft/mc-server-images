@@ -62,7 +62,7 @@ def delta(control,active):
         c=(ccmd.get(nid) or {}).get("command") or {}
         a=(acmd.get(nid) or {}).get("command") or {}
         fields={}
-        for k in ("success_count","condition_met","powered","last_execution"):
+        for k in ("success_count","condition_met","powered","last_execution","last_output_sha256"):
             if c.get(k)!=a.get(k):
                 fields[k]={"control":c.get(k),"activated":a.get(k)}
         if fields:
@@ -164,6 +164,7 @@ def main():
       "results":results,
       "limitations":[
         "Activation uses server-side block-state mutation as an actuator surrogate, not a real player's click packet.",
+        "Hashed LastOutput changes can prove command execution/failure without retaining map text, but do not identify the message semantics.",
         "Only lever/button sensors are included in this phase.",
         "A missing observed delta does not prove no mechanism effect; block/entity effects outside captured state may be missed.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
