@@ -73,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f source/original-world.zip
-          ! grep -n -E 'human-feedback|sentiment|overall_quality|fun|immersion' tools/analyze_legacy_causal_machinery.py
+          ! grep -n -E 'human-feedback|sentiment|overall_quality|(^|[^[:alpha:]])fun([^[:alpha:]]|$)|immersion' tools/analyze_legacy_causal_machinery.py
 
       - name: Extract causal machinery graph
         run: |
