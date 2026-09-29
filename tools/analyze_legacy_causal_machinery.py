@@ -570,6 +570,10 @@ def analyze(world: Path):
             "condition_met": bool(plain(te.get("conditionMet", 0))) if te.get("conditionMet") is not None else None,
             "last_execution": int(plain(te.get("LastExecution", 0))) if te.get("LastExecution") is not None else None,
             "custom_name": str(plain(te.get("CustomName"))) if te.get("CustomName") is not None else None,
+            "last_output_sha256": (
+                hashlib.sha256(str(plain(te.get("LastOutput"))).encode("utf-8")).hexdigest()
+                if te.get("LastOutput") is not None else None
+            ),
         }
         if verb == "scoreboard" and len(parts) >= 3:
             scoreboard_ops[" ".join(parts[1:3]).lower()] += 1
