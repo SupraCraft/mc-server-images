@@ -1,4 +1,5 @@
 name: worldgen 26.3 causal fixture
+# tip revalidation: causal fixture semantics unchanged; run must bind to authoritative branch tip
 
 on:
   workflow_dispatch:
