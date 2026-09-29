@@ -15,6 +15,7 @@ on:
       - 'bench/worldgen/human-feedback/**'
       - 'bench/worldgen/qualitative/**'
       - 'tools/validate_human_feedback_annotations.py'
+      - 'tools/validate_structured_human_benchmark.py'
       - '.github/workflows/worldgen-human-feedback-guard.yml'
   workflow_dispatch:
 
@@ -64,17 +65,7 @@ jobs:
             exit 78
           }
           for file in "${files[@]}"; do
-            kind="$(python - "$file" <<'PY'
-import json,sys
-d=json.load(open(sys.argv[1]))
-if "benchmark_id" in d:
-    print("structured_benchmark")
-elif "annotations" in d:
-    print("feedback_annotations")
-else:
-    print("unknown")
-PY
-)"
+            kind="$(python -c 'import json,sys; d=json.load(open(sys.argv[1])); print("structured_benchmark" if "benchmark_id" in d else ("feedback_annotations" if "annotations" in d else "unknown"))' "$file")"
             case "$kind" in
               feedback_annotations)
                 python tools/validate_human_feedback_annotations.py \
