@@ -21,6 +21,32 @@ def main():
         root=Path(td)
         server=root/"server.jar"
         world=root/"world"
+
+        # Exact 26.3 datapack format 121.0. For modern pack metadata the
+        # compatibility range is explicit and the legacy supported_formats field
+        # is intentionally absent.
+        pack=world/"datapacks"/"supracraft_causal_fixture"
+        (pack/"data"/"supracraft"/"function").mkdir(parents=True,exist_ok=True)
+        (pack/"pack.mcmeta").write_text(json.dumps({
+          "pack":{
+            "min_format":[121,0],
+            "max_format":[121,0],
+            "description":"SupraCraft exact-26.3 causal fixture"
+          }
+        },indent=2)+"\n")
+        (pack/"data"/"supracraft"/"function"/"fixture.mcfunction").write_text(
+          "scoreboard objectives add datapack_fixture dummy\n"
+          "scoreboard players set $dp datapack_fixture 7\n"
+          "data modify storage supracraft:fixture state set value 42\n"
+          "setblock 8 100 0 minecraft:redstone_lamp\n"
+          "schedule function supracraft:delayed 1t replace\n"
+          "say CAUSAL_FIXTURE_DATAPACK_PASS\n"
+        )
+        (pack/"data"/"supracraft"/"function"/"delayed.mcfunction").write_text(
+          "setblock 9 100 0 minecraft:redstone_lamp\n"
+          "say CAUSAL_FIXTURE_DATAPACK_DELAYED_PASS\n"
+        )
+
         download_server(evidence,server)
         (root/"eula.txt").write_text("eula=true\n")
         props={
@@ -85,6 +111,13 @@ def main():
             command(p,'summon minecraft:interaction 7 101 2 {width:1.0f,height:1.0f,Tags:["fixture_interaction"]}')
             command(p,'summon minecraft:text_display 7 102 2 {Tags:["fixture_display"]}')
 
+            # Datapack semantic-orchestration channel.
+            command(p,"function supracraft:fixture")
+            time.sleep(2)
+            command(p,'execute if score $dp datapack_fixture matches 7 run say CAUSAL_FIXTURE_DATAPACK_SCORE_PASS')
+            command(p,'execute if block 8 100 0 minecraft:redstone_lamp run say CAUSAL_FIXTURE_DATAPACK_WORLD_PASS')
+            command(p,'execute if block 9 100 0 minecraft:redstone_lamp run say CAUSAL_FIXTURE_DATAPACK_DELAYED_WORLD_PASS')
+
             # Runtime causal verification for channels that do not require a real player.
             # B: container inventory -> comparator -> wire -> lamp.
             command(p,"item replace block 1 100 2 container.0 with minecraft:stone 64")
@@ -123,6 +156,11 @@ def main():
             "CAUSAL_FIXTURE_PISTON_PASS",
             "CAUSAL_FIXTURE_SCORE_PASS",
             "CAUSAL_FIXTURE_WORLD_EFFECT_PASS",
+            "CAUSAL_FIXTURE_DATAPACK_PASS",
+            "CAUSAL_FIXTURE_DATAPACK_DELAYED_PASS",
+            "CAUSAL_FIXTURE_DATAPACK_SCORE_PASS",
+            "CAUSAL_FIXTURE_DATAPACK_WORLD_PASS",
+            "CAUSAL_FIXTURE_DATAPACK_DELAYED_WORLD_PASS",
         ]
         missing_markers=[m for m in required_markers if m not in server_log]
         if rc!=0 or diagnostic_lines or missing_markers:
@@ -152,7 +190,9 @@ def main():
             "container_inventory_to_comparator_to_lamp",
             "lever_to_repeater_to_piston",
             "command_block_to_scoreboard_state",
-            "command_chain_to_world_effect"
+            "command_chain_to_world_effect",
+            "datapack_function_to_scoreboard_and_storage_state",
+            "datapack_schedule_to_delayed_world_effect"
           ],
           "live_player_pending":[
             "trapped_chest_opening_sensor_channel",
