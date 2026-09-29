@@ -56,6 +56,19 @@ class CausalPathRecoverabilityTests(unittest.TestCase):
         self.assertEqual(1.0,d["candidate_path_metrics"]["sensor_to_feedback"]["coverage"])
         self.assertEqual(1.0,d["weak_edge_sensitivity"]["sensor_to_feedback"])
 
+    def test_legacy_undirected_adjacency_is_candidate_only(self):
+        doc={
+          "schema":"fixture/legacy-adjacency",
+          "nodes":[node("sensor","sensor_input"),node("feedback","presentation_feedback")],
+          "edges":{"physical_adjacency_candidates":[
+            {"a":"sensor","b":"feedback","edge_type":"physical_adjacency_candidate","certainty":"weak"}
+          ]}
+        }
+        d=recover.analyze(doc)
+        self.assertEqual(0.0,d["trusted_path_metrics"]["sensor_to_feedback"]["coverage"])
+        self.assertEqual(1.0,d["candidate_path_metrics"]["sensor_to_feedback"]["coverage"])
+        self.assertEqual(1.0,d["weak_edge_sensitivity"]["sensor_to_feedback"])
+
     def test_more_nodes_do_not_improve_coverage_when_disconnected(self):
         nodes=[node("sensor","sensor_input"),node("effect","actuator")]
         nodes += [node(f"noise{i}","signal_transport") for i in range(100)]
