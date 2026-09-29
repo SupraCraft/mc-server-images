@@ -104,6 +104,9 @@ jobs:
           for row in d["results"]:
               assert row["probe"]["family"] in {"lever","stone_button","wooden_button"}
               assert "runtime_effect_observed" in row["evidence"]
+              assert "world_target_change_count" in row["evidence"]
+              assert "world_target_actuation_observed" in row["evidence"]
+              assert isinstance(row["delta"].get("world_target_changes"),list)
           print(json.dumps({
               "probe_count":d["probe_count"],
               "results":[{
@@ -111,7 +114,9 @@ jobs:
                 "family":x["probe"]["family"],
                 "runtime_effect_observed":x["evidence"]["runtime_effect_observed"],
                 "command_block_change_count":x["evidence"]["command_block_change_count"],
-                "scoreboard_change_count":x["evidence"]["scoreboard_change_count"]
+                "scoreboard_change_count":x["evidence"]["scoreboard_change_count"],
+                "world_target_change_count":x["evidence"]["world_target_change_count"],
+                "world_target_actuation_observed":x["evidence"]["world_target_actuation_observed"]
               } for x in d["results"]]
           },indent=2,sort_keys=True))
           PY

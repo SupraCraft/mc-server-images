@@ -8,7 +8,13 @@ from pathlib import Path
 
 import nbtlib
 
-from analyze_legacy_causal_machinery import analyze as analyze_machinery
+from analyze_legacy_causal_machinery import (
+    analyze as analyze_machinery,
+    byte_values,
+    chunk_level,
+    iter_chunks,
+    nibble_at,
+)
 from run_legacy_reference_server import (
     download, materialize_world, resolve_version, send, wait_ready
 )
@@ -23,6 +29,73 @@ def set_spawn(world: Path, pos):
     data["SpawnY"]=nbtlib.Int(int(pos[1]))
     data["SpawnZ"]=nbtlib.Int(int(pos[2]))
     level.save(path)
+
+def legacy_block_states_at(world: Path, positions):
+    """Read exact legacy block id/metadata at a bounded set of world positions."""
+    wanted={tuple(int(v) for v in pos) for pos in positions}
+    by_chunk={}
+    for pos in wanted:
+        by_chunk.setdefault((pos[0]//16,pos[2]//16),[]).append(pos)
+
+    found={}
+    for region in sorted((world/"region").glob("r.*.*.mca")):
+        for root in iter_chunks(region):
+            level=chunk_level(root)
+            cx=int(level.get("xPos",0))
+            cz=int(level.get("zPos",0))
+            targets=by_chunk.get((cx,cz))
+            if not targets:
+                continue
+            sections={}
+            for sec in level.get("Sections",[]):
+                blocks=sec.get("Blocks")
+                if blocks is None:
+                    continue
+                sy=int(sec.get("Y",0))
+                sections[sy]=(
+                    byte_values(blocks),
+                    sec.get("Add"),
+                    sec.get("Data"),
+                )
+            for pos in targets:
+                x,y,z=pos
+                sec=sections.get(y//16)
+                key=f"{x},{y},{z}"
+                if sec is None:
+                    found[key]={
+                        "position":[x,y,z],
+                        "observed":True,
+                        "legacy_block_id":0,
+                        "legacy_metadata":0,
+                        "basis":"missing section implies air in legacy Anvil",
+                    }
+                    continue
+                base,add,data=sec
+                lx=x & 15
+                lz=z & 15
+                ly=y & 15
+                i=(ly<<8)|(lz<<4)|lx
+                bid=base[i]
+                if add is not None:
+                    bid |= nibble_at(add,i)<<8
+                meta=nibble_at(data,i) if data is not None else 0
+                found[key]={
+                    "position":[x,y,z],
+                    "observed":True,
+                    "legacy_block_id":bid,
+                    "legacy_metadata":meta,
+                }
+
+    for pos in wanted:
+        key=f"{pos[0]},{pos[1]},{pos[2]}"
+        found.setdefault(key,{
+            "position":list(pos),
+            "observed":False,
+            "legacy_block_id":None,
+            "legacy_metadata":None,
+        })
+    return found
+
 
 def snapshot(world: Path, center, radius=96):
     d=analyze_machinery(world)
@@ -39,7 +112,36 @@ def snapshot(world: Path, center, radius=96):
                   "position":p,
                   "command":n.get("command"),
                 })
-    score=d.get("semantic_state",{})
+    local_command_ids={n["node_id"] for n in nodes}
+    target_specs=[]
+    target_positions=[]
+    for edge in d.get("edges",{}).get("command_world_targets",[]):
+        if edge.get("source") not in local_command_ids:
+            continue
+        pos=edge.get("target_position")
+        if not isinstance(pos,list) or len(pos)!=3:
+            continue
+        try:
+            vals=[float(v) for v in pos]
+        except (TypeError,ValueError):
+            continue
+        if not all(v.is_integer() for v in vals):
+            continue
+        target=[int(v) for v in vals]
+        target_positions.append(target)
+        target_specs.append({
+            "source":edge.get("source"),
+            "target_position":target,
+            "target_kind":edge.get("target_kind"),
+            "verb":edge.get("verb"),
+            "coordinate_mode":edge.get("coordinate_mode"),
+        })
+    target_states=legacy_block_states_at(world,target_positions)
+    world_targets=[]
+    for spec in target_specs:
+        key=",".join(str(v) for v in spec["target_position"])
+        world_targets.append({**spec,"state":target_states[key]})
+
     objective_scores={}
     # The machinery result currently reports objective metadata but not score rows;
     # load raw scoreboard via helper-compatible output in a compact form.
@@ -51,6 +153,7 @@ def snapshot(world: Path, center, radius=96):
     return {
       "command_blocks":nodes,
       "scoreboard_scores":objective_scores,
+      "world_targets":world_targets,
       "machinery_node_count":d["node_count"],
     }
 
@@ -73,7 +176,33 @@ def delta(control,active):
     for key in sorted(set(cs)|set(as_)):
         if cs.get(key)!=as_.get(key):
             score_changes.append({"score":key,"control":cs.get(key),"activated":as_.get(key)})
-    return {"command_block_changes":changed,"scoreboard_changes":score_changes}
+
+    def target_key(row):
+        return (
+            row.get("source"),
+            tuple(row.get("target_position") or []),
+            row.get("target_kind"),
+        )
+    ct={target_key(x):x for x in control.get("world_targets",[])}
+    at={target_key(x):x for x in active.get("world_targets",[])}
+    target_changes=[]
+    for key in sorted(set(ct)|set(at),key=str):
+        c=(ct.get(key) or {}).get("state")
+        a=(at.get(key) or {}).get("state")
+        if c!=a:
+            source,pos,kind=key
+            target_changes.append({
+                "source":source,
+                "target_position":list(pos),
+                "target_kind":kind,
+                "control":c,
+                "activated":a,
+            })
+    return {
+        "command_block_changes":changed,
+        "scoreboard_changes":score_changes,
+        "world_target_changes":target_changes,
+    }
 
 def run_trial(server_jar, source_zip, probe, trial_dir, activate):
     world=trial_dir/"world"
@@ -152,7 +281,13 @@ def main():
               "evidence":{
                 "command_block_change_count":len(diff["command_block_changes"]),
                 "scoreboard_change_count":len(diff["scoreboard_changes"]),
-                "runtime_effect_observed":bool(diff["command_block_changes"] or diff["scoreboard_changes"])
+                "world_target_change_count":len(diff["world_target_changes"]),
+                "world_target_actuation_observed":bool(diff["world_target_changes"]),
+                "runtime_effect_observed":bool(
+                    diff["command_block_changes"] or
+                    diff["scoreboard_changes"] or
+                    diff["world_target_changes"]
+                )
               }
             })
 
@@ -165,8 +300,9 @@ def main():
       "limitations":[
         "Activation uses server-side block-state mutation as an actuator surrogate, not a real player's click packet.",
         "Hashed LastOutput changes can prove command execution/failure without retaining map text, but do not identify the message semantics.",
+        "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
         "Only lever/button sensors are included in this phase.",
-        "A missing observed delta does not prove no mechanism effect; block/entity effects outside captured state may be missed.",
+        "A missing observed delta does not prove no mechanism effect; entity effects, unresolved/dynamic command targets, and world changes outside captured target positions may be missed.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
       ]
     }
