@@ -221,6 +221,8 @@ def main() -> int:
         asset_results = list(pool.map(hydrate_asset, objects.items()))
 
     username = args.username
+    (game_dir / "quickPlay").mkdir(parents=True, exist_ok=True)
+
     vars = {
         "auth_player_name": username,
         "version_name": metadata["id"],
@@ -235,6 +237,7 @@ def main() -> int:
         "version_type": metadata.get("type", "release"),
         "resolution_width": str(args.width),
         "resolution_height": str(args.height),
+        "quickPlayPath": "quickPlay/log.json",
         "quickPlayMultiplayer": args.server,
         "launcher_name": "supracraft-worldgen-benchmark",
         "launcher_version": "1",
