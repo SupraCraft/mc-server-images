@@ -37,6 +37,15 @@ class PaletteDecodeTests(unittest.TestCase):
         self.assertIn("iron", mod.category_for("minecraft:deepslate_iron_ore"))
         self.assertNotIn("diamond", mod.category_for("minecraft:stone"))
 
+    def test_current_palette_id_shape(self):
+        self.assertEqual(
+            "minecraft:oak_log",
+            mod.palette_name({"id": "minecraft:oak_log", "properties": {"axis": "y"}}),
+        )
+
+    def test_current_palette_empty_key_shape(self):
+        self.assertEqual("minecraft:water", mod.palette_name({"": "minecraft:water"}))
+
     def test_modern_26_3_spawn_shape(self):
         pos, source = mod.spawn_from_level_data({
             "spawn": {"pos": [12, 71, -9], "dimension": "minecraft:overworld"}
