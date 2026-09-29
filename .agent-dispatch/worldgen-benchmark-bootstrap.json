@@ -21,7 +21,8 @@
     "generic-contract-fit": "Whether one small adapter/run/analysis contract can cover vanilla and the first non-vanilla generators without generator-specific semantic leakage.",
     "materializer-26.3": "RESOLVED for bootstrap: playable canonical world and official-client multi-site tour succeeded in public run 36561465862.",
     "agent-dispatch-public-binding": "Public workflow/target/workset semantics are prepared; live projection/plan/dispatch/observe remains intentionally blocked by deferred trusted-host admission authority in agent-dispatch-private#381.",
-    "metric-controls": "RESOLVED for bootstrap obvious-control test: vanilla versus flat-null control was independently distinguished. Richer qualitative metrics remain research/qualification work."
+    "metric-controls": "RESOLVED for bootstrap obvious-control test: vanilla versus flat-null control was independently distinguished. Richer qualitative metrics remain research/qualification work.",
+    "causal-machinery-extraction": "How much of authored redstone/command/datapack machinery can be reconstructed as one causal graph statically, and which edges require live instrumentation or persona traces."
   },
   "bounds": {
     "scope_allowed": [
@@ -147,7 +148,7 @@
           "https://github.com/SupraCraft/mc-server-images/issues/11"
         ]
       },
-      "frontier": "All hostless bootstrap leaves are accepted. Continue public generator/reference-world calibration work; keep the live Agent Dispatch runtime proof WAIT until canonical host gate #381 is durably reactivated."
+      "frontier": "Continue public reference-world calibration and READY interaction-causal-machinery extraction; keep live Agent Dispatch runtime proof WAIT until canonical host gate #381 is durably reactivated."
     },
     "contract-and-guard-leaf": {
       "parent_delegation_id": "bootstrap-orchestrator",
@@ -556,6 +557,98 @@
         ]
       },
       "frontier": "WAIT: host admission is intentionally deferred by agent-dispatch-private#381. After durable reactivation, plan and dispatch assignment worldgen-runtime-proof-001 once, then observe and reconcile."
+    },
+    "interaction-causal-machinery-leaf": {
+      "parent_delegation_id": "bootstrap-orchestrator",
+      "responsibilities": [
+        "extract command-block type, facing, conditionality and command dependencies from reference/generated worlds",
+        "extract redstone sensor/logic/timing/state/actuator topology including trapped-chest and comparator semantics",
+        "resolve datapack function, scoreboard/storage, predicate/advancement/loot/item/worldgen references that cross from physical mechanisms into semantic state",
+        "classify causal edges and identify hidden/unexplained effects that may harm player legibility",
+        "produce fixtures and falsification tests before using any metric as a qualitative proxy"
+      ],
+      "state_refs": [
+        "public-execution-authority",
+        "public-only-policy",
+        "human-calibration-evidence",
+        "cpe-qualitative-evidence"
+      ],
+      "unknown_refs": [
+        "causal-machinery-extraction"
+      ],
+      "scope": {
+        "allowed": [
+          "read public benchmark repository state",
+          "modify public benchmark analysis code/contracts on the bounded branch",
+          "run deterministic validation in public standard GitHub-hosted Actions",
+          "record public benchmark evidence"
+        ],
+        "prohibited": [
+          "change private consumer repositories",
+          "claim fun/fairness/immersion from machinery counts",
+          "mutate live Agent Dispatch host/grants",
+          "introduce paid runtime dependencies"
+        ]
+      },
+      "authority": {
+        "grants": [
+          "read public repository",
+          "write bounded public benchmark candidate",
+          "run validation",
+          "record public evidence"
+        ],
+        "reserved": [
+          "merge",
+          "publish release",
+          "spend money"
+        ]
+      },
+      "capabilities": {
+        "required": [
+          "minecraft-world-static-analysis",
+          "datapack-analysis",
+          "graph-analysis",
+          "public-github-actions"
+        ],
+        "may_acquire_free_tools": true,
+        "may_build_tools": true,
+        "may_delegate": false
+      },
+      "resources": [
+        {
+          "kind": "money",
+          "limit": 0,
+          "unit": "USD",
+          "enforcement": "hard"
+        },
+        {
+          "kind": "delegation-depth",
+          "limit": 0,
+          "unit": "level",
+          "enforcement": "hard"
+        }
+      ],
+      "constraints": [
+        "Treat physical redstone state, hidden semantic state, and player-facing feedback as separate graph layers.",
+        "Counts and graph complexity are descriptive context only until human/reference calibration earns stronger interpretation.",
+        "Preserve exact artifact/version identity for every extracted graph.",
+        "Prefer source-visible semantic references over heuristic inference; mark unresolved edges unknown."
+      ],
+      "acceptance": {
+        "criteria": [
+          "At least one command/redstone-heavy reference world produces a reconstructible causal graph.",
+          "A control fixture proves sensor->logic->actuator edges are recovered in the correct direction.",
+          "A hybrid fixture proves trapped-chest or other physical input can be linked through command/datapack semantic state to a visible effect.",
+          "Static unknowns are explicitly separated from live-only causal edges.",
+          "No human-primary qualitative concept is directly scored from machinery density."
+        ],
+        "evidence_refs": [
+          "bench/worldgen/interaction/causal-machinery-taxonomy-v0.json",
+          "bench/worldgen/qualitative/initial-human-metric-calibration-gap-analysis-v0.json",
+          "https://github.com/SupraCraft/mc-server-images/issues/11"
+        ]
+      },
+      "frontier": "Implement the minimum static causal extractor against CORE v1.4 first because its blind analysis already proves dense command/redstone machinery and its human feedback exposes legibility failures that raw counts cannot explain."
     }
   }
 }
