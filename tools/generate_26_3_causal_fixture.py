@@ -85,6 +85,24 @@ def main():
             command(p,'summon minecraft:interaction 7 101 2 {width:1.0f,height:1.0f,Tags:["fixture_interaction"]}')
             command(p,'summon minecraft:text_display 7 102 2 {Tags:["fixture_display"]}')
 
+            # Runtime causal verification for channels that do not require a real player.
+            # B: container inventory -> comparator -> wire -> lamp.
+            command(p,"item replace block 1 100 2 container.0 with minecraft:stone 64")
+            time.sleep(2)
+            command(p,'execute if block 4 100 2 minecraft:redstone_lamp[lit=true] run say CAUSAL_FIXTURE_COMPARATOR_PASS')
+
+            # C: lever state -> repeater -> wire -> piston.
+            command(p,"setblock 0 100 4 minecraft:lever[face=floor,facing=north,powered=true]")
+            time.sleep(2)
+            command(p,'execute if block 3 100 4 minecraft:piston[extended=true] run say CAUSAL_FIXTURE_PISTON_PASS')
+
+            # A logic tail: direct power injection isolates command/scoreboard/chain semantics.
+            # The trapped-chest opening sensor itself remains a live-player interaction test.
+            command(p,"setblock 2 99 0 minecraft:redstone_block")
+            time.sleep(2)
+            command(p,'execute if score $fixture fixture matches 1.. run say CAUSAL_FIXTURE_SCORE_PASS')
+            command(p,'execute if block 6 100 0 minecraft:redstone_block run say CAUSAL_FIXTURE_WORLD_EFFECT_PASS')
+
             command(p,"save-all flush")
             time.sleep(5)
             command(p,"forceload remove all")
@@ -100,13 +118,22 @@ def main():
                 "That position is not loaded", "[Server thread/ERROR]"
             ))
         ]
-        if rc!=0 or diagnostic_lines:
+        required_markers=[
+            "CAUSAL_FIXTURE_COMPARATOR_PASS",
+            "CAUSAL_FIXTURE_PISTON_PASS",
+            "CAUSAL_FIXTURE_SCORE_PASS",
+            "CAUSAL_FIXTURE_WORLD_EFFECT_PASS",
+        ]
+        missing_markers=[m for m in required_markers if m not in server_log]
+        if rc!=0 or diagnostic_lines or missing_markers:
             print("FIXTURE_SERVER_DIAGNOSTICS_BEGIN")
             for line in diagnostic_lines[-80:]:
                 print(line)
             print("FIXTURE_SERVER_DIAGNOSTICS_END")
+            if missing_markers:
+                print("FIXTURE_MISSING_MARKERS", ",".join(missing_markers))
             raise SystemExit(
-                f"server fixture failed rc={rc} diagnostics={len(diagnostic_lines)}"
+                f"server fixture failed rc={rc} diagnostics={len(diagnostic_lines)} missing_markers={missing_markers}"
             )
 
         zip_world(world,args.output_dir/"world.zip")
@@ -121,6 +148,16 @@ def main():
             "channel_c":"lever -> repeater -> wire -> piston",
             "surfaces":["interaction entity","text display entity"]
           },
+          "runtime_verified":[
+            "container_inventory_to_comparator_to_lamp",
+            "lever_to_repeater_to_piston",
+            "command_block_to_scoreboard_state",
+            "command_chain_to_world_effect"
+          ],
+          "live_player_pending":[
+            "trapped_chest_opening_sensor_channel",
+            "interaction_entity_click_channel"
+          ],
           "expected_minimums":{
             "command_blocks":3,
             "trapped_chests":2,
