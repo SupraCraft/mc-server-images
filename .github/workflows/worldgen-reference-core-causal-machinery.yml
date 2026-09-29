@@ -12,6 +12,7 @@ on:
       - plan/worldgen-benchmark-agent-dispatch
     paths:
       - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/analyze_causal_path_recoverability.py'
       - 'tests/test_worldgen_causal_machinery.py'
       - '.github/workflows/worldgen-reference-core-causal-machinery.yml'
 
