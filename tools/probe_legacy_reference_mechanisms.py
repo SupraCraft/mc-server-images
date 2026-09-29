@@ -219,6 +219,80 @@ def delta(control,active):
         "world_target_changes":target_changes,
     }
 
+def scoped_execution_receipt(control, active, scope, diff):
+    """Preserve compact paired outcome evidence without retaining command/message text."""
+    scope=set(scope)
+    ccmd={x["node_id"]:x for x in control.get("command_blocks",[])}
+    acmd={x["node_id"]:x for x in active.get("command_blocks",[])}
+    command_fields=(
+        "verb","sha256","success_count","condition_met",
+        "powered","last_execution","last_output_sha256",
+    )
+    commands=[]
+    for nid in sorted(scope):
+        c=(ccmd.get(nid) or {}).get("command") or {}
+        a=(acmd.get(nid) or {}).get("command") or {}
+        commands.append({
+            "node_id":nid,
+            "control":{k:c.get(k) for k in command_fields},
+            "activated":{k:a.get(k) for k in command_fields},
+        })
+
+    def target_key(row):
+        return (
+            row.get("source"),
+            tuple(row.get("target_position") or []),
+            row.get("target_kind"),
+        )
+    ct={
+        target_key(x):x
+        for x in control.get("world_targets",[])
+        if x.get("source") in scope
+    }
+    at={
+        target_key(x):x
+        for x in active.get("world_targets",[])
+        if x.get("source") in scope
+    }
+    targets=[]
+    for key in sorted(set(ct)|set(at),key=str):
+        source,pos,kind=key
+        c=(ct.get(key) or {}).get("state")
+        a=(at.get(key) or {}).get("state")
+        row=ct.get(key) or at.get(key) or {}
+        targets.append({
+            "source":source,
+            "target_position":list(pos),
+            "target_kind":kind,
+            "verb":row.get("verb"),
+            "control":c,
+            "activated":a,
+            "changed":c!=a,
+        })
+
+    changed_command_ids={
+        row.get("node_id") for row in diff.get("command_block_changes",[])
+        if row.get("node_id") in scope
+    }
+    if diff.get("world_target_changes"):
+        outcome_class="observable_world_target_actuation"
+    elif changed_command_ids:
+        outcome_class="selected_command_state_change_without_observable_target_delta"
+    elif diff.get("scoreboard_changes"):
+        outcome_class="other_runtime_state_change_without_observable_target_delta"
+    else:
+        outcome_class="no_observed_runtime_effect"
+
+    return {
+        "schema":"supracraft-legacy-execution-receipt/1",
+        "command_scope":sorted(scope),
+        "changed_command_ids":sorted(changed_command_ids),
+        "commands":commands,
+        "targets":targets,
+        "outcome_class":outcome_class,
+        "interpretation_limit":"No target delta does not distinguish failure, no-op, same-state actuation, or an effect outside captured targets.",
+    }
+
 def run_trial(server_jar, source_zip, probe, trial_dir, activate):
     world=trial_dir/"world"
     materialize_world(source_zip,world)
@@ -305,9 +379,16 @@ def main():
                     f"world-target source scope changed across paired trials: "
                     f"control={control_scope} activated={active_scope}"
                 )
+            receipt=scoped_execution_receipt(
+                control["snapshot"],
+                active["snapshot"],
+                control_scope,
+                diff,
+            )
             results.append({
               "probe":probe,
               "world_target_source_scope":control_scope,
+              "execution_receipt":receipt,
               "control_ready_seconds":control["ready_seconds"],
               "activated_ready_seconds":active["ready_seconds"],
               "delta":diff,
@@ -316,6 +397,7 @@ def main():
                 "scoreboard_change_count":len(diff["scoreboard_changes"]),
                 "world_target_change_count":len(diff["world_target_changes"]),
                 "world_target_actuation_observed":bool(diff["world_target_changes"]),
+                "outcome_class":receipt["outcome_class"],
                 "runtime_effect_observed":bool(
                     diff["command_block_changes"] or
                     diff["scoreboard_changes"] or
@@ -336,7 +418,8 @@ def main():
         "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
         "World-target sampling is scoped to the feedback-blind command set in the selected probe component. Older selection artifacts without embedded command IDs are reconciled against the current static candidate graph; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
         "Only lever/button sensors are included in this phase.",
-        "A missing observed delta does not prove no mechanism effect; entity effects, unresolved/dynamic command targets, and world changes outside captured target positions may be missed.",
+        "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
+        "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
       ]
     }

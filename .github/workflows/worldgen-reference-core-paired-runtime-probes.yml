@@ -113,6 +113,22 @@ jobs:
                   change.get("source") in scope
                   for change in row["delta"]["world_target_changes"]
               )
+              receipt=row["execution_receipt"]
+              assert receipt["schema"]=="supracraft-legacy-execution-receipt/1"
+              assert receipt["command_scope"]==row["world_target_source_scope"]
+              assert receipt["outcome_class"] in {
+                  "observable_world_target_actuation",
+                  "selected_command_state_change_without_observable_target_delta",
+                  "other_runtime_state_change_without_observable_target_delta",
+                  "no_observed_runtime_effect",
+              }
+              allowed_command_fields={
+                  "verb","sha256","success_count","condition_met",
+                  "powered","last_execution","last_output_sha256",
+              }
+              for command in receipt["commands"]:
+                  assert set(command["control"])==allowed_command_fields
+                  assert set(command["activated"])==allowed_command_fields
           print(json.dumps({
               "probe_count":d["probe_count"],
               "results":[{
@@ -123,7 +139,8 @@ jobs:
                 "scoreboard_change_count":x["evidence"]["scoreboard_change_count"],
                 "world_target_change_count":x["evidence"]["world_target_change_count"],
                 "world_target_actuation_observed":x["evidence"]["world_target_actuation_observed"],
-                "world_target_source_scope":x["world_target_source_scope"]
+                "world_target_source_scope":x["world_target_source_scope"],
+                "outcome_class":x["execution_receipt"]["outcome_class"]
               } for x in d["results"]]
           },indent=2,sort_keys=True))
           PY
