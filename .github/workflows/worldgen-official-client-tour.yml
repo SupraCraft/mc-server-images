@@ -167,6 +167,22 @@ jobs:
           echo "eligible=true" >> "$GITHUB_OUTPUT"
           cat evidence/client/client-runtime.json
 
+      - name: Seed deterministic first-run client options
+        if: steps.hydrate.outputs.eligible == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > client-runtime/game/options.txt <<'EOF'
+          onboardAccessibility:false
+          skipMultiplayerWarning:true
+          joinedFirstServer:true
+          tutorialStep:none
+          pauseOnLostFocus:false
+          narrator:0
+          telemetryOptInExtra:false
+          EOF
+          cp client-runtime/game/options.txt evidence/client/options.txt
+
       - name: Prepare exact 26.3 server with canonical world
         if: steps.hydrate.outputs.eligible == 'true'
         shell: bash
