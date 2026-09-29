@@ -405,6 +405,65 @@ def extract_absolute_target(parts):
     return None
 
 
+LEGACY_SENSOR_FAMILIES = {
+    "lever", "stone_button", "wooden_button",
+    "stone_pressure_plate", "wooden_pressure_plate",
+    "light_weighted_pressure_plate", "heavy_weighted_pressure_plate",
+    "tripwire_hook", "daylight_detector", "inverted_daylight_detector",
+    "trapped_chest",
+}
+
+LEGACY_DIRECT_WIRE_SINKS = {
+    "command_block", "repeating_command_block", "chain_command_block",
+    "redstone_lamp_off", "redstone_lamp_on",
+    "piston", "sticky_piston",
+    "dispenser", "dropper", "hopper",
+    "note_block", "iron_door", "wooden_door",
+    "trapdoor", "iron_trapdoor", "fence_gate",
+}
+
+
+def legacy_direct_redstone_edges(machinery):
+    """Recover only direct redstone relations that do not require hidden solid-block conduction.
+
+    Same-level dust-to-dust adjacency is structurally strong. Sensor-to-dust and
+    dust-to-direct-sink adjacency are adequate potential causal edges because
+    attachment/state details may still matter. Repeater/comparator ports are
+    handled separately from their orientation metadata.
+    """
+    edges=[]
+    horizontal=((1,0,0),(-1,0,0),(0,0,1),(0,0,-1))
+    all_sides=horizontal+((0,1,0),(0,-1,0))
+
+    for pos,node in machinery.items():
+        family=node["family"]
+        if family=="redstone_wire":
+            for delta in horizontal:
+                q=add_pos(pos,delta)
+                if q in machinery and machinery[q]["family"]=="redstone_wire":
+                    edges.append({
+                        "source":node_id(pos),"target":node_id(q),
+                        "edge_type":"legacy_dust_horizontal_connection",
+                        "certainty":"strong",
+                    })
+                elif q in machinery and machinery[q]["family"] in LEGACY_DIRECT_WIRE_SINKS:
+                    edges.append({
+                        "source":node_id(pos),"target":node_id(q),
+                        "edge_type":"legacy_dust_direct_component_power",
+                        "certainty":"adequate",
+                    })
+        if family in LEGACY_SENSOR_FAMILIES:
+            for delta in all_sides:
+                q=add_pos(pos,delta)
+                if q in machinery and machinery[q]["family"]=="redstone_wire":
+                    edges.append({
+                        "source":node_id(pos),"target":node_id(q),
+                        "edge_type":"legacy_sensor_direct_dust_power",
+                        "certainty":"adequate",
+                    })
+    return edges
+
+
 def analyze(world: Path):
     machinery = {}
     tile_entities = {}
@@ -566,6 +625,7 @@ def analyze(world: Path):
             undirected[q].add(pos)
 
     directed_edges = []
+    direct_redstone_edges = legacy_direct_redstone_edges(machinery)
     comparator_container_reads = []
     trapped_open_power_edges = []
     command_chain_edges = []
@@ -728,6 +788,7 @@ def analyze(world: Path):
         "edges": {
             "physical_adjacency_candidate_count": len(adjacency),
             "oriented_signal_edge_count": len(directed_edges),
+            "direct_redstone_edge_count": len(direct_redstone_edges),
             "command_world_target_count": len(explicit_target_edges),
             "command_chain_edge_count": len(command_chain_edges),
             "container_comparator_read_count": len(comparator_container_reads),
@@ -735,6 +796,7 @@ def analyze(world: Path):
             "scoreboard_state_edge_count": len(scoreboard_edges),
             "physical_adjacency_candidates": adjacency,
             "oriented_signal_candidates": directed_edges,
+            "direct_redstone_edges": direct_redstone_edges,
             "command_world_targets": explicit_target_edges,
             "command_chain_candidates": command_chain_edges,
             "container_comparator_reads": comparator_container_reads,
@@ -744,7 +806,7 @@ def analyze(world: Path):
         "nodes": sorted(machinery.values(), key=lambda n: tuple(n["position"])),
         "limitations": [
             "Physical adjacency is not equivalent to powered redstone connectivity or causal direction.",
-            "Repeater/comparator metadata ports and command-block facing are decoded; dust shape, solid-block conduction, locking/side-input behavior, and quasi-connectivity remain incomplete.",
+            "Repeater/comparator metadata ports and command-block facing are decoded. Same-level dust continuity and direct sensor/dust/component relations are recovered separately; vertical dust steps, opaque solid-block conduction, locking/side-input behavior, and quasi-connectivity remain incomplete.",
             "Trapped-chest opening power and comparator inventory/fullness reads are represented as distinct causal channels.",
             "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
             "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
