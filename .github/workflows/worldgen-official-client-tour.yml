@@ -280,6 +280,10 @@ jobs:
               "blocker":"official-client-did-not-join-server"
           },indent=2)+"\n")
           PY
+            mkdir -p evidence/ui
+            xdotool search --onlyvisible --name "Minecraft" getwindowgeometry --shell %@ > evidence/ui/window-geometry.txt 2>&1 || true
+            xwininfo -root -tree > evidence/ui/xwininfo-before-connect.txt 2>&1 || true
+            ffmpeg -y -loglevel error -f x11grab -video_size 640x360 -i :99 -frames:v 1 evidence/ui/title-screen.png || true
             echo "joined=false" >> "$GITHUB_OUTPUT"
             tail -200 evidence/official-client.log || true
             tail -200 server/server.log || true
