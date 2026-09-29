@@ -653,7 +653,7 @@
           "https://github.com/SupraCraft/mc-server-images/actions/runs/36583789287"
         ]
       },
-      "frontier": "READY: first re-run the exact-26.3 causal fixture explicitly from current branch head 749a6827082690ff29877d6fa1437c49d3f5c973 to remove ancestry/run-order ambiguity. Treat delayed failure run 36583788840 at ancestor 5ac16bfa9ae420e9dc7fb88d83c8b2ae91a15d09 as superseded by later accepted success run 36583717853 at 4673da2df664f907c1da6215841ef708d7b2d5d1. Then reconcile CORE exact-1.8.8 paired runtime probe evidence with static causal paths and frozen human legibility feedback; add only evidence-earned live edges/proxies, preserving human-primary qualitative judgments."
+      "frontier": "READY: first re-run the exact-26.3 causal fixture explicitly from the current authoritative branch tip (this baton commit or newer live state) to remove ancestry/run-order ambiguity. Treat delayed failure run 36583788840 at ancestor 5ac16bfa9ae420e9dc7fb88d83c8b2ae91a15d09 as superseded by later accepted success run 36583717853 at 4673da2df664f907c1da6215841ef708d7b2d5d1. Then reconcile CORE exact-1.8.8 paired runtime probe evidence with static causal paths and frozen human legibility feedback; add only evidence-earned live edges/proxies, preserving human-primary qualitative judgments."
     }
   }
 }
