@@ -8,6 +8,7 @@ on:
     paths:
       - 'tools/generate_26_3_causal_fixture.py'
       - 'tools/analyze_modern_causal_machinery.py'
+      - 'tools/analyze_causal_path_recoverability.py'
       - 'probes/26.3-release-identity.json'
       - '.github/workflows/worldgen-26-3-causal-fixture.yml'
 
