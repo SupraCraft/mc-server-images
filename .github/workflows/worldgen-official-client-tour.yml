@@ -25,7 +25,7 @@ jobs:
       RCON_PASSWORD: supracraft-local-only
       DISPLAY: ":99"
       LIBGL_ALWAYS_SOFTWARE: "1"
-      MESA_LOADER_DRIVER_OVERRIDE: llvmpipe
+      GALLIUM_DRIVER: llvmpipe
       SDL_VIDEODRIVER: x11
       SDL_VIDEO_X11_FORCE_EGL: "1"
 
@@ -78,16 +78,70 @@ jobs:
           set -euo pipefail
           mkdir -p evidence camera-output
           sudo apt-get update -qq
-          sudo apt-get install -y -qq             xvfb ffmpeg xdotool mesa-utils             libgl1-mesa-dri libglx-mesa0 libx11-6 libxext6 libxrandr2 libxinerama1             libxcursor1 libxi6 libxxf86vm1 libasound2t64 libopenal1             > evidence/apt-official-client.log 2>&1
+          sudo apt-get install -y -qq             xserver-xorg-core xserver-xorg-video-dummy ffmpeg xdotool mesa-utils             libgl1-mesa-dri libglx-mesa0 libx11-6 libxext6 libxrandr2 libxinerama1             libxcursor1 libxi6 libxxf86vm1 libasound2t64 libopenal1             > evidence/apt-official-client.log 2>&1
 
-      - name: Start software X server and record GL capability
+      - name: Start Xorg dummy display with Mesa llvmpipe and record GL capability
         shell: bash
         run: |
           set -euo pipefail
-          Xvfb :99 -screen 0 640x360x24 -ac +extension GLX +render -noreset             > evidence/xvfb.log 2>&1 &
-          echo $! > xvfb.pid
-          sleep 2
-          glxinfo -B | tee evidence/glxinfo.txt
+          cat > xorg-dummy.conf <<'EOF'
+          Section "ServerFlags"
+            Option "AutoAddDevices" "false"
+            Option "AutoEnableDevices" "false"
+          EndSection
+          Section "Device"
+            Identifier "DummyDevice"
+            Driver "dummy"
+            VideoRam 192000
+          EndSection
+          Section "Monitor"
+            Identifier "DummyMonitor"
+            HorizSync 5.0-1000.0
+            VertRefresh 5.0-200.0
+            Modeline "640x360" 18.00 640 656 720 800 360 363 368 375
+          EndSection
+          Section "Screen"
+            Identifier "DummyScreen"
+            Device "DummyDevice"
+            Monitor "DummyMonitor"
+            DefaultDepth 24
+            SubSection "Display"
+              Depth 24
+              Modes "640x360"
+              Virtual 640 360
+            EndSubSection
+          EndSection
+          Section "ServerLayout"
+            Identifier "DummyLayout"
+            Screen "DummyScreen"
+          EndSection
+          EOF
+
+          Xorg :99 -noreset -ac +extension GLX +extension RANDR +extension RENDER             -logfile "$(pwd)/evidence/xorg.log"             -config "$(pwd)/xorg-dummy.conf"             > evidence/xorg-stdout.log 2>&1 &
+          echo $! > xorg.pid
+
+          ready=0
+          for i in {1..30}; do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$(cat xorg.pid)" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          [[ "$ready" == "1" ]] || {
+            cat evidence/xorg.log || true
+            cat evidence/xorg-stdout.log || true
+            exit 1
+          }
+
+          DISPLAY=:99 LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe glxinfo -B | tee evidence/glxinfo.txt
+          grep -Eq 'OpenGL renderer string:.*(llvmpipe|softpipe)' evidence/glxinfo.txt || {
+            echo "::error::software OpenGL renderer was not established"
+            exit 1
+          }
 
       - name: Hydrate exact official Minecraft 26.3 client runtime
         id: hydrate
@@ -314,7 +368,7 @@ jobs:
           set +e
           [[ -f client.pid ]] && kill "$(cat client.pid)" 2>/dev/null
           [[ -f server.pid ]] && kill "$(cat server.pid)" 2>/dev/null
-          [[ -f xvfb.pid ]] && kill "$(cat xvfb.pid)" 2>/dev/null
+          [[ -f xorg.pid ]] && kill "$(cat xorg.pid)" 2>/dev/null
           exit 0
 
       - name: Upload official-client camera evidence only
