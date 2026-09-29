@@ -337,9 +337,14 @@ def command_targets(parts, command_origin):
 
 
 def read_scoreboard(world: Path):
-    path = world / "data" / "scoreboard.dat"
-    if not path.exists():
-        return {"present": False, "objectives": [], "scores": []}
+    # Since Java 26.1 persistent saved data is namespaced under data/<namespace>/.
+    candidates = [
+        world / "data" / "minecraft" / "scoreboard.dat",
+        world / "data" / "scoreboard.dat",
+    ]
+    path = next((p for p in candidates if p.exists()), None)
+    if path is None:
+        return {"present": False, "path": None, "objectives": [], "scores": []}
     root = nbtlib.load(path)
     data = root.get("data", root.get("Data", root))
     objectives = []
@@ -358,7 +363,7 @@ def read_scoreboard(world: Path):
             "score": int(plain(score.get("Score", 0))),
             "locked": bool(plain(score.get("Locked", 0))) if score.get("Locked") is not None else None,
         })
-    return {"present": True, "objectives": objectives, "scores": scores}
+    return {"present": True, "path": str(path.relative_to(world)), "objectives": objectives, "scores": scores}
 
 
 def scoreboard_refs(parts):
