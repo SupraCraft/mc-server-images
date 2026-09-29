@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "status": "research_hypotheses_not_scoring_authority",
+  "authority_ref": "mark-e-deyoung/concept-policy-engine-private#301",
+  "consumer_ref": "SupraCraft/mc-structure-foundry-private#7",
+  "principles": [
+    "automated_metric_is_evidence_not_human_experience_truth",
+    "player_experience_assessments_require_human_report_for_primary_validation",
+    "proxy_relationships_may_be_non_monotonic",
+    "metric_alignment_must_be_tested_on_held_out_worlds",
+    "do_not_optimize_generators_directly_against_feedback_labels"
+  ],
+  "hypotheses": [
+    {
+      "concept_id": "research.game_world.navigation_legibility",
+      "automation_role": "strong_proxy_candidate",
+      "candidate_metrics": [
+        "landmark_prominence",
+        "route_branch_entropy",
+        "backtrack_ratio",
+        "return_to_reference_success",
+        "path_detour_ratio"
+      ],
+      "expected_relation": "multivariate_non_monotonic",
+      "falsifiers": [
+        "highly nonlinear but well-landmarked world",
+        "linear corridor with confusing visual cues"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.affordance_legibility",
+      "automation_role": "partial_proxy_candidate",
+      "candidate_metrics": [
+        "interaction_success_rate",
+        "entrance_visibility",
+        "poi_line_of_sight",
+        "failed_interaction_rate",
+        "time_to_first_use"
+      ],
+      "expected_relation": "context_dependent",
+      "falsifiers": [
+        "hidden secret intentionally designed to be obscure",
+        "visible decorative object that is not interactable"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.progression_legibility",
+      "automation_role": "strong_proxy_candidate",
+      "candidate_metrics": [
+        "persona_stall_time",
+        "goal_inference_failures",
+        "backtrack_ratio",
+        "unproductive_action_count",
+        "time_to_next_progress_event"
+      ],
+      "expected_relation": "negative_with_stalls_after_skill_control",
+      "falsifiers": [
+        "open-world play without intended goal",
+        "expert route skipping intended guidance"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.content_variety",
+      "automation_role": "direct_descriptive_metric_candidate",
+      "candidate_metrics": [
+        "biome_entropy",
+        "structure_type_entropy",
+        "palette_entropy",
+        "mechanic_class_diversity",
+        "encounter_type_diversity"
+      ],
+      "expected_relation": "positive_but_not_quality",
+      "falsifiers": [
+        "random incoherent variety",
+        "many nominal types with nearly identical play"
+      ],
+      "human_validation": "useful_not_primary"
+    },
+    {
+      "concept_id": "research.game_world.repetition_monotony",
+      "automation_role": "partial_proxy_candidate",
+      "candidate_metrics": [
+        "spatial_autocorrelation",
+        "view_embedding_redundancy",
+        "palette_repetition",
+        "encounter_sequence_repetition",
+        "long_empty_travel_fraction"
+      ],
+      "expected_relation": "positive_with_perceived_monotony_after_genre_control",
+      "falsifiers": [
+        "intentional motif with strong progression",
+        "meditative/repetitive genre preference"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.atmospheric_coherence",
+      "automation_role": "weak_proxy_only",
+      "candidate_metrics": [
+        "regional_visual_embedding_consistency",
+        "palette_transition_coherence",
+        "exposed_implementation_artifacts",
+        "theme_structure_consistency"
+      ],
+      "expected_relation": "unknown_multivariate",
+      "falsifiers": [
+        "deliberate surreal contrast",
+        "coherent visuals with incoherent story/mechanics"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.place_identity",
+      "automation_role": "partial_proxy_candidate",
+      "candidate_metrics": [
+        "regional_embedding_separability",
+        "landmark_uniqueness",
+        "palette_signature_distinctness",
+        "spatial_cluster_stability"
+      ],
+      "expected_relation": "positive_until_overfragmentation",
+      "falsifiers": [
+        "visually distinct but meaningless zones",
+        "subtle place identity not captured visually"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.retry_recovery_burden",
+      "automation_role": "direct_behavioral_metric_candidate",
+      "candidate_metrics": [
+        "time_from_failure_to_retry",
+        "distance_from_failure_to_retry",
+        "state_loss_count",
+        "repeated_setup_actions",
+        "checkpoint_spacing"
+      ],
+      "expected_relation": "positive",
+      "falsifiers": [
+        "roguelike genre where reset is desired",
+        "intentional permadeath challenge"
+      ],
+      "human_validation": "context_required"
+    },
+    {
+      "concept_id": "research.game_world.challenge_information_sufficiency",
+      "automation_role": "partial_proxy_candidate",
+      "candidate_metrics": [
+        "avoidable_failure_after_observation",
+        "hazard_visibility",
+        "hint_exposure_before_failure",
+        "persona_guess_rate"
+      ],
+      "expected_relation": "negative_with_blind_guessing",
+      "falsifiers": [
+        "knowledge puzzle aimed at prior-domain experts",
+        "intended surprise mechanic learned after one failure"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.pacing_content_density",
+      "automation_role": "direct_descriptive_metric_candidate",
+      "candidate_metrics": [
+        "meaningful_event_rate",
+        "poi_discovery_rate",
+        "decision_rate",
+        "uninterrupted_travel_time",
+        "interaction_gap_distribution"
+      ],
+      "expected_relation": "descriptive_not_monotonic_quality",
+      "falsifiers": [
+        "slow contemplative world",
+        "deliberately overwhelming arcade world"
+      ],
+      "human_validation": "preference_context_required"
+    },
+    {
+      "concept_id": "research.game_world.exploratory_pull",
+      "automation_role": "persona_proxy_only",
+      "candidate_metrics": [
+        "optional_branch_entry_rate",
+        "continued_exploration_after_goal",
+        "novel_poi_discovery_curve",
+        "voluntary_travel_distance"
+      ],
+      "expected_relation": "uncertain",
+      "falsifiers": [
+        "bot objective induces exploration",
+        "human explores despite sparse objective novelty"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.productive_mystery",
+      "automation_role": "research_proxy_only",
+      "candidate_metrics": [
+        "visible_unreached_landmark_count",
+        "eventual_route_discovery_rate",
+        "mystery_resolution_time",
+        "backtracking_before_resolution"
+      ],
+      "expected_relation": "inverted_u_candidate",
+      "falsifiers": [
+        "unreachable decorative landmark",
+        "obscurity mistaken for mystery",
+        "directly signposted route with high landmark visibility"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.disorientation_confusion",
+      "automation_role": "strong_proxy_candidate",
+      "candidate_metrics": [
+        "backtrack_ratio",
+        "loop_rate",
+        "failed_route_attempts",
+        "time_without_progress",
+        "return_to_reference_failure"
+      ],
+      "expected_relation": "positive_after_genre_and_skill_control",
+      "falsifiers": [
+        "maze genre",
+        "deliberate free exploration",
+        "speedrunner route experimentation"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.perceived_challenge_fairness",
+      "automation_role": "proxy_only_never_direct",
+      "candidate_metrics": [
+        "challenge_information_sufficiency",
+        "retry_recovery_burden",
+        "failure_cause_repeatability",
+        "hazard_telegraph_time"
+      ],
+      "expected_relation": "multivariate_contextual",
+      "falsifiers": [
+        "high skill mismatch",
+        "challenge designed for memorization",
+        "player knowingly chooses unfair/troll mode"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.perceived_polish",
+      "automation_role": "partial_proxy_candidate",
+      "candidate_metrics": [
+        "runtime_error_count",
+        "broken_progression_count",
+        "unreachable_required_affordances",
+        "visual_artifact_count",
+        "performance_stall_rate"
+      ],
+      "expected_relation": "negative_with_defects",
+      "falsifiers": [
+        "technically flawless but aesthetically unfinished world",
+        "intentional glitch aesthetic"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.immersion",
+      "automation_role": "not_directly_observable",
+      "candidate_metrics": [
+        "none_authoritative"
+      ],
+      "expected_relation": "unknown",
+      "falsifiers": [
+        "all static proxies can be high while player remains unimmersed"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.coziness_comfort",
+      "automation_role": "not_directly_observable",
+      "candidate_metrics": [
+        "visual_or_environmental_features_may_be_exploratory_only"
+      ],
+      "expected_relation": "culture_and_context_dependent",
+      "falsifiers": [
+        "safe sterile room",
+        "dangerous but cozy cabin"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.anticipatory_excitement",
+      "automation_role": "not_directly_observable",
+      "candidate_metrics": [
+        "discovery_curve_and_visible_unreached_landmarks_are_only_hypotheses"
+      ],
+      "expected_relation": "unknown",
+      "falsifiers": [
+        "salient landmark evokes dread rather than positive anticipation"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.boredom",
+      "automation_role": "persona_proxy_only",
+      "candidate_metrics": [
+        "low_discovery_rate",
+        "high_repetition",
+        "long_uninterrupted_travel",
+        "low_decision_rate"
+      ],
+      "expected_relation": "context_dependent",
+      "falsifiers": [
+        "relaxing/meditative preference",
+        "builder creates own goals"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.frustration",
+      "automation_role": "persona_proxy_only",
+      "candidate_metrics": [
+        "repeated_failure",
+        "stall_time",
+        "retry_burden",
+        "unproductive_action_rate"
+      ],
+      "expected_relation": "context_dependent",
+      "falsifiers": [
+        "desired hard challenge",
+        "player enjoys mastery loop"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.fun_enjoyment",
+      "automation_role": "never_directly_scored",
+      "candidate_metrics": [],
+      "expected_relation": "no_simple_monotonic_mapping",
+      "falsifiers": [
+        "any attempt to equate popularity, completion, engagement, or metric aggregate with fun"
+      ],
+      "human_validation": "only"
+    }
+  ]
+}
