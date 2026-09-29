@@ -47,6 +47,10 @@ def main():
             )
             wait_ready(p,log_path,180)
 
+            # Force-load the fixture origin before any placement. Spawn is seed-dependent.
+            command(p,"forceload add -16 -16 16 16")
+            time.sleep(2)
+
             # Stable empty workspace high above terrain.
             command(p,"fill -4 99 -4 12 104 5 minecraft:air")
             command(p,"fill -4 99 -4 12 99 5 minecraft:stone")
@@ -81,7 +85,6 @@ def main():
             command(p,'summon minecraft:interaction 7 101 2 {width:1.0f,height:1.0f,Tags:["fixture_interaction"]}')
             command(p,'summon minecraft:text_display 7 102 2 {Tags:["fixture_display"]}')
 
-            command(p,"forceload add -16 -16 16 16")
             command(p,"save-all flush")
             time.sleep(5)
             command(p,"forceload remove all")
@@ -89,8 +92,22 @@ def main():
             time.sleep(2)
             command(p,"stop")
             rc=p.wait(timeout=60)
-        if rc!=0:
-            raise SystemExit(f"server exited {rc}")
+        server_log=log_path.read_text("utf-8",errors="replace")
+        diagnostic_lines=[
+            line for line in server_log.splitlines()
+            if any(marker in line for marker in (
+                "Incorrect argument", "Unknown or incomplete command",
+                "That position is not loaded", "[Server thread/ERROR]"
+            ))
+        ]
+        if rc!=0 or diagnostic_lines:
+            print("FIXTURE_SERVER_DIAGNOSTICS_BEGIN")
+            for line in diagnostic_lines[-80:]:
+                print(line)
+            print("FIXTURE_SERVER_DIAGNOSTICS_END")
+            raise SystemExit(
+                f"server fixture failed rc={rc} diagnostics={len(diagnostic_lines)}"
+            )
 
         zip_world(world,args.output_dir/"world.zip")
         shutil.copy2(log_path,args.output_dir/"server.log")
