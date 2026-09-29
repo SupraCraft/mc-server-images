@@ -102,8 +102,8 @@ COMMAND_ROLE = {
     "function": ["orchestrator"],
 }
 
-ABS_INT = re.compile(r"^-?\\d+$")
-ABS_NUM = re.compile(r"^-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$")
+ABS_INT = re.compile(r"^-?\d+$")
+ABS_NUM = re.compile(r"^-?(?:\d+(?:\.\d*)?|\.\d+)$")
 DIR4 = {
     0: ("north", (0, 0, -1)),
     1: ("east", (1, 0, 0)),
