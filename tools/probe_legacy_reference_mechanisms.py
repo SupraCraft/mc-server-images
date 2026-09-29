@@ -18,6 +18,7 @@ from analyze_legacy_causal_machinery import (
 from run_legacy_reference_server import (
     download, materialize_world, resolve_version, send, wait_ready
 )
+from select_legacy_runtime_probes import candidate_graph, component
 
 ACTIVATABLE = {"lever","stone_button","wooden_button"}
 
@@ -97,7 +98,7 @@ def legacy_block_states_at(world: Path, positions):
     return found
 
 
-def snapshot(world: Path, center, target_command_ids=None, radius=96):
+def snapshot(world: Path, center, sensor_node_id=None, target_command_ids=None, radius=96):
     d=analyze_machinery(world)
     cx,cy,cz=center
     nodes=[]
@@ -113,8 +114,19 @@ def snapshot(world: Path, center, target_command_ids=None, radius=96):
                   "command":n.get("command"),
                 })
     local_command_ids={n["node_id"] for n in nodes}
-    target_command_ids=set(target_command_ids or local_command_ids)
-    target_source_scope=local_command_ids & target_command_ids
+    explicit_target_ids=set(target_command_ids or [])
+    if explicit_target_ids:
+        target_source_scope=local_command_ids & explicit_target_ids
+    elif sensor_node_id:
+        graph_nodes,graph=candidate_graph(d)
+        members=component(graph,sensor_node_id)
+        derived_command_ids={
+            nid for nid in members
+            if nid in graph_nodes and "command_block" in str(graph_nodes[nid].get("family",""))
+        }
+        target_source_scope=local_command_ids & derived_command_ids
+    else:
+        target_source_scope=set(local_command_ids)
     target_specs=[]
     target_positions=[]
     for edge in d.get("edges",{}).get("command_world_targets",[]):
@@ -257,6 +269,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
     snap=snapshot(
         world,
         probe["position"],
+        sensor_node_id=probe.get("node_id"),
         target_command_ids=target_command_ids or None,
     )
     return {"ready_seconds":round(ready,3),"snapshot":snap}
@@ -313,7 +326,7 @@ def main():
         "Activation uses server-side block-state mutation as an actuator surrogate, not a real player's click packet.",
         "Hashed LastOutput changes can prove command execution/failure without retaining map text, but do not identify the message semantics.",
         "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
-        "World-target sampling is scoped to the feedback-blind command set in the selected probe component; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
+        "World-target sampling is scoped to the feedback-blind command set in the selected probe component. Older selection artifacts without embedded command IDs are reconciled against the current static candidate graph; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
         "Only lever/button sensors are included in this phase.",
         "A missing observed delta does not prove no mechanism effect; entity effects, unresolved/dynamic command targets, and world changes outside captured target positions may be missed.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
