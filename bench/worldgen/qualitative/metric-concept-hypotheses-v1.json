@@ -415,6 +415,26 @@
         "high embedding consistency caused by repetitive copy-paste structures"
       ],
       "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.causal_legibility",
+      "automation_role": "partial_proxy_candidate",
+      "candidate_metrics": [
+        "sensor_to_effect_path_recoverability",
+        "action_to_feedback_latency",
+        "feedback_channel_presence",
+        "hidden_state_transition_count",
+        "orphan_actuator_effect_count",
+        "unexplained_effect_rate",
+        "persona_action_effect_attribution_success"
+      ],
+      "expected_relation": "multivariate_context_dependent",
+      "falsifiers": [
+        "hidden command mechanism with immediate unambiguous feedback",
+        "fully visible redstone machinery that remains too complex for intended players",
+        "deliberately mysterious effect later explained by narrative"
+      ],
+      "human_validation": "required"
     }
   ],
   "structured_human_benchmark_refs": [
