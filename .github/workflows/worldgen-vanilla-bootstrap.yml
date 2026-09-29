@@ -1,4 +1,5 @@
 name: worldgen vanilla bootstrap
+# bootstrap diagnostic replay
 
 on:
   workflow_dispatch:
