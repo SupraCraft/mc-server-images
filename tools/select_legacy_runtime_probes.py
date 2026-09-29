@@ -81,7 +81,17 @@ def main():
         member_nodes=[nodes[x] for x in members if x in nodes]
         roles=set().union(*(role_set(x) for x in member_nodes)) if member_nodes else set()
         families={x.get("family") for x in member_nodes}
-        commands=sum(1 for x in member_nodes if "command_block" in str(x.get("family","")))
+        command_nodes=[
+            {
+              "node_id":x["node_id"],
+              "position":x.get("position"),
+              "family":x.get("family"),
+              "verb":(x.get("command") or {}).get("verb"),
+              "command_sha256":(x.get("command") or {}).get("sha256"),
+            }
+            for x in member_nodes if "command_block" in str(x.get("family",""))
+        ]
+        commands=len(command_nodes)
         feedback=sum(1 for x in member_nodes if "presentation_feedback" in role_set(x))
         actuators=sum(1 for x in member_nodes if "actuator" in role_set(x))
         state=sum(1 for x in member_nodes if role_set(x)&{"semantic_state","state_memory"})
@@ -103,6 +113,7 @@ def main():
           "metadata_semantics":node.get("metadata_semantics",{}),
           "candidate_component_node_count":len(members),
           "candidate_component_command_blocks":commands,
+          "candidate_component_commands":sorted(command_nodes,key=lambda x:x["node_id"])[:25],
           "candidate_component_feedback_nodes":feedback,
           "candidate_component_actuators":actuators,
           "candidate_component_state_nodes":state,
