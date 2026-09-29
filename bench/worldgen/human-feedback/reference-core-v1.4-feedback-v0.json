@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "corpus_id": "reference.core.v1.4.human-feedback-v0",
+  "world_ref": "reference.core.v1.4",
+  "artifact_version_ref": "original_sha256:pending-link-to-intake-receipt-run-36559943983",
+  "metrics_frozen_ref": "github-actions:SupraCraft/mc-server-images/36560410515",
+  "coding_status": "initial_source-grounded_non_exhaustive",
+  "authority_refs": [
+    "SupraCraft/mc-structure-foundry-private#7",
+    "mark-e-deyoung/concept-policy-engine-private#301"
+  ],
+  "annotations": [
+    {
+      "schema_version": 1,
+      "annotation_id": "core.forum.player.troll-stall.001",
+      "world_ref": "reference.core.v1.4",
+      "artifact_version_ref": "forum-thread-era-pre-v1.2_or_early-build",
+      "source": {
+        "source_ref": "https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map#c2",
+        "source_role": "forum_comment",
+        "independence_group": "minecraftforum-core-thread",
+        "published_at": "2015-05-23",
+        "retrieved_at": "2026-09-29",
+        "author_relation": "independent_player"
+      },
+      "language": "en",
+      "script": "Latn",
+      "evidence_scope": "mixed",
+      "original_text_ref": "source-post-2; no bulk copy retained",
+      "translation_ref": null,
+      "reporter_context": {
+        "skill_level": null,
+        "solo_multiplayer": "unknown",
+        "genre_preference": null,
+        "session_context": "active playthrough"
+      },
+      "concept_annotations": [
+        {
+          "concept_id": "research.game_world.progression_legibility",
+          "evidence_relation": "contradicts",
+          "certainty": "strong",
+          "native_lexicalization": "doesn't seem to be anything I can do",
+          "notes": "Player reports a progression stall after scripted text."
+        },
+        {
+          "concept_id": "research.game_world.perceived_polish",
+          "evidence_relation": "contradicts",
+          "certainty": "adequate",
+          "native_lexicalization": null,
+          "notes": "Creator later identifies a missing repeater in the chain."
+        },
+        {
+          "concept_id": "research.game_world.fun_enjoyment",
+          "evidence_relation": "supports",
+          "certainty": "adequate",
+          "native_lexicalization": "liking the map so far",
+          "notes": "Positive enjoyment coexists with a hard progression defect."
+        }
+      ],
+      "confounds": [
+        "version_mismatch"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "annotation_id": "core.forum.player.crafting-legibility.002",
+      "world_ref": "reference.core.v1.4",
+      "artifact_version_ref": "forum-thread-era-pre-v1.2_or_early-build",
+      "source": {
+        "source_ref": "https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map#c7",
+        "source_role": "forum_comment",
+        "independence_group": "minecraftforum-core-thread",
+        "published_at": "2015-05-24",
+        "retrieved_at": "2026-09-29",
+        "author_relation": "independent_player"
+      },
+      "language": "en",
+      "script": "Latn",
+      "evidence_scope": "player_experience",
+      "original_text_ref": "source-post-7; no bulk copy retained",
+      "translation_ref": null,
+      "reporter_context": {
+        "skill_level": null,
+        "solo_multiplayer": "unknown",
+        "genre_preference": null,
+        "session_context": "crafting puzzle"
+      },
+      "concept_annotations": [
+        {
+          "concept_id": "research.game_world.affordance_legibility",
+          "evidence_relation": "contradicts",
+          "certainty": "strong",
+          "native_lexicalization": "don't understand how the crafting thing works",
+          "notes": "Player cannot infer which dropped items become usable."
+        },
+        {
+          "concept_id": "research.game_world.challenge_information_sufficiency",
+          "evidence_relation": "contradicts",
+          "certainty": "adequate",
+          "native_lexicalization": null,
+          "notes": "Creator later acknowledges the interaction is confusing and provides hints."
+        }
+      ],
+      "confounds": [
+        "version_mismatch",
+        "skill_mismatch"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "annotation_id": "core.forum.player.not-obvious.003",
+      "world_ref": "reference.core.v1.4",
+      "artifact_version_ref": "forum-thread-era-pre-v1.2_or_early-build",
+      "source": {
+        "source_ref": "https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map#c12",
+        "source_role": "forum_comment",
+        "independence_group": "minecraftforum-core-thread",
+        "published_at": "2015-05-25",
+        "retrieved_at": "2026-09-29",
+        "author_relation": "independent_player"
+      },
+      "language": "en",
+      "script": "Latn",
+      "evidence_scope": "mixed",
+      "original_text_ref": "source-post-12; no bulk copy retained",
+      "translation_ref": null,
+      "reporter_context": {
+        "skill_level": null,
+        "solo_multiplayer": "unknown",
+        "genre_preference": null,
+        "session_context": "puzzle/progression area"
+      },
+      "concept_annotations": [
+        {
+          "concept_id": "research.game_world.progression_legibility",
+          "evidence_relation": "contradicts",
+          "certainty": "strong",
+          "native_lexicalization": null,
+          "notes": "Player reports a missing teleport/progression problem; creator says intended action was not obvious and adds instructions."
+        },
+        {
+          "concept_id": "research.game_world.perceived_polish",
+          "evidence_relation": "contradicts",
+          "certainty": "adequate",
+          "native_lexicalization": null,
+          "notes": "Report mixes a suspected breakage with an unclear intended interaction."
+        }
+      ],
+      "confounds": [
+        "version_mismatch"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "annotation_id": "core.creator.changelog-legibility.004",
+      "world_ref": "reference.core.v1.4",
+      "artifact_version_ref": "v1.2-v1.4_change_history",
+      "source": {
+        "source_ref": "https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map",
+        "source_role": "author_changelog",
+        "independence_group": "core-author-changelog",
+        "published_at": null,
+        "retrieved_at": "2026-09-29",
+        "author_relation": "creator"
+      },
+      "language": "en",
+      "script": "Latn",
+      "evidence_scope": "world_intrinsic",
+      "original_text_ref": "creator changelog; no bulk copy retained",
+      "translation_ref": null,
+      "reporter_context": {
+        "skill_level": null,
+        "solo_multiplayer": null,
+        "genre_preference": null,
+        "session_context": "revision history"
+      },
+      "concept_annotations": [
+        {
+          "concept_id": "research.game_world.progression_legibility",
+          "evidence_relation": "supports",
+          "certainty": "strong",
+          "native_lexicalization": "easier to understand / instructions more clear",
+          "notes": "Creator explicitly records changes intended to make progression/mechanics easier to understand."
+        },
+        {
+          "concept_id": "research.game_world.affordance_legibility",
+          "evidence_relation": "supports",
+          "certainty": "adequate",
+          "native_lexicalization": "moved blocks ... to make more sense",
+          "notes": "Creator describes spatial/mechanical changes for intelligibility."
+        },
+        {
+          "concept_id": "research.game_world.perceived_polish",
+          "evidence_relation": "supports",
+          "certainty": "adequate",
+          "native_lexicalization": "fixed holes / missing mechanics",
+          "notes": "Creator fix evidence is not independent player judgment and is kept separate."
+        }
+      ],
+      "confounds": [
+        "version_mismatch"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "annotation_id": "core.forum.player.hint-request.005",
+      "world_ref": "reference.core.v1.4",
+      "artifact_version_ref": "thread-era-map",
+      "source": {
+        "source_ref": "https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map#c19",
+        "source_role": "forum_comment",
+        "independence_group": "minecraftforum-core-thread",
+        "published_at": "2015-05-30",
+        "retrieved_at": "2026-09-29",
+        "author_relation": "independent_player"
+      },
+      "language": "en",
+      "script": "Latn",
+      "evidence_scope": "player_experience",
+      "original_text_ref": "source-post-19; no bulk copy retained",
+      "translation_ref": null,
+      "reporter_context": {
+        "skill_level": null,
+        "solo_multiplayer": "unknown",
+        "genre_preference": null,
+        "session_context": "clock puzzle"
+      },
+      "concept_annotations": [
+        {
+          "concept_id": "research.game_world.challenge_information_sufficiency",
+          "evidence_relation": "ambiguous",
+          "certainty": "adequate",
+          "native_lexicalization": "can't figure out ... can you give me a hint",
+          "notes": "A hint request alone does not prove unfairness or bad design; retained as challenge-information evidence."
+        },
+        {
+          "concept_id": "research.game_world.perceived_challenge_fairness",
+          "evidence_relation": "ambiguous",
+          "certainty": "weak",
+          "native_lexicalization": null,
+          "notes": "No explicit unfairness judgment; human-primary concept must not be inferred from difficulty alone."
+        }
+      ],
+      "confounds": [
+        "skill_mismatch"
+      ]
+    }
+  ],
+  "initial_alignment_questions": [
+    "Can static command/redstone/interaction density identify mechanically complex areas but not legibility defects?",
+    "Can a persona/runtime trace detect stalls caused by missing progression triggers or unclear interaction rules?",
+    "Does the high command/redstone density predict fragility/polish risk without falsely labeling complexity as bad?",
+    "Can affordance/progression metrics distinguish a bug from a deliberately difficult puzzle?"
+  ],
+  "limitations": [
+    "Most forum comments precede final v1.4 and therefore are causal revision evidence, not direct labels for the frozen v1.4 artifact.",
+    "The creator changelog is not independent player feedback.",
+    "This is a bounded initial coding pass, not exhaustive sentiment extraction.",
+    "No overall quality or fun score is derived."
+  ]
+}
