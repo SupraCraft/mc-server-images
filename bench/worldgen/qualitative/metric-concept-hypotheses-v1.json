@@ -341,6 +341,83 @@
         "any attempt to equate popularity, completion, engagement, or metric aggregate with fun"
       ],
       "human_validation": "only"
+    },
+    {
+      "concept_id": "research.game_world.environmental_adaptation",
+      "automation_role": "strong_descriptive_proxy_candidate",
+      "candidate_metrics": [
+        "building_foundation_terrain_fit",
+        "cut_fill_volume",
+        "terrain_feature_utilization",
+        "biome_material_correspondence",
+        "input_output_settlement_difference_across_maps",
+        "bridge_tunnel_stilt_response_to_obstacles"
+      ],
+      "expected_relation": "positive_multivariate",
+      "falsifiers": [
+        "visually adaptive settlement that uses hand-authored terrain-specific templates without high metric variation",
+        "high input sensitivity that produces incoherent or destructive adaptation"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.embodied_functionality",
+      "automation_role": "strong_behavioral_proxy_candidate",
+      "candidate_metrics": [
+        "walkable_connectivity",
+        "door_and_interior_accessibility",
+        "path_cost_between_key_affordances",
+        "mob_spawnable_area",
+        "defensive_boundary_coverage",
+        "food_resource_access",
+        "crafting_affordance_access",
+        "player_scale_clearance"
+      ],
+      "expected_relation": "positive_multivariate",
+      "falsifiers": [
+        "technically reachable settlement whose circulation is unpleasant or confusing",
+        "resource-rich settlement with inaccessible or badly placed affordances"
+      ],
+      "human_validation": "required"
+    },
+    {
+      "concept_id": "research.game_world.evocative_environmental_narrative",
+      "automation_role": "weak_proxy_human_primary",
+      "candidate_metrics": [
+        "functional_structure_role_consistency",
+        "terrain_function_alignment",
+        "district_or_role_differentiation",
+        "development_layering_proxy",
+        "culture_style_consistency"
+      ],
+      "expected_relation": "unknown_multivariate",
+      "falsifiers": [
+        "strong repeated visual motif without any perceived story",
+        "human-readable narrative conveyed through subtle context not captured by block metrics"
+      ],
+      "human_validation": "primary"
+    },
+    {
+      "concept_id": "research.game_world.visual_design_coherence",
+      "automation_role": "partial_visual_proxy_candidate",
+      "candidate_metrics": [
+        "structure_proportion_outliers",
+        "palette_coherence",
+        "regional_style_consistency",
+        "appropriate_structure_variation",
+        "procedural_artifact_anomaly_rate",
+        "alignment_and_sightline_features",
+        "render_embedding_outlier_rate"
+      ],
+      "expected_relation": "positive_when_artifact_rate_low_and_variation_balanced",
+      "falsifiers": [
+        "coherent minimalist settlement scored lower due to subjective preference",
+        "high embedding consistency caused by repetitive copy-paste structures"
+      ],
+      "human_validation": "required"
     }
+  ],
+  "structured_human_benchmark_refs": [
+    "bench/worldgen/human-feedback/gdmc-structured-judge-corpus-v0.json"
   ]
 }
