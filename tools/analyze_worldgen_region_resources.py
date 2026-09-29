@@ -174,8 +174,17 @@ def section_y(section) -> int:
     return int(section.get("Y", section.get("y", 0)))
 
 
+def locate_world_root(extract_root: Path) -> Path:
+    matches=sorted(extract_root.rglob("level.dat"))
+    if len(matches) != 1:
+        raise RuntimeError(f"expected exactly one level.dat in archive, found {len(matches)}: {matches[:8]}")
+    return matches[0].parent
+
+
 def analyze_world(world: Path, chunk_radius: int = 4) -> dict:
     (spawn_x, spawn_y, spawn_z), spawn_source = read_level_spawn(world)
+    spawn_cx=math.floor(spawn_x/16)
+    spawn_cz=math.floor(spawn_z/16)
     block_counts = Counter()
     biome_counts = Counter()
     resource_counts = Counter()
@@ -195,7 +204,7 @@ def analyze_world(world: Path, chunk_radius: int = 4) -> dict:
             chunk = root
             cx = int(chunk.get("xPos", chunk.get("x_pos", 0)))
             cz = int(chunk.get("zPos", chunk.get("z_pos", 0)))
-            if abs(cx) > chunk_radius or abs(cz) > chunk_radius:
+            if abs(cx-spawn_cx) > chunk_radius or abs(cz-spawn_cz) > chunk_radius:
                 continue
             chunks_seen.add((cx, cz))
             sections = chunk.get("sections", chunk.get("Sections", []))
@@ -270,7 +279,13 @@ def analyze_world(world: Path, chunk_radius: int = 4) -> dict:
             "position": [spawn_x, spawn_y, spawn_z],
             "source": spawn_source,
         },
-        "bounded_chunk_box": [-chunk_radius, -chunk_radius, chunk_radius, chunk_radius],
+        "spawn_chunk": [spawn_cx, spawn_cz],
+        "bounded_chunk_box": [
+            spawn_cx-chunk_radius,
+            spawn_cz-chunk_radius,
+            spawn_cx+chunk_radius,
+            spawn_cz+chunk_radius
+        ],
         "chunks_seen": len(chunks_seen),
         "sections_seen": sections_seen,
         "resource_counts": dict(sorted(resource_counts.items())),
@@ -306,9 +321,7 @@ def main() -> int:
         root = Path(td)
         with zipfile.ZipFile(args.world_zip) as zf:
             zf.extractall(root)
-        world = root / "world"
-        if not (world / "level.dat").exists():
-            raise SystemExit("world.zip does not contain world/level.dat")
+        world = locate_world_root(root)
         result = analyze_world(world, chunk_radius=args.chunk_radius)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
