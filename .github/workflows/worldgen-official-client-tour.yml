@@ -361,12 +361,16 @@ jobs:
           cp server/server.log evidence/server.log 2>/dev/null || true
           cp source-analysis/tour/manifest.json evidence/source-tour-manifest.json 2>/dev/null || true
 
-      - name: Stop disposable processes
+      - name: Stop disposable processes and preserve Quick Play diagnostics
         if: always()
         shell: bash
         run: |
           set +e
           [[ -f client.pid ]] && kill "$(cat client.pid)" 2>/dev/null
+          sleep 2
+          mkdir -p evidence/quickplay
+          cp client-runtime/game/quickPlay/log.json evidence/quickplay/log.json 2>/dev/null || true
+          find client-runtime/game/quickPlay -maxdepth 2 -type f -print > evidence/quickplay/files.txt 2>/dev/null || true
           [[ -f server.pid ]] && kill "$(cat server.pid)" 2>/dev/null
           [[ -f xorg.pid ]] && kill "$(cat xorg.pid)" 2>/dev/null
           exit 0
