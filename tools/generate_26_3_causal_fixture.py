@@ -82,13 +82,11 @@ def main():
             command(p,"fill -4 99 -4 12 99 5 minecraft:stone")
 
             # Semantic state and player-facing orchestration.
-            command(p,"scoreboard objectives add fixture dummy")
-            command(p,"scoreboard players set $fixture fixture 0")
 
             # Channel A: trapped chest opening can emit redstone.
             command(p,"setblock 0 100 0 minecraft:trapped_chest[facing=north]")
             command(p,"setblock 1 100 0 minecraft:redstone_wire")
-            command(p,"setblock 2 100 0 minecraft:command_block[facing=east]{Command:\"scoreboard players add $fixture fixture 1\"}")
+            command(p,"setblock 2 100 0 minecraft:command_block[facing=east]{Command:\"function supracraft:fixture\"}")
             command(p,"setblock 3 100 0 minecraft:chain_command_block[facing=east,conditional=true]{Command:\"tellraw @a {\\\"text\\\":\\\"fixture activated\\\"}\",auto:1b}")
             command(p,"setblock 4 100 0 minecraft:chain_command_block[facing=east]{Command:\"setblock 6 100 0 minecraft:redstone_block\",auto:1b}")
             command(p,"setblock 5 100 0 minecraft:redstone_lamp")
@@ -111,13 +109,6 @@ def main():
             command(p,'summon minecraft:interaction 7 101 2 {width:1.0f,height:1.0f,Tags:["fixture_interaction"]}')
             command(p,'summon minecraft:text_display 7 102 2 {Tags:["fixture_display"]}')
 
-            # Datapack semantic-orchestration channel.
-            command(p,"function supracraft:fixture")
-            time.sleep(2)
-            command(p,'execute if score $dp datapack_fixture matches 7 run say CAUSAL_FIXTURE_DATAPACK_SCORE_PASS')
-            command(p,'execute if block 8 100 0 minecraft:redstone_lamp run say CAUSAL_FIXTURE_DATAPACK_WORLD_PASS')
-            command(p,'execute if block 9 100 0 minecraft:redstone_lamp run say CAUSAL_FIXTURE_DATAPACK_DELAYED_WORLD_PASS')
-
             # Runtime causal verification for channels that do not require a real player.
             # B: container inventory -> comparator -> wire -> lamp.
             command(p,"item replace block 1 100 2 container.0 with minecraft:stone 64")
@@ -129,11 +120,15 @@ def main():
             time.sleep(2)
             command(p,'execute if block 3 100 4 minecraft:piston[extended=true] run say CAUSAL_FIXTURE_PISTON_PASS')
 
-            # A logic tail: direct power injection isolates command/scoreboard/chain semantics.
+            # A cross-layer logic tail: direct power injection isolates
+            # physical redstone -> command block -> datapack function -> semantic
+            # state/scheduled effect -> command-chain feedback.
             # The trapped-chest opening sensor itself remains a live-player interaction test.
             command(p,"setblock 2 99 0 minecraft:redstone_block")
-            time.sleep(2)
-            command(p,'execute if score $fixture fixture matches 1.. run say CAUSAL_FIXTURE_SCORE_PASS')
+            time.sleep(3)
+            command(p,'execute if score $dp datapack_fixture matches 7 run say CAUSAL_FIXTURE_DATAPACK_SCORE_PASS')
+            command(p,'execute if block 8 100 0 minecraft:redstone_lamp run say CAUSAL_FIXTURE_DATAPACK_WORLD_PASS')
+            command(p,'execute if block 9 100 0 minecraft:redstone_lamp run say CAUSAL_FIXTURE_DATAPACK_DELAYED_WORLD_PASS')
             command(p,'execute if block 6 100 0 minecraft:redstone_block run say CAUSAL_FIXTURE_WORLD_EFFECT_PASS')
 
             command(p,"save-all flush")
@@ -154,7 +149,6 @@ def main():
         required_markers=[
             "CAUSAL_FIXTURE_COMPARATOR_PASS",
             "CAUSAL_FIXTURE_PISTON_PASS",
-            "CAUSAL_FIXTURE_SCORE_PASS",
             "CAUSAL_FIXTURE_WORLD_EFFECT_PASS",
             "CAUSAL_FIXTURE_DATAPACK_PASS",
             "CAUSAL_FIXTURE_DATAPACK_DELAYED_PASS",
@@ -181,7 +175,7 @@ def main():
           "minecraft_version":"26.3",
           "protocol":evidence["artifact_version_json"]["protocol_version"],
           "fixture_semantics":{
-            "channel_a":"trapped chest opening -> redstone -> command semantic state -> conditional chain feedback/world mutation",
+            "channel_a":"trapped chest opening -> redstone -> command block -> datapack function -> scoreboard/storage state + scheduled world effect -> conditional chain feedback/world mutation",
             "channel_b":"trapped chest inventory -> comparator -> redstone -> lamp",
             "channel_c":"lever -> repeater -> wire -> piston",
             "surfaces":["interaction entity","text display entity"]
@@ -189,7 +183,7 @@ def main():
           "runtime_verified":[
             "container_inventory_to_comparator_to_lamp",
             "lever_to_repeater_to_piston",
-            "command_block_to_scoreboard_state",
+            "physical_redstone_to_command_block_to_datapack_state",
             "command_chain_to_world_effect",
             "datapack_function_to_scoreboard_and_storage_state",
             "datapack_schedule_to_delayed_world_effect"
