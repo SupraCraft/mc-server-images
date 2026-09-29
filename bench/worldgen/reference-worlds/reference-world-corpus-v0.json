@@ -284,6 +284,34 @@
         }
       ],
       "analysis_notes": "Original v1.4 is the evidence artifact. Any 26.3 datafixed/upgraded copy is a distinct derivative treatment and must retain CC BY-SA attribution/share-alike; do not silently equate its gameplay behavior with original 1.8."
+    },
+    {
+      "world_id": "reference.savanna-scramble.v2",
+      "name": "Savanna Scramble",
+      "edition": "java",
+      "source_version": "1.19.2-1.19.4",
+      "genre": [
+        "adventure",
+        "exploration",
+        "parkour",
+        "story",
+        "collectibles",
+        "multiplayer"
+      ],
+      "artifact_sources": [
+        "https://www.planetminecraft.com/project/savanna-scramble/",
+        "https://www.planetminecraft.com/project/savanna-scramble/download/mirror/672206/"
+      ],
+      "artifact_rights": "CC-BY-NC-SA-4.0_with_voice-file-modification-exception",
+      "execution_state": "open_feedback_rich_candidate_pending_exact_hash",
+      "feedback_sources": [
+        {
+          "language": "en",
+          "ref": "https://www.planetminecraft.com/project/savanna-scramble/",
+          "role": "player_comments_creator_replies_and_v2_changelog"
+        }
+      ],
+      "analysis_notes": "Keep original v2 behavior as feedback target. Any datafixed/upgraded copy is a separate derivative treatment under CC BY-NC-SA; do not modify voice-containing files per creator exception."
     }
   ]
 }
