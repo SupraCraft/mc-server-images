@@ -130,6 +130,30 @@
         "vanilla_survival_start_bundle",
         "ordinary_progression"
       ]
+    },
+    {
+      "profile_id": "generated_settlement",
+      "intent": "Procedurally generated settlement evaluated as an adaptive, embodied, narratively evocative and visually coherent built environment across varying input terrain.",
+      "required_metric_families": [
+        "terrain_adaptation",
+        "embodied_functionality",
+        "navigation",
+        "resource_food_security_affordances",
+        "narrative_integration",
+        "visual_design_coherence"
+      ],
+      "optional_metric_families": [
+        "architecture",
+        "place_identity",
+        "villager_functionality",
+        "mob_safety",
+        "transport",
+        "performance"
+      ],
+      "not_applicable_by_default": [
+        "vanilla_survival_start_bundle",
+        "global_world_biome_diversity"
+      ]
     }
   ],
   "profile_assignments": [
