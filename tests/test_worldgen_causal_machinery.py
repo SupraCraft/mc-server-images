@@ -50,6 +50,43 @@ class CausalMachineryPrimitiveTests(unittest.TestCase):
         self.assertEqual([{"objective":"keys","access":"write"}],causal.scoreboard_refs(set_parts))
         self.assertEqual([{"objective":"keys","access":"read"}],causal.scoreboard_refs(test_parts))
 
+    def test_button_metadata_decodes_facing_and_attached_support(self):
+        cases={
+            1:("east",[1,0,0],[-1,0,0]),
+            2:("west",[-1,0,0],[1,0,0]),
+            3:("south",[0,0,1],[0,0,-1]),
+            4:("north",[0,0,-1],[0,0,1]),
+            0:("down",[0,-1,0],[0,1,0]),
+            5:("up",[0,1,0],[0,-1,0]),
+        }
+        for meta,(facing,facing_vector,support_vector) in cases.items():
+            with self.subTest(meta=meta):
+                d=causal.metadata_semantics("wooden_button",meta)
+                self.assertEqual(facing,d["facing"])
+                self.assertEqual(facing_vector,d["facing_vector"])
+                self.assertEqual(support_vector,d["support_vector"])
+                self.assertFalse(d["powered"])
+
+    def test_button_attached_command_block_is_strong_directed_power_edge(self):
+        button=(25,66,-5)
+        support=(26,66,-5)
+        machinery={
+            button:{
+                "family":"wooden_button",
+                "metadata_semantics":causal.metadata_semantics("wooden_button",2),
+            },
+            support:{"family":"command_block","metadata_semantics":{}},
+        }
+        edges=causal.legacy_direct_redstone_edges(machinery)
+        matches=[
+            e for e in edges
+            if e["edge_type"]=="legacy_button_attached_support_power"
+        ]
+        self.assertEqual(1,len(matches))
+        self.assertEqual("25,66,-5",matches[0]["source"])
+        self.assertEqual("26,66,-5",matches[0]["target"])
+        self.assertEqual("strong",matches[0]["certainty"])
+
     def test_direct_legacy_dust_edges_keep_sensor_direction(self):
         machinery={
             (0,0,0):{"family":"lever"},

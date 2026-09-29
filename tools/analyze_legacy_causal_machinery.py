@@ -131,6 +131,14 @@ DIR6 = {
     4: ("west", (-1, 0, 0)),
     5: ("east", (1, 0, 0)),
 }
+BUTTON_META_FACING = {
+    0: ("down", (0, -1, 0)),
+    1: ("east", (1, 0, 0)),
+    2: ("west", (-1, 0, 0)),
+    3: ("south", (0, 0, 1)),
+    4: ("north", (0, 0, -1)),
+    5: ("up", (0, 1, 0)),
+}
 CHEST_FACING = {
     2: "north",
     3: "south",
@@ -273,7 +281,19 @@ def metadata_semantics(family: str, meta: int | None):
     elif family in {"redstone_torch_off", "redstone_torch_on"}:
         out["lit"] = family.endswith("_on")
         out["attachment_code"] = meta & 0x7
-    elif family in {"lever", "stone_button", "wooden_button"}:
+    elif family in {"stone_button", "wooden_button"}:
+        code = meta & 0x7
+        name, facing = BUTTON_META_FACING.get(code, BUTTON_META_FACING[5])
+        support = opposite(facing)
+        out.update({
+            "powered": bool(meta & 0x8),
+            "attachment_code": code,
+            "facing": name,
+            "facing_vector": list(facing),
+            "support_vector": list(support),
+            "support_semantics": "Minecraft 1.8.8 BlockButton support is opposite FACING; powered button strongly powers and notifies that attached support block",
+        })
+    elif family == "lever":
         out["powered"] = bool(meta & 0x8)
         out["attachment_code"] = meta & 0x7
     elif family in {
@@ -460,6 +480,17 @@ def legacy_direct_redstone_edges(machinery):
                         "source":node_id(pos),"target":node_id(q),
                         "edge_type":"legacy_sensor_direct_dust_power",
                         "certainty":"adequate",
+                    })
+        if family in {"stone_button", "wooden_button"}:
+            support_vector=node.get("metadata_semantics",{}).get("support_vector")
+            if support_vector:
+                q=add_pos(pos,tuple(support_vector))
+                if q in machinery:
+                    edges.append({
+                        "source":node_id(pos),"target":node_id(q),
+                        "edge_type":"legacy_button_attached_support_power",
+                        "certainty":"strong",
+                        "basis":"exact Minecraft 1.8.8 BlockButton metadata FACING; attached support is opposite FACING",
                     })
     return edges
 
@@ -810,7 +841,7 @@ def analyze(world: Path):
         "nodes": sorted(machinery.values(), key=lambda n: tuple(n["position"])),
         "limitations": [
             "Physical adjacency is not equivalent to powered redstone connectivity or causal direction.",
-            "Repeater/comparator metadata ports and command-block facing are decoded. Same-level dust continuity and direct sensor/dust/component relations are recovered separately; vertical dust steps, opaque solid-block conduction, locking/side-input behavior, and quasi-connectivity remain incomplete.",
+            "Repeater/comparator metadata ports, command-block facing, and exact 1.8.8 button attachment direction are decoded. Same-level dust continuity, direct sensor/dust/component relations, and button-to-attached-support power are recovered separately; vertical dust steps, opaque solid-block conduction beyond the directly attached button support, locking/side-input behavior, and quasi-connectivity remain incomplete.",
             "Trapped-chest opening power and comparator inventory/fullness reads are represented as distinct causal channels.",
             "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
             "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
