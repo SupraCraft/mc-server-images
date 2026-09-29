@@ -60,7 +60,7 @@ class Rcon:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", type=Path, required=True)
-    ap.add_argument("--username", default="SupraCraftTourBot")
+    ap.add_argument("--username", default="SupraTourBot")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=25572)
     ap.add_argument("--password", required=True)
@@ -68,6 +68,11 @@ def main() -> int:
     ap.add_argument("--wait-player-seconds", type=float, default=120)
     ap.add_argument("--receipt", type=Path, required=True)
     args = ap.parse_args()
+
+    # Compatibility with the pre-qualification camera name, which exceeded the
+    # 16-character Minecraft username limit and was replaced by SupraTourBot.
+    requested_username = username
+    username = "SupraTourBot" if requested_username == "SupraCraftTourBot" else requested_username
 
     manifest = json.loads(args.manifest.read_text("utf-8"))
     sites = manifest.get("sites") or []
@@ -80,7 +85,7 @@ def main() -> int:
         last_list = ""
         while time.monotonic() < deadline:
             last_list = rcon.command("list")
-            if args.username in last_list:
+            if username in last_list:
                 break
             time.sleep(1)
         else:
@@ -89,20 +94,21 @@ def main() -> int:
                 "status": "blocked",
                 "blocker": "camera-player-did-not-join",
                 "last_list": last_list,
-                "username": args.username,
+                "username": username,
+            "requested_username": requested_username,
             }
             args.receipt.parent.mkdir(parents=True, exist_ok=True)
             args.receipt.write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, indent=2))
             return 3
 
-        rcon.command(f"gamemode spectator {args.username}")
-        rcon.command(f"effect give {args.username} minecraft:night_vision infinite 0 true")
+        rcon.command(f"gamemode spectator {username}")
+        rcon.command(f"effect give {username} minecraft:night_vision infinite 0 true")
         visited = []
         for site in sites:
             p = site["position"]
             look = site.get("look_at")
-            cmd = f"tp {args.username} {p[0]} {p[1]} {p[2]}"
+            cmd = f"tp {username} {p[0]} {p[1]} {p[2]}"
             if look:
                 cmd += f" facing {look[0]} {look[1]} {look[2]}"
             response = rcon.command(cmd)
@@ -118,7 +124,8 @@ def main() -> int:
         result = {
             "schema": "supracraft-rcon-tour/1",
             "status": "success",
-            "username": args.username,
+            "username": username,
+            "requested_username": requested_username,
             "visited_sites": visited,
             "seconds_per_site": args.seconds_per_site,
         }
