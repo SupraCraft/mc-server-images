@@ -149,7 +149,7 @@ jobs:
         run: |
           set -euo pipefail
           set +e
-          python tools/prepare_official_minecraft_client.py             --release-evidence probes/26.3-release-identity.json             --runtime-dir client-runtime             --evidence-dir evidence/client             --username SupraCraftTourBot             --server 127.0.0.1:25571             --width 640             --height 360             > evidence/client-hydration.log 2>&1
+          python tools/prepare_official_minecraft_client.py             --release-evidence probes/26.3-release-identity.json             --runtime-dir client-runtime             --evidence-dir evidence/client             --username SupraTourBot             --server 127.0.0.1:25571             --width 640             --height 360             > evidence/client-hydration.log 2>&1
           rc=$?
           set -e
           if [[ $rc -ne 0 ]]; then
@@ -277,7 +277,7 @@ jobs:
 
           joined=0
           for i in {1..180}; do
-            if grep -q "SupraCraftTourBot.*joined the game" server/server.log 2>/dev/null; then
+            if grep -q "SupraTourBot.*joined the game" server/server.log 2>/dev/null; then
               joined=1
               break
             fi
