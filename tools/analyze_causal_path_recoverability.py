@@ -41,6 +41,17 @@ def normalize(doc):
     trusted=defaultdict(set); candidate=defaultdict(set)
     unresolved=[]
     for e in edges:
+        # Legacy physical-adjacency candidates are intentionally undirected a/b
+        # relations. They may contribute only to candidate reachability.
+        if e.get("a") and e.get("b"):
+            a,b=e["a"],e["b"]
+            if a not in nodes or b not in nodes:
+                unresolved.append(e)
+                continue
+            candidate[a].add(b)
+            candidate[b].add(a)
+            continue
+
         src=e.get("source"); dst=e.get("target")
         if not src or not dst:
             unresolved.append(e)
