@@ -9,7 +9,7 @@ from pathlib import Path
 import nbtlib
 
 from analyze_legacy_causal_machinery import (
-    command_targets, normalize_command, read_scoreboard, scoreboard_refs
+    COMMAND_ROLE, command_targets, normalize_command, read_scoreboard, scoreboard_refs
 )
 
 DIR={
@@ -165,6 +165,11 @@ def analyze(world:Path):
             command=str(plain(be.get("Command","")))
             verb,parts=normalize_command(command)
             command_counts[verb or "<empty>"]+=1
+            command_roles=COMMAND_ROLE.get(verb,[])
+            if command_roles:
+                node["roles"]=sorted(set(node["roles"]) | set(command_roles))
+                for role in command_roles:
+                    role_counts[role]+=1
             node["block_entity"].update({
               "command_present":bool(command.strip()),"verb":verb or None,
               "command_sha256":hashlib.sha256(command.encode()).hexdigest(),
