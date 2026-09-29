@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "status": "candidate_reference_world_corpus",
+  "analysis_blind": true,
+  "human_feedback_authority_ref": "SupraCraft/mc-structure-foundry-private#7",
+  "cpe_research_ref": "mark-e-deyoung/concept-policy-engine-private#301",
+  "rules": [
+    "artifact_metadata_and_feedback_source_refs_may_be_visible_to_corpus_management_but_feedback_theme_labels_are_not_inputs_to_world_analyzers",
+    "do_not_redistribute_world_bytes_unless_upstream_rights_explicitly_allow_it",
+    "pin_exact_artifact_version_and_hash_before benchmark execution",
+    "version_upgrade_is_a_separate_treatment_not_silent_normalization",
+    "ratings_downloads_and_upvotes_are_context_not_quality_labels"
+  ],
+  "worlds": [
+    {
+      "world_id": "reference.diversity-3.v1.6.6",
+      "name": "Diversity 3",
+      "edition": "java",
+      "source_version": "1.14.4",
+      "genre": [
+        "multi-genre",
+        "adventure",
+        "puzzle",
+        "parkour",
+        "survival"
+      ],
+      "artifact_sources": [
+        "https://www.curseforge.com/minecraft/worlds/diversity-3",
+        "https://www.planetminecraft.com/project/diversity-3"
+      ],
+      "artifact_rights": "upstream-download-only_all-rights-reserved",
+      "execution_state": "needs_exact_file_hash_and_upgrade_qualification",
+      "feedback_sources": [
+        {
+          "language": "en",
+          "ref": "https://www.curseforge.com/minecraft/worlds/diversity-3/comments",
+          "role": "player_comments"
+        },
+        {
+          "language": "fr",
+          "ref": "https://minecraft.fr/",
+          "role": "ratings_comments_cross_site"
+        },
+        {
+          "language": "ru",
+          "ref": "https://ru-minecraft.ru/",
+          "role": "player_comments_cross_site"
+        },
+        {
+          "language": "en",
+          "ref": "https://www.reddit.com/r/minecraftmaps/",
+          "role": "recommendation_discussion"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.parkour-spiral.v3.0.3",
+      "name": "Parkour Spiral",
+      "edition": "java",
+      "source_version": "26.2",
+      "genre": [
+        "parkour",
+        "challenge",
+        "multiplayer"
+      ],
+      "artifact_sources": [
+        "https://www.minecraftmaps.com/29139-parkour-spiral",
+        "https://hielkemaps.com/maps/"
+      ],
+      "artifact_rights": "upstream-terms",
+      "execution_state": "high_priority_near-current_version",
+      "feedback_sources": [
+        {
+          "language": "en",
+          "ref": "https://www.minecraftmaps.com/29139-parkour-spiral",
+          "role": "ratings_comments_reviews"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.parkour-spiral-3.v1.4.5",
+      "name": "Parkour Spiral 3",
+      "edition": "java",
+      "source_version": "26.2",
+      "genre": [
+        "parkour",
+        "challenge",
+        "multiplayer"
+      ],
+      "artifact_sources": [
+        "https://www.minecraftmaps.com/48382-parkour-spiral-3",
+        "https://hielkemaps.com/maps/parkour-spiral-3"
+      ],
+      "artifact_rights": "upstream-terms",
+      "execution_state": "high_priority_near-current_version",
+      "feedback_sources": [
+        {
+          "language": "en",
+          "ref": "https://www.minecraftmaps.com/48382-parkour-spiral-3",
+          "role": "ratings"
+        },
+        {
+          "language": "en",
+          "ref": "https://hielkemaps.com/maps/parkour-spiral-3",
+          "role": "community_comments_and_times"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.terra-swoop-force.v1.1.5",
+      "name": "Terra Swoop Force",
+      "edition": "java",
+      "source_version": "1.16.4",
+      "genre": [
+        "elytra",
+        "arcade",
+        "adventure",
+        "time-trial"
+      ],
+      "artifact_sources": [
+        "https://noxcrew.com/installing-terra-swoop-force",
+        "https://www.curseforge.com/minecraft/worlds/terra-swoop-force"
+      ],
+      "artifact_rights": "free-upstream-download_no-republication-assumed",
+      "execution_state": "needs_upgrade_qualification",
+      "feedback_sources": [
+        {
+          "language": "en",
+          "ref": "https://www.curseforge.com/minecraft/worlds/terra-swoop-force",
+          "role": "project_engagement"
+        },
+        {
+          "language": "en",
+          "ref": "https://noxcrew.com/creations/terraswoopforce",
+          "role": "creator_context_not_independent_feedback"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.oneblock-reborn.v1.2.4",
+      "name": "OneBlock Reborn",
+      "edition": "java",
+      "source_version": "1.21.11",
+      "genre": [
+        "survival",
+        "progression",
+        "challenge",
+        "adventure"
+      ],
+      "artifact_sources": [
+        "https://www.curseforge.com/minecraft/worlds/oneblock-reborn"
+      ],
+      "artifact_rights": "upstream-download-only_all-rights-reserved",
+      "execution_state": "high_feedback_candidate_needs_exact_file_hash",
+      "feedback_sources": [
+        {
+          "language": "en",
+          "ref": "https://www.curseforge.com/minecraft/worlds/oneblock-reborn/comments",
+          "role": "large_player_comment_thread"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.witchcraft-wizardry",
+      "name": "Witchcraft and Wizardry",
+      "edition": "java",
+      "source_version": "legacy_exact_version_to_resolve",
+      "genre": [
+        "rpg",
+        "adventure",
+        "open-world",
+        "story"
+      ],
+      "artifact_sources": [
+        "https://floonetwork.gumroad.com/l/floomap"
+      ],
+      "artifact_rights": "free-upstream-download_creator-controlled",
+      "execution_state": "needs_exact_artifact_version_and_runtime_requirements",
+      "feedback_sources": [
+        {
+          "language": "multi",
+          "ref": "https://floonetwork.gumroad.com/l/floomap",
+          "role": "verified_product_ratings"
+        },
+        {
+          "language": "es",
+          "ref": "https://floonetwork.gumroad.com/l/wwomeb",
+          "role": "localized_distribution_rating"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.kosmos.ru.1.12.2",
+      "name": "Космос",
+      "edition": "java",
+      "source_version": "1.12.2",
+      "genre": [
+        "survival",
+        "skyblock-like"
+      ],
+      "artifact_sources": [
+        "https://minecraft-inside.ru/maps/73835-kosmos.html"
+      ],
+      "artifact_rights": "source-hosted_download_rights_to_verify",
+      "execution_state": "feedback-rich_negative_candidate_needs_artifact_resolution",
+      "feedback_sources": [
+        {
+          "language": "ru",
+          "ref": "https://minecraft-inside.ru/maps/73835-kosmos.html",
+          "role": "player_comments"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.desolado.es.1.10.2",
+      "name": "DESOLADO",
+      "edition": "java",
+      "source_version": "1.10.2",
+      "genre": [
+        "adventure",
+        "story"
+      ],
+      "artifact_sources": [
+        "https://minecraftmin.net/index.php?topic=15565.0"
+      ],
+      "artifact_rights": "source-hosted_download_rights_to_verify",
+      "execution_state": "high_value_counterexample_needs_artifact_resolution",
+      "feedback_sources": [
+        {
+          "language": "es",
+          "ref": "https://minecraftmin.net/index.php?topic=15565.0",
+          "role": "player_review"
+        }
+      ]
+    },
+    {
+      "world_id": "reference.legendary-rainbow.ko.1.20.4",
+      "name": "Legendary! Rainbow",
+      "edition": "java",
+      "source_version": "1.20.4",
+      "genre": [
+        "escape",
+        "multi-genre",
+        "puzzle",
+        "parkour",
+        "arena"
+      ],
+      "artifact_sources": [
+        "https://gall.dcinside.com/board/view/?id=minecraft&no=81438"
+      ],
+      "artifact_rights": "creator-posted_download_link_rights_to_verify",
+      "execution_state": "multilingual_candidate_needs_artifact_resolution",
+      "feedback_sources": [
+        {
+          "language": "ko",
+          "ref": "https://gall.dcinside.com/board/view/?id=minecraft&no=81438",
+          "role": "community_post_comments_votes"
+        }
+      ]
+    }
+  ]
+}
