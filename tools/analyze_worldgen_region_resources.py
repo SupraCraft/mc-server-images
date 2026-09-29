@@ -114,9 +114,10 @@ def palette_name(entry) -> str:
     if isinstance(entry, str):
         return str(entry)
     if hasattr(entry, "get"):
-        name = entry.get("Name", entry.get("name"))
-        if name is not None:
-            return str(name)
+        for key in ("Name", "name", "id", ""):
+            value = entry.get(key)
+            if value is not None:
+                return str(value)
     return str(entry)
 
 
