@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import urllib.request
+import urllib.parse
 import zipfile
 from pathlib import Path
 
@@ -44,6 +45,35 @@ def resolve_mediafire(page_url: str) -> str:
     return html.unescape(candidates[0]).replace("&amp;","&")
 
 
+
+def resolve_download_page(page_url: str) -> tuple[str, str]:
+    """Resolve an upstream download page/mirror without persisting transient signed URLs."""
+    parsed=urllib.parse.urlparse(page_url)
+    if "mediafire.com" in parsed.netloc:
+        return resolve_mediafire(page_url), "mediafire"
+
+    req=urllib.request.Request(page_url,headers={"User-Agent":"SupraCraft-reference-world-calibration/1"})
+    with urllib.request.urlopen(req,timeout=120) as r:
+        final_url=r.geturl()
+        content_type=(r.headers.get("Content-Type") or "").lower()
+        head=r.read(512*1024)
+
+    final=urllib.parse.urlparse(final_url)
+    if "mediafire.com" in final.netloc:
+        return resolve_mediafire(final_url), "mediafire-via-mirror"
+
+    if "zip" in content_type or head.startswith(b"PK\x03\x04"):
+        return final_url, final.netloc or "direct"
+
+    text=head.decode("utf-8",errors="replace")
+    media=re.search(r'https?://(?:www\.)?mediafire\.com/[^"\'<> ]+',text)
+    if media:
+        media_page=html.unescape(media.group(0)).replace("&amp;","&")
+        return resolve_mediafire(media_page), "mediafire-via-page"
+
+    raise RuntimeError(f"download page did not resolve to a ZIP or supported provider: {page_url}")
+
+
 def locate_world_root(extract_root: Path) -> Path:
     matches=sorted(extract_root.rglob("level.dat"))
     if len(matches) != 1:
@@ -75,7 +105,8 @@ def inspect_level(world_root: Path) -> dict:
 def main() -> int:
     ap=argparse.ArgumentParser()
     ap.add_argument("--world-id", required=True)
-    ap.add_argument("--mediafire-page", required=True)
+    ap.add_argument("--download-page")
+    ap.add_argument("--mediafire-page", help="Backward-compatible alias for --download-page")
     ap.add_argument("--license", required=True)
     ap.add_argument("--attribution", required=True)
     ap.add_argument("--source-page", required=True)
@@ -86,7 +117,10 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     source_zip=out/"original-world.zip"
 
-    direct=resolve_mediafire(args.mediafire_page)
+    download_page=args.download_page or args.mediafire_page
+    if not download_page:
+        ap.error("one of --download-page or --mediafire-page is required")
+    direct, provider_kind=resolve_download_page(download_page)
     req=urllib.request.Request(direct,headers={"User-Agent":"SupraCraft-reference-world-calibration/1"})
     with urllib.request.urlopen(req,timeout=300) as r, source_zip.open("wb") as f:
         shutil.copyfileobj(r,f)
@@ -103,7 +137,7 @@ def main() -> int:
         f"# Reference-world attribution\n\n"
         f"- World ID: {args.world_id}\n"
         f"- Source: {args.source_page}\n"
-        f"- Artifact download page: {args.mediafire_page}\n"
+        f"- Artifact download page: {download_page}\n"
         f"- License: {args.license}\n"
         f"- Attribution: {args.attribution}\n\n"
         "This benchmark intake preserves the original artifact as a calibration input. "
@@ -115,8 +149,9 @@ def main() -> int:
         "schema":"supracraft-reference-world-intake/1",
         "world_id":args.world_id,
         "source_page":args.source_page,
-        "download_page":args.mediafire_page,
-        "resolved_provider_host":urllib.request.urlparse(direct).hostname if hasattr(urllib.request,"urlparse") else "download.mediafire.com",
+        "download_page":download_page,
+        "resolved_provider_kind":provider_kind,
+        "resolved_provider_host":urllib.parse.urlparse(direct).hostname,
         "license":args.license,
         "original_sha256":sha256(source_zip),
         "original_bytes":source_zip.stat().st_size,
@@ -125,8 +160,7 @@ def main() -> int:
         "human_feedback_labels_loaded":False,
         "treatment":"original-artifact-intake-only"
     }
-    # urllib.request has no urlparse; don't retain a transient signed direct URL.
-    receipt["resolved_provider_host"]="mediafire-download"
+    # Do not persist transient signed/direct provider URLs.
     (out/"intake-receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     print(json.dumps(receipt,indent=2,sort_keys=True))
     return 0
