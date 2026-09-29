@@ -466,6 +466,89 @@
         ]
       },
       "frontier": "Validate each candidate tranche only after its canonical public workflow evidence exists."
+    },
+    "agent-dispatch-runtime-proof": {
+      "parent_delegation_id": "bootstrap-orchestrator",
+      "responsibilities": [
+        "dispatch exactly one already-qualified public Minecraft 26.3 vanilla runtime smoke through Agent Dispatch",
+        "return canonical public GitHub Actions evidence to the parent for reconciliation"
+      ],
+      "state_refs": [
+        "public-execution-authority",
+        "public-only-policy",
+        "runner-evidence",
+        "no-scheduler"
+      ],
+      "unknown_refs": [
+        "agent-dispatch-public-binding"
+      ],
+      "scope": {
+        "allowed": [
+          "read public benchmark repository state",
+          "dispatch approved public benchmark workflows"
+        ],
+        "prohibited": [
+          "modify public benchmark code/contracts on a bounded branch",
+          "run private GitHub-hosted Actions",
+          "change secrets"
+        ]
+      },
+      "authority": {
+        "grants": [
+          "read public repository",
+          "dispatch approved public workflow"
+        ],
+        "reserved": [
+          "write bounded public benchmark candidate",
+          "run validation",
+          "merge",
+          "publish release",
+          "spend money"
+        ]
+      },
+      "capabilities": {
+        "required": [
+          "minecraft-vanilla-runtime-smoke"
+        ],
+        "may_acquire_free_tools": false,
+        "may_build_tools": false,
+        "may_delegate": false
+      },
+      "resources": [
+        {
+          "kind": "workflow-dispatches",
+          "limit": 1,
+          "unit": "dispatch",
+          "enforcement": "hard"
+        },
+        {
+          "kind": "money",
+          "limit": 0,
+          "unit": "USD",
+          "enforcement": "hard"
+        }
+      ],
+      "constraints": [
+        "Use only the already-accepted public mc-server-images Agent Dispatch vanilla runtime workflow on standard ubuntu-24.04.",
+        "Do not retry or redispatch automatically.",
+        "Do not modify repository state, secrets, target bindings, or client grants from this leaf.",
+        "This child is a leaf and may not delegate."
+      ],
+      "acceptance": {
+        "criteria": [
+          "Sidecar projects this leaf without authority or scope amplification.",
+          "Planning binds exactly one configured target satisfying minecraft-vanilla-runtime-smoke.",
+          "GitHub accepts at most one correlated workflow dispatch.",
+          "The correlated public workflow reaches terminal success.",
+          "Observation returns a normalized result referencing canonical GitHub evidence."
+        ],
+        "evidence_refs": [
+          ".github/workflows/agent-dispatch-vanilla-runtime.yml",
+          "https://github.com/SupraCraft/mc-server-images/pull/14",
+          "https://github.com/SupraCraft/mc-server-images/issues/15"
+        ]
+      },
+      "frontier": "After exact Sidecar client admission and target convergence, plan and dispatch assignment worldgen-runtime-proof-001 once, then observe and reconcile."
     }
   }
 }
