@@ -71,7 +71,7 @@ def main() -> int:
 
     # Compatibility with the pre-qualification camera name, which exceeded the
     # 16-character Minecraft username limit and was replaced by SupraTourBot.
-    requested_username = username
+    requested_username = args.username
     username = "SupraTourBot" if requested_username == "SupraCraftTourBot" else requested_username
 
     manifest = json.loads(args.manifest.read_text("utf-8"))
@@ -95,7 +95,7 @@ def main() -> int:
                 "blocker": "camera-player-did-not-join",
                 "last_list": last_list,
                 "username": username,
-            "requested_username": requested_username,
+                "requested_username": requested_username,
             }
             args.receipt.parent.mkdir(parents=True, exist_ok=True)
             args.receipt.write_text(json.dumps(result, indent=2) + "\n")
