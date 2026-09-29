@@ -167,7 +167,11 @@ def analyze_world(world: Path) -> dict:
     sections_seen = 0
     decode_errors = []
 
-    region_dir = world / "region"
+    region_candidates = [
+        world / "dimensions" / "minecraft" / "overworld" / "region",
+        world / "region",
+    ]
+    region_dir = next((p for p in region_candidates if p.is_dir()), region_candidates[0])
     for region_path in sorted(region_dir.glob("r.*.*.mca")):
         for root in iter_region_chunks(region_path):
             chunk = root
