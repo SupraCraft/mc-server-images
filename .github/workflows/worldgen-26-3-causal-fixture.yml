@@ -8,6 +8,7 @@ on:
     paths:
       - 'tools/generate_26_3_causal_fixture.py'
       - 'tools/analyze_modern_causal_machinery.py'
+      - 'tools/analyze_datapack_causal_semantics.py'
       - 'tools/analyze_causal_path_recoverability.py'
       - 'probes/26.3-release-identity.json'
       - '.github/workflows/worldgen-26-3-causal-fixture.yml'
@@ -64,6 +65,12 @@ jobs:
             --world-zip out/world.zip \
             --output out/causal-machinery.json
 
+      - name: Analyze loaded datapack semantics
+        run: |
+          python tools/analyze_datapack_causal_semantics.py \
+            --world-zip out/world.zip \
+            --output out/datapack-causal.json
+
       - name: Analyze structural causal-path recoverability
         run: |
           python tools/analyze_causal_path_recoverability.py \
@@ -91,9 +98,18 @@ jobs:
           assert e.get("container_inventory_signal_read",0) >= 1
           assert e.get("open_emits_redstone_power_candidate",0) >= 1
           paths=json.loads(pathlib.Path("out/causal-paths.json").read_text())
+          dp=json.loads(pathlib.Path("out/datapack-causal.json").read_text())
           assert paths["trusted_path_metrics"]["sensor_to_actuator"]["covered_count"] >= 1
           assert paths["trusted_path_metrics"]["sensor_to_feedback"]["covered_count"] >= 1
           assert paths["analysis_kind"]=="structural_causal_evidence_not_quality_score"
+          assert dp["function_count"] >= 2
+          assert dp["verb_counts"].get("scoreboard",0) >= 2
+          assert dp["verb_counts"].get("data",0) >= 1
+          assert dp["verb_counts"].get("schedule",0) >= 1
+          dp_edges={e["edge_type"] for e in dp["edges"]}
+          assert "function_schedule" in dp_edges
+          assert "scoreboard_write" in dp_edges
+          assert "storage_write" in dp_edges
           print(json.dumps({
             "family_counts":f,
             "edge_counts":e,
@@ -101,7 +117,8 @@ jobs:
             "entity_surface_node_count":d["entity_surface_node_count"],
             "role_counts":d["role_counts"],
             "causal_path_trusted":paths["trusted_path_metrics"],
-            "causal_path_candidate":paths["candidate_path_metrics"]
+            "causal_path_candidate":paths["candidate_path_metrics"],
+            "datapack":{"function_count":dp["function_count"],"edge_count":dp["edge_count"],"verb_counts":dp["verb_counts"],"role_counts":dp["role_counts"]}
           },indent=2,sort_keys=True))
           print("MODERN-CAUSAL-FIXTURE-PASS")
           PY
