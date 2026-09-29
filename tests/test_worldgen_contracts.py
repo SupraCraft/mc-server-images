@@ -23,6 +23,7 @@ class WorldgenSchemaSmokeTests(unittest.TestCase):
             "worldgen-run-v1.schema.json",
             "worldgen-analysis-v1.schema.json",
             "worldgen-tour-v1.schema.json",
+            "human-feedback-annotation-v1.schema.json",
         }
         self.assertEqual(expected, {p.name for p in SCHEMA_DIR.glob("*.schema.json")})
         for path in SCHEMA_DIR.glob("*.schema.json"):
@@ -30,6 +31,17 @@ class WorldgenSchemaSmokeTests(unittest.TestCase):
             self.assertEqual("object", data["type"], path)
             self.assertFalse(data["additionalProperties"], path)
             self.assertTrue(data["required"], path)
+
+    def test_human_feedback_contract_keeps_cpe_research_namespace(self):
+        data = json.loads((SCHEMA_DIR / "human-feedback-annotation-v1.schema.json").read_text())
+        concept = data["properties"]["concept_annotations"]["items"]["properties"]["concept_id"]
+        self.assertEqual("^research\\.game_world\\.", concept["pattern"])
+        roles = data["properties"]["source"]["properties"]["source_role"]["enum"]
+        self.assertIn("player_review", roles)
+        self.assertIn("author_changelog", roles)
+        scopes = data["properties"]["evidence_scope"]["enum"]
+        self.assertIn("preference_context", scopes)
+        self.assertIn("packaging_installation", scopes)
 
     def test_runtime_public_standard_runner_passes(self):
         self.assertEqual([], policy.check_runtime("false", "ubuntu-latest"))
