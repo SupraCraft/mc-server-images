@@ -78,7 +78,7 @@ jobs:
           set -euo pipefail
           mkdir -p evidence camera-output
           sudo apt-get update -qq
-          sudo apt-get install -y -qq             xserver-xorg-core xserver-xorg-video-dummy ffmpeg xdotool mesa-utils             libgl1-mesa-dri libglx-mesa0 libx11-6 libxext6 libxrandr2 libxinerama1             libxcursor1 libxi6 libxxf86vm1 libasound2t64 libopenal1             > evidence/apt-official-client.log 2>&1
+          sudo apt-get install -y -qq             xserver-xorg-core xserver-xorg-video-dummy x11-utils ffmpeg xdotool mesa-utils             libgl1-mesa-dri libglx-mesa0 libx11-6 libxext6 libxrandr2 libxinerama1             libxcursor1 libxi6 libxxf86vm1 libasound2t64 libopenal1             > evidence/apt-official-client.log 2>&1
 
       - name: Start Xorg dummy display with Mesa llvmpipe and record GL capability
         shell: bash
