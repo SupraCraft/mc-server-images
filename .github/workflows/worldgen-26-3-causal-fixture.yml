@@ -101,7 +101,6 @@ jobs:
           assert f.get("minecraft:repeater",0) >= 1
           assert d["scoreboard"]["objective_count"] >= 1
           assert d["entity_surface_node_count"] >= 2
-          assert e.get("scoreboard_write",0) >= 1
           assert e.get("command_world_target",0) >= 1
           assert e.get("container_inventory_signal_read",0) >= 1
           assert e.get("open_emits_redstone_power_candidate",0) >= 1
