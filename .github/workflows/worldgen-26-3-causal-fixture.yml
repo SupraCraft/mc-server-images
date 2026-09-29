@@ -63,6 +63,12 @@ jobs:
             --world-zip out/world.zip \
             --output out/causal-machinery.json
 
+      - name: Analyze structural causal-path recoverability
+        run: |
+          python tools/analyze_causal_path_recoverability.py \
+            --graph out/causal-machinery.json \
+            --output out/causal-paths.json
+
       - name: Verify fixture semantics survived materialization
         shell: bash
         run: |
@@ -83,12 +89,18 @@ jobs:
           assert e.get("command_world_target",0) >= 1
           assert e.get("container_inventory_signal_read",0) >= 1
           assert e.get("open_emits_redstone_power_candidate",0) >= 1
+          paths=json.loads(pathlib.Path("out/causal-paths.json").read_text())
+          assert paths["trusted_path_metrics"]["sensor_to_actuator"]["covered_count"] >= 1
+          assert paths["trusted_path_metrics"]["sensor_to_feedback"]["covered_count"] >= 1
+          assert paths["analysis_kind"]=="structural_causal_evidence_not_quality_score"
           print(json.dumps({
             "family_counts":f,
             "edge_counts":e,
             "scoreboard":d["scoreboard"],
             "entity_surface_node_count":d["entity_surface_node_count"],
-            "role_counts":d["role_counts"]
+            "role_counts":d["role_counts"],
+            "causal_path_trusted":paths["trusted_path_metrics"],
+            "causal_path_candidate":paths["candidate_path_metrics"]
           },indent=2,sort_keys=True))
           print("MODERN-CAUSAL-FIXTURE-PASS")
           PY
