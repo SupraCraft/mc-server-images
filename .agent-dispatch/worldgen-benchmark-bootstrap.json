@@ -10,13 +10,18 @@
     "runner-evidence": "Public Ubuntu/Docker and public macOS 26 ARM64 are observed/qualified execution primitives in Agent Dispatch runner-census evidence; Terrain Diffusion has already completed on the free public macOS/CoreML lane.",
     "learned-baselines": "Dream-Cubed DP4 author-config CPU generation and Terrain Diffusion CoreML pipeline have completed successfully in the public benchmark repository; Build-with-Bombs CPU ONNX execution has also completed.",
     "no-scheduler": "Agent Dispatch remains a bounded actuator/observer. The bootstrap must not add a queue, scheduler, retry engine, database, or generic workflow service.",
-    "agent-dispatch-host-gate": "Live trusted-host Sidecar target/grant mutation is deliberately deferred by Human-in-Command authority recorded in SemperSupra/agent-dispatch-private#381; public-side contracts remain ready but live dispatch must not be attempted until durable reactivation."
+    "agent-dispatch-host-gate": "Live trusted-host Sidecar target/grant mutation is deliberately deferred by Human-in-Command authority recorded in SemperSupra/agent-dispatch-private#381; public-side contracts remain ready but live dispatch must not be attempted until durable reactivation.",
+    "contract-guard-evidence": "PASS on public standard Ubuntu; public/free policy guard and versioned benchmark contracts are active on PR #12.",
+    "vanilla-control-evidence": "PASS run 36509631901: normal and flat-null-control worlds generated, independently validated, and control discrimination passed.",
+    "camera-tour-evidence": "PASS run 36561465862: exact official Minecraft 26.3 client joined the disposable server, visited five categorized sites, and produced tour.mp4 sha256 9466036f1152d4210276829241f5a0c693ec952e4bce0a5dd687833ecc807091.",
+    "human-calibration-evidence": "Reference-world calibration lane active: CORE v1.4 blind metrics frozen in run 36560410515; Savanna Scramble v2 blind metrics frozen in run 36565553649; human-feedback annotations are added only after those freezes and guarded by public validation.",
+    "cpe-qualitative-evidence": "CPE research issue mark-e-deyoung/concept-policy-engine-private#301 and research branch research/game-world-qualitative-concepts provide the multilingual, non-canonical qualitative concept watchset consumed by the public benchmark."
   },
   "unknowns": {
     "generic-contract-fit": "Whether one small adapter/run/analysis contract can cover vanilla and the first non-vanilla generators without generator-specific semantic leakage.",
-    "materializer-26.3": "Whether the generic playable-world materializer can be repaired and qualified for Minecraft 26.3 datapack/pack-loading semantics.",
+    "materializer-26.3": "RESOLVED for bootstrap: playable canonical world and official-client multi-site tour succeeded in public run 36561465862.",
     "agent-dispatch-public-binding": "Public workflow/target/workset semantics are prepared; live projection/plan/dispatch/observe remains intentionally blocked by deferred trusted-host admission authority in agent-dispatch-private#381.",
-    "metric-controls": "Whether the first static metrics distinguish vanilla from deliberately bad controls without producing misleading aesthetic conclusions."
+    "metric-controls": "RESOLVED for bootstrap obvious-control test: vanilla versus flat-null control was independently distinguished. Richer qualitative metrics remain research/qualification work."
   },
   "bounds": {
     "scope_allowed": [
@@ -142,7 +147,7 @@
           "https://github.com/SupraCraft/mc-server-images/issues/11"
         ]
       },
-      "frontier": "Delegate the first READY leaf: implement and validate the public benchmark contract/guard surface, then reconcile before opening generator-expansion cells."
+      "frontier": "All hostless bootstrap leaves are accepted. Continue public generator/reference-world calibration work; keep the live Agent Dispatch runtime proof WAIT until canonical host gate #381 is durably reactivated."
     },
     "contract-and-guard-leaf": {
       "parent_delegation_id": "bootstrap-orchestrator",
@@ -223,7 +228,7 @@
           "https://github.com/SupraCraft/mc-server-images/issues/11"
         ]
       },
-      "frontier": "Implement the minimum schema and public-only guard surface needed to admit the vanilla/control execution leaf."
+      "frontier": "ACCEPTED: public/free contract and guard evidence is green; extend only through versioned additive contracts."
     },
     "vanilla-control-execution-leaf": {
       "parent_delegation_id": "bootstrap-orchestrator",
@@ -310,7 +315,7 @@
           "https://github.com/SupraCraft/mc-server-images/issues/11"
         ]
       },
-      "frontier": "After contract/guard acceptance, dispatch exactly the bounded vanilla/control pair and normalize terminal evidence."
+      "frontier": "ACCEPTED: run 36509631901 generated and independently validated the canonical normal/control pair; retain as bootstrap controls."
     },
     "materializer-tour-leaf": {
       "parent_delegation_id": "bootstrap-orchestrator",
@@ -393,7 +398,7 @@
           "https://github.com/SupraCraft/mc-server-images/issues/11"
         ]
       },
-      "frontier": "Repair 26.3 materialization first; then qualify the reusable camera/tour path against a canonical world artifact."
+      "frontier": "ACCEPTED: official 26.3 client tour run 36561465862 produced a real MP4 and successful five-site teleport receipt. Reuse this camera path for compatible generated/reference treatments."
     },
     "independent-bootstrap-validator": {
       "parent_delegation_id": "bootstrap-orchestrator",
@@ -466,7 +471,7 @@
           "https://github.com/SupraCraft/mc-server-images/issues/11"
         ]
       },
-      "frontier": "Validate each candidate tranche only after its canonical public workflow evidence exists."
+      "frontier": "ACCEPTED for current bootstrap tranche: canonical worlds/control comparison validated in run 36509631901; continue independent validation for each new generator/reference tranche."
     },
     "agent-dispatch-runtime-proof": {
       "parent_delegation_id": "bootstrap-orchestrator",
