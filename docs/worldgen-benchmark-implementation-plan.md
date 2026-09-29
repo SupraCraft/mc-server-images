@@ -674,3 +674,24 @@ Return `needs-envelope-expansion` rather than violating the envelope when:
 - resource use exceeds bounded workflow limits.
 
 Do not silently substitute a different model, version, generator, runner, or reduced-quality algorithm and call it the same experiment.
+
+## 23. Live Agent Dispatch host-admission authority status
+
+Reconciled 2026-09-29 against the existing Agent Dispatch authority rather than treating later duplicate admission issues as permission to mutate the trusted host.
+
+Canonical host gate: `SemperSupra/agent-dispatch-private#381`.
+
+Its latest durable Human-in-Command disposition explicitly defers local sovereign host mutation and directs actors to:
+- not mutate Sidecar targets or client grants;
+- not substitute another local host;
+- leave the exact host gate dormant until durable reactivation;
+- continue hostless public source/validation work, or separately authorized non-local substrate qualification.
+
+Therefore:
+- the accepted public Agent Dispatch workflow/target/workset contracts remain the intended live route;
+- `openai-tunnel` admission failure is currently an intentional authority boundary, not a defect to bypass;
+- the benchmark MAY continue public project-native build/test/generation/analysis work that is independently valid without Sidecar dispatch;
+- the benchmark MUST NOT claim the Agent Dispatch live round trip has passed until #381 is durably reactivated and the exact projection -> plan -> one dispatch -> observe rep succeeds;
+- duplicate admission issues #373 and #402 were closed/superseded after reconciliation.
+
+This does not weaken the requirement that the operational autonomous deployment ultimately route bounded delegated execution through Agent Dispatch. It records that the live trusted-host gate is deliberately unavailable under current authority.
