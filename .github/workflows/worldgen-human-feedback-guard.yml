@@ -1,0 +1,69 @@
+name: worldgen human feedback guard
+
+on:
+  pull_request:
+    paths:
+      - 'bench/worldgen/human-feedback/**'
+      - 'bench/worldgen/qualitative/**'
+      - 'tools/validate_human_feedback_annotations.py'
+      - '.github/workflows/worldgen-human-feedback-guard.yml'
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'bench/worldgen/human-feedback/**'
+      - 'bench/worldgen/qualitative/**'
+      - 'tools/validate_human_feedback_annotations.py'
+      - '.github/workflows/worldgen-human-feedback-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Human-feedback validation is authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Validate all committed human-feedback corpora
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(bench/worldgen/human-feedback/*.json)
+          [[ ${#files[@]} -gt 0 ]] || {
+            echo "::error::No human-feedback corpus files found"
+            exit 78
+          }
+          for file in "${files[@]}"; do
+            python tools/validate_human_feedback_annotations.py \
+              --feedback "$file" \
+              --projection bench/worldgen/qualitative/cpe-game-world-projection.json
+          done
