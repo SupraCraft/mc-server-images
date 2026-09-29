@@ -209,6 +209,8 @@ jobs:
           EOF
           cat > server/server.properties <<EOF
           online-mode=false
+          white-list=false
+          enforce-whitelist=false
           server-port=25571
           enable-rcon=true
           rcon.port=25572
