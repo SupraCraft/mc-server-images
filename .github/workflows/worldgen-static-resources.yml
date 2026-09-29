@@ -83,6 +83,14 @@ jobs:
           name: worldgen-bootstrap-${{ matrix.profile }}
           path: source
 
+      - name: Record canonical world archive layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "WORLD_ARCHIVE_LAYOUT_BEGIN"
+          unzip -l source/world.zip | sed -n '1,240p'
+          echo "WORLD_ARCHIVE_LAYOUT_END"
+
       - name: Analyze static resources and biomes
         shell: bash
         run: |
