@@ -55,10 +55,27 @@ def plain(value):
     return value
 
 
-def read_level_spawn(world: Path) -> tuple[int, int, int]:
+def spawn_from_level_data(data) -> tuple[tuple[int, int, int], str]:
+    modern = data.get("spawn") if hasattr(data, "get") else None
+    if modern is not None and hasattr(modern, "get"):
+        pos = modern.get("pos")
+        if pos is not None and len(pos) >= 3:
+            return (int(pos[0]), int(pos[1]), int(pos[2])), "level.dat Data.spawn.pos"
+
+    if all(key in data for key in ("SpawnX", "SpawnY", "SpawnZ")):
+        return (
+            int(data["SpawnX"]),
+            int(data["SpawnY"]),
+            int(data["SpawnZ"]),
+        ), "level.dat legacy SpawnX/SpawnY/SpawnZ"
+
+    return (0, 64, 0), "fallback origin; no recognized spawn fields"
+
+
+def read_level_spawn(world: Path) -> tuple[tuple[int, int, int], str]:
     level = nbtlib.load(world / "level.dat")
     data = level.get("Data", level)
-    return int(data.get("SpawnX", 0)), int(data.get("SpawnY", 64)), int(data.get("SpawnZ", 0))
+    return spawn_from_level_data(data)
 
 
 def decompress_chunk(payload: bytes, compression: int) -> bytes:
@@ -157,7 +174,7 @@ def section_y(section) -> int:
 
 
 def analyze_world(world: Path, chunk_radius: int = 4) -> dict:
-    spawn_x, spawn_y, spawn_z = read_level_spawn(world)
+    (spawn_x, spawn_y, spawn_z), spawn_source = read_level_spawn(world)
     block_counts = Counter()
     biome_counts = Counter()
     resource_counts = Counter()
@@ -250,7 +267,7 @@ def analyze_world(world: Path, chunk_radius: int = 4) -> dict:
         "schema": "supracraft-worldgen-resource-biome-static/1",
         "spawn_reference": {
             "position": [spawn_x, spawn_y, spawn_z],
-            "source": "level.dat SpawnX/SpawnY/SpawnZ when present; legacy defaults otherwise",
+            "source": spawn_source,
         },
         "bounded_chunk_box": [-chunk_radius, -chunk_radius, chunk_radius, chunk_radius],
         "chunks_seen": len(chunks_seen),
