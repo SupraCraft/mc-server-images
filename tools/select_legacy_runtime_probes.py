@@ -17,10 +17,14 @@ AUTOMATABLE_SENSOR_FAMILIES = {
     "lever",
     "stone_button",
     "wooden_button",
+}
+
+LIVE_OCCUPANCY_SENSOR_FAMILIES = {
     "stone_pressure_plate",
     "wooden_pressure_plate",
     "light_weighted_pressure_plate",
     "heavy_weighted_pressure_plate",
+    "trapped_chest",
 }
 
 def iter_edges(doc):
@@ -133,8 +137,10 @@ def main():
       "candidate_count":len(candidates),
       "selected_count":len(selected),
       "selected":selected,
+      "deferred_live_occupancy_families":sorted(LIVE_OCCUPANCY_SENSOR_FAMILIES),
       "constraints":[
-        "Only automatable physical sensors are selected; trapped-chest opening remains a real-player interaction probe.",
+        "Only stable block-state activation sensors (lever/buttons) are selected for this paired runtime phase.",
+        "Pressure plates, trapped-chest opening and interaction entities remain live occupancy/player interaction probes.",
         "Selection uses structural causal evidence only and does not read human feedback.",
         "Each runtime probe must start from a fresh copy of the exact original world.",
         "Probe outcome is mechanism evidence, not a qualitative judgment."
