@@ -37,6 +37,20 @@ class PaletteDecodeTests(unittest.TestCase):
         self.assertIn("iron", mod.category_for("minecraft:deepslate_iron_ore"))
         self.assertNotIn("diamond", mod.category_for("minecraft:stone"))
 
+    def test_modern_26_3_spawn_shape(self):
+        pos, source = mod.spawn_from_level_data({
+            "spawn": {"pos": [12, 71, -9], "dimension": "minecraft:overworld"}
+        })
+        self.assertEqual((12, 71, -9), pos)
+        self.assertEqual("level.dat Data.spawn.pos", source)
+
+    def test_legacy_spawn_shape(self):
+        pos, source = mod.spawn_from_level_data({
+            "SpawnX": 1, "SpawnY": 70, "SpawnZ": 2
+        })
+        self.assertEqual((1, 70, 2), pos)
+        self.assertIn("legacy", source)
+
 
 if __name__ == "__main__":
     unittest.main()
