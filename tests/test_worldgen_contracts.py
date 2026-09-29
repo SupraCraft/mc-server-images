@@ -43,6 +43,29 @@ class WorldgenSchemaSmokeTests(unittest.TestCase):
         self.assertIn("preference_context", scopes)
         self.assertIn("packaging_installation", scopes)
 
+    def test_reference_world_corpus_is_blind_and_reference_only(self):
+        path = ROOT / "bench" / "worldgen" / "reference-worlds" / "reference-world-corpus-v0.json"
+        data = json.loads(path.read_text())
+        self.assertTrue(data["analysis_blind"])
+        self.assertGreaterEqual(len(data["worlds"]), 5)
+        forbidden = {"human_themes", "sentiment", "comment_text", "overall_quality_label"}
+        for world in data["worlds"]:
+            self.assertTrue(world["artifact_rights"])
+            self.assertTrue(world["execution_state"])
+            self.assertTrue(world["feedback_sources"])
+            self.assertFalse(forbidden & set(world))
+            for source in world["feedback_sources"]:
+                self.assertTrue(source["ref"].startswith("http"))
+
+    def test_qualitative_projection_keeps_human_primary_boundaries(self):
+        path = ROOT / "bench" / "worldgen" / "qualitative" / "metric-concept-hypotheses-v1.json"
+        data = json.loads(path.read_text())
+        by_id = {x["concept_id"]: x for x in data["hypotheses"]}
+        self.assertEqual("never_directly_scored", by_id["research.game_world.fun_enjoyment"]["automation_role"])
+        self.assertEqual("not_directly_observable", by_id["research.game_world.immersion"]["automation_role"])
+        self.assertEqual("not_directly_observable", by_id["research.game_world.coziness_comfort"]["automation_role"])
+        self.assertEqual("primary", by_id["research.game_world.perceived_challenge_fairness"]["human_validation"])
+
     def test_runtime_public_standard_runner_passes(self):
         self.assertEqual([], policy.check_runtime("false", "ubuntu-latest"))
 
