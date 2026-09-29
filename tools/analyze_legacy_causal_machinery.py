@@ -102,8 +102,28 @@ COMMAND_ROLE = {
     "function": ["orchestrator"],
 }
 
-COORD_COMMANDS = {"setblock": 3, "testforblock": 3, "summon": 3, "tp": 3, "teleport": 3}
-ABS_INT = re.compile(r"^-?\d+$")
+ABS_INT = re.compile(r"^-?\\d+$")
+ABS_NUM = re.compile(r"^-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$")
+DIR4 = {
+    0: ("north", (0, 0, -1)),
+    1: ("east", (1, 0, 0)),
+    2: ("south", (0, 0, 1)),
+    3: ("west", (-1, 0, 0)),
+}
+DIR6 = {
+    0: ("down", (0, -1, 0)),
+    1: ("up", (0, 1, 0)),
+    2: ("north", (0, 0, -1)),
+    3: ("south", (0, 0, 1)),
+    4: ("west", (-1, 0, 0)),
+    5: ("east", (1, 0, 0)),
+}
+CHEST_FACING = {
+    2: "north",
+    3: "south",
+    4: "west",
+    5: "east",
+}
 
 
 def plain(v):
@@ -181,6 +201,174 @@ def normalize_command(command: str):
     return verb, parts
 
 
+def add_pos(a, delta):
+    return (a[0] + delta[0], a[1] + delta[1], a[2] + delta[2])
+
+
+def opposite(delta):
+    return (-delta[0], -delta[1], -delta[2])
+
+
+def metadata_semantics(family: str, meta: int | None):
+    if meta is None:
+        return {}
+
+    out = {"raw": meta}
+    if family in {"repeater_off", "repeater_on"}:
+        name, delta = DIR4[meta & 0x3]
+        out.update({
+            "facing": name,
+            "facing_vector": list(delta),
+            "delay_redstone_ticks": ((meta >> 2) & 0x3) + 1,
+            "powered": family.endswith("_on"),
+            "port_semantics": "legacy facing points from output side toward input side; input is +facing, output is -facing",
+        })
+    elif family in {"comparator_off", "comparator_on"}:
+        name, delta = DIR4[meta & 0x3]
+        out.update({
+            "facing": name,
+            "facing_vector": list(delta),
+            "mode": "subtract" if (meta & 0x4) else "compare",
+            "powered": family.endswith("_on"),
+            "port_semantics": "legacy facing points from output side toward rear input; rear input is +facing, output is -facing",
+        })
+    elif family in {"command_block", "repeating_command_block", "chain_command_block"}:
+        code = meta & 0x7
+        if code in DIR6:
+            name, delta = DIR6[code]
+            out.update({"facing": name, "facing_vector": list(delta)})
+        else:
+            out.update({"facing": "invalid_or_legacy_unused", "facing_code": code})
+        out["conditional"] = bool(meta & 0x8)
+    elif family in {"dispenser", "dropper", "hopper", "piston", "sticky_piston"}:
+        code = meta & 0x7
+        if code in DIR6:
+            name, delta = DIR6[code]
+            out.update({"facing": name, "facing_vector": list(delta)})
+        out["active_or_extended_bit"] = bool(meta & 0x8)
+    elif family in {"trapped_chest", "chest"}:
+        if meta in CHEST_FACING:
+            out["facing"] = CHEST_FACING[meta]
+        if family == "trapped_chest":
+            out["open_sensor_state"] = "dynamic_not_stored_in_block_metadata"
+            out["inventory_signal_state"] = "readable_by_comparator"
+    elif family == "redstone_wire":
+        out["power_level"] = meta & 0xF
+        out["connection_shape"] = "runtime_derived_not_stored"
+    elif family in {"redstone_lamp_off", "redstone_lamp_on"}:
+        out["lit"] = family.endswith("_on")
+    elif family in {"redstone_torch_off", "redstone_torch_on"}:
+        out["lit"] = family.endswith("_on")
+        out["attachment_code"] = meta & 0x7
+    elif family in {"lever", "stone_button", "wooden_button"}:
+        out["powered"] = bool(meta & 0x8)
+        out["attachment_code"] = meta & 0x7
+    elif family in {
+        "stone_pressure_plate", "wooden_pressure_plate",
+        "light_weighted_pressure_plate", "heavy_weighted_pressure_plate"
+    }:
+        out["power_level"] = meta & 0xF
+    return out
+
+
+def parse_coord(token: str, origin_value: int):
+    if token.startswith("~"):
+        suffix = token[1:]
+        if suffix == "":
+            return float(origin_value)
+        if ABS_NUM.match(suffix):
+            return float(origin_value) + float(suffix)
+        return None
+    if ABS_NUM.match(token):
+        return float(token)
+    return None
+
+
+def resolve_xyz(tokens, origin):
+    if len(tokens) != 3:
+        return None
+    vals = [parse_coord(tokens[i], origin[i]) for i in range(3)]
+    if any(v is None for v in vals):
+        return None
+    return tuple(int(v) if float(v).is_integer() else float(v) for v in vals)
+
+
+def command_targets(parts, command_origin):
+    if not parts:
+        return []
+    verb = parts[0].lower().lstrip("/")
+    specs = []
+    if verb in {"setblock", "testforblock", "summon"}:
+        specs = [("point", 1)]
+    elif verb in {"tp", "teleport"}:
+        # tp x y z OR tp <target> x y z
+        for start in (1, 2):
+            if len(parts) >= start + 3:
+                pos = resolve_xyz(parts[start:start+3], command_origin)
+                if pos is not None:
+                    return [{"kind": "point", "position": pos, "coordinate_mode": "resolved_absolute_or_relative"}]
+        return []
+    elif verb == "fill":
+        specs = [("region_start", 1), ("region_end", 4)]
+    elif verb == "clone":
+        specs = [("source_start", 1), ("source_end", 4), ("destination", 7)]
+    else:
+        return []
+
+    out = []
+    for kind, start in specs:
+        pos = resolve_xyz(parts[start:start+3], command_origin)
+        if pos is not None:
+            out.append({"kind": kind, "position": pos, "coordinate_mode": "resolved_absolute_or_relative"})
+    return out
+
+
+def read_scoreboard(world: Path):
+    path = world / "data" / "scoreboard.dat"
+    if not path.exists():
+        return {"present": False, "objectives": [], "scores": []}
+    root = nbtlib.load(path)
+    data = root.get("data", root.get("Data", root))
+    objectives = []
+    for obj in data.get("Objectives", []):
+        objectives.append({
+            "name": str(plain(obj.get("Name", ""))),
+            "criteria": str(plain(obj.get("CriteriaName", ""))),
+            "display_name": str(plain(obj.get("DisplayName", ""))) if obj.get("DisplayName") is not None else None,
+            "render_type": str(plain(obj.get("RenderType", ""))) if obj.get("RenderType") is not None else None,
+        })
+    scores = []
+    for score in data.get("PlayerScores", []):
+        scores.append({
+            "name": str(plain(score.get("Name", ""))),
+            "objective": str(plain(score.get("Objective", ""))),
+            "score": int(plain(score.get("Score", 0))),
+            "locked": bool(plain(score.get("Locked", 0))) if score.get("Locked") is not None else None,
+        })
+    return {"present": True, "objectives": objectives, "scores": scores}
+
+
+def scoreboard_refs(parts):
+    if len(parts) < 3 or parts[0].lower().lstrip("/") != "scoreboard":
+        return []
+    domain = parts[1].lower()
+    op = parts[2].lower()
+    refs = []
+    if domain == "objectives" and op in {"add", "remove"} and len(parts) >= 4:
+        refs.append({"objective": parts[3], "access": "write"})
+    elif domain == "objectives" and op == "setdisplay" and len(parts) >= 5:
+        refs.append({"objective": parts[4], "access": "read"})
+    elif domain == "players":
+        if op in {"set", "add", "remove", "test", "enable"} and len(parts) >= 5:
+            refs.append({"objective": parts[4], "access": "read" if op == "test" else "write"})
+        elif op == "reset" and len(parts) >= 5:
+            refs.append({"objective": parts[4], "access": "write"})
+        elif op == "operation" and len(parts) >= 8:
+            refs.append({"objective": parts[4], "access": "write"})
+            refs.append({"objective": parts[7], "access": "read"})
+    return refs
+
+
 def extract_absolute_target(parts):
     if not parts:
         return None
@@ -245,14 +433,30 @@ def analyze(world: Path):
                         "position": list(pos),
                         "legacy_block_id": bid,
                         "legacy_metadata": meta,
+                        "metadata_semantics": metadata_semantics(name, meta),
                         "family": name,
                         "roles": sorted(set(roles)),
                     }
+
+    scoreboard = read_scoreboard(world)
+    scoreboard_objectives = {x["name"]: x for x in scoreboard["objectives"] if x["name"]}
+    semantic_state_nodes = {
+        name: {
+            "node_id": f"scoreboard_objective::{name}",
+            "kind": "scoreboard_objective",
+            "objective": name,
+            "criteria": meta.get("criteria"),
+            "display_name": meta.get("display_name"),
+            "render_type": meta.get("render_type"),
+        }
+        for name, meta in scoreboard_objectives.items()
+    }
 
     command_counts = Counter()
     command_role_counts = Counter()
     scoreboard_ops = Counter()
     explicit_target_edges = []
+    scoreboard_edges = []
 
     for pos, node in machinery.items():
         if "command_block" not in node["family"]:
@@ -277,17 +481,42 @@ def analyze(world: Path):
             "success_count": int(plain(te.get("SuccessCount", 0))) if te.get("SuccessCount") is not None else None,
             "track_output": bool(plain(te.get("TrackOutput", 1))) if te.get("TrackOutput") is not None else None,
             "auto": bool(plain(te.get("auto", 0))) if te.get("auto") is not None else None,
+            "powered": bool(plain(te.get("powered", 0))) if te.get("powered") is not None else None,
+            "condition_met": bool(plain(te.get("conditionMet", 0))) if te.get("conditionMet") is not None else None,
+            "last_execution": int(plain(te.get("LastExecution", 0))) if te.get("LastExecution") is not None else None,
+            "custom_name": str(plain(te.get("CustomName"))) if te.get("CustomName") is not None else None,
         }
         if verb == "scoreboard" and len(parts) >= 3:
             scoreboard_ops[" ".join(parts[1:3]).lower()] += 1
-        target = extract_absolute_target(parts)
-        if target is not None:
+            for ref in scoreboard_refs(parts):
+                objective = ref["objective"]
+                if objective not in semantic_state_nodes:
+                    semantic_state_nodes[objective] = {
+                        "node_id": f"scoreboard_objective::{objective}",
+                        "kind": "scoreboard_objective_reference_only",
+                        "objective": objective,
+                        "criteria": None,
+                        "display_name": None,
+                        "render_type": None,
+                    }
+                scoreboard_edges.append({
+                    "source": node_id(pos),
+                    "target": semantic_state_nodes[objective]["node_id"],
+                    "edge_type": f"scoreboard_{ref['access']}",
+                    "certainty": "strong",
+                    "operation": " ".join(parts[1:3]).lower(),
+                })
+        for target_info in command_targets(parts, pos):
+            target = target_info["position"]
+            target_block_pos = tuple(int(v) for v in target) if all(float(v).is_integer() for v in target) else None
             explicit_target_edges.append({
                 "source": node_id(pos),
                 "target_position": list(target),
-                "target": node_id(target) if target in machinery else None,
-                "edge_type": "command_explicit_target",
-                "certainty": "strong" if target in machinery else "adequate",
+                "target": node_id(target_block_pos) if target_block_pos in machinery else None,
+                "edge_type": "command_world_target",
+                "target_kind": target_info["kind"],
+                "coordinate_mode": target_info["coordinate_mode"],
+                "certainty": "strong" if target_block_pos in machinery else "adequate",
                 "verb": verb,
             })
 
@@ -309,6 +538,74 @@ def analyze(world: Path):
             })
             undirected[pos].add(q)
             undirected[q].add(pos)
+
+    directed_edges = []
+    comparator_container_reads = []
+    trapped_open_power_edges = []
+    command_chain_edges = []
+
+    for pos, node in machinery.items():
+        sem = node.get("metadata_semantics", {})
+        family = node["family"]
+
+        if family in {"repeater_off", "repeater_on", "comparator_off", "comparator_on"} and sem.get("facing_vector"):
+            facing = tuple(sem["facing_vector"])
+            input_pos = add_pos(pos, facing)
+            output_pos = add_pos(pos, opposite(facing))
+            if input_pos in machinery:
+                directed_edges.append({
+                    "source": node_id(input_pos),
+                    "target": node_id(pos),
+                    "edge_type": "oriented_rear_input_candidate",
+                    "certainty": "adequate",
+                    "basis": "legacy metadata facing; facing is output-to-input direction",
+                })
+            if output_pos in machinery:
+                directed_edges.append({
+                    "source": node_id(pos),
+                    "target": node_id(output_pos),
+                    "edge_type": "oriented_front_output_candidate",
+                    "certainty": "adequate",
+                    "basis": "legacy metadata facing; output is opposite facing",
+                })
+            if family.startswith("comparator") and input_pos in machinery and machinery[input_pos]["family"] in {"chest", "trapped_chest", "hopper", "furnace", "lit_furnace"}:
+                comparator_container_reads.append({
+                    "source": node_id(input_pos),
+                    "target": node_id(pos),
+                    "edge_type": "container_inventory_signal_read",
+                    "certainty": "strong",
+                })
+
+        if family in {"command_block", "repeating_command_block", "chain_command_block"} and sem.get("facing_vector"):
+            facing = tuple(sem["facing_vector"])
+            next_pos = add_pos(pos, facing)
+            prev_pos = add_pos(pos, opposite(facing))
+            if family == "chain_command_block" and next_pos in machinery and "command_block" in machinery[next_pos]["family"]:
+                command_chain_edges.append({
+                    "source": node_id(pos),
+                    "target": node_id(next_pos),
+                    "edge_type": "chain_facing_successor_candidate",
+                    "certainty": "adequate",
+                })
+            if sem.get("conditional") and prev_pos in machinery and "command_block" in machinery[prev_pos]["family"]:
+                command_chain_edges.append({
+                    "source": node_id(prev_pos),
+                    "target": node_id(pos),
+                    "edge_type": "conditional_predecessor_success_dependency",
+                    "certainty": "strong",
+                })
+
+        if family == "trapped_chest":
+            for dx,dy,dz in dirs:
+                q = (pos[0]+dx, pos[1]+dy, pos[2]+dz)
+                if q in machinery and machinery[q]["family"] not in {"chest", "trapped_chest"}:
+                    trapped_open_power_edges.append({
+                        "source": node_id(pos),
+                        "target": node_id(q),
+                        "edge_type": "open_emits_redstone_power_candidate",
+                        "certainty": "adequate",
+                        "channel": "player_open_count_signal",
+                    })
 
     # Connected components of observed machinery.
     seen = set()
@@ -355,7 +652,16 @@ def analyze(world: Path):
             q=(pos[0]+d[0],pos[1]+d[1],pos[2]+d[2])
             if q in machinery:
                 neigh.append({"node_id":node_id(q),"family":machinery[q]["family"],"roles":machinery[q]["roles"]})
-        trapped.append({"node_id":node_id(pos),"position":list(pos),"adjacent_machinery":neigh})
+        trapped.append({
+            "node_id":node_id(pos),
+            "position":list(pos),
+            "adjacent_machinery":neigh,
+            "semantic_channels": [
+                "player_open_count_redstone_output",
+                "inventory_fullness_comparator_output"
+            ],
+            "channel_separation": "opening signal and inventory/fullness signal are distinct causal channels"
+        })
 
     role_counts = Counter()
     family_counts = Counter()
@@ -377,7 +683,15 @@ def analyze(world: Path):
             "verb_counts": dict(command_counts.most_common()),
             "role_counts": dict(sorted(command_role_counts.items())),
             "scoreboard_operation_counts": dict(scoreboard_ops.most_common()),
-            "explicit_target_edge_count": len(explicit_target_edges),
+            "world_target_edge_count": len(explicit_target_edges),
+            "command_chain_edge_count": len(command_chain_edges),
+        },
+        "semantic_state": {
+            "scoreboard_present": scoreboard["present"],
+            "objective_count": len(semantic_state_nodes),
+            "score_record_count": len(scoreboard["scores"]),
+            "objectives": sorted(semantic_state_nodes.values(), key=lambda x: x["objective"]),
+            "scoreboard_edges": scoreboard_edges,
         },
         "component_count": len(components),
         "hybrid_component_count": len(hybrid_components),
@@ -385,16 +699,27 @@ def analyze(world: Path):
         "trapped_chests": trapped,
         "edges": {
             "physical_adjacency_candidate_count": len(adjacency),
-            "command_explicit_target_count": len(explicit_target_edges),
+            "oriented_signal_edge_count": len(directed_edges),
+            "command_world_target_count": len(explicit_target_edges),
+            "command_chain_edge_count": len(command_chain_edges),
+            "container_comparator_read_count": len(comparator_container_reads),
+            "trapped_chest_open_power_edge_count": len(trapped_open_power_edges),
+            "scoreboard_state_edge_count": len(scoreboard_edges),
             "physical_adjacency_candidates": adjacency,
-            "command_explicit_targets": explicit_target_edges,
+            "oriented_signal_candidates": directed_edges,
+            "command_world_targets": explicit_target_edges,
+            "command_chain_candidates": command_chain_edges,
+            "container_comparator_reads": comparator_container_reads,
+            "trapped_chest_open_power_candidates": trapped_open_power_edges,
+            "scoreboard_state_edges": scoreboard_edges,
         },
         "nodes": sorted(machinery.values(), key=lambda n: tuple(n["position"])),
         "limitations": [
             "Physical adjacency is not equivalent to powered redstone connectivity or causal direction.",
-            "Legacy block metadata is preserved but this version does not infer all orientation semantics from it.",
-            "Redstone dust connections beyond direct observed machinery and opaque solid-block conduction are not fully reconstructed.",
-            "Commands are classified by top-level verb; nested execute semantics and relative-coordinate targets are not yet fully resolved.",
+            "Repeater/comparator metadata ports and command-block facing are decoded; dust shape, solid-block conduction, locking/side-input behavior, and quasi-connectivity remain incomplete.",
+            "Trapped-chest opening power and comparator inventory/fullness reads are represented as distinct causal channels.",
+            "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
+            "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
             "Static structure cannot establish whether a player perceived or understood the mechanism.",
             "No human feedback labels are loaded by this analyzer."
         ]
@@ -420,6 +745,15 @@ def main():
         "family_counts":result["family_counts"],
         "role_counts":result["role_counts"],
         "command_semantics":result["command_semantics"],
+        "semantic_state": {
+            "scoreboard_present": result["semantic_state"]["scoreboard_present"],
+            "objective_count": result["semantic_state"]["objective_count"],
+            "score_record_count": result["semantic_state"]["score_record_count"],
+            "scoreboard_edge_count": len(result["semantic_state"]["scoreboard_edges"]),
+        },
+        "edge_counts": {
+            k:v for k,v in result["edges"].items() if k.endswith("_count")
+        },
         "component_count":result["component_count"],
         "hybrid_component_count":result["hybrid_component_count"],
         "trapped_chest_count":len(result["trapped_chests"]),
