@@ -283,14 +283,6 @@
           "role": "four_page_player_feedback_creator_replies_and_changelog"
         }
       ],
-      "calibration_value": [
-        "progression_legibility",
-        "affordance_legibility",
-        "bug_vs_confusion_boundary",
-        "feedback_driven_revision",
-        "retry_and_failure_burden",
-        "performance"
-      ],
       "analysis_notes": "Original v1.4 is the evidence artifact. Any 26.3 datafixed/upgraded copy is a distinct derivative treatment and must retain CC BY-SA attribution/share-alike; do not silently equate its gameplay behavior with original 1.8."
     }
   ]
