@@ -338,7 +338,47 @@ def live_testforblock(proc, log_path, probe, expected_meta):
     }
 
 
-def run_trial(server_jar, source_zip, probe, trial_dir, activate):
+def start_legacy_player_actor(script, trial_dir, port=25579):
+    ready_path=trial_dir/"player-actor-ready.json"
+    log_path=trial_dir/"player-actor.log"
+    log=log_path.open("w",encoding="utf-8")
+    proc=subprocess.Popen(
+        [
+            "node",str(script),
+            "--host","127.0.0.1",
+            "--port",str(port),
+            "--username","SupraPlateBot",
+            "--ready",str(ready_path),
+        ],
+        stdout=log,stderr=subprocess.STDOUT,text=True,
+    )
+    deadline=time.monotonic()+30
+    receipt=None
+    while time.monotonic()<deadline:
+        if ready_path.exists():
+            receipt=json.loads(ready_path.read_text())
+            break
+        if proc.poll() is not None:
+            break
+        time.sleep(0.1)
+    if receipt is None or receipt.get("status")!="ready":
+        if proc.poll() is None:
+            proc.terminate()
+            proc.wait(timeout=5)
+        log.close()
+        raise RuntimeError(
+            f"legacy player actor failed to become ready: receipt={receipt} rc={proc.poll()}"
+        )
+    return proc,log,{
+        "schema":receipt.get("schema"),
+        "status":receipt.get("status"),
+        "minecraft_version":receipt.get("minecraft_version"),
+        "protocol_version":receipt.get("protocol_version"),
+        "mineflayer_version":receipt.get("mineflayer_version"),
+    }
+
+
+def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_script=None):
     world=trial_dir/"world"
     materialize_world(source_zip,world)
     set_spawn(world,probe["position"])
@@ -361,7 +401,28 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
         if family not in ACTIVATABLE:
             raise RuntimeError(f"probe family not activatable: {family}")
         live_sensor_query=None
+        player_proc=None
+        player_log=None
+        player_actor=None
         x,y,z=probe["position"]
+
+        if family in PRESSURE_PLATE_ACTIVATABLE:
+            if player_client_script is None:
+                raise RuntimeError("pressure-plate probes require --player-client-script")
+            player_proc,player_log,player_actor=start_legacy_player_actor(
+                player_client_script,trial_dir
+            )
+            # Keep player presence and gamemode paired across both arms. The
+            # neutral platform is far outside the local causal snapshot; only
+            # the activated arm moves that same player onto the plate.
+            nx,nz=x+128,z+128
+            send(p,f"gamemode 3 SupraPlateBot")
+            send(p,f"setblock {nx} 249 {nz} minecraft:barrier 0 replace")
+            send(p,f"tp SupraPlateBot {nx + 0.5} 250 {nz + 0.5}")
+            time.sleep(0.5)
+            send(p,f"gamemode 2 SupraPlateBot")
+            time.sleep(0.5)
+
         if activate:
             if family in STABLE_ACTIVATABLE:
                 meta=int(probe.get("legacy_metadata") or 0)
@@ -374,11 +435,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
                 send(p,f"setblock {x} {y} {z} {block} {powered} replace")
                 time.sleep(4)
             elif family in PRESSURE_PLATE_ACTIVATABLE:
-                send(
-                    p,
-                    f"summon Pig {x + 0.5} {y + 1.0} {z + 0.5} "
-                    "{NoAI:1b,PersistenceRequired:1b}",
-                )
+                send(p,f"tp SupraPlateBot {x + 0.5} {y} {z + 0.5}")
                 time.sleep(0.25)
                 live_sensor_query=live_testforblock(p,log_path,probe,1)
                 time.sleep(3.5)
@@ -412,6 +469,16 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
 
         send(p,"stop")
         rc=p.wait(timeout=60)
+        if player_proc is not None:
+            if player_proc.poll() is None:
+                player_proc.terminate()
+                try:
+                    player_proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    player_proc.kill()
+                    player_proc.wait(timeout=5)
+            if player_log is not None:
+                player_log.close()
     text=log_path.read_text("utf-8",errors="replace")
     if rc!=0 or "Exception in server tick loop" in text:
         raise RuntimeError(f"trial failed activate={activate} rc={rc}")
@@ -419,6 +486,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
         "ready_seconds":round(ready,3),
         "snapshot":snap,
         "live_sensor_query":live_sensor_query,
+        "player_actor":player_actor,
     }
 
 def main():
@@ -427,6 +495,7 @@ def main():
     ap.add_argument("--world-zip",type=Path,required=True)
     ap.add_argument("--selection",type=Path,required=True)
     ap.add_argument("--limit",type=int,default=3)
+    ap.add_argument("--player-client-script",type=Path)
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
 
@@ -442,8 +511,16 @@ def main():
         for i,probe in enumerate(probes):
             control_dir=root/f"probe-{i}-control";active_dir=root/f"probe-{i}-active"
             control_dir.mkdir();active_dir.mkdir()
-            control=run_trial(server,args.world_zip,probe,control_dir,False)
-            active=run_trial(server,args.world_zip,probe,active_dir,True)
+            player_script=(
+                args.player_client_script.resolve()
+                if args.player_client_script is not None else None
+            )
+            control=run_trial(
+                server,args.world_zip,probe,control_dir,False,player_script
+            )
+            active=run_trial(
+                server,args.world_zip,probe,active_dir,True,player_script
+            )
             diff=delta(control["snapshot"],active["snapshot"])
             control_scope=control["snapshot"].get("world_target_source_scope",[])
             active_scope=active["snapshot"].get("world_target_source_scope",[])
@@ -466,12 +543,16 @@ def main():
               "activation_method":(
                   "server_side_powered_block_state_surrogate"
                   if probe["family"] in STABLE_ACTIVATABLE
-                  else "live_pig_entity_occupancy"
+                  else "paired_exact_1.8.8_player_occupancy"
               ),
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
               "control_ready_seconds":control["ready_seconds"],
               "activated_ready_seconds":active["ready_seconds"],
+              "player_actor":{
+                "control":control.get("player_actor"),
+                "activated":active.get("player_actor"),
+              },
               "live_sensor_query":{
                 "control":control.get("live_sensor_query"),
                 "activated":active.get("live_sensor_query"),
@@ -511,7 +592,7 @@ def main():
         "Hashed LastOutput changes can prove command execution/failure without retaining map text, but do not identify the message semantics.",
         "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
         "World-target sampling is scoped to the feedback-blind command set in the selected probe component. Older selection artifacts without embedded command IDs are reconciled against the current static candidate graph; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
-        "Stable lever/button activation remains a server-side powered-block-state surrogate; pressure-plate activation uses a live persistent Pig occupancy event so the plate computes its own exact 1.8.8 powered state.",
+        "Stable lever/button activation remains a server-side powered-block-state surrogate; pressure-plate control and activated arms both use the same exact-1.8.8 offline player actor, with only the activated arm moving that player from an identical neutral platform onto the plate.",
         "Pressure-plate activation is checked immediately with exact 1.8.8 testforblock metadata and only a boolean plus response hash is retained; later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
