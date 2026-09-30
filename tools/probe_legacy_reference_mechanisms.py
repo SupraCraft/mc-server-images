@@ -349,22 +349,28 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
             time.sleep(4)
         send(p,"save-all")
         time.sleep(2)
+
+        # Capture dynamic occupancy-backed block state while the world is still
+        # live. Server shutdown can unload entities before the final on-disk
+        # observation, which would collapse a valid pressure-plate activation
+        # back to its unpowered state.
+        target_command_ids={
+            row.get("node_id")
+            for row in probe.get("candidate_component_commands",[])
+            if row.get("node_id")
+        }
+        snap=snapshot(
+            world,
+            probe["position"],
+            sensor_node_id=probe.get("node_id"),
+            target_command_ids=target_command_ids or None,
+        )
+
         send(p,"stop")
         rc=p.wait(timeout=60)
     text=log_path.read_text("utf-8",errors="replace")
     if rc!=0 or "Exception in server tick loop" in text:
         raise RuntimeError(f"trial failed activate={activate} rc={rc}")
-    target_command_ids={
-        row.get("node_id")
-        for row in probe.get("candidate_component_commands",[])
-        if row.get("node_id")
-    }
-    snap=snapshot(
-        world,
-        probe["position"],
-        sensor_node_id=probe.get("node_id"),
-        target_command_ids=target_command_ids or None,
-    )
     return {"ready_seconds":round(ready,3),"snapshot":snap}
 
 def main():
