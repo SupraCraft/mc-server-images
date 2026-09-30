@@ -129,9 +129,12 @@ jobs:
               assert sensor["activated"]["observed"] is True
               assert sensor["control"]["legacy_block_id"]==sensor["activated"]["legacy_block_id"]
               assert sensor["control"]["legacy_metadata"]==0
-              assert 1 <= sensor["activated"]["legacy_metadata"] <= 15
-              assert sensor["changed"] is True
-              assert row["evidence"]["sensor_state_change_observed"] is True
+              live=row["live_sensor_query"]
+              assert live["control"]["expected_legacy_metadata"]==0
+              assert live["control"]["matched"] is True
+              assert live["activated"]["expected_legacy_metadata"]==1
+              assert live["activated"]["matched"] is True
+              assert row["evidence"]["live_sensor_activation_observed"] is True
 
               scope=set(row.get("world_target_source_scope",[]))
               assert scope
@@ -170,7 +173,8 @@ jobs:
                   {
                       "node_id":x["probe"]["node_id"],
                       "family":x["probe"]["family"],
-                      "sensor_state":x["sensor_state"],
+                      "live_sensor_query":x["live_sensor_query"],
+                      "saved_sensor_state":x["sensor_state"],
                       "command_block_change_count":x["evidence"]["command_block_change_count"],
                       "world_target_change_count":x["evidence"]["world_target_change_count"],
                       "outcome_class":x["execution_receipt"]["outcome_class"],
@@ -181,6 +185,7 @@ jobs:
           PY
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: reference-core-v1.4-pressure-plate-runtime
           path: |
