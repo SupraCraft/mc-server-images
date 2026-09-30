@@ -1,0 +1,189 @@
+name: worldgen CORE exact 1.8.8 pressure-plate runtime probes
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE v1.4 intake run
+        required: true
+        default: "36559943983"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/select_legacy_runtime_probes.py'
+      - 'tools/probe_legacy_reference_mechanisms.py'
+      - 'tests/test_worldgen_causal_machinery.py'
+      - 'bench/worldgen/interaction/exact-1.8.8-pressure-plate-source-evidence-v0.json'
+      - '.github/workflows/worldgen-reference-core-pressure-plate-runtime.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Run pressure-plate structural controls
+        run: python -m unittest -v tests.test_worldgen_causal_machinery
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Build current feedback-blind causal graph
+        run: |
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py \
+            --world-zip source/original-world.zip \
+            --output out/core-v1.4-causal-machinery.json
+
+      - name: Select pressure-plate probes without human feedback
+        run: |
+          python tools/select_legacy_runtime_probes.py \
+            --graph out/core-v1.4-causal-machinery.json \
+            --sensor-mode pressure_plates \
+            --limit 3 \
+            --output out/pressure-plate-selection.json
+
+      - name: Run paired fresh-world control versus occupied trials
+        run: |
+          python tools/probe_legacy_reference_mechanisms.py \
+            --version 1.8.8 \
+            --world-zip source/original-world.zip \
+            --selection out/pressure-plate-selection.json \
+            --limit 3 \
+            --output out/pressure-plate-paired-probes.json
+
+      - name: Validate compact receipts and preserve negative outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          selected=json.loads(pathlib.Path("out/pressure-plate-selection.json").read_text())
+          d=json.loads(pathlib.Path("out/pressure-plate-paired-probes.json").read_text())
+          families={
+              "stone_pressure_plate","wooden_pressure_plate",
+              "light_weighted_pressure_plate","heavy_weighted_pressure_plate",
+          }
+          assert selected["sensor_mode"]=="pressure_plates"
+          assert 1 <= selected["selected_count"] <= 3
+          assert d["paired_control_design"] is True
+          assert d["minecraft_version"]=="1.8.8"
+          assert d["probe_count"]==selected["selected_count"]
+          for row in d["results"]:
+              assert row["probe"]["family"] in families
+              assert row["activation_method"]=="live_pig_entity_occupancy"
+              sensor=row["sensor_state"]
+              assert sensor["control"]["observed"] is True
+              assert sensor["activated"]["observed"] is True
+              assert sensor["control"]["legacy_block_id"]==sensor["activated"]["legacy_block_id"]
+              assert sensor["control"]["legacy_metadata"]==0
+              assert 1 <= sensor["activated"]["legacy_metadata"] <= 15
+              assert sensor["changed"] is True
+              assert row["evidence"]["sensor_state_change_observed"] is True
+
+              scope=set(row.get("world_target_source_scope",[]))
+              assert scope
+              assert all(
+                  change.get("source") in scope
+                  for change in row["delta"]["world_target_changes"]
+              )
+
+              receipt=row["execution_receipt"]
+              assert receipt["schema"]=="supracraft-legacy-execution-receipt/1"
+              assert receipt["command_scope"]==row["world_target_source_scope"]
+              assert receipt["outcome_class"] in {
+                  "observable_world_target_actuation",
+                  "selected_command_state_change_without_observable_target_delta",
+                  "other_runtime_state_change_without_observable_target_delta",
+                  "no_observed_runtime_effect",
+              }
+              allowed_command_fields={
+                  "verb","sha256","success_count","condition_met",
+                  "powered","last_execution","last_output_sha256",
+              }
+              for command in receipt["commands"]:
+                  assert set(command["control"])==allowed_command_fields
+                  assert set(command["activated"])==allowed_command_fields
+
+          print(json.dumps({
+              "selected":[
+                  {
+                      "node_id":x["node_id"],
+                      "family":x["family"],
+                      "candidate_component_command_blocks":x["candidate_component_command_blocks"],
+                  }
+                  for x in selected["selected"]
+              ],
+              "results":[
+                  {
+                      "node_id":x["probe"]["node_id"],
+                      "family":x["probe"]["family"],
+                      "sensor_state":x["sensor_state"],
+                      "command_block_change_count":x["evidence"]["command_block_change_count"],
+                      "world_target_change_count":x["evidence"]["world_target_change_count"],
+                      "outcome_class":x["execution_receipt"]["outcome_class"],
+                  }
+                  for x in d["results"]
+              ],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-pressure-plate-runtime
+          path: |
+            out/pressure-plate-selection.json
+            out/pressure-plate-paired-probes.json
+          retention-days: 14
