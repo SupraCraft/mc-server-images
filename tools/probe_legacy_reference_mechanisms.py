@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import argparse, copy, json, shutil, subprocess, tempfile, time, urllib.request, zipfile
+import argparse, copy, hashlib, json, shutil, subprocess, tempfile, time, urllib.request, zipfile
 from pathlib import Path
 
 import nbtlib
@@ -301,6 +301,43 @@ def scoped_execution_receipt(control, active, scope, diff):
         "interpretation_limit":"No target delta does not distinguish failure, no-op, same-state actuation, or an effect outside captured targets.",
     }
 
+def live_testforblock(proc, log_path, probe, expected_meta):
+    """Query exact live sensor block state without retaining raw console feedback."""
+    family=probe["family"]
+    block={
+      "stone_pressure_plate":"minecraft:stone_pressure_plate",
+      "wooden_pressure_plate":"minecraft:wooden_pressure_plate",
+      "light_weighted_pressure_plate":"minecraft:light_weighted_pressure_plate",
+      "heavy_weighted_pressure_plate":"minecraft:heavy_weighted_pressure_plate",
+    }.get(family)
+    if block is None:
+        return None
+    x,y,z=probe["position"]
+    try:
+        start=log_path.stat().st_size
+    except FileNotFoundError:
+        start=0
+    send(proc,f"testforblock {x} {y} {z} {block} {int(expected_meta)}")
+    deadline=time.monotonic()+2.0
+    segment=""
+    success=f"Successfully found the block at {x},{y},{z}."
+    while time.monotonic()<deadline:
+        time.sleep(0.05)
+        with log_path.open("r",encoding="utf-8",errors="replace") as fh:
+            fh.seek(start)
+            segment=fh.read()
+        if success in segment:
+            break
+        if "commands.testforblock" in segment or "The block at " in segment:
+            break
+    return {
+      "query_kind":"exact_1.8.8_testforblock_metadata",
+      "expected_legacy_metadata":int(expected_meta),
+      "matched":success in segment,
+      "response_sha256":hashlib.sha256(segment.encode("utf-8")).hexdigest(),
+    }
+
+
 def run_trial(server_jar, source_zip, probe, trial_dir, activate):
     world=trial_dir/"world"
     materialize_world(source_zip,world)
@@ -320,11 +357,12 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
         )
         ready=wait_ready(p,log_path,180)
         time.sleep(3)
+        family=probe["family"]
+        if family not in ACTIVATABLE:
+            raise RuntimeError(f"probe family not activatable: {family}")
+        live_sensor_query=None
+        x,y,z=probe["position"]
         if activate:
-            family=probe["family"]
-            if family not in ACTIVATABLE:
-                raise RuntimeError(f"probe family not activatable: {family}")
-            x,y,z=probe["position"]
             if family in STABLE_ACTIVATABLE:
                 meta=int(probe.get("legacy_metadata") or 0)
                 powered=meta|0x8
@@ -334,19 +372,25 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
                   "wooden_button":"minecraft:wooden_button",
                 }[family]
                 send(p,f"setblock {x} {y} {z} {block} {powered} replace")
+                time.sleep(4)
             elif family in PRESSURE_PLATE_ACTIVATABLE:
-                # Exact 1.8.8 pressure plates are live occupancy sensors. Use a
-                # persistent living entity so stone, wooden and weighted plates
-                # all receive a genuine collision/occupancy update rather than
-                # mutating their stored powered metadata.
                 send(
                     p,
                     f"summon Pig {x + 0.5} {y + 1.0} {z + 0.5} "
                     "{NoAI:1b,PersistenceRequired:1b}",
                 )
-            time.sleep(4)
+                time.sleep(0.25)
+                live_sensor_query=live_testforblock(p,log_path,probe,1)
+                time.sleep(3.5)
         else:
-            time.sleep(4)
+            if family in PRESSURE_PLATE_ACTIVATABLE:
+                time.sleep(0.25)
+                live_sensor_query=live_testforblock(
+                    p,log_path,probe,int(probe.get("legacy_metadata") or 0)
+                )
+                time.sleep(3.5)
+            else:
+                time.sleep(4)
         send(p,"save-all")
         time.sleep(2)
 
@@ -371,7 +415,11 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
     text=log_path.read_text("utf-8",errors="replace")
     if rc!=0 or "Exception in server tick loop" in text:
         raise RuntimeError(f"trial failed activate={activate} rc={rc}")
-    return {"ready_seconds":round(ready,3),"snapshot":snap}
+    return {
+        "ready_seconds":round(ready,3),
+        "snapshot":snap,
+        "live_sensor_query":live_sensor_query,
+    }
 
 def main():
     ap=argparse.ArgumentParser()
@@ -424,6 +472,10 @@ def main():
               "execution_receipt":receipt,
               "control_ready_seconds":control["ready_seconds"],
               "activated_ready_seconds":active["ready_seconds"],
+              "live_sensor_query":{
+                "control":control.get("live_sensor_query"),
+                "activated":active.get("live_sensor_query"),
+              },
               "sensor_state":{
                 "control":control_sensor,
                 "activated":active_sensor,
@@ -432,6 +484,9 @@ def main():
               "delta":diff,
               "evidence":{
                 "sensor_state_change_observed":sensor_state_changed,
+                "live_sensor_activation_observed":bool(
+                    (active.get("live_sensor_query") or {}).get("matched")
+                ),
                 "command_block_change_count":len(diff["command_block_changes"]),
                 "scoreboard_change_count":len(diff["scoreboard_changes"]),
                 "world_target_change_count":len(diff["world_target_changes"]),
@@ -457,6 +512,7 @@ def main():
         "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
         "World-target sampling is scoped to the feedback-blind command set in the selected probe component. Older selection artifacts without embedded command IDs are reconciled against the current static candidate graph; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
         "Stable lever/button activation remains a server-side powered-block-state surrogate; pressure-plate activation uses a live persistent Pig occupancy event so the plate computes its own exact 1.8.8 powered state.",
+        "Pressure-plate activation is checked immediately with exact 1.8.8 testforblock metadata and only a boolean plus response hash is retained; later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
