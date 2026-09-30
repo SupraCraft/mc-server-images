@@ -13,18 +13,25 @@ import argparse, json
 from collections import defaultdict, deque
 from pathlib import Path
 
-AUTOMATABLE_SENSOR_FAMILIES = {
+STABLE_SENSOR_FAMILIES = {
     "lever",
     "stone_button",
     "wooden_button",
 }
 
-LIVE_OCCUPANCY_SENSOR_FAMILIES = {
+PRESSURE_PLATE_SENSOR_FAMILIES = {
     "stone_pressure_plate",
     "wooden_pressure_plate",
     "light_weighted_pressure_plate",
     "heavy_weighted_pressure_plate",
-    "trapped_chest",
+}
+
+TRAPPED_CHEST_SENSOR_FAMILIES = {"trapped_chest"}
+
+SENSOR_MODES = {
+    "stable": STABLE_SENSOR_FAMILIES,
+    "pressure_plates": PRESSURE_PLATE_SENSOR_FAMILIES,
+    "trapped_chest": TRAPPED_CHEST_SENSOR_FAMILIES,
 }
 
 def iter_edges(doc):
@@ -67,15 +74,17 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--graph",type=Path,required=True)
     ap.add_argument("--limit",type=int,default=5)
+    ap.add_argument("--sensor-mode",choices=sorted(SENSOR_MODES),default="stable")
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
     doc=json.loads(args.graph.read_text())
     nodes,graph=candidate_graph(doc)
+    selected_families=SENSOR_MODES[args.sensor_mode]
 
     candidates=[]
     for nid,node in nodes.items():
         family=node.get("family")
-        if family not in AUTOMATABLE_SENSOR_FAMILIES:
+        if family not in selected_families:
             continue
         members=component(graph,nid)
         member_nodes=[nodes[x] for x in members if x in nodes]
@@ -141,18 +150,25 @@ def main():
             selected.append(c);used.add(c["node_id"])
             if len(selected)>=args.limit:break
 
+    deferred=set().union(*SENSOR_MODES.values())-set(selected_families)
+    mode_constraints={
+      "stable":"Stable block-state activation sensors (lever/buttons) only.",
+      "pressure_plates":"Pressure plates only; activation must use live entity occupancy, not metadata mutation.",
+      "trapped_chest":"Trapped chests only; opening-power qualification must remain separate from comparator inventory/fullness state.",
+    }
     result={
       "schema":"supracraft-legacy-runtime-probe-selection/1",
       "source_graph_schema":doc.get("schema"),
       "selection_kind":"feedback_blind_structural",
+      "sensor_mode":args.sensor_mode,
       "candidate_count":len(candidates),
       "selected_count":len(selected),
       "selected":selected,
-      "deferred_live_occupancy_families":sorted(LIVE_OCCUPANCY_SENSOR_FAMILIES),
+      "deferred_sensor_families":sorted(deferred),
       "constraints":[
-        "Only stable block-state activation sensors (lever/buttons) are selected for this paired runtime phase.",
-        "Pressure plates, trapped-chest opening and interaction entities remain live occupancy/player interaction probes.",
+        mode_constraints[args.sensor_mode],
         "Selection uses structural causal evidence only and does not read human feedback.",
+        "Only candidates whose structural component contains command blocks are selected.",
         "Each runtime probe must start from a fresh copy of the exact original world.",
         "Probe outcome is mechanism evidence, not a qualitative judgment."
       ]
