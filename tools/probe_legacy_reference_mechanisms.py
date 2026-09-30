@@ -20,7 +20,12 @@ from run_legacy_reference_server import (
 )
 from select_legacy_runtime_probes import candidate_graph, component
 
-ACTIVATABLE = {"lever","stone_button","wooden_button"}
+STABLE_ACTIVATABLE = {"lever","stone_button","wooden_button"}
+PRESSURE_PLATE_ACTIVATABLE = {
+    "stone_pressure_plate","wooden_pressure_plate",
+    "light_weighted_pressure_plate","heavy_weighted_pressure_plate",
+}
+ACTIVATABLE = STABLE_ACTIVATABLE | PRESSURE_PLATE_ACTIVATABLE
 
 def set_spawn(world: Path, pos):
     path=world/"level.dat"
@@ -164,11 +169,14 @@ def snapshot(world: Path, center, sensor_node_id=None, target_command_ids=None, 
     for row in sb.get("scores",[]):
         key=f"{row.get('name')}::{row.get('objective')}"
         objective_scores[key]=row.get("score")
+    sensor_states=legacy_block_states_at(world,[center])
+    sensor_key=f"{int(center[0])},{int(center[1])},{int(center[2])}"
     return {
       "command_blocks":nodes,
       "scoreboard_scores":objective_scores,
       "world_targets":world_targets,
       "world_target_source_scope":sorted(target_source_scope),
+      "sensor_state":sensor_states[sensor_key],
       "machinery_node_count":d["node_count"],
     }
 
@@ -316,15 +324,26 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
             family=probe["family"]
             if family not in ACTIVATABLE:
                 raise RuntimeError(f"probe family not activatable: {family}")
-            meta=int(probe.get("legacy_metadata") or 0)
-            powered=meta|0x8
-            block={
-              "lever":"minecraft:lever",
-              "stone_button":"minecraft:stone_button",
-              "wooden_button":"minecraft:wooden_button",
-            }[family]
             x,y,z=probe["position"]
-            send(p,f"setblock {x} {y} {z} {block} {powered} replace")
+            if family in STABLE_ACTIVATABLE:
+                meta=int(probe.get("legacy_metadata") or 0)
+                powered=meta|0x8
+                block={
+                  "lever":"minecraft:lever",
+                  "stone_button":"minecraft:stone_button",
+                  "wooden_button":"minecraft:wooden_button",
+                }[family]
+                send(p,f"setblock {x} {y} {z} {block} {powered} replace")
+            elif family in PRESSURE_PLATE_ACTIVATABLE:
+                # Exact 1.8.8 pressure plates are live occupancy sensors. Use a
+                # persistent living entity so stone, wooden and weighted plates
+                # all receive a genuine collision/occupancy update rather than
+                # mutating their stored powered metadata.
+                send(
+                    p,
+                    f"summon Pig {x + 0.5} {y} {z + 0.5} "
+                    "{NoAI:1b,PersistenceRequired:1b}",
+                )
             time.sleep(4)
         else:
             time.sleep(4)
@@ -359,7 +378,7 @@ def main():
 
     selection=json.loads(args.selection.read_text())
     probes=[p for p in selection["selected"] if p["family"] in ACTIVATABLE][:args.limit]
-    if not probes:raise RuntimeError("selection contains no automatable lever/button probes")
+    if not probes:raise RuntimeError("selection contains no supported runtime sensor probes")
 
     entry,meta,server_meta=resolve_version(args.version)
     with tempfile.TemporaryDirectory(prefix="paired-legacy-probes-") as td:
@@ -385,14 +404,28 @@ def main():
                 control_scope,
                 diff,
             )
+            control_sensor=control["snapshot"].get("sensor_state")
+            active_sensor=active["snapshot"].get("sensor_state")
+            sensor_state_changed=control_sensor != active_sensor
             results.append({
               "probe":probe,
+              "activation_method":(
+                  "server_side_powered_block_state_surrogate"
+                  if probe["family"] in STABLE_ACTIVATABLE
+                  else "live_pig_entity_occupancy"
+              ),
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
               "control_ready_seconds":control["ready_seconds"],
               "activated_ready_seconds":active["ready_seconds"],
+              "sensor_state":{
+                "control":control_sensor,
+                "activated":active_sensor,
+                "changed":sensor_state_changed,
+              },
               "delta":diff,
               "evidence":{
+                "sensor_state_change_observed":sensor_state_changed,
                 "command_block_change_count":len(diff["command_block_changes"]),
                 "scoreboard_change_count":len(diff["scoreboard_changes"]),
                 "world_target_change_count":len(diff["world_target_changes"]),
@@ -417,7 +450,7 @@ def main():
         "Hashed LastOutput changes can prove command execution/failure without retaining map text, but do not identify the message semantics.",
         "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
         "World-target sampling is scoped to the feedback-blind command set in the selected probe component. Older selection artifacts without embedded command IDs are reconciled against the current static candidate graph; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
-        "Only lever/button sensors are included in this phase.",
+        "Stable lever/button activation remains a server-side powered-block-state surrogate; pressure-plate activation uses a live persistent Pig occupancy event so the plate computes its own exact 1.8.8 powered state.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
