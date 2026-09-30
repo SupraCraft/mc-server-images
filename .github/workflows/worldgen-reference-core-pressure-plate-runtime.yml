@@ -14,6 +14,7 @@ on:
       - 'tools/analyze_legacy_causal_machinery.py'
       - 'tools/select_legacy_runtime_probes.py'
       - 'tools/probe_legacy_reference_mechanisms.py'
+      - 'tools/legacy_pressure_plate_player.js'
       - 'tests/test_worldgen_causal_machinery.py'
       - 'bench/worldgen/interaction/exact-1.8.8-pressure-plate-source-evidence-v0.json'
       - '.github/workflows/worldgen-reference-core-pressure-plate-runtime.yml'
@@ -50,6 +51,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
       - name: Enforce public/free execution policy
         run: |
           python tools/check_worldgen_public_policy.py \
@@ -59,6 +64,16 @@ jobs:
 
       - name: Install bounded NBT dependency
         run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Pin exact player-actor dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pressure-player-runtime
+          cd pressure-player-runtime
+          npm init -y >/dev/null
+          npm install --save-exact mineflayer@4.39.0
+          echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
 
       - name: Run pressure-plate structural controls
         run: python -m unittest -v tests.test_worldgen_causal_machinery
@@ -102,6 +117,7 @@ jobs:
             --world-zip source/original-world.zip \
             --selection out/pressure-plate-selection.json \
             --limit 3 \
+            --player-client-script tools/legacy_pressure_plate_player.js \
             --output out/pressure-plate-paired-probes.json
 
       - name: Validate compact receipts and preserve negative outcomes
@@ -123,7 +139,12 @@ jobs:
           assert d["probe_count"]==selected["selected_count"]
           for row in d["results"]:
               assert row["probe"]["family"] in families
-              assert row["activation_method"]=="live_pig_entity_occupancy"
+              assert row["activation_method"]=="paired_exact_1.8.8_player_occupancy"
+              actors=row["player_actor"]
+              for arm in ("control","activated"):
+                  assert actors[arm]["status"]=="ready"
+                  assert actors[arm]["minecraft_version"]=="1.8.8"
+                  assert actors[arm]["protocol_version"]==47
               sensor=row["sensor_state"]
               assert sensor["control"]["observed"] is True
               assert sensor["activated"]["observed"] is True
@@ -173,6 +194,7 @@ jobs:
                   {
                       "node_id":x["probe"]["node_id"],
                       "family":x["probe"]["family"],
+                      "player_actor":x["player_actor"],
                       "live_sensor_query":x["live_sensor_query"],
                       "saved_sensor_state":x["sensor_state"],
                       "command_block_change_count":x["evidence"]["command_block_change_count"],
