@@ -296,11 +296,41 @@ def metadata_semantics(family: str, meta: int | None):
     elif family == "lever":
         out["powered"] = bool(meta & 0x8)
         out["attachment_code"] = meta & 0x7
-    elif family in {
-        "stone_pressure_plate", "wooden_pressure_plate",
-        "light_weighted_pressure_plate", "heavy_weighted_pressure_plate"
-    }:
-        out["power_level"] = meta & 0xF
+    elif family in {"stone_pressure_plate", "wooden_pressure_plate"}:
+        stored_powered = meta == 1
+        out.update({
+            "powered": stored_powered,
+            "stored_state": 1 if stored_powered else 0,
+            "power_level": 15 if stored_powered else 0,
+            "occupancy_semantics": (
+                "living_entities_only"
+                if family == "stone_pressure_plate"
+                else "all_triggering_entities"
+            ),
+            "support_vector": [0, -1, 0],
+            "support_semantics": (
+                "Minecraft 1.8.8 BlockBasePressurePlate strongly powers only the "
+                "support side below; ordinary BlockPressurePlate serializes powered "
+                "state as metadata 0/1 while emitting strength 0/15"
+            ),
+        })
+    elif family in {"light_weighted_pressure_plate", "heavy_weighted_pressure_plate"}:
+        power = meta & 0xF
+        out.update({
+            "powered": power > 0,
+            "stored_state": power,
+            "power_level": power,
+            "occupancy_semantics": "entity_count_weighted_signal",
+            "entity_count_capacity": (
+                15 if family == "light_weighted_pressure_plate" else 150
+            ),
+            "support_vector": [0, -1, 0],
+            "support_semantics": (
+                "Minecraft 1.8.8 BlockBasePressurePlate strongly powers only the "
+                "support side below; BlockPressurePlateWeighted serializes its 0..15 "
+                "power level directly"
+            ),
+        })
     return out
 
 
@@ -491,6 +521,20 @@ def legacy_direct_redstone_edges(machinery):
                         "edge_type":"legacy_button_attached_support_power",
                         "certainty":"strong",
                         "basis":"exact Minecraft 1.8.8 BlockButton metadata FACING; attached support is opposite FACING",
+                    })
+        if family in {
+            "stone_pressure_plate", "wooden_pressure_plate",
+            "light_weighted_pressure_plate", "heavy_weighted_pressure_plate",
+        }:
+            support_vector=node.get("metadata_semantics",{}).get("support_vector")
+            if support_vector:
+                q=add_pos(pos,tuple(support_vector))
+                if q in machinery:
+                    edges.append({
+                        "source":node_id(pos),"target":node_id(q),
+                        "edge_type":"legacy_pressure_plate_support_power",
+                        "certainty":"strong",
+                        "basis":"exact Minecraft 1.8.8 BlockBasePressurePlate strong power is emitted only toward EnumFacing.UP, i.e. the supporting block below",
                     })
     return edges
 
@@ -841,7 +885,7 @@ def analyze(world: Path):
         "nodes": sorted(machinery.values(), key=lambda n: tuple(n["position"])),
         "limitations": [
             "Physical adjacency is not equivalent to powered redstone connectivity or causal direction.",
-            "Repeater/comparator metadata ports, command-block facing, and exact 1.8.8 button attachment direction are decoded. Same-level dust continuity, direct sensor/dust/component relations, and button-to-attached-support power are recovered separately; vertical dust steps, opaque solid-block conduction beyond the directly attached button support, locking/side-input behavior, and quasi-connectivity remain incomplete.",
+            "Repeater/comparator metadata ports, command-block facing, exact 1.8.8 button attachment direction, and exact 1.8.8 pressure-plate stored/output power semantics are decoded. Same-level dust continuity, direct sensor/dust/component relations, button-to-attached-support power, and pressure-plate-to-support power are recovered separately; vertical dust steps, opaque solid-block conduction beyond those exact directly powered supports, locking/side-input behavior, and quasi-connectivity remain incomplete.",
             "Trapped-chest opening power and comparator inventory/fullness reads are represented as distinct causal channels.",
             "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
             "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
