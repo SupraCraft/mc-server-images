@@ -341,7 +341,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate):
                 # mutating their stored powered metadata.
                 send(
                     p,
-                    f"summon Pig {x + 0.5} {y} {z + 0.5} "
+                    f"summon Pig {x + 0.5} {y + 1.0} {z + 0.5} "
                     "{NoAI:1b,PersistenceRequired:1b}",
                 )
             time.sleep(4)
