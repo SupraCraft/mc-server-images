@@ -67,6 +67,49 @@ class CausalMachineryPrimitiveTests(unittest.TestCase):
                 self.assertEqual(support_vector,d["support_vector"])
                 self.assertFalse(d["powered"])
 
+    def test_pressure_plate_metadata_separates_ordinary_and_weighted_storage(self):
+        stone=causal.metadata_semantics("stone_pressure_plate",1)
+        wood=causal.metadata_semantics("wooden_pressure_plate",1)
+        light=causal.metadata_semantics("light_weighted_pressure_plate",7)
+        heavy=causal.metadata_semantics("heavy_weighted_pressure_plate",3)
+
+        self.assertTrue(stone["powered"])
+        self.assertEqual(1,stone["stored_state"])
+        self.assertEqual(15,stone["power_level"])
+        self.assertEqual("living_entities_only",stone["occupancy_semantics"])
+        self.assertEqual([0,-1,0],stone["support_vector"])
+
+        self.assertEqual("all_triggering_entities",wood["occupancy_semantics"])
+        self.assertEqual(15,wood["power_level"])
+
+        self.assertEqual(7,light["stored_state"])
+        self.assertEqual(7,light["power_level"])
+        self.assertEqual(15,light["entity_count_capacity"])
+        self.assertEqual(150,heavy["entity_count_capacity"])
+
+    def test_pressure_plate_direct_support_power_is_strong_and_narrow(self):
+        plate=(10,65,10)
+        support=(10,64,10)
+        side=(11,65,10)
+        machinery={
+            plate:{
+                "family":"wooden_pressure_plate",
+                "metadata_semantics":causal.metadata_semantics("wooden_pressure_plate",0),
+            },
+            support:{"family":"command_block","metadata_semantics":{}},
+            side:{"family":"command_block","metadata_semantics":{}},
+        }
+        edges=causal.legacy_direct_redstone_edges(machinery)
+        matches=[
+            e for e in edges
+            if e["edge_type"]=="legacy_pressure_plate_support_power"
+        ]
+        self.assertEqual(1,len(matches))
+        self.assertEqual("10,65,10",matches[0]["source"])
+        self.assertEqual("10,64,10",matches[0]["target"])
+        self.assertEqual("strong",matches[0]["certainty"])
+        self.assertFalse(any(e.get("target")=="11,65,10" for e in matches))
+
     def test_button_attached_command_block_is_strong_directed_power_edge(self):
         button=(25,66,-5)
         support=(26,66,-5)
