@@ -595,6 +595,14 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
         )
         ready=wait_ready(p,log_path,180)
         time.sleep(3)
+        if p.poll() is not None:
+            server_tail="\n".join(
+                log_path.read_text("utf-8",errors="replace").splitlines()[-80:]
+            )
+            raise RuntimeError(
+                f"server exited after ready activate={activate} rc={p.poll()}\n"
+                f"{server_tail}"
+            )
         if family not in ACTIVATABLE:
             raise RuntimeError(f"probe family not activatable: {family}")
         live_sensor_query=None
