@@ -705,17 +705,6 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                             [diagnostic_sentinel,1,0],
                         )
                     )
-                    # The recovered lower timer reaches the second matched
-                    # tellraw roughly 264 server ticks after the first. Keep
-                    # this long observation window diagnostic-only so normal
-                    # pressure qualification does not pay the added latency.
-                    time.sleep(11.5)
-                    diagnostic_success_observation["t15000ms"]=(
-                        sample_diagnostic_success_counts(
-                            p,log_path,diagnostic_command_ids,
-                            [diagnostic_sentinel,1,0],
-                        )
-                    )
         else:
             if family in PRESSURE_PLATE_ACTIVATABLE:
                 trigger_epoch_ms=int(time.time()*1000)
@@ -744,6 +733,15 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                 time.sleep(2.5)
                 if diagnostic_command_ids:
                     diagnostic_success_observation["t3500ms"]=(
+                        sample_diagnostic_success_counts(
+                            p,log_path,diagnostic_command_ids,
+                            [diagnostic_sentinel,1,0],
+                        )
+                    )
+                    # Match the activated arm's long timer observation window.
+                    # The sham must be temporally symmetric for attribution.
+                    time.sleep(11.5)
+                    diagnostic_success_observation["t15000ms"]=(
                         sample_diagnostic_success_counts(
                             p,log_path,diagnostic_command_ids,
                             [diagnostic_sentinel,1,0],
