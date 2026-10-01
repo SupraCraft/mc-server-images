@@ -114,7 +114,7 @@ def parse_javap_methods(output: str, class_name: str) -> list[dict]:
             descriptor = line.split(":", 1)[1].strip()
             before = pending.split("(", 1)[0].strip()
             token = before.split()[-1]
-            if token == simple or token.endswith(simple):
+            if token == simple or token == class_name:
                 name = "<init>"
             else:
                 name = token
