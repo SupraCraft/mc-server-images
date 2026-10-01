@@ -177,8 +177,29 @@ jobs:
           assert literal["runtime_feedback"]["protocol_semantic_class_counts"]=={
               "literal_text":2
           }
+          assert literal["runtime_feedback"][
+              "authored_literal_payload_hash_match_count"
+          ]==2
+          assert literal["runtime_feedback"][
+              "authored_literal_payload_unique_static_match_count"
+          ]==2
+          assert literal["runtime_feedback"]["attribution_class"]==(
+              "client_literal_payload_identity_match_without_command_execution_state_delta"
+          )
+          literal_matches={
+              match["static_node_ids"][0]:match
+              for match in literal["payload_identity_matches"]
+              if match["unique_static_match"]
+          }
+          assert set(literal_matches)=={"388,85,-75","392,86,-63"}
+          assert literal_matches["388,85,-75"]["static_support"][
+              "388,85,-75"
+          ]["support_class"]=="trusted"
+          assert literal_matches["392,86,-63"]["static_support"][
+              "392,86,-63"
+          ]["support_class"]=="none"
           assert literal["calibration_class"]==(
-              "runtime_feedback_without_static_feedback_path"
+              "runtime_feedback_with_trusted_static_path"
           )
 
           print(json.dumps({
@@ -196,6 +217,14 @@ jobs:
                           "to_runtime_feedback_command_nodes"
                       ].items()
                   },
+                  "payload_identity_support":[{
+                      "static_node_ids":m["static_node_ids"],
+                      "unique_static_match":m["unique_static_match"],
+                      "support":{
+                          k:v["support_class"]
+                          for k,v in m["static_support"].items()
+                      },
+                  } for m in w.get("payload_identity_matches",[])],
                   "calibration_class":w["calibration_class"],
               } for w in d["witnesses"]],
           },indent=2,sort_keys=True))
