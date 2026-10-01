@@ -117,8 +117,11 @@ jobs:
         run: |
           set -euo pipefail
           java -version
-          test "${JAVA_VERSION%%.*}" = "${{ matrix.java_major }}" || {
-            echo "JAVA_VERSION=$JAVA_VERSION does not match required ${{ matrix.java_major }}"
+          observed="$(java -XshowSettings:properties -version 2>&1 \
+            | awk -F'= ' '/java.specification.version =/ {print $2; exit}')"
+          observed_major="${observed%%.*}"
+          test "$observed_major" = "${{ matrix.java_major }}" || {
+            echo "observed Java $observed does not match required ${{ matrix.java_major }}"
             exit 1
           }
 
