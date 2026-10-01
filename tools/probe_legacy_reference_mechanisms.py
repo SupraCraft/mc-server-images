@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse, copy, hashlib, json, shutil, subprocess, tempfile, time, urllib.request, zipfile
+from collections import Counter
 from pathlib import Path
 
 import nbtlib
@@ -332,6 +333,56 @@ def presentation_feedback_command_state_changes(receipt, diff):
     return rows
 
 
+def client_feedback_delta(control_observation, activated_observation):
+    """Compare compact client feedback observations as multisets."""
+    control=((control_observation or {}).get("client_feedback") or {})
+    activated=((activated_observation or {}).get("client_feedback") or {})
+
+    def message_counter(doc):
+        return Counter(
+            (row.get("sha256"),row.get("position"))
+            for row in doc.get("message_events",[])
+            if row.get("sha256")
+        )
+
+    def effect_counter(doc):
+        return Counter(
+            (
+                row.get("event"),row.get("id"),row.get("amplifier"),row.get("duration")
+            )
+            for row in doc.get("self_effect_events",[])
+            if row.get("event") in {"start","end"}
+        )
+
+    def message_rows(counter):
+        return [
+            {"sha256":key[0],"position":key[1],"count":count}
+            for key,count in sorted(counter.items(),key=lambda item:str(item[0]))
+            if count > 0
+        ]
+
+    def effect_rows(counter):
+        return [
+            {
+                "event":key[0],"id":key[1],"amplifier":key[2],
+                "duration":key[3],"count":count,
+            }
+            for key,count in sorted(counter.items(),key=lambda item:str(item[0]))
+            if count > 0
+        ]
+
+    cm=message_counter(control); am=message_counter(activated)
+    ce=effect_counter(control); ae=effect_counter(activated)
+    return {
+        "message_events_added":message_rows(am-cm),
+        "message_events_removed":message_rows(cm-am),
+        "self_effect_events_added":effect_rows(ae-ce),
+        "self_effect_events_removed":effect_rows(ce-ae),
+        "control_truncated":bool(control.get("truncated")),
+        "activated_truncated":bool(activated.get("truncated")),
+    }
+
+
 def live_testforblock(proc, log_path, probe, expected_meta):
     """Query exact live sensor block state without retaining raw console feedback."""
     family=probe["family"]
@@ -582,6 +633,10 @@ def main():
             feedback_command_changes=presentation_feedback_command_state_changes(
                 receipt,diff
             )
+            feedback_delta=client_feedback_delta(
+                control.get("player_sensor_observation"),
+                active.get("player_sensor_observation"),
+            )
             control_sensor=control["snapshot"].get("sensor_state")
             active_sensor=active["snapshot"].get("sensor_state")
             sensor_state_changed=control_sensor != active_sensor
@@ -595,6 +650,7 @@ def main():
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
               "presentation_feedback_command_state_changes":feedback_command_changes,
+              "client_feedback_delta":feedback_delta,
               "control_ready_seconds":control["ready_seconds"],
               "activated_ready_seconds":active["ready_seconds"],
               "player_actor":{
@@ -632,6 +688,20 @@ def main():
                     1 for row in feedback_command_changes
                     if row["success_count_changed"]
                 ),
+                "client_message_delta_observed":bool(
+                    feedback_delta["message_events_added"] or
+                    feedback_delta["message_events_removed"]
+                ),
+                "client_self_effect_delta_observed":bool(
+                    feedback_delta["self_effect_events_added"] or
+                    feedback_delta["self_effect_events_removed"]
+                ),
+                "client_feedback_delta_observed":bool(
+                    feedback_delta["message_events_added"] or
+                    feedback_delta["message_events_removed"] or
+                    feedback_delta["self_effect_events_added"] or
+                    feedback_delta["self_effect_events_removed"]
+                ),
                 "scoreboard_change_count":len(diff["scoreboard_changes"]),
                 "world_target_change_count":len(diff["world_target_changes"]),
                 "world_target_actuation_observed":bool(diff["world_target_changes"]),
@@ -659,6 +729,7 @@ def main():
         "Pressure-plate activation is observed both by an exact 1.8.8 testforblock metadata query and by the paired exact-version player client's block-state stream; only compact metadata/boolean evidence is retained, and later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "Presentation-feedback command state changes are reported only for commands inside the selected compact command scope and retain verb, node id, changed field names, and SuccessCount values only; they do not prove client delivery, perception, comprehension, or qualitative value.",
+        "Client feedback observations retain only message hashes/positions and self-effect numeric id/amplifier/duration events. Paired deltas can establish client-visible delivery candidates without retaining message text; they do not identify message semantics or establish perception/comprehension.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
       ]
