@@ -14,8 +14,13 @@
     "data"
   ],
   "properties": {
-    "schema": {"const": "supracraft-causal-event/1"},
-    "seq": {"type": "integer", "minimum": 1},
+    "schema": {
+      "const": "supracraft-causal-event/1"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1
+    },
     "event_type": {
       "enum": [
         "trace_start",
@@ -29,6 +34,7 @@
         "redstone_power_result",
         "block_power_query",
         "block_power_result",
+        "wire_neighbor_changed",
         "wire_recompute_start",
         "wire_recompute_end",
         "command_block_neighbor",
@@ -39,9 +45,18 @@
         "packet_send"
       ]
     },
-    "monotonic_ns": {"type": "integer", "minimum": 0},
-    "thread_id": {"type": "integer", "minimum": 1},
-    "tick": {"type": "integer", "minimum": -1},
+    "monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "thread_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tick": {
+      "type": "integer",
+      "minimum": -1
+    },
     "data": {
       "type": "object",
       "additionalProperties": false,
@@ -51,25 +66,57 @@
           "pattern": "^[A-Za-z0-9._-]+$",
           "maxLength": 96
         },
-        "trace_schema": {"const": "supracraft-causal-trace/1"},
-        "dropped_events": {"type": "integer", "minimum": 0},
-        "x": {"type": "integer"},
-        "y": {"type": "integer"},
-        "z": {"type": "integer"},
-        "value": {"type": "integer"},
+        "trace_schema": {
+          "const": "supracraft-causal-trace/1"
+        },
+        "dropped_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "z": {
+          "type": "integer"
+        },
+        "value": {
+          "type": "integer"
+        },
         "command_verb": {
           "type": "string",
           "pattern": "^[a-z0-9_:-]+$",
           "maxLength": 64
         },
-        "command_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "success_count": {"type": "integer"},
-        "dispatch_kind": {
-          "enum": ["performCommand", "performPrefixedCommand"]
+        "command_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         },
-        "packet_class": {"enum": ["chat"]},
-        "packet_position": {"type": "integer", "minimum": 0, "maximum": 255},
-        "payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "success_count": {
+          "type": "integer"
+        },
+        "dispatch_kind": {
+          "enum": [
+            "performCommand",
+            "performPrefixedCommand"
+          ]
+        },
+        "packet_class": {
+          "enum": [
+            "chat"
+          ]
+        },
+        "packet_position": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
         "runtime_class": {
           "type": "string",
           "pattern": "^[A-Za-z0-9_.$/]+$",

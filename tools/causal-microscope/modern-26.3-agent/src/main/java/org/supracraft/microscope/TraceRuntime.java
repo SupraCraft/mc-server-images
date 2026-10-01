@@ -95,6 +95,13 @@ public final class TraceRuntime {
             ",\"z\":"+xyz[2]+"}");
     }
 
+    public static void eventIntPos(int value,String eventType,Object pos) {
+        if (!CAPTURE.get()) return;
+        int[] xyz=position(pos);
+        emit(eventType,"{\"x\":"+xyz[0]+",\"y\":"+xyz[1]+
+            ",\"z\":"+xyz[2]+",\"value\":"+value+"}");
+    }
+
     public static void commandTriggerStart(Object pos,Object logic) {
         if (!CAPTURE.get()) return;
         try {

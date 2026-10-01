@@ -122,7 +122,7 @@ class CausalMicroscopeContractTests(unittest.TestCase):
         for required in (
             "command_trigger_start","command_trigger_end","command_dispatch",
             "packet_send","redstone_power_query","redstone_power_result",
-            "scheduled_tick_enqueue","neighbor_notify",
+            "scheduled_tick_enqueue","neighbor_notify","wire_neighbor_changed",
         ):
             self.assertIn(required,events)
 
