@@ -48,6 +48,7 @@ def normalize(doc):
     edges=list(iter_edges(doc))
     trusted=defaultdict(set); candidate=defaultdict(set)
     unresolved=[]
+    external_world_targets=[]
     for e in edges:
         # Legacy physical-adjacency candidates are intentionally undirected a/b
         # relations. They may contribute only to candidate reachability.
@@ -61,6 +62,18 @@ def normalize(doc):
             continue
 
         src=e.get("source"); dst=e.get("target")
+        # A resolved command coordinate may intentionally land on ordinary
+        # world state outside the extracted machinery-node set. Preserve that
+        # as an external target rather than misclassifying it as a broken graph
+        # reference. It contributes no reachability edge.
+        if (
+            e.get("edge_type")=="command_world_target"
+            and src in nodes
+            and not dst
+            and e.get("target_position") is not None
+        ):
+            external_world_targets.append(e)
+            continue
         if not src or not dst:
             unresolved.append(e)
             continue
@@ -71,7 +84,7 @@ def normalize(doc):
         candidate[src].add(dst)
         if certainty in TRUSTED:
             trusted[src].add(dst)
-    return nodes, trusted, candidate, unresolved, edges
+    return nodes, trusted, candidate, unresolved, external_world_targets, edges
 
 def reachable(graph,start,max_hops=32):
     seen={start}; q=deque([(start,0)])
@@ -111,7 +124,7 @@ def coverage(starts,targets,graph):
     }
 
 def analyze(doc):
-    nodes,trusted,candidate,unresolved,edges=normalize(doc)
+    nodes,trusted,candidate,unresolved,external_world_targets,edges=normalize(doc)
     cats=classify(nodes)
     sensors=cats["sensor_input"]
     state=cats["semantic_state"]|cats["state_memory"]
@@ -147,6 +160,7 @@ def analyze(doc):
       "node_count":len(nodes),
       "edge_count":len(edges),
       "unresolved_edge_count":len(unresolved),
+      "external_world_target_count":len(external_world_targets),
       "role_counts":{k:len(v) for k,v in sorted(cats.items())},
       "trusted_path_metrics":trusted_metrics,
       "candidate_path_metrics":candidate_metrics,
@@ -157,10 +171,15 @@ def analyze(doc):
         {k:e.get(k) for k in ("source","target","edge_type","certainty","target_position") if e.get(k) is not None}
         for e in unresolved[:50]
       ],
+      "external_world_target_examples":[
+        {k:e.get(k) for k in ("source","edge_type","certainty","target_position","target_kind","verb") if e.get(k) is not None}
+        for e in external_world_targets[:50]
+      ],
       "interpretation_limits":[
         "Coverage means a path is statically recoverable in the extracted graph, not that the mechanism executes.",
         "Absence of a trusted path may reflect an incomplete extractor, hidden solid-block conduction, runtime context, or intentionally indirect design.",
         "Presence of a path does not establish that a player understands the causal relationship.",
+        "Resolved command coordinates outside the extracted machinery-node set are reported as external world targets, not unresolved graph references and not causal reachability edges.",
         "Weak-edge sensitivity is reported separately so adjacency guesses cannot silently become causal truth.",
         "These metrics are candidates for causal-legibility calibration only and are not an overall quality score."
       ]
