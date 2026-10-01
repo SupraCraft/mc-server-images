@@ -141,6 +141,71 @@ class RuntimeCausalCalibrationTests(unittest.TestCase):
             w["runtime_feedback"]["attribution_class"],
         )
 
+    def test_literal_payload_hash_match_is_identity_not_execution_claim(self):
+        digest="0"*64
+        feedback=node("feedback","presentation_feedback")
+        feedback["command"]={
+            "verb":"tellraw",
+            "presentation_payload_fingerprints":{
+                "kind":"tellraw_json",
+                "parse_status":"parsed",
+                "json_kind":"string",
+                "literal_text_sha256":digest,
+            },
+        }
+        graph={
+            "schema":"fixture/static",
+            "nodes":[
+                node("sensor","sensor_input"),
+                feedback,
+            ],
+            "edges":[{
+                "source":"sensor","target":"feedback",
+                "edge_type":"exact","certainty":"strong",
+            }],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row(
+                "sensor",message=True,protocol_class="literal_text"
+            )],
+        }
+        original_edges=list(graph["edges"])
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual(original_edges,graph["edges"])
+        self.assertEqual(1,len(w["payload_identity_matches"]))
+        match=w["payload_identity_matches"][0]
+        self.assertEqual(digest,match["sha256"])
+        self.assertTrue(match["unique_static_match"])
+        self.assertEqual(["feedback"],match["static_node_ids"])
+        self.assertEqual(
+            "trusted",
+            match["static_support"]["feedback"]["support_class"],
+        )
+        self.assertEqual(
+            1,
+            w["runtime_feedback"][
+                "authored_literal_payload_hash_match_count"
+            ],
+        )
+        self.assertEqual(
+            1,
+            w["runtime_feedback"][
+                "authored_literal_payload_unique_static_match_count"
+            ],
+        )
+        self.assertEqual(
+            "client_literal_payload_identity_match_without_command_execution_state_delta",
+            w["runtime_feedback"]["attribution_class"],
+        )
+        self.assertEqual(
+            0,
+            w["runtime_feedback"][
+                "scoped_feedback_command_state_change_count"
+            ],
+        )
+
     def test_death_packet_is_preserved_as_outcome_not_presentation_feedback(self):
         graph={
             "schema":"fixture/static",
