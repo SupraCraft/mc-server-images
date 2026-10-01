@@ -34,7 +34,7 @@ ROLE_SUFFIXES = {
     "packet_listener": (
         "net/minecraft/server/network/ServerGamePacketListenerImpl.class"
     ),
-    "redstone_wire": "net/minecraft/world/level/block/RedStoneWireBlock.class",
+    "redstone_wire": "net/minecraft/world/level/block/RedstoneWireBlock.class",
 }
 
 TOKEN_HINTS = {
