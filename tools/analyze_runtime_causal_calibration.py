@@ -145,20 +145,78 @@ def path_support(trusted,candidate,start,targets):
     }
 
 
+PRESENTATION_PROTOCOL_CLASSES={
+    "literal_text","chat","composite","translated_other","other_component",
+}
+OUTCOME_PROTOCOL_CLASSES={"death","achievement","gamemode","multiplayer","command_feedback"}
+
+
 def feedback_delta_summary(delta):
+    """Separate broad client delivery from presentation-calibration evidence.
+
+    Protocol-classified chat is preferred when available. A legacy rendered
+    message hash without protocol classification remains observable delivery,
+    but is not promoted to presentation feedback merely because text arrived.
+    """
     delta=delta or {}
     message_added=delta.get("message_events_added",[])
     message_removed=delta.get("message_events_removed",[])
+    protocol_added=delta.get("protocol_chat_events_added",[])
+    protocol_removed=delta.get("protocol_chat_events_removed",[])
     effect_added=delta.get("self_effect_events_added",[])
     effect_removed=delta.get("self_effect_events_removed",[])
+
+    protocol_rows=protocol_added+protocol_removed
+    protocol_classes=[
+        row.get("semantic_class") for row in protocol_rows
+        if row.get("semantic_class")
+    ]
+    presentation_protocol=[
+        row for row in protocol_rows
+        if row.get("semantic_class") in PRESENTATION_PROTOCOL_CLASSES
+    ]
+    outcome_protocol=[
+        row for row in protocol_rows
+        if row.get("semantic_class") in OUTCOME_PROTOCOL_CLASSES
+    ]
+    unclassified_protocol=[
+        row for row in protocol_rows
+        if row.get("semantic_class") not in (
+            PRESENTATION_PROTOCOL_CLASSES | OUTCOME_PROTOCOL_CLASSES
+        )
+    ]
+    message_observed=bool(message_added or message_removed)
+    protocol_observed=bool(protocol_rows)
+    effect_observed=bool(effect_added or effect_removed)
+    presentation_delivery=bool(presentation_protocol or effect_observed)
+    outcome_delivery=bool(outcome_protocol)
+    unclassified_message=bool(message_observed and not protocol_observed)
+
     return {
-        "message_delta_observed":bool(message_added or message_removed),
-        "self_effect_delta_observed":bool(effect_added or effect_removed),
-        "feedback_delta_observed":bool(
-            message_added or message_removed or effect_added or effect_removed
+        "message_delta_observed":message_observed,
+        "protocol_chat_delta_observed":protocol_observed,
+        "self_effect_delta_observed":effect_observed,
+        "client_delivery_observed":bool(
+            message_observed or protocol_observed or effect_observed
         ),
-        "message_event_delta_count":sum(int(x.get("count",0)) for x in message_added+message_removed),
-        "self_effect_event_delta_count":sum(int(x.get("count",0)) for x in effect_added+effect_removed),
+        "presentation_delivery_candidate_observed":presentation_delivery,
+        "outcome_event_delta_observed":outcome_delivery,
+        "unclassified_message_delta_observed":unclassified_message,
+        "message_event_delta_count":sum(
+            int(x.get("count",0)) for x in message_added+message_removed
+        ),
+        "protocol_chat_event_delta_count":sum(
+            int(x.get("count",0)) for x in protocol_rows
+        ),
+        "self_effect_event_delta_count":sum(
+            int(x.get("count",0)) for x in effect_added+effect_removed
+        ),
+        "protocol_semantic_class_counts":{
+            cls:protocol_classes.count(cls) for cls in sorted(set(protocol_classes))
+        },
+        "unclassified_protocol_event_count":sum(
+            int(x.get("count",0)) for x in unclassified_protocol
+        ),
         "control_truncated":bool(delta.get("control_truncated",False)),
         "activated_truncated":bool(delta.get("activated_truncated",False)),
     }
@@ -197,7 +255,7 @@ def analyze(static_doc,runtime_doc,static_source_run_id=None,runtime_source_run_
         )
 
         runtime_feedback_observed=bool(
-            client["feedback_delta_observed"] or changed_nodes
+            client["presentation_delivery_candidate_observed"] or changed_nodes
         )
         if not runtime_feedback_observed:
             calibration_class="no_runtime_feedback_witness"
@@ -208,12 +266,16 @@ def analyze(static_doc,runtime_doc,static_source_run_id=None,runtime_source_run_
         else:
             calibration_class="runtime_feedback_without_static_feedback_path"
 
-        if changed_nodes and client["feedback_delta_observed"]:
+        if changed_nodes and client["presentation_delivery_candidate_observed"]:
             attribution="scoped_feedback_command_execution_plus_client_delivery"
         elif changed_nodes:
             attribution="scoped_feedback_command_execution_without_client_delta"
-        elif client["feedback_delta_observed"]:
-            attribution="client_delivery_without_scoped_feedback_command_state_delta"
+        elif client["presentation_delivery_candidate_observed"]:
+            attribution="client_presentation_delivery_without_scoped_feedback_command_state_delta"
+        elif client["outcome_event_delta_observed"]:
+            attribution="client_outcome_event_without_presentation_feedback_attribution"
+        elif client["client_delivery_observed"]:
+            attribution="unclassified_client_delivery_without_presentation_feedback_attribution"
         else:
             attribution="no_feedback_attribution"
 
@@ -255,8 +317,10 @@ def analyze(static_doc,runtime_doc,static_source_run_id=None,runtime_source_run_
         "interpretation_limits":[
             "Runtime feedback evidence does not mutate or upgrade static graph edges.",
             "Candidate-only support may contain weak physical adjacency and must not be restated as trusted causality.",
-            "Client delivery does not identify message semantics unless separately observed by an authorized semantic oracle.",
-            "Command execution does not by itself prove client delivery; client delivery does not prove perception, comprehension, legibility, or qualitative value.",
+            "Broad client delivery is preserved separately from presentation-feedback calibration; death, achievement, gamemode, multiplayer, and command-feedback packet classes are not automatically counted as authored presentation feedback.",
+            "Legacy rendered-message hashes without protocol classification remain observable delivery but are not promoted to presentation feedback solely because text arrived.",
+            "Compact protocol class does not reveal message text or meaning beyond the bounded class retained by the runtime receipt.",
+            "Command execution does not by itself prove client delivery; presentation delivery does not prove perception, comprehension, legibility, or qualitative value.",
             "A missing static path can indicate hidden conduction, incomplete extraction, runtime-only state, or an unattributed delivery mechanism.",
         ],
     }
