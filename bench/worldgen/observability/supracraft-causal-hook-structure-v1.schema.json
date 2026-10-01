@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:supracraft:schema:causal-hook-structure:1",
+  "title": "SupraCraft causal microscope hook structure v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "channel",
+    "minecraft_version",
+    "java_major",
+    "server_sha1",
+    "methods",
+    "qualification_status",
+    "boundaries"
+  ],
+  "properties": {
+    "schema": {
+      "const": "supracraft-causal-hook-structure/1"
+    },
+    "channel": {
+      "enum": ["release", "snapshot"]
+    },
+    "minecraft_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "java_major": {
+      "type": "integer",
+      "minimum": 8
+    },
+    "server_sha1": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "methods": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "event_family",
+          "role",
+          "runtime_class",
+          "class_sha256",
+          "method_name",
+          "method_descriptor",
+          "normalized_code_sha256",
+          "instruction_count",
+          "method_refs",
+          "field_refs",
+          "class_refs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "event_family": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "runtime_class": {
+            "type": "string"
+          },
+          "class_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "method_name": {
+            "type": "string"
+          },
+          "method_descriptor": {
+            "type": "string",
+            "minLength": 1
+          },
+          "normalized_code_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "instruction_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "method_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string"}
+          },
+          "field_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string"}
+          },
+          "class_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "qualification_status": {
+      "const": "structure_only_not_hook_qualified"
+    },
+    "boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    }
+  }
+}
