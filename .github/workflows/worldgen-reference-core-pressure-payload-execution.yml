@@ -227,18 +227,55 @@ jobs:
               }
 
           nodes={n["node_id"]:n for n in graph["nodes"]}
-          expected_hashes={
-              nodes[node_id]["command"]["presentation_payload_fingerprints"][
-                  "literal_text_sha256"
-              ]
+          expected_hash_by_node={
+              node_id:nodes[node_id]["command"][
+                  "presentation_payload_fingerprints"
+              ]["literal_text_sha256"]
               for node_id in diagnostics
           }
-          assert None not in expected_hashes
+          assert all(expected_hash_by_node.values())
+          expected_hashes=set(expected_hash_by_node.values())
           added_hashes={
               item["sha256"]
               for item in row["client_feedback_delta"]["message_events_added"]
           }
           matched_payload_hashes=expected_hashes & added_hashes
+
+          trigger=row["trigger_epoch_ms"]
+          assert set(trigger)=={"control","activated"}
+          assert all(isinstance(trigger[arm],int) for arm in trigger)
+
+          raw=row["player_sensor_observation"]
+          payload_delivery_timing={}
+          for node_id,digest in expected_hash_by_node.items():
+              control_events=[
+                  event for event in raw["control"]["client_feedback"][
+                      "message_events"
+                  ]
+                  if event["sha256"]==digest
+              ]
+              activated_events=[
+                  event for event in raw["activated"]["client_feedback"][
+                      "message_events"
+                  ]
+                  if event["sha256"]==digest
+              ]
+              assert not control_events
+              assert len(activated_events)==1
+              event=activated_events[0]
+              assert isinstance(event["observed_at_epoch_ms"],int)
+              delta_ms=event["observed_at_epoch_ms"]-trigger["activated"]
+              payload_delivery_timing[node_id]={
+                  "sha256":digest,
+                  "observed_at_epoch_ms":event["observed_at_epoch_ms"],
+                  "trigger_epoch_ms":trigger["activated"],
+                  "delta_ms_from_trigger":delta_ms,
+                  "timing_class":(
+                      "pretrigger_delivery"
+                      if delta_ms < 0
+                      else "posttrigger_delivery"
+                  ),
+              }
 
           literal_count=sum(
               int(item["count"])
@@ -253,6 +290,7 @@ jobs:
               "probe_node_id":row["probe"]["node_id"],
               "diagnostic_command_node_ids":sorted(diagnostics),
               "temporal_execution_classification":temporal_classification,
+              "payload_delivery_timing":payload_delivery_timing,
               "final_success_count_state":{
                   node_id:{
                       "control":commands[node_id]["control"]["success_count"],
@@ -264,9 +302,9 @@ jobs:
               "literal_protocol_event_count":literal_count,
               "outcome_class":row["execution_receipt"]["outcome_class"],
               "interpretation_boundary":(
-                  "temporal SuccessCount observation distinguishes timing classes; "
-                  "it does not by itself establish message semantics, perception, "
-                  "comprehension, or qualitative value"
+                  "temporal SuccessCount and compact event timestamps separate "
+                  "execution timing from payload delivery timing; neither establishes "
+                  "message semantics, perception, comprehension, or qualitative value"
               ),
           },indent=2,sort_keys=True))
           PY
