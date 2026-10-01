@@ -491,7 +491,7 @@ def start_legacy_player_actor(script, trial_dir, sensor_position, port=25579):
     },observation_path
 
 
-def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_script=None):
+def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_script=None, diagnostic_command_ids=None):
     world=trial_dir/"world"
     materialize_world(source_zip,world)
     family=probe["family"]
@@ -541,6 +541,20 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
             send(p,f"gamemode 2 SupraPlateBot")
             time.sleep(0.5)
 
+        diagnostic_command_ids=sorted(set(diagnostic_command_ids or []))
+        for command_id in diagnostic_command_ids:
+            try:
+                qx,qy,qz=(int(v) for v in command_id.split(","))
+            except Exception as exc:
+                raise RuntimeError(
+                    f"invalid diagnostic command node id: {command_id}"
+                ) from exc
+            # Reset only the compact execution counter in both fresh-world arms.
+            # Command text and LastOutput are left untouched.
+            send(p,f"blockdata {qx} {qy} {qz} {{SuccessCount:0}}")
+        if diagnostic_command_ids:
+            time.sleep(0.25)
+
         if activate:
             if family in STABLE_ACTIVATABLE:
                 meta=int(probe.get("legacy_metadata") or 0)
@@ -578,6 +592,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
             for row in probe.get("candidate_component_commands",[])
             if row.get("node_id")
         }
+        target_command_ids |= set(diagnostic_command_ids or [])
         snap=snapshot(
             world,
             probe["position"],
@@ -617,6 +632,7 @@ def main():
     ap.add_argument("--selection",type=Path,required=True)
     ap.add_argument("--limit",type=int,default=3)
     ap.add_argument("--player-client-script",type=Path)
+    ap.add_argument("--diagnostic-command-node-id",action="append",default=[])
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
 
@@ -637,10 +653,12 @@ def main():
                 if args.player_client_script is not None else None
             )
             control=run_trial(
-                server,args.world_zip,probe,control_dir,False,player_script
+                server,args.world_zip,probe,control_dir,False,player_script,
+                args.diagnostic_command_node_id,
             )
             active=run_trial(
-                server,args.world_zip,probe,active_dir,True,player_script
+                server,args.world_zip,probe,active_dir,True,player_script,
+                args.diagnostic_command_node_id,
             )
             diff=delta(control["snapshot"],active["snapshot"])
             control_scope=control["snapshot"].get("world_target_source_scope",[])
@@ -672,6 +690,9 @@ def main():
                   "server_side_powered_block_state_surrogate"
                   if probe["family"] in STABLE_ACTIVATABLE
                   else "paired_exact_1.8.8_player_occupancy"
+              ),
+              "diagnostic_command_node_ids":sorted(
+                  set(args.diagnostic_command_node_id)
               ),
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
@@ -761,6 +782,7 @@ def main():
         "Pressure-plate activation is observed both by an exact 1.8.8 testforblock metadata query and by the paired exact-version player client's block-state stream; only compact metadata/boolean evidence is retained, and later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "Presentation-feedback command state changes are reported only for commands inside the selected compact command scope and retain verb, node id, changed field names, and SuccessCount values only; they do not prove client delivery, perception, comprehension, or qualitative value.",
+        "Optional diagnostic command-node IDs expand only the compact sampled command scope and reset SuccessCount to zero identically in both paired arms immediately before the trigger window; command text and LastOutput are not modified or newly retained.",
         "Client feedback observations retain rendered-message hashes/positions, bounded protocol-chat component classes without component text or arguments, and self-effect numeric id/amplifier/duration events. Protocol chat classes can distinguish broad vanilla delivery mechanisms such as command feedback, death, achievement, or literal text without retaining message text; they do not establish player perception/comprehension or qualitative value.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
