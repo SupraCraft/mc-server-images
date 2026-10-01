@@ -29,7 +29,8 @@ public final class Agent {
         String out=value(args,"out","supracraft-causal-trace.jsonl");
         String gate=value(args,"gate","");
         TraceRuntime.start(adapter,out,gate);
-        final Modern264Snapshot2Transformer transformer=new Modern264Snapshot2Transformer();
+        String sensors=value(args,"sensors","core");
+        final Modern264Snapshot2Transformer transformer=new Modern264Snapshot2Transformer(sensors);
         instrumentation.addTransformer(transformer,false);
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override public void run() {
