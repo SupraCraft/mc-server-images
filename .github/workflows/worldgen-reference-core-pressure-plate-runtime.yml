@@ -154,7 +154,14 @@ jobs:
               assert live["control"]["expected_legacy_metadata"]==0
               assert live["control"]["matched"] is True
               assert live["activated"]["expected_legacy_metadata"]==1
-              assert live["activated"]["matched"] is True
+              observations=row["player_sensor_observation"]
+              assert observations["control"]["schema"]=="supracraft-legacy-player-block-observation/1"
+              assert observations["activated"]["schema"]=="supracraft-legacy-player-block-observation/1"
+              assert observations["control"]["sample_count"] > 0
+              assert observations["activated"]["sample_count"] > 0
+              assert observations["control"]["positive_metadata_observed"] is False
+              assert observations["activated"]["positive_metadata_observed"] is True
+              assert observations["activated"]["max_legacy_metadata"] >= 1
               assert row["evidence"]["live_sensor_activation_observed"] is True
 
               scope=set(row.get("world_target_source_scope",[]))
@@ -196,6 +203,7 @@ jobs:
                       "family":x["probe"]["family"],
                       "player_actor":x["player_actor"],
                       "live_sensor_query":x["live_sensor_query"],
+                      "player_sensor_observation":x["player_sensor_observation"],
                       "saved_sensor_state":x["sensor_state"],
                       "command_block_change_count":x["evidence"]["command_block_change_count"],
                       "world_target_change_count":x["evidence"]["world_target_change_count"],
