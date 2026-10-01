@@ -79,6 +79,94 @@ class CausalMachineryPrimitiveTests(unittest.TestCase):
         targets=causal.command_targets(parts,(10,64,-3))
         self.assertEqual((12,63,-3), targets[0]["position"])
 
+    def test_setblock_compact_world_state_write_keeps_only_bounded_class(self):
+        _,parts=causal.normalize_command(
+            "setblock ~2 ~-1 ~ minecraft:redstone_block 0 replace"
+        )
+        self.assertEqual(
+            [{
+                "position":[12,63,-3],
+                "state_class":"redstone_block",
+                "write_kind":"setblock",
+            }],
+            causal.command_authored_world_state_writes(parts,(10,64,-3)),
+        )
+
+        _,air_parts=causal.normalize_command("setblock 1 2 3 air")
+        self.assertEqual(
+            [{
+                "position":[1,2,3],
+                "state_class":"air",
+                "write_kind":"setblock",
+            }],
+            causal.command_authored_world_state_writes(air_parts,(0,0,0)),
+        )
+
+        _,other_parts=causal.normalize_command("setblock 1 2 3 stone")
+        self.assertEqual(
+            [],
+            causal.command_authored_world_state_writes(other_parts,(0,0,0)),
+        )
+
+    def test_setblock_redstone_power_is_exact_and_narrow(self):
+        source=(0,70,0)
+        authored=(10,65,10)
+        command_below=(10,64,10)
+        rear_input_diode=(10,65,11)
+        wrong_side_diode=(11,65,10)
+        adjacent_wire=(9,65,10)
+        machinery={
+            source:{
+                "family":"command_block",
+                "command":{
+                    "authored_world_state_writes":[{
+                        "position":list(authored),
+                        "state_class":"redstone_block",
+                        "write_kind":"setblock",
+                    }],
+                },
+            },
+            command_below:{
+                "family":"command_block",
+                "metadata_semantics":{},
+            },
+            rear_input_diode:{
+                "family":"repeater_off",
+                "metadata_semantics":causal.metadata_semantics(
+                    "repeater_off",2
+                ),
+            },
+            wrong_side_diode:{
+                "family":"repeater_off",
+                "metadata_semantics":causal.metadata_semantics(
+                    "repeater_off",2
+                ),
+            },
+            adjacent_wire:{
+                "family":"redstone_wire",
+                "metadata_semantics":{},
+            },
+        }
+        edges=causal.legacy_command_authored_redstone_edges(machinery)
+        triples={(e["source"],e["target"],e["edge_type"]) for e in edges}
+        self.assertIn(
+            (
+                "0,70,0","10,64,10",
+                "legacy_setblock_redstone_block_direct_command_power",
+            ),
+            triples,
+        )
+        self.assertIn(
+            (
+                "0,70,0","10,65,11",
+                "legacy_setblock_redstone_block_diode_rear_input",
+            ),
+            triples,
+        )
+        self.assertFalse(any(e["target"]=="11,65,10" for e in edges))
+        self.assertFalse(any(e["target"]=="9,65,10" for e in edges))
+        self.assertTrue(all(e["certainty"]=="strong" for e in edges))
+
     def test_fill_emits_both_region_boundaries(self):
         _,parts=causal.normalize_command("fill 1 2 3 4 5 6 minecraft:stone")
         targets=causal.command_targets(parts,(0,0,0))
