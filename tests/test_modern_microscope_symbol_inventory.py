@@ -29,7 +29,7 @@ class ModernSymbolInventoryTests(unittest.TestCase):
         )
         self.assertEqual(
             mod.ROLE_SUFFIXES["redstone_wire"],
-            "net/minecraft/world/level/block/RedStoneWireBlock.class",
+            "net/minecraft/world/level/block/RedstoneWireBlock.class",
         )
 
     def test_candidate_methods_are_search_aids_only(self):
