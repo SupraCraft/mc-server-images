@@ -1,4 +1,6 @@
+import hashlib
 import importlib.util
+import json
 import pathlib
 import unittest
 
@@ -31,6 +33,31 @@ class CausalMachineryPrimitiveTests(unittest.TestCase):
         d=causal.metadata_semantics("trapped_chest", 2)
         self.assertEqual("dynamic_not_stored_in_block_metadata", d["open_sensor_state"])
         self.assertEqual("readable_by_comparator", d["inventory_signal_state"])
+
+    def test_tellraw_payload_fingerprints_retain_hashes_not_text(self):
+        command='tellraw @a "private calibration phrase"'
+        d=causal.presentation_payload_fingerprints(command,"tellraw")
+        self.assertEqual("tellraw_json",d["kind"])
+        self.assertEqual("parsed",d["parse_status"])
+        self.assertEqual("string",d["json_kind"])
+        self.assertEqual(
+            hashlib.sha256(
+                '"private calibration phrase"'.encode("utf-8")
+            ).hexdigest(),
+            d["wire_json_sha256"],
+        )
+        self.assertEqual(
+            hashlib.sha256(
+                "private calibration phrase".encode("utf-8")
+            ).hexdigest(),
+            d["literal_text_sha256"],
+        )
+        self.assertNotIn("private calibration phrase",json.dumps(d))
+
+    def test_non_tellraw_command_has_no_presentation_payload_fingerprint(self):
+        self.assertIsNone(
+            causal.presentation_payload_fingerprints("clear @a","clear")
+        )
 
     def test_relative_setblock_target_resolves_from_command_origin(self):
         _,parts=causal.normalize_command("setblock ~2 ~-1 ~ minecraft:redstone_block")
