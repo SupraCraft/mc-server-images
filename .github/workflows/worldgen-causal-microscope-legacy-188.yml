@@ -53,6 +53,15 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
       - name: Contract and source controls
         shell: bash
         run: |
