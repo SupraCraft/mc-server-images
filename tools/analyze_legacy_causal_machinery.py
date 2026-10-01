@@ -642,6 +642,49 @@ def legacy_direct_redstone_edges(machinery):
     return edges
 
 
+
+def legacy_repeater_command_block_conduction_edges(machinery):
+    """Recover exact repeater -> command-block conductor -> dust power.
+
+    Minecraft 1.8.8 repeaters provide strong power on their output side.
+    A legacy command block is a normal cube for redstone-power lookup, so
+    World.getRedstonePower delegates through that cube to neighboring strong
+    power. Redstone wire consumes that indirect power while recalculating.
+    This models only the observed collinear repeater/command-block/dust shape;
+    it is not generic opaque-solid conduction.
+    """
+    edges=[]
+    for pos,node in machinery.items():
+        if node.get("family") not in {"repeater_off","repeater_on"}:
+            continue
+        facing=node.get("metadata_semantics",{}).get("facing_vector")
+        if not facing:
+            continue
+        output_delta=opposite(tuple(facing))
+        conductor_pos=add_pos(pos,output_delta)
+        conductor=machinery.get(conductor_pos)
+        if not conductor or conductor.get("family")!="command_block":
+            continue
+        dust_pos=add_pos(conductor_pos,output_delta)
+        dust=machinery.get(dust_pos)
+        if not dust or dust.get("family")!="redstone_wire":
+            continue
+        edges.append({
+            "source":node_id(pos),
+            "target":node_id(dust_pos),
+            "via":node_id(conductor_pos),
+            "edge_type":"legacy_repeater_through_command_block_to_dust_power",
+            "certainty":"strong",
+            "basis":(
+                "exact Minecraft 1.8.8 BlockRedstoneDiode strong output; "
+                "BlockCommandBlock inherits a normal full opaque cube; "
+                "World.getRedstonePower delegates normal cubes to getStrongPower; "
+                "BlockRedstoneWire consumes indirect neighboring power"
+            ),
+        })
+    return edges
+
+
 def legacy_command_authored_redstone_edges(machinery):
     """Recover exact power relations from compact setblock redstone-block writes.
 
@@ -879,6 +922,9 @@ def analyze(world: Path):
     command_authored_redstone_edges = legacy_command_authored_redstone_edges(
         machinery
     )
+    repeater_command_block_conduction_edges = (
+        legacy_repeater_command_block_conduction_edges(machinery)
+    )
     comparator_container_reads = []
     trapped_open_power_edges = []
     command_chain_edges = []
@@ -1043,6 +1089,7 @@ def analyze(world: Path):
             "oriented_signal_edge_count": len(directed_edges),
             "direct_redstone_edge_count": len(direct_redstone_edges),
             "command_authored_redstone_edge_count": len(command_authored_redstone_edges),
+            "repeater_command_block_conduction_edge_count": len(repeater_command_block_conduction_edges),
             "command_world_target_count": len(explicit_target_edges),
             "command_chain_edge_count": len(command_chain_edges),
             "container_comparator_read_count": len(comparator_container_reads),
@@ -1052,6 +1099,7 @@ def analyze(world: Path):
             "oriented_signal_candidates": directed_edges,
             "direct_redstone_edges": direct_redstone_edges,
             "command_authored_redstone_edges": command_authored_redstone_edges,
+            "repeater_command_block_conduction_edges": repeater_command_block_conduction_edges,
             "command_world_targets": explicit_target_edges,
             "command_chain_candidates": command_chain_edges,
             "container_comparator_reads": comparator_container_reads,
@@ -1061,7 +1109,7 @@ def analyze(world: Path):
         "nodes": sorted(machinery.values(), key=lambda n: tuple(n["position"])),
         "limitations": [
             "Physical adjacency is not equivalent to powered redstone connectivity or causal direction.",
-            "Repeater/comparator metadata ports, command-block facing, exact 1.8.8 button attachment direction, exact 1.8.8 pressure-plate stored/output power semantics, exact powered-wire-above to legacy-command-block-below power, and exact setblock-authored redstone-block direct power into adjacent legacy command blocks / decoded diode rear inputs are recovered. Same-level dust continuity, direct sensor/dust/component relations, button-to-attached-support power, and pressure-plate-to-support power are recovered separately; other dynamic block writes, vertical dust steps, opaque solid-block conduction beyond these exact relations, locking/side-input behavior, and quasi-connectivity remain incomplete.",
+            "Repeater/comparator metadata ports, command-block facing, exact 1.8.8 button attachment direction, exact 1.8.8 pressure-plate stored/output power semantics, exact powered-wire-above to legacy-command-block-below power, exact setblock-authored redstone-block direct power into adjacent legacy command blocks / decoded diode rear inputs, and the exact collinear repeater -> legacy-command-block normal-cube conductor -> dust relation are recovered. Same-level dust continuity, direct sensor/dust/component relations, button-to-attached-support power, and pressure-plate-to-support power are recovered separately; other dynamic block writes, vertical dust steps, opaque solid-block conduction beyond these exact relations, locking/side-input behavior, and quasi-connectivity remain incomplete.",
             "Trapped-chest opening power and comparator inventory/fullness reads are represented as distinct causal channels.",
             "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
             "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
