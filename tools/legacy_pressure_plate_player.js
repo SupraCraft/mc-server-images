@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict'
 
+const crypto = require('crypto')
 const fs = require('fs')
 const mineflayer = require('mineflayer')
 
@@ -32,7 +33,12 @@ const observation = observePos
       positive_metadata_observed: false,
       max_legacy_metadata: null,
       last_legacy_metadata: null,
-      sources: []
+      sources: [],
+      client_feedback: {
+        message_events: [],
+        self_effect_events: [],
+        truncated: false
+      }
     }
   : null
 
@@ -63,6 +69,43 @@ function observeBlock (block, source) {
   persistObservation()
 }
 
+function appendFeedbackEvent (field, row) {
+  if (!observation || !observation.client_feedback) return
+  const events = observation.client_feedback[field]
+  if (!Array.isArray(events)) return
+  if (events.length >= 64) {
+    observation.client_feedback.truncated = true
+    persistObservation()
+    return
+  }
+  events.push(row)
+  persistObservation()
+}
+
+function recordMessage (message, messagePosition) {
+  if (!observation) return
+  appendFeedbackEvent('message_events', {
+    sha256: crypto.createHash('sha256').update(String(message)).digest('hex'),
+    position: messagePosition === undefined || messagePosition === null
+      ? null
+      : String(messagePosition)
+  })
+}
+
+function recordSelfEffect (event, entity, effect) {
+  if (!observation || !bot.entity || !entity || entity.id !== bot.entity.id || !effect) return
+  const id = Number(effect.id)
+  const amplifier = Number(effect.amplifier)
+  const duration = Number(effect.duration)
+  if (![id, amplifier, duration].every(Number.isFinite)) return
+  appendFeedbackEvent('self_effect_events', {
+    event,
+    id,
+    amplifier,
+    duration
+  })
+}
+
 function writeReceipt (status, extra = {}) {
   if (settled) return
   settled = true
@@ -89,6 +132,18 @@ const bot = mineflayer.createBot({
 
 bot.on('blockUpdate', (oldBlock, newBlock) => {
   observeBlock(newBlock, 'block_update')
+})
+
+bot.on('messagestr', (message, messagePosition) => {
+  recordMessage(message, messagePosition)
+})
+
+bot.on('entityEffect', (entity, effect) => {
+  recordSelfEffect('start', entity, effect)
+})
+
+bot.on('entityEffectEnd', (entity, effect) => {
+  recordSelfEffect('end', entity, effect)
 })
 
 const timer = setTimeout(() => {
