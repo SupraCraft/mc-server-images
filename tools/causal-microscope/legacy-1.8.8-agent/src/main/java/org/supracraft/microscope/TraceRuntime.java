@@ -79,7 +79,7 @@ public final class TraceRuntime {
         try {
             String command=String.valueOf(readField(logic,"e"));
             String verb=commandVerb(command);
-            Object pos=logic.getClass().getMethod("c").invoke(logic);
+            Object pos=invokeNoArg(logic,"c");
             int[] xyz=position(pos);
             emit("command_trigger_start",
                 "{\"x\":"+xyz[0]+",\"y\":"+xyz[1]+",\"z\":"+xyz[2]+
@@ -93,7 +93,7 @@ public final class TraceRuntime {
     public static void commandTriggerEnd(Object logic) {
         try {
             int success=((Number)readField(logic,"b")).intValue();
-            Object pos=logic.getClass().getMethod("c").invoke(logic);
+            Object pos=invokeNoArg(logic,"c");
             int[] xyz=position(pos);
             emit("command_trigger_end",
                 "{\"x\":"+xyz[0]+",\"y\":"+xyz[1]+",\"z\":"+xyz[2]+
@@ -107,13 +107,13 @@ public final class TraceRuntime {
         if (packet==null || !"fy".equals(packet.getClass().getName())) return;
         try {
             ClassLoader loader=packet.getClass().getClassLoader();
-            Object component=packet.getClass().getMethod("a").invoke(packet);
+            Object component=invokeNoArg(packet,"a");
             Class<?> componentType=Class.forName("eu",false,loader);
             Class<?> serializer=Class.forName("eu$a",false,loader);
             Method serialize=serializer.getMethod("a",componentType);
+            serialize.setAccessible(true);
             String wire=(String)serialize.invoke(null,component);
-            int position=((Number)packet.getClass().getMethod("c").invoke(packet))
-                .intValue() & 0xff;
+            int position=((Number)invokeNoArg(packet,"c")).intValue() & 0xff;
             emit("packet_send",
                 "{\"packet_class\":\"chat\",\"packet_position\":"+position+
                 ",\"payload_sha256\":\""+sha256(wire)+
@@ -178,18 +178,22 @@ public final class TraceRuntime {
 
     private static int[] position(Object pos) {
         try {
-            Method x=pos.getClass().getMethod("n");
-            Method y=pos.getClass().getMethod("o");
-            Method z=pos.getClass().getMethod("p");
             return new int[]{
-                ((Number)x.invoke(pos)).intValue(),
-                ((Number)y.invoke(pos)).intValue(),
-                ((Number)z.invoke(pos)).intValue()
+                ((Number)invokeNoArg(pos,"n")).intValue(),
+                ((Number)invokeNoArg(pos,"o")).intValue(),
+                ((Number)invokeNoArg(pos,"p")).intValue()
             };
         } catch (Exception exc) {
             fatalBinding("block_pos_runtime",3,0);
             return new int[]{0,0,0};
         }
+    }
+
+    private static Object invokeNoArg(Object target,String name)
+            throws Exception {
+        Method method=target.getClass().getMethod(name);
+        method.setAccessible(true);
+        return method.invoke(target);
     }
 
     private static Object readField(Object target,String name) throws Exception {
