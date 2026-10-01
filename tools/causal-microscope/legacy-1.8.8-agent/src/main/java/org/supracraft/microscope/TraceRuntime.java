@@ -107,19 +107,21 @@ public final class TraceRuntime {
         if (packet==null || !"fy".equals(packet.getClass().getName())) return;
         try {
             ClassLoader loader=packet.getClass().getClassLoader();
-            Object component=invokeNoArg(packet,"a");
+            Object component=readField(packet,"a");
+            int position=((Number)readField(packet,"b")).intValue() & 0xff;
             Class<?> componentType=Class.forName("eu",false,loader);
             Class<?> serializer=Class.forName("eu$a",false,loader);
-            Method serialize=serializer.getMethod("a",componentType);
+            Method serialize=serializer.getDeclaredMethod("a",componentType);
             serialize.setAccessible(true);
             String wire=(String)serialize.invoke(null,component);
-            int position=((Number)invokeNoArg(packet,"c")).intValue() & 0xff;
             emit("packet_send",
                 "{\"packet_class\":\"chat\",\"packet_position\":"+position+
                 ",\"payload_sha256\":\""+sha256(wire)+
                 "\",\"runtime_class\":\"fy\"}");
         } catch (Exception exc) {
-            fatalBinding("chat_packet_runtime",1,0);
+            fatalBinding(
+                "chat_packet_runtime_"+exc.getClass().getSimpleName(),1,0
+            );
         }
     }
 
