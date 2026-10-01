@@ -1,0 +1,132 @@
+name: worldgen CORE causal recoverability
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE v1.4 intake run
+        required: true
+        default: "36559943983"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/analyze_causal_path_recoverability.py'
+      - 'tests/test_worldgen_causal_machinery.py'
+      - 'tests/test_worldgen_causal_path_recoverability.py'
+      - '.github/workflows/worldgen-reference-core-causal-recoverability.yml'
+
+concurrency:
+  group: worldgen-core-causal-recoverability-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Run structural regression controls
+        run: |
+          python -m py_compile tools/analyze_legacy_causal_machinery.py
+          python -m py_compile tools/analyze_causal_path_recoverability.py
+          python -m unittest -v \
+            tests.test_worldgen_causal_machinery \
+            tests.test_worldgen_causal_path_recoverability
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Build exact current causal graph
+        run: |
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py \
+            --world-zip source/original-world.zip \
+            --output out/core-v1.4-causal-machinery.json
+
+      - name: Measure trusted and candidate recoverability
+        run: |
+          python tools/analyze_causal_path_recoverability.py \
+            --graph out/core-v1.4-causal-machinery.json \
+            --output out/core-v1.4-causal-recoverability.json
+
+      - name: Validate measurement boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/core-v1.4-causal-recoverability.json").read_text())
+          assert d["schema"]=="supracraft-causal-path-recoverability/1"
+          assert d["analysis_kind"]=="structural_causal_evidence_not_quality_score"
+          assert d["node_count"] > 0
+          assert d["edge_count"] > 0
+          for bucket in ("trusted_path_metrics","candidate_path_metrics"):
+              assert set(d[bucket])=={
+                  "sensor_to_state","sensor_to_actuator","sensor_to_feedback",
+                  "actuator_with_sensor_upstream","state_with_feedback_downstream",
+              }
+          print(json.dumps({
+              "node_count":d["node_count"],
+              "edge_count":d["edge_count"],
+              "unresolved_edge_count":d["unresolved_edge_count"],
+              "role_counts":d["role_counts"],
+              "trusted_path_metrics":d["trusted_path_metrics"],
+              "candidate_path_metrics":d["candidate_path_metrics"],
+              "weak_edge_sensitivity":d["weak_edge_sensitivity"],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-causal-recoverability
+          path: |
+            out/core-v1.4-causal-machinery.json
+            out/core-v1.4-causal-recoverability.json
+          retention-days: 14
