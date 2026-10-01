@@ -76,7 +76,12 @@ jobs:
           echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
 
       - name: Run pressure-plate structural controls
-        run: python -m unittest -v tests.test_worldgen_causal_machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/legacy_pressure_plate_player.js
+          python -m py_compile tools/probe_legacy_reference_mechanisms.py
+          python -m unittest -v tests.test_worldgen_causal_machinery
 
       - name: Resolve source run
         shell: bash
