@@ -446,6 +446,72 @@ def live_testforblock(proc, log_path, probe, expected_meta):
     }
 
 
+def live_command_success_count(proc, log_path, command_node_id, expected_values):
+    """Read a compact command-block SuccessCount via exact testforblock NBT."""
+    try:
+        x,y,z=(int(v) for v in command_node_id.split(","))
+    except Exception as exc:
+        raise RuntimeError(
+            f"invalid diagnostic command node id: {command_node_id}"
+        ) from exc
+
+    attempts=[]
+    success=f"Successfully found the block at {x},{y},{z}."
+    for expected in expected_values:
+        try:
+            start=log_path.stat().st_size
+        except FileNotFoundError:
+            start=0
+        send(
+            proc,
+            f"testforblock {x} {y} {z} minecraft:command_block -1 "
+            f"{{SuccessCount:{int(expected)}}}",
+        )
+        deadline=time.monotonic()+2.0
+        segment=""
+        while time.monotonic()<deadline:
+            time.sleep(0.05)
+            with log_path.open("r",encoding="utf-8",errors="replace") as fh:
+                fh.seek(start)
+                segment=fh.read()
+            if success in segment:
+                break
+            if "commands.testforblock" in segment or "The block at " in segment:
+                break
+        matched=success in segment
+        attempts.append({
+            "expected_success_count":int(expected),
+            "matched":matched,
+            "response_sha256":hashlib.sha256(
+                segment.encode("utf-8")
+            ).hexdigest(),
+        })
+        if matched:
+            return {
+                "query_kind":"exact_1.8.8_testforblock_nbt_success_count",
+                "node_id":command_node_id,
+                "success_count":int(expected),
+                "matched_known_value":True,
+                "attempts":attempts,
+            }
+    return {
+        "query_kind":"exact_1.8.8_testforblock_nbt_success_count",
+        "node_id":command_node_id,
+        "success_count":None,
+        "matched_known_value":False,
+        "attempts":attempts,
+    }
+
+
+def sample_diagnostic_success_counts(proc, log_path, command_node_ids, expected_values):
+    return {
+        node_id:live_command_success_count(
+            proc,log_path,node_id,expected_values
+        )
+        for node_id in sorted(set(command_node_ids or []))
+    }
+
+
 def start_legacy_player_actor(script, trial_dir, sensor_position, port=25579):
     ready_path=trial_dir/"player-actor-ready.json"
     observation_path=trial_dir/"player-sensor-observation.json"
@@ -542,6 +608,8 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
             time.sleep(0.5)
 
         diagnostic_command_ids=sorted(set(diagnostic_command_ids or []))
+        diagnostic_sentinel=2147483647
+        diagnostic_success_observation={}
         for command_id in diagnostic_command_ids:
             try:
                 qx,qy,qz=(int(v) for v in command_id.split(","))
@@ -549,11 +617,22 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                 raise RuntimeError(
                     f"invalid diagnostic command node id: {command_id}"
                 ) from exc
-            # Reset only the compact execution counter in both fresh-world arms.
+            # Use an out-of-band sentinel so exact testforblock NBT can observe
+            # whether a later command execution overwrites SuccessCount.
             # Command text and LastOutput are left untouched.
-            send(p,f"blockdata {qx} {qy} {qz} {{SuccessCount:0}}")
+            send(
+                p,
+                f"blockdata {qx} {qy} {qz} "
+                f"{{SuccessCount:{diagnostic_sentinel}}}",
+            )
         if diagnostic_command_ids:
-            time.sleep(0.25)
+            time.sleep(0.05)
+            diagnostic_success_observation["pre_trigger"]=(
+                sample_diagnostic_success_counts(
+                    p,log_path,diagnostic_command_ids,
+                    [diagnostic_sentinel,1,0],
+                )
+            )
 
         if activate:
             if family in STABLE_ACTIVATABLE:
@@ -570,14 +649,61 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                 send(p,f"tp SupraPlateBot {x + 0.5} {y + 0.05} {z + 0.5}")
                 time.sleep(0.25)
                 live_sensor_query=live_testforblock(p,log_path,probe,1)
-                time.sleep(3.5)
+                if diagnostic_command_ids:
+                    diagnostic_success_observation["t250ms"]=(
+                        sample_diagnostic_success_counts(
+                            p,log_path,diagnostic_command_ids,
+                            [diagnostic_sentinel,1,0],
+                        )
+                    )
+                time.sleep(0.75)
+                if diagnostic_command_ids:
+                    diagnostic_success_observation["t1000ms"]=(
+                        sample_diagnostic_success_counts(
+                            p,log_path,diagnostic_command_ids,
+                            [diagnostic_sentinel,1,0],
+                        )
+                    )
+                time.sleep(2.5)
+                if diagnostic_command_ids:
+                    diagnostic_success_observation["t3500ms"]=(
+                        sample_diagnostic_success_counts(
+                            p,log_path,diagnostic_command_ids,
+                            [diagnostic_sentinel,1,0],
+                        )
+                    )
         else:
             if family in PRESSURE_PLATE_ACTIVATABLE:
+                # Match the activation arm's teleport/movement command without
+                # entering the authored mechanism: remain on the neutral barrier.
+                send(p,f"tp SupraPlateBot {nx + 0.5} 250.05 {nz + 0.5}")
                 time.sleep(0.25)
                 live_sensor_query=live_testforblock(
                     p,log_path,probe,int(probe.get("legacy_metadata") or 0)
                 )
-                time.sleep(3.5)
+                if diagnostic_command_ids:
+                    diagnostic_success_observation["t250ms"]=(
+                        sample_diagnostic_success_counts(
+                            p,log_path,diagnostic_command_ids,
+                            [diagnostic_sentinel,1,0],
+                        )
+                    )
+                time.sleep(0.75)
+                if diagnostic_command_ids:
+                    diagnostic_success_observation["t1000ms"]=(
+                        sample_diagnostic_success_counts(
+                            p,log_path,diagnostic_command_ids,
+                            [diagnostic_sentinel,1,0],
+                        )
+                    )
+                time.sleep(2.5)
+                if diagnostic_command_ids:
+                    diagnostic_success_observation["t3500ms"]=(
+                        sample_diagnostic_success_counts(
+                            p,log_path,diagnostic_command_ids,
+                            [diagnostic_sentinel,1,0],
+                        )
+                    )
             else:
                 time.sleep(4)
         send(p,"save-all")
@@ -623,6 +749,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
         "live_sensor_query":live_sensor_query,
         "player_actor":player_actor,
         "player_sensor_observation":player_sensor_observation,
+        "diagnostic_success_observation":diagnostic_success_observation,
     }
 
 def main():
@@ -694,6 +821,10 @@ def main():
               "diagnostic_command_node_ids":sorted(
                   set(args.diagnostic_command_node_id)
               ),
+              "diagnostic_success_observation":{
+                  "control":control.get("diagnostic_success_observation",{}),
+                  "activated":active.get("diagnostic_success_observation",{}),
+              },
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
               "presentation_feedback_command_state_changes":feedback_command_changes,
@@ -782,7 +913,7 @@ def main():
         "Pressure-plate activation is observed both by an exact 1.8.8 testforblock metadata query and by the paired exact-version player client's block-state stream; only compact metadata/boolean evidence is retained, and later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "Presentation-feedback command state changes are reported only for commands inside the selected compact command scope and retain verb, node id, changed field names, and SuccessCount values only; they do not prove client delivery, perception, comprehension, or qualitative value.",
-        "Optional diagnostic command-node IDs expand only the compact sampled command scope and reset SuccessCount to zero identically in both paired arms immediately before the trigger window; command text and LastOutput are not modified or newly retained.",
+        "Optional diagnostic command-node IDs expand only the compact sampled command scope and place the same out-of-band SuccessCount sentinel in both paired arms immediately before the trigger window; exact testforblock NBT queries retain only compact matched values/timing hashes. Command text and LastOutput are not modified or newly retained.",
         "Client feedback observations retain rendered-message hashes/positions, bounded protocol-chat component classes without component text or arguments, and self-effect numeric id/amplifier/duration events. Protocol chat classes can distinguish broad vanilla delivery mechanisms such as command feedback, death, achievement, or literal text without retaining message text; they do not establish player perception/comprehension or qualitative value.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
