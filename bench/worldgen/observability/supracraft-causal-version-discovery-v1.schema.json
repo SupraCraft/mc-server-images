@@ -97,6 +97,7 @@
       "additionalProperties": false,
       "required": [
         "jfr_profile_flag_detected",
+        "jfr_profile_option",
         "activation_mode",
         "recording_file",
         "minecraft_event_count",
@@ -105,6 +106,10 @@
       "properties": {
         "jfr_profile_flag_detected": {
           "type": "boolean"
+        },
+        "jfr_profile_option": {
+          "type": ["string", "null"],
+          "enum": ["--jfrProfile", "--jfr-profile", null]
         },
         "activation_mode": {
           "enum": [
