@@ -25,3 +25,25 @@ Observer qualification compares stock vanilla against the same exact executable
 with the requested sensor pack attached. Timing overhead is reported separately
 from semantic divergence. Alternative servers and modded runtimes may be useful
 comparison surfaces but do not silently replace the vanilla oracle.
+
+
+## Exact-version frontier discovery
+
+A qualified adapter manifest and a frontier discovery receipt are deliberately
+different artifacts.
+
+- `supracraft-causal-version-discovery/1` is produced before any version-
+  specific direct hooks are trusted. It records exact Mojang artifact
+  provenance, required Java, detected symbol mode, the runtime-discovered
+  native Minecraft JFR catalog, and conservative semantic coverage gaps.
+- `supracraft-causal-capability-manifest/1` is reserved for an exact-version
+  adapter whose concrete bindings have been identified and independently
+  qualified.
+
+Frontier discovery resolves `latest.release` and `latest.snapshot` from the
+official Mojang version manifest at workflow execution time and fails closed if
+either frontier changes between resolution and probing. Native JFR event names
+are evidence discovered from the exact runtime; they are reported as candidates
+until their fields and semantics are independently qualified. Missing coverage
+is the input to the next smallest direct-hook sensor pack, not permission to
+reuse a nearby version's hooks.
