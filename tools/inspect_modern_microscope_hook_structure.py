@@ -125,7 +125,7 @@ def _method_name(declaration: str, class_name: str) -> str:
     simple = class_name.rsplit(".", 1)[-1]
     before = declaration.split("(", 1)[0].strip()
     token = before.split()[-1]
-    if token == simple or token.endswith(simple):
+    if token == simple or token == class_name:
         return "<init>"
     return token
 
