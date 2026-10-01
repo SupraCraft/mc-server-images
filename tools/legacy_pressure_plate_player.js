@@ -150,7 +150,8 @@ function classifyProtocolChat (packet) {
       : null,
     component_kind: componentKind,
     semantic_class: semanticClass,
-    command_verb: commandVerb
+    command_verb: commandVerb,
+    observed_at_epoch_ms: Date.now()
   }
 }
 
