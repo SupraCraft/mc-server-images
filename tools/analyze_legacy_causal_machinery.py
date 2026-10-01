@@ -477,9 +477,11 @@ def legacy_direct_redstone_edges(machinery):
     """Recover only direct redstone relations that do not require hidden solid-block conduction.
 
     Same-level dust-to-dust adjacency is structurally strong. Sensor-to-dust and
-    dust-to-direct-sink adjacency are adequate potential causal edges because
-    attachment/state details may still matter. Repeater/comparator ports are
-    handled separately from their orientation metadata.
+    horizontal dust-to-direct-sink adjacency are adequate potential causal edges
+    because attachment/state details may still matter. Exact Minecraft 1.8.8
+    source separately grounds powered wire immediately above a legacy command
+    block as a directed power relation. Repeater/comparator ports are handled
+    separately from their orientation metadata.
     """
     edges=[]
     horizontal=((1,0,0),(-1,0,0),(0,0,1),(0,0,-1))
@@ -502,6 +504,19 @@ def legacy_direct_redstone_edges(machinery):
                         "edge_type":"legacy_dust_direct_component_power",
                         "certainty":"adequate",
                     })
+            below=add_pos(pos,(0,-1,0))
+            if below in machinery and machinery[below]["family"]=="command_block":
+                edges.append({
+                    "source":node_id(pos),"target":node_id(below),
+                    "edge_type":"legacy_dust_downward_command_power",
+                    "certainty":"strong",
+                    "basis":(
+                        "exact Minecraft 1.8.8 BlockCommandBlock.onNeighborBlockChange "
+                        "uses World.isBlockPowered; World.isBlockPowered queries the "
+                        "block above with EnumFacing.UP; BlockRedstoneWire.getWeakPower "
+                        "returns wire power for side UP"
+                    ),
+                })
         if family in LEGACY_SENSOR_FAMILIES:
             for delta in all_sides:
                 q=add_pos(pos,delta)
@@ -885,7 +900,7 @@ def analyze(world: Path):
         "nodes": sorted(machinery.values(), key=lambda n: tuple(n["position"])),
         "limitations": [
             "Physical adjacency is not equivalent to powered redstone connectivity or causal direction.",
-            "Repeater/comparator metadata ports, command-block facing, exact 1.8.8 button attachment direction, and exact 1.8.8 pressure-plate stored/output power semantics are decoded. Same-level dust continuity, direct sensor/dust/component relations, button-to-attached-support power, and pressure-plate-to-support power are recovered separately; vertical dust steps, opaque solid-block conduction beyond those exact directly powered supports, locking/side-input behavior, and quasi-connectivity remain incomplete.",
+            "Repeater/comparator metadata ports, command-block facing, exact 1.8.8 button attachment direction, exact 1.8.8 pressure-plate stored/output power semantics, and the exact 1.8.8 powered-wire-above to legacy-command-block-below relation are decoded. Same-level dust continuity, direct sensor/dust/component relations, button-to-attached-support power, and pressure-plate-to-support power are recovered separately; other vertical dust steps, opaque solid-block conduction beyond these exact relations, locking/side-input behavior, and quasi-connectivity remain incomplete.",
             "Trapped-chest opening power and comparator inventory/fullness reads are represented as distinct causal channels.",
             "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
             "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
