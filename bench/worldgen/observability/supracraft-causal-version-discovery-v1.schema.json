@@ -66,6 +66,7 @@
         "server_url",
         "server_sha1_expected",
         "server_sha1_observed",
+        "server_sha256_observed",
         "server_size"
       ],
       "properties": {
@@ -85,6 +86,10 @@
         "server_sha1_observed": {
           "type": "string",
           "pattern": "^[0-9a-f]{40}$"
+        },
+        "server_sha256_observed": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         },
         "server_size": {
           "type": "integer",

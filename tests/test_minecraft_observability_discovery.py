@@ -111,6 +111,12 @@ class FrontierDiscoveryTests(unittest.TestCase):
             schema["properties"]["qualification_status"]["const"],
             "discovery_only_not_adapter_qualified",
         )
+        provenance=schema["properties"]["artifact_provenance"]
+        self.assertIn("server_sha256_observed",provenance["required"])
+        self.assertEqual(
+            provenance["properties"]["server_sha256_observed"]["pattern"],
+            "^[0-9a-f]{64}$",
+        )
 
 
 if __name__ == "__main__":

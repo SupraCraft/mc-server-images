@@ -97,6 +97,14 @@ def sha1_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
 def download_verified(row: dict, target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(
@@ -364,6 +372,7 @@ def build_discovery_receipt(
             "server_url": row["server_url"],
             "server_sha1_expected": row["server_sha1"],
             "server_sha1_observed": sha1_file(server_jar),
+            "server_sha256_observed": sha256_file(server_jar),
             "server_size": server_jar.stat().st_size,
         },
         "native_observability": {
