@@ -127,8 +127,8 @@ jobs:
           expected={
               "wire_update_power_strength","wire_get_block_signal",
               "wire_get_signal","wire_get_direct_signal",
-              "wire_neighbor_changed","level_neighbor_changed",
-              "level_update_neighbors_at",
+              "wire_neighbor_changed","server_level_neighbor_changed",
+              "server_level_update_neighbors_at",
           }
           assert set(rows)==expected
           for row in rows.values():
