@@ -153,6 +153,14 @@ def start_actor(script: Path, trial_dir: Path, activate: bool):
     return proc,log,actor,observation_path
 
 
+def prime_fixture_chunk(proc):
+    send(
+        proc,
+        f"setworldspawn {NEUTRAL_SPAWN[0]} {NEUTRAL_SPAWN[1]} {NEUTRAL_SPAWN[2]}",
+    )
+    time.sleep(0.5)
+
+
 def configure_fixture(proc):
     commands=[
         "gamerule commandBlockOutput false",
@@ -168,11 +176,31 @@ def configure_fixture(proc):
         ),
         "setblock 4 65 0 minecraft:air 0 replace",
         "setblock 0 64 8 minecraft:barrier 0 replace",
-        "setworldspawn 0 65 8",
     ]
     for command in commands:
         send(proc,command)
         time.sleep(0.08)
+
+
+def verify_fixture_setup(proc, log_path: Path):
+    checks={
+        "trapped_chest":live_testforblock(
+            proc,log_path,CHEST,"minecraft:trapped_chest",3
+        ),
+        "wire_unpowered":live_testforblock(
+            proc,log_path,WIRE,"minecraft:redstone_wire",0
+        ),
+        "command_block":live_testforblock(
+            proc,log_path,COMMAND,"minecraft:command_block",0
+        ),
+        "target_air":live_testforblock(
+            proc,log_path,TARGET,"minecraft:air",0
+        ),
+    }
+    return {
+        "all_matched":all(row["matched"] for row in checks.values()),
+        "checks":checks,
+    }
 
 
 def run_trial(server_jar: Path, trial_dir: Path, actor_script: Path, activate: bool):
@@ -186,6 +214,7 @@ def run_trial(server_jar: Path, trial_dir: Path, actor_script: Path, activate: b
         "generate-structures=false",
         "enable-command-block=true",
         "spawn-protection=0",
+        "spawn-radius=0",
         "max-players=1",
         "view-distance=6",
         "difficulty=1",
@@ -203,14 +232,25 @@ def run_trial(server_jar: Path, trial_dir: Path, actor_script: Path, activate: b
             text=True,
         )
         ready=wait_ready(server,log_path,180)
-        configure_fixture(server)
-        send(server,"save-all")
-        time.sleep(1)
-
+        # A fresh 1.8.8 world does not guarantee that the synthetic target
+        # chunk is resident before any player joins. Prime the login spawn,
+        # let the exact-version actor load that chunk, then materialize and
+        # verify the fixture before attempting interaction.
+        prime_fixture_chunk(server)
         actor_proc,actor_log,actor,observation_path=start_actor(
             actor_script,trial_dir,activate
         )
         time.sleep(0.75)
+        configure_fixture(server)
+        send(server,"save-all")
+        time.sleep(1)
+        setup_verification=verify_fixture_setup(server,log_path)
+        send(
+            server,
+            f"tp SupraChestBot {NEUTRAL_SPAWN[0] + 0.5} {NEUTRAL_SPAWN[1]} {NEUTRAL_SPAWN[2] + 0.5}",
+        )
+        time.sleep(0.5)
+
         control_observation=read_json_retry(observation_path)
         if activate:
             send(
@@ -270,6 +310,7 @@ def run_trial(server_jar: Path, trial_dir: Path, actor_script: Path, activate: b
         "sensor_observation":observation,
         "opening_power_witness":power_query,
         "inventory_fingerprint":inventory,
+        "fixture_setup_verification":setup_verification,
         "snapshot":snap,
     }
 
@@ -327,6 +368,10 @@ def main():
             "inventory_fixture":"empty_and_unchanged",
         },
         "activation_method":"paired_exact_1.8.8_player_open",
+        "fixture_setup_verification":{
+            "control":control["fixture_setup_verification"],
+            "activated":active["fixture_setup_verification"],
+        },
         "player_actor":{
             "control":control["player_actor"],
             "activated":active["player_actor"],
