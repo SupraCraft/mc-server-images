@@ -35,6 +35,21 @@ class CausalPathRecoverabilityTests(unittest.TestCase):
         self.assertEqual(1.0,d["trusted_path_metrics"]["sensor_to_actuator"]["coverage"])
         self.assertEqual(1.0,d["trusted_path_metrics"]["sensor_to_feedback"]["coverage"])
 
+    def test_nested_semantic_state_objective_is_resolved_as_graph_node(self):
+        doc={
+          "schema":"fixture/nested-semantic-state",
+          "nodes":[node("feedback","presentation_feedback")],
+          "semantic_state":{
+            "objectives":[node("score",kind="scoreboard_objective")]
+          },
+          "edges":[
+            {"source":"score","target":"feedback","edge_type":"state_renders","certainty":"strong"}
+          ]
+        }
+        d=recover.analyze(doc)
+        self.assertEqual(0,d["unresolved_edge_count"])
+        self.assertEqual(1.0,d["trusted_path_metrics"]["state_with_feedback_downstream"]["coverage"])
+
     def test_hidden_effect_without_feedback_is_not_counted_as_feedback_covered(self):
         doc={
           "schema":"fixture/opaque",
