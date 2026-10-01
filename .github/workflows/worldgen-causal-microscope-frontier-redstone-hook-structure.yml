@@ -1,0 +1,208 @@
+name: worldgen causal microscope frontier redstone hook structure
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bench/worldgen/observability/**'
+      - 'tools/discover_minecraft_observability.py'
+      - 'tools/inventory_modern_microscope_symbols.py'
+      - 'tools/inspect_modern_microscope_hook_structure.py'
+      - 'tests/test_modern_microscope_hook_structure.py'
+      - '.github/workflows/worldgen-causal-microscope-frontier-redstone-hook-structure.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: worldgen-causal-microscope-frontier-redstone-hook-structure-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.frontier.outputs.matrix }}
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Redstone hook-structure contract controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_modern_microscope_symbol_inventory \
+            tests.test_modern_microscope_hook_structure
+          python -m py_compile \
+            tools/discover_minecraft_observability.py \
+            tools/inventory_modern_microscope_symbols.py \
+            tools/inspect_modern_microscope_hook_structure.py
+      - name: Resolve exact Mojang frontier
+        id: frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python tools/discover_minecraft_observability.py resolve \
+            --output out/frontier-resolution.json \
+            --github-output "$GITHUB_OUTPUT"
+
+  inspect:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '${{ matrix.java_major }}'
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Inspect exact redstone method bodies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/runtime
+          python tools/inspect_modern_microscope_hook_structure.py inspect \
+            --channel "${{ matrix.channel }}" \
+            --expected-version "${{ matrix.minecraft_version }}" \
+            --expected-java "${{ matrix.java_major }}" \
+            --target-set redstone \
+            --work-dir out/runtime \
+            --output out/hook-structure.json
+      - name: Validate bounded redstone structure receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/hook-structure.json").read_text())
+          assert d["schema"]=="supracraft-causal-hook-structure/1"
+          assert d["target_set"]=="redstone"
+          assert d["qualification_status"]=="structure_only_not_hook_qualified"
+          rows={r["id"]:r for r in d["methods"]}
+          expected={
+              "wire_update_power_strength","wire_get_block_signal",
+              "wire_get_signal","wire_get_direct_signal",
+              "wire_neighbor_changed","level_neighbor_changed",
+              "level_update_neighbors_at",
+          }
+          assert set(rows)==expected
+          for row in rows.values():
+              assert row["instruction_count"]>0
+              assert len(row["class_sha256"])==64
+              assert len(row["normalized_code_sha256"])==64
+          print(json.dumps({
+              "channel":d["channel"],
+              "minecraft_version":d["minecraft_version"],
+              "methods":{
+                  k:{
+                      "sha256":v["normalized_code_sha256"],
+                      "instructions":v["instruction_count"],
+                      "method_refs":len(v["method_refs"]),
+                      "field_refs":len(v["field_refs"]),
+                  } for k,v in rows.items()
+              }
+          },indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-redstone-hook-structure-${{ matrix.channel }}
+          path: out/hook-structure.json
+          retention-days: 14
+
+  compare:
+    needs: inspect
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: causal-microscope-redstone-hook-structure-*
+          path: out/hooks
+          merge-multiple: false
+      - name: Compare exact redstone method structures across frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/inspect_modern_microscope_hook_structure.py compare \
+            --root out/hooks \
+            --output out/redstone-hook-frontier-comparison.json
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/redstone-hook-frontier-comparison.json").read_text())
+          assert d["target_set"]=="redstone"
+          assert len(d["methods"])==7
+          print(json.dumps({
+              "release":d["release"],
+              "snapshot":d["snapshot"],
+              "target_set":d["target_set"],
+              "methods":{
+                  k:{
+                      "same_class_bytes":v["same_class_bytes"],
+                      "same_normalized_code":v["same_normalized_code"],
+                      "release_only_method_refs":len(v["release_only_method_refs"]),
+                      "snapshot_only_method_refs":len(v["snapshot_only_method_refs"]),
+                  } for k,v in d["methods"].items()
+              }
+          },indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-redstone-hook-frontier-comparison
+          path: out/redstone-hook-frontier-comparison.json
+          retention-days: 14
