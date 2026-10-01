@@ -36,6 +36,7 @@ const observation = observePos
       sources: [],
       client_feedback: {
         message_events: [],
+        protocol_chat_events: [],
         self_effect_events: [],
         truncated: false
       }
@@ -92,6 +93,71 @@ function recordMessage (message, messagePosition) {
   })
 }
 
+function classifyProtocolChat (packet) {
+  const raw = packet && packet.message !== undefined && packet.message !== null
+    ? String(packet.message)
+    : ''
+  let componentKind = 'unparsed'
+  let semanticClass = 'unparsed'
+  let commandVerb = null
+
+  try {
+    const component = JSON.parse(raw)
+    if (typeof component === 'string') {
+      componentKind = 'string'
+      semanticClass = 'literal_text'
+    } else if (Array.isArray(component)) {
+      componentKind = 'array'
+      semanticClass = 'composite'
+    } else if (component && typeof component === 'object') {
+      if (typeof component.translate === 'string') {
+        componentKind = 'translate'
+        const key = component.translate
+        if (key.startsWith('commands.')) {
+          semanticClass = 'command_feedback'
+          const parts = key.split('.')
+          commandVerb = parts.length > 1 && /^[a-z0-9_-]+$/i.test(parts[1])
+            ? parts[1].toLowerCase()
+            : null
+        } else if (key.startsWith('death.')) {
+          semanticClass = 'death'
+        } else if (key.startsWith('achievement.')) {
+          semanticClass = 'achievement'
+        } else if (key.startsWith('chat.')) {
+          semanticClass = 'chat'
+        } else if (key.startsWith('gameMode.')) {
+          semanticClass = 'gamemode'
+        } else if (key.startsWith('multiplayer.')) {
+          semanticClass = 'multiplayer'
+        } else {
+          semanticClass = 'translated_other'
+        }
+      } else if (Object.prototype.hasOwnProperty.call(component, 'text')) {
+        componentKind = 'text'
+        semanticClass = 'literal_text'
+      } else {
+        componentKind = 'object'
+        semanticClass = 'other_component'
+      }
+    }
+  } catch (_) {}
+
+  return {
+    sha256: crypto.createHash('sha256').update(raw).digest('hex'),
+    position: packet && packet.position !== undefined && packet.position !== null
+      ? Number(packet.position)
+      : null,
+    component_kind: componentKind,
+    semantic_class: semanticClass,
+    command_verb: commandVerb
+  }
+}
+
+function recordProtocolChat (packet) {
+  if (!observation) return
+  appendFeedbackEvent('protocol_chat_events', classifyProtocolChat(packet))
+}
+
 function recordSelfEffect (event, entity, effect) {
   if (!observation || !bot.entity || !entity || entity.id !== bot.entity.id || !effect) return
   const id = Number(effect.id)
@@ -136,6 +202,10 @@ bot.on('blockUpdate', (oldBlock, newBlock) => {
 
 bot.on('messagestr', (message, messagePosition) => {
   recordMessage(message, messagePosition)
+})
+
+bot._client.on('chat', packet => {
+  recordProtocolChat(packet)
 })
 
 bot.on('entityEffect', (entity, effect) => {
