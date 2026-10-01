@@ -126,6 +126,39 @@ class CausalMicroscopeContractTests(unittest.TestCase):
         ):
             self.assertIn(required,events)
 
+    def test_modern_frontier_profiles_are_exact_and_fail_closed(self):
+        release=json.loads(
+            (OBS/"modern-26.3-java25-capability-manifest.json").read_text()
+        )
+        snapshot=json.loads(
+            (OBS/"modern-26.4-snapshot-2-java25-capability-manifest.json").read_text()
+        )
+        self.assertEqual("26.3",release["minecraft_version"])
+        self.assertEqual("26.4-snapshot-2",snapshot["minecraft_version"])
+        self.assertEqual(25,release["java_major"])
+        self.assertEqual(25,snapshot["java_major"])
+        self.assertIs(release["fail_closed"],True)
+        self.assertIs(snapshot["fail_closed"],True)
+        rb={x["id"]:x for x in release["bindings"]}
+        sb={x["id"]:x for x in snapshot["bindings"]}
+        self.assertEqual(set(rb),set(sb))
+        self.assertNotEqual(
+            rb["server_tick"]["class_sha256"],
+            sb["server_tick"]["class_sha256"],
+        )
+        self.assertNotEqual(
+            rb["block_state_write"]["class_sha256"],
+            sb["block_state_write"]["class_sha256"],
+        )
+        self.assertEqual(
+            rb["command_block_execute"]["class_sha256"],
+            sb["command_block_execute"]["class_sha256"],
+        )
+        self.assertEqual(
+            rb["command_dispatch"]["class_sha256"],
+            sb["command_dispatch"]["class_sha256"],
+        )
+
 
 if __name__=="__main__":
     unittest.main()
