@@ -72,10 +72,12 @@ jobs:
           bridge="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar"
           test -s "$agent"
           test -s "$bridge"
-          unzip -p "$agent" META-INF/MANIFEST.MF | grep -q \
-            'Premain-Class: org.supracraft.microscope.Agent'
-          unzip -p "$agent" META-INF/MANIFEST.MF | grep -q \
-            'Boot-Class-Path: causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar'
+          manifest="$(unzip -p "$agent" META-INF/MANIFEST.MF | tr -d '\\r\\n ')"
+          grep -q \
+            'Premain-Class:org.supracraft.microscope.Agent' <<<"$manifest"
+          grep -q \
+            'Boot-Class-Path:causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar' \
+            <<<"$manifest"
           unzip -l "$bridge" | grep -q \
             'org/supracraft/microscope/TraceRuntime.class'
           ! unzip -l "$bridge" | grep -q 'org/objectweb/asm/'
