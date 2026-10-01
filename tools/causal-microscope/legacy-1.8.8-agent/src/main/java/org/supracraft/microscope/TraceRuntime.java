@@ -127,6 +127,7 @@ public final class TraceRuntime {
         System.err.println(
             "SupraCraft causal microscope fail-closed binding: "+binding+
             " expected="+expected+" actual="+actual);
+        System.err.flush();
         Runtime.getRuntime().halt(73);
     }
 
