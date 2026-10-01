@@ -45,13 +45,27 @@ class ModernHookStructureTests(unittest.TestCase):
                 "wire_get_signal",
                 "wire_get_direct_signal",
                 "wire_neighbor_changed",
-                "level_neighbor_changed",
-                "level_update_neighbors_at",
+                "server_level_neighbor_changed",
+                "server_level_update_neighbors_at",
             },
         )
         self.assertTrue(all("packet" not in row["id"] for row in mod.REDSTONE_TARGETS))
         self.assertTrue(all("command" not in row["id"] for row in mod.REDSTONE_TARGETS))
         self.assertEqual(set(mod.TARGET_SETS),{"core","redstone"})
+        roles={row["id"]:row["role"] for row in mod.REDSTONE_TARGETS}
+        self.assertEqual(
+            roles["server_level_neighbor_changed"],"server_world_host"
+        )
+        self.assertEqual(
+            roles["server_level_update_neighbors_at"],"server_world_host"
+        )
+        self.assertFalse(
+            any(
+                row["role"]=="world_state_host"
+                for row in mod.REDSTONE_TARGETS
+                if row["event_family"]=="neighbor_notify"
+            )
+        )
 
     def test_parse_sections_selects_exact_descriptor(self):
         text = """
