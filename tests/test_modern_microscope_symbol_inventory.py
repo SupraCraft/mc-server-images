@@ -67,6 +67,25 @@ class ModernSymbolInventoryTests(unittest.TestCase):
             )],
         )
 
+    def test_method_ending_in_class_name_is_not_constructor(self):
+        output = """
+        protected net.minecraft.world.level.Level(float);
+          descriptor: (F)V
+        public float getRainLevel(float);
+          descriptor: (F)F
+        """
+        rows = mod.parse_javap_methods(
+            output,
+            "net.minecraft.world.level.Level",
+        )
+        self.assertEqual(
+            [(row["name"], row["descriptor"]) for row in rows],
+            [
+                ("<init>", "(F)V"),
+                ("getRainLevel", "(F)F"),
+            ],
+        )
+
     def test_symbol_inventory_schema_is_not_capability_manifest(self):
         schema = json.loads(
             (
