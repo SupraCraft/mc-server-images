@@ -159,9 +159,9 @@ REDSTONE_TARGETS = (
         ),
     },
     {
-        "id": "level_neighbor_changed",
+        "id": "server_level_neighbor_changed",
         "event_family": "neighbor_notify",
-        "role": "world_state_host",
+        "role": "server_world_host",
         "name": "neighborChanged",
         "descriptor": (
             "(Lnet/minecraft/core/BlockPos;"
@@ -170,9 +170,9 @@ REDSTONE_TARGETS = (
         ),
     },
     {
-        "id": "level_update_neighbors_at",
+        "id": "server_level_update_neighbors_at",
         "event_family": "neighbor_notify",
-        "role": "world_state_host",
+        "role": "server_world_host",
         "name": "updateNeighborsAt",
         "descriptor": (
             "(Lnet/minecraft/core/BlockPos;"
