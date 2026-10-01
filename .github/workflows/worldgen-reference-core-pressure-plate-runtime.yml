@@ -174,11 +174,32 @@ jobs:
               for arm in ("control","activated"):
                   feedback=observations[arm]["client_feedback"]
                   assert set(feedback)=={
-                      "message_events","self_effect_events","truncated"
+                      "message_events","protocol_chat_events",
+                      "self_effect_events","truncated"
                   }
                   for message in feedback["message_events"]:
                       assert set(message)=={"sha256","position"}
                       assert len(message["sha256"])==64
+                  for protocol_chat in feedback["protocol_chat_events"]:
+                      assert set(protocol_chat)=={
+                          "sha256","position","component_kind",
+                          "semantic_class","command_verb",
+                      }
+                      assert len(protocol_chat["sha256"])==64
+                      assert protocol_chat["position"] is None or isinstance(
+                          protocol_chat["position"],int
+                      )
+                      assert protocol_chat["component_kind"] in {
+                          "unparsed","string","array","translate","text","object"
+                      }
+                      assert protocol_chat["semantic_class"] in {
+                          "unparsed","literal_text","composite","command_feedback",
+                          "death","achievement","chat","gamemode","multiplayer",
+                          "translated_other","other_component",
+                      }
+                      assert protocol_chat["command_verb"] is None or isinstance(
+                          protocol_chat["command_verb"],str
+                      )
                   for effect in feedback["self_effect_events"]:
                       assert set(effect)=={
                           "event","id","amplifier","duration"
@@ -233,6 +254,7 @@ jobs:
               client_delta=row["client_feedback_delta"]
               assert set(client_delta)=={
                   "message_events_added","message_events_removed",
+                  "protocol_chat_events_added","protocol_chat_events_removed",
                   "self_effect_events_added","self_effect_events_removed",
                   "control_truncated","activated_truncated",
               }
@@ -243,6 +265,16 @@ jobs:
                   client_delta["message_events_removed"]
               ):
                   assert set(item)=={"sha256","position","count"}
+                  assert len(item["sha256"])==64
+                  assert item["count"] > 0
+              for item in (
+                  client_delta["protocol_chat_events_added"]+
+                  client_delta["protocol_chat_events_removed"]
+              ):
+                  assert set(item)=={
+                      "sha256","position","component_kind","semantic_class",
+                      "command_verb","count",
+                  }
                   assert len(item["sha256"])==64
                   assert item["count"] > 0
               for item in (
@@ -258,6 +290,10 @@ jobs:
                   client_delta["message_events_added"] or
                   client_delta["message_events_removed"]
               )
+              assert row["evidence"]["client_protocol_chat_delta_observed"]==bool(
+                  client_delta["protocol_chat_events_added"] or
+                  client_delta["protocol_chat_events_removed"]
+              )
               assert row["evidence"]["client_self_effect_delta_observed"]==bool(
                   client_delta["self_effect_events_added"] or
                   client_delta["self_effect_events_removed"]
@@ -265,6 +301,8 @@ jobs:
               assert row["evidence"]["client_feedback_delta_observed"]==bool(
                   client_delta["message_events_added"] or
                   client_delta["message_events_removed"] or
+                  client_delta["protocol_chat_events_added"] or
+                  client_delta["protocol_chat_events_removed"] or
                   client_delta["self_effect_events_added"] or
                   client_delta["self_effect_events_removed"]
               )
