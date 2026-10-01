@@ -20,7 +20,7 @@ WIRE=(1,65,0)
 COMMAND=(2,65,0)
 TARGET=(4,65,0)
 PLAYER_STAND=(0.5,65,2.5)
-NEUTRAL_SPAWN=(64,65,64)
+NEUTRAL_SPAWN=(0,65,8)
 FIXTURE_COMMAND="setblock 4 65 0 minecraft:redstone_block"
 FIXTURE_COMMAND_SHA256=hashlib.sha256(FIXTURE_COMMAND.encode("utf-8")).hexdigest()
 
@@ -167,8 +167,8 @@ def configure_fixture(proc):
             '{Command:"setblock 4 65 0 minecraft:redstone_block",TrackOutput:1b}'
         ),
         "setblock 4 65 0 minecraft:air 0 replace",
-        "setblock 64 64 64 minecraft:barrier 0 replace",
-        "setworldspawn 64 65 64",
+        "setblock 0 64 8 minecraft:barrier 0 replace",
+        "setworldspawn 0 65 8",
     ]
     for command in commands:
         send(proc,command)
