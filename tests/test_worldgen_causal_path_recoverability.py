@@ -91,14 +91,34 @@ class CausalPathRecoverabilityTests(unittest.TestCase):
         self.assertEqual(0.0,d["trusted_path_metrics"]["sensor_to_actuator"]["coverage"])
         self.assertEqual(102,d["node_count"])
 
-    def test_unresolved_target_is_reported_not_assumed(self):
+    def test_resolved_external_world_target_is_separate_from_unresolved_graph_edges(self):
+        doc={
+          "schema":"fixture/external-target",
+          "nodes":[node("sensor","sensor_input")],
+          "edges":[{
+            "source":"sensor","target":None,"target_position":[1,2,3],
+            "certainty":"adequate","edge_type":"command_world_target",
+            "target_kind":"point","verb":"setblock",
+          }]
+        }
+        d=recover.analyze(doc)
+        self.assertEqual(0,d["unresolved_edge_count"])
+        self.assertEqual(1,d["external_world_target_count"])
+        self.assertEqual([1,2,3],d["external_world_target_examples"][0]["target_position"])
+        self.assertEqual(0.0,d["trusted_path_metrics"]["sensor_to_actuator"]["coverage"])
+
+    def test_truly_unresolved_target_is_reported_not_assumed(self):
         doc={
           "schema":"fixture/unresolved",
           "nodes":[node("sensor","sensor_input")],
-          "edges":[{"source":"sensor","target":None,"target_position":[1,2,3],"certainty":"adequate","edge_type":"command_world_target"}]
+          "edges":[{
+            "source":"sensor","target":None,
+            "certainty":"adequate","edge_type":"semantic_reference",
+          }]
         }
         d=recover.analyze(doc)
         self.assertEqual(1,d["unresolved_edge_count"])
+        self.assertEqual(0,d["external_world_target_count"])
 
 if __name__=="__main__":
     unittest.main()
