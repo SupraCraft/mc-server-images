@@ -2,15 +2,19 @@ name: worldgen exact 1.8.8 trapped-chest opening fixture
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
-      - plan/worldgen-benchmark-agent-dispatch
+      - main
     paths:
       - 'tools/legacy_trapped_chest_player.js'
       - 'tools/probe_legacy_trapped_chest_fixture.py'
       - 'tools/analyze_legacy_causal_machinery.py'
       - 'bench/worldgen/interaction/exact-1.8.8-trapped-chest-source-evidence-v0.json'
       - '.github/workflows/worldgen-exact-1-8-8-trapped-chest-opening.yml'
+
+concurrency:
+  group: worldgen-trapped-chest-runtime-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
