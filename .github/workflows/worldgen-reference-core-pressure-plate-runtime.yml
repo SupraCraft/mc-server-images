@@ -178,12 +178,15 @@ jobs:
                       "self_effect_events","truncated"
                   }
                   for message in feedback["message_events"]:
-                      assert set(message)=={"sha256","position"}
+                      assert set(message)=={
+                          "sha256","position","observed_at_epoch_ms"
+                      }
                       assert len(message["sha256"])==64
+                      assert isinstance(message["observed_at_epoch_ms"],int)
                   for protocol_chat in feedback["protocol_chat_events"]:
                       assert set(protocol_chat)=={
                           "sha256","position","component_kind",
-                          "semantic_class","command_verb",
+                          "semantic_class","command_verb","observed_at_epoch_ms",
                       }
                       assert len(protocol_chat["sha256"])==64
                       assert protocol_chat["position"] is None or isinstance(
@@ -200,14 +203,20 @@ jobs:
                       assert protocol_chat["command_verb"] is None or isinstance(
                           protocol_chat["command_verb"],str
                       )
+                      assert isinstance(
+                          protocol_chat["observed_at_epoch_ms"],int
+                      )
                   for effect in feedback["self_effect_events"]:
                       assert set(effect)=={
-                          "event","id","amplifier","duration"
+                          "event","id","amplifier","duration",
+                          "observed_at_epoch_ms"
                       }
                       assert effect["event"] in {"start","end"}
                       assert all(
                           isinstance(effect[field],int)
-                          for field in ("id","amplifier","duration")
+                          for field in (
+                              "id","amplifier","duration","observed_at_epoch_ms"
+                          )
                       )
               assert row["evidence"]["live_sensor_activation_observed"] is True
 
