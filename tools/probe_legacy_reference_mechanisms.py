@@ -554,6 +554,7 @@ def start_legacy_player_actor(script, trial_dir, sensor_position, port=25579):
         "minecraft_version":receipt.get("minecraft_version"),
         "protocol_version":receipt.get("protocol_version"),
         "mineflayer_version":receipt.get("mineflayer_version"),
+        "spawned_at_epoch_ms":receipt.get("spawned_at_epoch_ms"),
     },observation_path
 
 
@@ -634,6 +635,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                 )
             )
 
+        trigger_epoch_ms=None
         if activate:
             if family in STABLE_ACTIVATABLE:
                 meta=int(probe.get("legacy_metadata") or 0)
@@ -646,6 +648,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                 send(p,f"setblock {x} {y} {z} {block} {powered} replace")
                 time.sleep(4)
             elif family in PRESSURE_PLATE_ACTIVATABLE:
+                trigger_epoch_ms=int(time.time()*1000)
                 send(p,f"tp SupraPlateBot {x + 0.5} {y + 0.05} {z + 0.5}")
                 time.sleep(0.25)
                 live_sensor_query=live_testforblock(p,log_path,probe,1)
@@ -674,6 +677,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                     )
         else:
             if family in PRESSURE_PLATE_ACTIVATABLE:
+                trigger_epoch_ms=int(time.time()*1000)
                 # Match the activation arm's teleport/movement command without
                 # entering the authored mechanism: remain on the neutral barrier.
                 send(p,f"tp SupraPlateBot {nx + 0.5} 250.05 {nz + 0.5}")
@@ -750,6 +754,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
         "player_actor":player_actor,
         "player_sensor_observation":player_sensor_observation,
         "diagnostic_success_observation":diagnostic_success_observation,
+        "trigger_epoch_ms":trigger_epoch_ms,
     }
 
 def main():
@@ -824,6 +829,10 @@ def main():
               "diagnostic_success_observation":{
                   "control":control.get("diagnostic_success_observation",{}),
                   "activated":active.get("diagnostic_success_observation",{}),
+              },
+              "trigger_epoch_ms":{
+                  "control":control.get("trigger_epoch_ms"),
+                  "activated":active.get("trigger_epoch_ms"),
               },
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
