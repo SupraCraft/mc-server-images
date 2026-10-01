@@ -48,6 +48,25 @@ class ModernSymbolInventoryTests(unittest.TestCase):
         rows = mod.candidate_methods("server_tick_host", methods)
         self.assertEqual([row["name"] for row in rows], ["tickServer"])
 
+    def test_javap_parser_ignores_field_descriptors(self):
+        output = """
+        private static final org.slf4j.Logger LOGGER;
+          descriptor: Lorg/slf4j/Logger;
+        public void tickServer(java.util.function.BooleanSupplier);
+          descriptor: (Ljava/util/function/BooleanSupplier;)V
+        """
+        rows = mod.parse_javap_methods(
+            output,
+            "net.minecraft.server.MinecraftServer",
+        )
+        self.assertEqual(
+            [(row["name"], row["descriptor"]) for row in rows],
+            [(
+                "tickServer",
+                "(Ljava/util/function/BooleanSupplier;)V",
+            )],
+        )
+
     def test_symbol_inventory_schema_is_not_capability_manifest(self):
         schema = json.loads(
             (
