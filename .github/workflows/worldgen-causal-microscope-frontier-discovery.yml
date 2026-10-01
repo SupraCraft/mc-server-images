@@ -1,0 +1,225 @@
+name: worldgen causal microscope frontier discovery
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bench/worldgen/observability/**'
+      - 'tools/discover_minecraft_observability.py'
+      - 'tests/test_minecraft_observability_discovery.py'
+      - '.github/workflows/worldgen-causal-microscope-frontier-discovery.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: worldgen-causal-microscope-frontier-discovery-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.frontier.outputs.matrix }}
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Discovery contract controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v tests.test_minecraft_observability_discovery
+          python -m py_compile tools/discover_minecraft_observability.py
+
+      - name: Resolve exact Mojang frontier
+        id: frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python tools/discover_minecraft_observability.py resolve \
+            --output out/frontier-resolution.json \
+            --github-output "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-frontier-resolution
+          path: out/frontier-resolution.json
+          retention-days: 14
+
+  probe:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '${{ matrix.java_major }}'
+
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Verify provisioned Java matches exact-version requirement
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          test "${JAVA_VERSION%%.*}" = "${{ matrix.java_major }}" || {
+            echo "JAVA_VERSION=$JAVA_VERSION does not match required ${{ matrix.java_major }}"
+            exit 1
+          }
+
+      - name: Probe native observability without injected hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/runtime
+          python tools/discover_minecraft_observability.py probe \
+            --channel "${{ matrix.channel }}" \
+            --expected-version "${{ matrix.minecraft_version }}" \
+            --expected-java "${{ matrix.java_major }}" \
+            --work-dir out/runtime \
+            --output out/discovery.json
+
+      - name: Validate discovery receipt boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          doc=json.loads(pathlib.Path("out/discovery.json").read_text())
+          assert doc["schema"]=="supracraft-causal-version-discovery/1"
+          assert doc["fail_closed"] is True
+          assert doc["qualification_status"]=="discovery_only_not_adapter_qualified"
+          assert doc["artifact_provenance"]["server_sha1_expected"]==doc["artifact_provenance"]["server_sha1_observed"]
+          assert doc["native_observability"]["minecraft_event_count"]==len(
+              doc["native_observability"]["minecraft_events"]
+          )
+          required={
+              "tick_boundary","block_state_write","neighbor_notify",
+              "scheduled_tick_enqueue","scheduled_tick_execute",
+              "redstone_power_query","block_power_query","wire_recompute",
+              "command_block_neighbor","command_block_scheduled_tick",
+              "command_trigger","command_execute","packet_send","packet_receive",
+          }
+          rows={x["event_family"]:x for x in doc["semantic_coverage"]}
+          assert set(rows)==required
+          assert all(x["status"] in {"native_candidate","missing"} for x in rows.values())
+          assert not any(x["status"]=="qualified" for x in rows.values())
+          print(json.dumps({
+              "minecraft_version":doc["minecraft_version"],
+              "channel":doc["channel"],
+              "java_major":doc["java_major"],
+              "symbol_mode":doc["symbol_mode"],
+              "native_minecraft_jfr_events":doc["native_observability"]["minecraft_events"],
+              "missing_direct_hook_families":[
+                  name for name,row in rows.items() if row["direct_hook_required"]
+              ],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: causal-microscope-frontier-${{ matrix.channel }}
+          path: |
+            out/discovery.json
+            out/runtime/jfr-metadata.txt
+            out/runtime/jfr-summary.txt
+            out/runtime/runtime/server.log
+          retention-days: 14
+
+  summarize:
+    needs: probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: causal-microscope-frontier-*
+          path: out/frontier
+          merge-multiple: false
+
+      - name: Summarize exact frontier gaps
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/discover_minecraft_observability.py summarize \
+            --root out/frontier \
+            --output out/frontier-summary.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-frontier-summary
+          path: out/frontier-summary.json
+          retention-days: 14
