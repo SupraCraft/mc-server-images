@@ -441,6 +441,38 @@ def command_targets(parts, command_origin):
             out.append({"kind": kind, "position": pos, "coordinate_mode": "resolved_absolute_or_relative"})
     return out
 
+SETBLOCK_COMPACT_STATE_CLASS = {
+    "redstone_block": "redstone_block",
+    "minecraft:redstone_block": "redstone_block",
+    "152": "redstone_block",
+    "air": "air",
+    "minecraft:air": "air",
+    "0": "air",
+}
+
+
+def command_authored_world_state_writes(parts, command_origin):
+    """Return compact exact setblock writes without retaining raw arguments.
+
+    Only state classes required for bounded causal qualification are retained.
+    Other authored block payloads remain represented by the existing verb/hash
+    and resolved command-world target edges.
+    """
+    if len(parts) < 5 or parts[0].lower().lstrip("/") != "setblock":
+        return []
+    pos=resolve_xyz(parts[1:4],command_origin)
+    if pos is None or not all(float(v).is_integer() for v in pos):
+        return []
+    state_class=SETBLOCK_COMPACT_STATE_CLASS.get(parts[4].lower())
+    if state_class is None:
+        return []
+    return [{
+        "position":[int(v) for v in pos],
+        "state_class":state_class,
+        "write_kind":"setblock",
+    }]
+
+
 
 def read_scoreboard(world: Path):
     # Since Java 26.1 persistent saved data is namespaced under data/<namespace>/.
@@ -610,6 +642,68 @@ def legacy_direct_redstone_edges(machinery):
     return edges
 
 
+def legacy_command_authored_redstone_edges(machinery):
+    """Recover exact power relations from compact setblock redstone-block writes.
+
+    Minecraft 1.8.8 CommandSetBlock notifies neighbors after a successful write.
+    BlockCompressedPowered supplies weak power 15 on every side. This permits
+    only two bounded relations here: an adjacent legacy command block, which
+    rechecks World.isBlockPowered on neighbor change, and a horizontal diode
+    whose exact decoded rear input is the authored redstone-block coordinate.
+    """
+    edges=[]
+    all_sides=((1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1))
+    diode_families={"repeater_off","repeater_on","comparator_off","comparator_on"}
+
+    for source_pos,node in machinery.items():
+        command=node.get("command") or {}
+        for write in command.get("authored_world_state_writes",[]):
+            if write.get("state_class")!="redstone_block":
+                continue
+            raw_pos=write.get("position")
+            if not isinstance(raw_pos,list) or len(raw_pos)!=3:
+                continue
+            target_pos=tuple(int(v) for v in raw_pos)
+
+            for delta in all_sides:
+                q=add_pos(target_pos,delta)
+                downstream=machinery.get(q)
+                if downstream is None:
+                    continue
+                family=downstream.get("family")
+                if family=="command_block":
+                    edges.append({
+                        "source":node_id(source_pos),
+                        "target":node_id(q),
+                        "edge_type":"legacy_setblock_redstone_block_direct_command_power",
+                        "certainty":"strong",
+                        "authored_target_position":list(target_pos),
+                        "basis":(
+                            "exact Minecraft 1.8.8 CommandSetBlock neighbor notification; "
+                            "BlockCompressedPowered weak power 15; "
+                            "BlockCommandBlock.onNeighborBlockChange uses World.isBlockPowered"
+                        ),
+                    })
+                    continue
+
+                if family in diode_families:
+                    facing=downstream.get("metadata_semantics",{}).get("facing_vector")
+                    if facing and add_pos(q,tuple(facing))==target_pos:
+                        edges.append({
+                            "source":node_id(source_pos),
+                            "target":node_id(q),
+                            "edge_type":"legacy_setblock_redstone_block_diode_rear_input",
+                            "certainty":"strong",
+                            "authored_target_position":list(target_pos),
+                            "basis":(
+                                "exact Minecraft 1.8.8 CommandSetBlock neighbor notification; "
+                                "BlockCompressedPowered weak power 15; "
+                                "BlockRedstoneDiode.calculateInputStrength reads pos.offset(FACING)"
+                            ),
+                        })
+    return edges
+
+
 def analyze(world: Path):
     machinery = {}
     tile_entities = {}
@@ -723,6 +817,9 @@ def analyze(world: Path):
             "presentation_payload_fingerprints":presentation_payload_fingerprints(
                 command,verb
             ),
+            "authored_world_state_writes":command_authored_world_state_writes(
+                parts,pos
+            ),
         }
         if verb == "scoreboard" and len(parts) >= 3:
             scoreboard_ops[" ".join(parts[1:3]).lower()] += 1
@@ -779,6 +876,9 @@ def analyze(world: Path):
 
     directed_edges = []
     direct_redstone_edges = legacy_direct_redstone_edges(machinery)
+    command_authored_redstone_edges = legacy_command_authored_redstone_edges(
+        machinery
+    )
     comparator_container_reads = []
     trapped_open_power_edges = []
     command_chain_edges = []
@@ -942,6 +1042,7 @@ def analyze(world: Path):
             "physical_adjacency_candidate_count": len(adjacency),
             "oriented_signal_edge_count": len(directed_edges),
             "direct_redstone_edge_count": len(direct_redstone_edges),
+            "command_authored_redstone_edge_count": len(command_authored_redstone_edges),
             "command_world_target_count": len(explicit_target_edges),
             "command_chain_edge_count": len(command_chain_edges),
             "container_comparator_read_count": len(comparator_container_reads),
@@ -950,6 +1051,7 @@ def analyze(world: Path):
             "physical_adjacency_candidates": adjacency,
             "oriented_signal_candidates": directed_edges,
             "direct_redstone_edges": direct_redstone_edges,
+            "command_authored_redstone_edges": command_authored_redstone_edges,
             "command_world_targets": explicit_target_edges,
             "command_chain_candidates": command_chain_edges,
             "container_comparator_reads": comparator_container_reads,
@@ -959,7 +1061,7 @@ def analyze(world: Path):
         "nodes": sorted(machinery.values(), key=lambda n: tuple(n["position"])),
         "limitations": [
             "Physical adjacency is not equivalent to powered redstone connectivity or causal direction.",
-            "Repeater/comparator metadata ports, command-block facing, exact 1.8.8 button attachment direction, exact 1.8.8 pressure-plate stored/output power semantics, and the exact 1.8.8 powered-wire-above to legacy-command-block-below relation are decoded. Same-level dust continuity, direct sensor/dust/component relations, button-to-attached-support power, and pressure-plate-to-support power are recovered separately; other vertical dust steps, opaque solid-block conduction beyond these exact relations, locking/side-input behavior, and quasi-connectivity remain incomplete.",
+            "Repeater/comparator metadata ports, command-block facing, exact 1.8.8 button attachment direction, exact 1.8.8 pressure-plate stored/output power semantics, exact powered-wire-above to legacy-command-block-below power, and exact setblock-authored redstone-block direct power into adjacent legacy command blocks / decoded diode rear inputs are recovered. Same-level dust continuity, direct sensor/dust/component relations, button-to-attached-support power, and pressure-plate-to-support power are recovered separately; other dynamic block writes, vertical dust steps, opaque solid-block conduction beyond these exact relations, locking/side-input behavior, and quasi-connectivity remain incomplete.",
             "Trapped-chest opening power and comparator inventory/fullness reads are represented as distinct causal channels.",
             "Direct command coordinates including tilde-relative coordinates are resolved where the command-block origin is sufficient; nested execute contexts remain dynamic and unresolved.",
             "Scoreboard objectives/reads/writes are semantic-state graph nodes, but selector expansion and all player/entity instances are not statically resolved.",
