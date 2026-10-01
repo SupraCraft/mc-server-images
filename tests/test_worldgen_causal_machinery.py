@@ -13,14 +13,29 @@ spec.loader.exec_module(causal)
 class CausalMachineryPrimitiveTests(unittest.TestCase):
     def test_repeater_metadata_decodes_orientation_delay_and_power(self):
         d=causal.metadata_semantics("repeater_on", 0b1001)
-        self.assertEqual("east", d["facing"])
-        self.assertEqual([1,0,0], d["facing_vector"])
+        self.assertEqual("west", d["facing"])
+        self.assertEqual([-1,0,0], d["facing_vector"])
         self.assertEqual(3, d["delay_redstone_ticks"])
         self.assertTrue(d["powered"])
 
+    def test_exact_1_8_8_horizontal_diode_metadata_uses_s_w_n_e_order(self):
+        expected={
+            0:("south",[0,0,1]),
+            1:("west",[-1,0,0]),
+            2:("north",[0,0,-1]),
+            3:("east",[1,0,0]),
+        }
+        for meta,(facing,vector) in expected.items():
+            for family in ("repeater_off","comparator_off"):
+                with self.subTest(meta=meta,family=family):
+                    d=causal.metadata_semantics(family,meta)
+                    self.assertEqual(facing,d["facing"])
+                    self.assertEqual(vector,d["facing_vector"])
+
     def test_comparator_metadata_separates_mode_and_power(self):
         d=causal.metadata_semantics("comparator_off", 0b0110)
-        self.assertEqual("south", d["facing"])
+        self.assertEqual("north", d["facing"])
+        self.assertEqual([0,0,-1], d["facing_vector"])
         self.assertEqual("subtract", d["mode"])
         self.assertFalse(d["powered"])
 
