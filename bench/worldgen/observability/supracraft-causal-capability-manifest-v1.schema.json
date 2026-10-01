@@ -13,65 +13,61 @@
     "java_major",
     "symbol_mode",
     "fail_closed",
-    "mapping_provenance",
     "bindings"
   ],
+  "oneOf": [
+    {
+      "required": ["mapping_provenance"],
+      "not": {"required": ["artifact_provenance"]}
+    },
+    {
+      "required": ["artifact_provenance"],
+      "not": {"required": ["mapping_provenance"]}
+    }
+  ],
   "properties": {
-    "schema": {
-      "const": "supracraft-causal-capability-manifest/1"
-    },
-    "adapter_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9._-]+$"
-    },
-    "minecraft_version": {
-      "type": "string"
-    },
-    "edition": {
-      "const": "java"
-    },
-    "side": {
-      "const": "dedicated_server"
-    },
-    "java_major": {
-      "type": "integer",
-      "minimum": 8
-    },
+    "schema": {"const": "supracraft-causal-capability-manifest/1"},
+    "adapter_id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "minecraft_version": {"type": "string"},
+    "edition": {"const": "java"},
+    "side": {"const": "dedicated_server"},
+    "java_major": {"type": "integer", "minimum": 8},
     "symbol_mode": {
-      "enum": [
-        "obfuscated",
-        "mapped",
-        "unobfuscated",
-        "structural"
-      ]
+      "enum": ["obfuscated", "mapped", "unobfuscated", "structural"]
     },
-    "fail_closed": {
-      "const": true
-    },
+    "fail_closed": {"const": true},
     "mapping_provenance": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["repository", "commit", "mapping_artifact", "mapping_blob_sha"],
+      "properties": {
+        "repository": {"type": "string"},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "mapping_artifact": {"type": "string"},
+        "mapping_blob_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "artifact_provenance": {
+      "type": "object",
+      "additionalProperties": false,
       "required": [
-        "repository",
-        "commit",
-        "mapping_artifact",
-        "mapping_blob_sha"
+        "provider",
+        "version_metadata_url",
+        "server_sha1",
+        "server_sha256",
+        "symbol_inventory_sha256",
+        "hook_structure_sha256"
       ],
       "properties": {
-        "repository": {
-          "type": "string"
-        },
-        "commit": {
+        "provider": {"const": "mojang"},
+        "version_metadata_url": {
           "type": "string",
-          "pattern": "^[0-9a-f]{40}$"
+          "pattern": "^https://piston-meta\\.mojang\\.com/"
         },
-        "mapping_artifact": {
-          "type": "string"
-        },
-        "mapping_blob_sha": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{40}$"
-        }
+        "server_sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "server_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "symbol_inventory_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "hook_structure_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
     },
     "bindings": {
@@ -81,37 +77,18 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "id",
-          "event_family",
-          "runtime_class",
-          "runtime_method",
-          "runtime_descriptor",
-          "semantic_symbol",
-          "expected_bind_count"
+          "id", "event_family", "runtime_class", "runtime_method",
+          "runtime_descriptor", "semantic_symbol", "expected_bind_count"
         ],
         "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9._-]+$"
-          },
-          "event_family": {
-            "type": "string"
-          },
-          "runtime_class": {
-            "type": "string"
-          },
-          "runtime_method": {
-            "type": "string"
-          },
-          "runtime_descriptor": {
-            "type": "string"
-          },
-          "semantic_symbol": {
-            "type": "string"
-          },
-          "expected_bind_count": {
-            "const": 1
-          }
+          "id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+          "event_family": {"type": "string"},
+          "runtime_class": {"type": "string"},
+          "runtime_method": {"type": "string"},
+          "runtime_descriptor": {"type": "string"},
+          "semantic_symbol": {"type": "string"},
+          "expected_bind_count": {"const": 1},
+          "class_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
         }
       }
     }

@@ -1,0 +1,269 @@
+name: worldgen causal microscope modern 26.3
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bench/worldgen/observability/**'
+      - 'tools/causal-microscope/modern-26.3-agent/**'
+      - 'tools/run_modern_microscope_canary.py'
+      - 'tests/test_causal_microscope_contract.py'
+      - 'probes/26.3-release-identity.json'
+      - '.github/workflows/worldgen-causal-microscope-modern-263.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: worldgen-causal-microscope-modern-263-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Contract controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v tests.test_causal_microscope_contract
+          python -m py_compile tools/run_modern_microscope_canary.py
+
+      - name: Build shaded Java 25 runtime observer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -f tools/causal-microscope/modern-26.3-agent/pom.xml \
+            -DskipTests package
+          agent="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar"
+          test -s "$agent"
+          unzip -p "$agent" META-INF/MANIFEST.MF | grep -q \
+            'Premain-Class: org.supracraft.microscope.Agent'
+          echo "MICROSCOPE_AGENT=$PWD/$agent" >> "$GITHUB_ENV"
+
+      - name: Stock exact 26.3 canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/stock out/instrumented
+          python tools/run_modern_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --output-dir out/stock
+
+      - name: Instrumented exact 26.3 canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --output-dir out/instrumented \
+            --java-agent "$MICROSCOPE_AGENT"
+
+      - name: Validate observer effect and causal ordering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import collections,json,pathlib
+          stock=json.loads(pathlib.Path("out/stock/result.json").read_text())
+          inst=json.loads(pathlib.Path("out/instrumented/result.json").read_text())
+
+          for key in (
+              "minecraft_version","java_major","canary_pass","target_position",
+              "command_block_position","command_sha256",
+          ):
+              assert stock[key]==inst[key],(key,stock[key],inst[key])
+          assert stock["instrumented"] is False
+          assert inst["instrumented"] is True
+          assert stock["canary_pass"] is True
+          assert inst["canary_pass"] is True
+          assert inst["trace_present"] is True
+
+          rows=[
+              json.loads(line)
+              for line in pathlib.Path(
+                  "out/instrumented/trace.jsonl"
+              ).read_text().splitlines()
+              if line.strip()
+          ]
+          assert rows
+          assert [r["seq"] for r in rows]==list(range(1,len(rows)+1))
+          assert rows[0]["event_type"]=="trace_start"
+          assert rows[-1]["event_type"]=="trace_end"
+          assert rows[-1]["data"]["dropped_events"]==0
+
+          counts=collections.Counter(r["event_type"] for r in rows)
+          for required in (
+              "tick_start","tick_end","block_state_write",
+              "command_block_neighbor","command_block_scheduled_tick",
+              "command_trigger_start","command_trigger_end",
+              "command_dispatch",
+          ):
+              assert counts[required]>0,(required,counts)
+
+          command_hash=inst["command_sha256"]
+          triggers=[
+              r for r in rows
+              if r["event_type"]=="command_trigger_start"
+              and r["data"].get("command_sha256")==command_hash
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert triggers
+          start=triggers[0]
+          ends=[
+              r for r in rows
+              if r["event_type"]=="command_trigger_end"
+              and r["seq"]>start["seq"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert ends
+          end=ends[0]
+          target_writes=[
+              r for r in rows
+              if r["event_type"]=="block_state_write"
+              and start["seq"]<r["seq"]<end["seq"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["target_position"]
+          ]
+          assert target_writes
+          target=target_writes[0]
+          assert start["tick"]==target["tick"]==end["tick"]
+
+          scheduled=[
+              r for r in rows
+              if r["event_type"]=="command_block_scheduled_tick"
+              and r["seq"]<start["seq"]
+              and r["tick"]==start["tick"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert scheduled
+          neighbours=[
+              r for r in rows
+              if r["event_type"]=="command_block_neighbor"
+              and r["seq"]<start["seq"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert neighbours
+          dispatch=[
+              r for r in rows
+              if r["event_type"]=="command_dispatch"
+              and r["data"].get("command_sha256")==command_hash
+          ]
+          assert dispatch
+
+          tick_starts=[
+              r for r in rows
+              if r["event_type"]=="tick_start"
+              and r["tick"]==start["tick"]
+          ]
+          tick_ends=[
+              r for r in rows
+              if r["event_type"]=="tick_end"
+              and r["tick"]==start["tick"]
+          ]
+          assert tick_starts and tick_ends
+          assert (
+              tick_starts[0]["seq"]
+              < start["seq"]
+              < end["seq"]
+              < tick_ends[-1]["seq"]
+          )
+
+          overhead=(
+              inst["elapsed_seconds"]/stock["elapsed_seconds"]
+              if stock["elapsed_seconds"] else None
+          )
+          report={
+              "schema":"supracraft-modern-microscope-observer-ab/1",
+              "minecraft_version":"26.3",
+              "semantic_divergence":False,
+              "stock_canary_pass":stock["canary_pass"],
+              "instrumented_canary_pass":inst["canary_pass"],
+              "command_tick":start["tick"],
+              "causal_seq":{
+                  "neighbor":neighbours[-1]["seq"],
+                  "scheduled_tick":scheduled[-1]["seq"],
+                  "command_trigger_start":start["seq"],
+                  "target_write":target["seq"],
+                  "command_trigger_end":end["seq"],
+              },
+              "event_counts":dict(sorted(counts.items())),
+              "dropped_events":0,
+              "stock_elapsed_seconds":stock["elapsed_seconds"],
+              "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+              "elapsed_ratio":(
+                  round(overhead,6) if overhead is not None else None
+              ),
+              "boundary":"observer A/B plus event order supports the canary mechanism only; it does not promote unobserved redstone, packet, client, or human semantics",
+          }
+          pathlib.Path("out/observer-ab-report.json").write_text(
+              json.dumps(report,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: causal-microscope-modern-26.3
+          path: |
+            bench/worldgen/observability/modern-26.3-java25-capability-manifest.json
+            out/stock/result.json
+            out/instrumented/result.json
+            out/instrumented/trace.jsonl
+            out/observer-ab-report.json
+          retention-days: 14
