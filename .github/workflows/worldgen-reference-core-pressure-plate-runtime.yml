@@ -162,6 +162,23 @@ jobs:
               assert observations["control"]["positive_metadata_observed"] is False
               assert observations["activated"]["positive_metadata_observed"] is True
               assert observations["activated"]["max_legacy_metadata"] >= 1
+              for arm in ("control","activated"):
+                  feedback=observations[arm]["client_feedback"]
+                  assert set(feedback)=={
+                      "message_events","self_effect_events","truncated"
+                  }
+                  for message in feedback["message_events"]:
+                      assert set(message)=={"sha256","position"}
+                      assert len(message["sha256"])==64
+                  for effect in feedback["self_effect_events"]:
+                      assert set(effect)=={
+                          "event","id","amplifier","duration"
+                      }
+                      assert effect["event"] in {"start","end"}
+                      assert all(
+                          isinstance(effect[field],int)
+                          for field in ("id","amplifier","duration")
+                      )
               assert row["evidence"]["live_sensor_activation_observed"] is True
 
               scope=set(row.get("world_target_source_scope",[]))
@@ -204,6 +221,45 @@ jobs:
                       "control_success_count","activated_success_count",
                   }
 
+              client_delta=row["client_feedback_delta"]
+              assert set(client_delta)=={
+                  "message_events_added","message_events_removed",
+                  "self_effect_events_added","self_effect_events_removed",
+                  "control_truncated","activated_truncated",
+              }
+              assert client_delta["control_truncated"] is False
+              assert client_delta["activated_truncated"] is False
+              for item in (
+                  client_delta["message_events_added"]+
+                  client_delta["message_events_removed"]
+              ):
+                  assert set(item)=={"sha256","position","count"}
+                  assert len(item["sha256"])==64
+                  assert item["count"] > 0
+              for item in (
+                  client_delta["self_effect_events_added"]+
+                  client_delta["self_effect_events_removed"]
+              ):
+                  assert set(item)=={
+                      "event","id","amplifier","duration","count"
+                  }
+                  assert item["event"] in {"start","end"}
+                  assert item["count"] > 0
+              assert row["evidence"]["client_message_delta_observed"]==bool(
+                  client_delta["message_events_added"] or
+                  client_delta["message_events_removed"]
+              )
+              assert row["evidence"]["client_self_effect_delta_observed"]==bool(
+                  client_delta["self_effect_events_added"] or
+                  client_delta["self_effect_events_removed"]
+              )
+              assert row["evidence"]["client_feedback_delta_observed"]==bool(
+                  client_delta["message_events_added"] or
+                  client_delta["message_events_removed"] or
+                  client_delta["self_effect_events_added"] or
+                  client_delta["self_effect_events_removed"]
+              )
+
           print(json.dumps({
               "selected":[
                   {
@@ -224,6 +280,7 @@ jobs:
                       "command_block_change_count":x["evidence"]["command_block_change_count"],
                       "world_target_change_count":x["evidence"]["world_target_change_count"],
                       "presentation_feedback_command_state_changes":x["presentation_feedback_command_state_changes"],
+                      "client_feedback_delta":x["client_feedback_delta"],
                       "outcome_class":x["execution_receipt"]["outcome_class"],
                   }
                   for x in d["results"]
