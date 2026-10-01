@@ -89,7 +89,8 @@ function recordMessage (message, messagePosition) {
     sha256: crypto.createHash('sha256').update(String(message)).digest('hex'),
     position: messagePosition === undefined || messagePosition === null
       ? null
-      : String(messagePosition)
+      : String(messagePosition),
+    observed_at_epoch_ms: Date.now()
   })
 }
 
@@ -168,7 +169,8 @@ function recordSelfEffect (event, entity, effect) {
     event,
     id,
     amplifier,
-    duration
+    duration,
+    observed_at_epoch_ms: Date.now()
   })
 }
 
@@ -228,7 +230,8 @@ bot.once('spawn', () => {
     protocol_version: Number(bot.protocolVersion),
     initial_position: bot.entity && bot.entity.position
       ? bot.entity.position.toArray().map(x => Number(x.toFixed(3)))
-      : null
+      : null,
+    spawned_at_epoch_ms: Date.now()
   })
   if (observation) {
     observationTimer = setInterval(() => {
