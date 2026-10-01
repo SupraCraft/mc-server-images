@@ -74,6 +74,63 @@ def checked_command(process: subprocess.Popen[str], line: str, stage: str,
         fail_early(stage,process,log_path,output_dir,exc)
 
 
+def wait_for_state_marker(
+    process: subprocess.Popen[str],
+    log_path: Path,
+    output_dir: Path,
+    marker: str,
+    probe_command: str,
+    stage: str,
+    timeout_seconds: float=8.0,
+    poll_seconds: float=0.20,
+) -> tuple[int,float]:
+    """Poll an exact server-side state condition until its marker is observed."""
+    started=time.monotonic()
+    deadline=started+timeout_seconds
+    attempts=0
+    while time.monotonic()<deadline:
+        if process.poll() is not None:
+            fail_early(stage,process,log_path,output_dir)
+        checked_command(
+            process,f"{probe_command} run say {marker}",
+            stage,log_path,output_dir,
+        )
+        attempts+=1
+        window=min(deadline,time.monotonic()+poll_seconds)
+        while time.monotonic()<window:
+            if process.poll() is not None:
+                fail_early(stage,process,log_path,output_dir)
+            if log_path.exists() and marker in log_path.read_text(
+                "utf-8",errors="replace"
+            ):
+                return attempts,time.monotonic()-started
+            time.sleep(0.05)
+
+    server_log=log_path.read_text("utf-8",errors="replace") if log_path.exists() else ""
+    receipt={
+        "schema":"supracraft-modern-microscope-state-timeout/1",
+        "stage":stage,
+        "marker_observed":False,
+        "attempts":attempts,
+        "timeout_seconds":timeout_seconds,
+        "process_exit_code":process.poll(),
+        "server_log_sha256":hashlib.sha256(
+            server_log.encode("utf-8",errors="replace")
+        ).hexdigest(),
+        "diagnostic_lines":bounded_diagnostics(server_log),
+        "boundary":"bounded state-poll timeout receipt excludes raw console commands and authored payload text",
+    }
+    (output_dir/"diagnostic.json").write_text(
+        json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+    )
+    print("CANARY_STATE_TIMEOUT_DIAGNOSTIC")
+    print(json.dumps(receipt,indent=2,sort_keys=True))
+    raise SystemExit(
+        f"modern microscope state condition timed out during {stage}; "
+        f"attempts={attempts}"
+    )
+
+
 def main() -> None:
     ap=argparse.ArgumentParser()
     ap.add_argument("--evidence",type=Path,required=True)
@@ -180,12 +237,11 @@ def main() -> None:
                 p,"setblock 0 99 0 minecraft:redstone_block","activate_canary",
                 log_path,args.output_dir,
             )
-            time.sleep(2)
-            checked_command(
-                p,
-                "execute if block 4 100 0 minecraft:redstone_block "
-                "run say SUPRACRAFT_MICROSCOPE_CANARY_PASS",
-                "verify_target",log_path,args.output_dir,
+            verification_attempts,target_wait_seconds=wait_for_state_marker(
+                p,log_path,args.output_dir,
+                "SUPRACRAFT_MICROSCOPE_CANARY_PASS",
+                "execute if block 4 100 0 minecraft:redstone_block",
+                "verify_target",
             )
             checked_command(
                 p,"save-all flush","save_flush",log_path,args.output_dir
@@ -226,6 +282,8 @@ def main() -> None:
             "command_sha256":digest_bytes(CANARY_COMMAND),
             "ready_seconds":round(ready_seconds,6),
             "elapsed_seconds":round(elapsed,6),
+            "verification_attempts":verification_attempts,
+            "target_wait_seconds":round(target_wait_seconds,6),
             "trace_present":trace_path.is_file(),
             "boundary":"world-target equality is observer-effect evidence; trace ordering remains separate causal evidence",
         }
