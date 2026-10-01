@@ -195,9 +195,17 @@ jobs:
           assert literal_matches["388,85,-75"]["static_support"][
               "388,85,-75"
           ]["support_class"]=="trusted"
-          assert literal_matches["392,86,-63"]["static_support"][
+          second_support=literal_matches["392,86,-63"]["static_support"][
               "392,86,-63"
-          ]["support_class"]=="none"
+          ]
+          assert second_support["support_class"]=="trusted"
+          assert second_support["trusted_path"]["hop_count"] > 32
+          assert any(
+              step["edge_type"]==(
+                  "legacy_repeater_through_command_block_to_dust_power"
+              )
+              for step in second_support["trusted_path"]["steps"]
+          )
           assert literal["calibration_class"]==(
               "runtime_feedback_with_trusted_static_path"
           )
