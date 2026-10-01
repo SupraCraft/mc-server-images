@@ -19,6 +19,10 @@ on:
       - 'bench/worldgen/interaction/exact-1.8.8-pressure-plate-source-evidence-v0.json'
       - '.github/workflows/worldgen-reference-core-pressure-plate-runtime.yml'
 
+concurrency:
+  group: worldgen-core-pressure-runtime-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   actions: read
