@@ -113,6 +113,17 @@ jobs:
               assert actor["protocol_version"]==47
               assert actor["mineflayer_version"]=="4.39.0"
 
+          setup=d["fixture_setup_verification"]
+          for arm in ("control","activated"):
+              assert setup[arm]["all_matched"] is True
+              assert set(setup[arm]["checks"])=={
+                  "trapped_chest","wire_unpowered","command_block","target_air"
+              }
+              assert all(
+                  row["matched"] is True
+                  for row in setup[arm]["checks"].values()
+              )
+
           control=d["sensor_observation"]["control"]
           active=d["sensor_observation"]["activated"]
           assert control["schema"]=="supracraft-legacy-trapped-chest-observation/1"
