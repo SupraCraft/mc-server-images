@@ -278,17 +278,6 @@ def run_trial(server_jar: Path, trial_dir: Path, actor_script: Path, activate: b
             )
             time.sleep(0.5)
 
-        send(server,"save-all")
-        time.sleep(1)
-        snap=snapshot(
-            trial_dir/"world",
-            CHEST,
-            sensor_node_id="0,65,0",
-            target_command_ids={"2,65,0"},
-            radius=16,
-        )
-        inventory=tile_inventory_fingerprint(trial_dir/"world",CHEST)
-
         if actor_proc.poll() is None:
             actor_proc.terminate()
             try:
@@ -298,12 +287,26 @@ def run_trial(server_jar: Path, trial_dir: Path, actor_script: Path, activate: b
                 actor_proc.wait(timeout=5)
         actor_log.close()
 
+        # The live open-count and wire witnesses are already captured above.
+        # Flush and stop before reading Anvil/NBT so freshly materialized
+        # command/tile entities are compared from equally durable worlds.
+        send(server,"save-all")
+        time.sleep(1)
         send(server,"stop")
         rc=server.wait(timeout=60)
 
     server_text=log_path.read_text("utf-8",errors="replace")
     if rc!=0 or "Exception in server tick loop" in server_text:
         raise RuntimeError(f"trapped-chest fixture trial failed activate={activate} rc={rc}")
+
+    snap=snapshot(
+        trial_dir/"world",
+        CHEST,
+        sensor_node_id="0,65,0",
+        target_command_ids={"2,65,0"},
+        radius=16,
+    )
+    inventory=tile_inventory_fingerprint(trial_dir/"world",CHEST)
     return {
         "ready_seconds":round(ready,3),
         "player_actor":actor,
