@@ -70,7 +70,7 @@ def path_graphs(doc,nodes):
     return trusted,candidate
 
 
-def shortest_path(graph,start,targets,max_hops=32):
+def shortest_path(graph,start,targets,max_hops=64):
     if start not in graph and start not in targets:
         # A node with no outgoing edges can still be a valid start, but cannot
         # reach a distinct target.
