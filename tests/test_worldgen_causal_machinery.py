@@ -144,6 +144,29 @@ class CausalMachineryPrimitiveTests(unittest.TestCase):
         self.assertIn(("2,0,0","3,0,0","legacy_dust_direct_component_power"),triples)
         self.assertNotIn(("1,0,0","0,0,0","legacy_sensor_direct_dust_power"),triples)
 
+    def test_exact_1_8_8_wire_above_command_power_is_strong_and_directional(self):
+        wire=(302,95,-67)
+        command_below=(302,94,-67)
+        command_above=(302,96,-67)
+        side_command=(303,95,-67)
+        machinery={
+            wire:{"family":"redstone_wire"},
+            command_below:{"family":"command_block"},
+            command_above:{"family":"command_block"},
+            side_command:{"family":"command_block"},
+        }
+        edges=causal.legacy_direct_redstone_edges(machinery)
+        exact=[
+            e for e in edges
+            if e["edge_type"]=="legacy_dust_downward_command_power"
+        ]
+        self.assertEqual(1,len(exact))
+        self.assertEqual("302,95,-67",exact[0]["source"])
+        self.assertEqual("302,94,-67",exact[0]["target"])
+        self.assertEqual("strong",exact[0]["certainty"])
+        self.assertFalse(any(e["target"]=="302,96,-67" for e in exact))
+        self.assertFalse(any(e["target"]=="303,95,-67" for e in exact))
+
     def test_repeater_and_comparator_are_not_bypassed_as_generic_wire_sinks(self):
         machinery={
             (0,0,0):{"family":"redstone_wire"},
