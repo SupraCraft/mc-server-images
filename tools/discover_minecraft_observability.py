@@ -175,7 +175,7 @@ def java_executable(name: str) -> str:
     return found
 
 
-def detect_jfr_profile_flag(server_jar: Path) -> bool:
+def detect_jfr_profile_option(server_jar: Path) -> str | None:
     java = java_executable("java")
     proc = subprocess.run(
         [java, "-jar", str(server_jar.resolve()), "--help"],
@@ -186,14 +186,17 @@ def detect_jfr_profile_flag(server_jar: Path) -> bool:
         check=False,
     )
     output = proc.stdout or ""
-    return "jfrProfile" in output or "jfr-profile" in output
+    for option in ("--jfrProfile", "--jfr-profile"):
+        if option in output:
+            return option
+    return None
 
 
 def run_native_jfr_probe(
     server_jar: Path,
     run_dir: Path,
     *,
-    use_minecraft_jfr_profile: bool,
+    minecraft_jfr_profile_option: str | None,
 ) -> tuple[Path, str, str]:
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
@@ -218,8 +221,8 @@ def run_native_jfr_probe(
     cmd = [java, "-Xms512M", "-Xmx1536M", "-jar", str(server_jar.resolve())]
     activation_mode = "minecraft_jfr_profile_flag"
     external_recording = run_dir / "external-discovery.jfr"
-    if use_minecraft_jfr_profile:
-        cmd.append("--jfrProfile")
+    if minecraft_jfr_profile_option:
+        cmd.append(minecraft_jfr_profile_option)
     else:
         activation_mode = "external_jfr_fallback"
         cmd.insert(
@@ -339,7 +342,7 @@ def build_discovery_receipt(
     *,
     symbol_mode: str,
     symbol_witnesses: list[str],
-    jfr_profile_flag_detected: bool,
+    jfr_profile_option: str | None,
     activation_mode: str,
     recording: Path,
     native_events: list[str],
@@ -364,7 +367,8 @@ def build_discovery_receipt(
             "server_size": server_jar.stat().st_size,
         },
         "native_observability": {
-            "jfr_profile_flag_detected": jfr_profile_flag_detected,
+            "jfr_profile_flag_detected": jfr_profile_option is not None,
+            "jfr_profile_option": jfr_profile_option,
             "activation_mode": activation_mode,
             "recording_file": recording.name,
             "minecraft_event_count": len(native_events),
@@ -421,11 +425,11 @@ def probe_command(args: argparse.Namespace) -> None:
     download_verified(row, server_jar)
     classes = server_class_entries(server_jar)
     symbol_mode, witnesses = detect_symbol_mode(classes)
-    jfr_flag = detect_jfr_profile_flag(server_jar)
+    jfr_option = detect_jfr_profile_option(server_jar)
     recording, metadata, summary = run_native_jfr_probe(
         server_jar,
         work / "runtime",
-        use_minecraft_jfr_profile=jfr_flag,
+        minecraft_jfr_profile_option=jfr_option,
     )
     native_events = parse_minecraft_jfr_event_names(metadata)
 
@@ -436,9 +440,11 @@ def probe_command(args: argparse.Namespace) -> None:
         server_jar,
         symbol_mode=symbol_mode,
         symbol_witnesses=witnesses,
-        jfr_profile_flag_detected=jfr_flag,
+        jfr_profile_option=jfr_option,
         activation_mode=(
-            "minecraft_jfr_profile_flag" if jfr_flag else "external_jfr_fallback"
+            "minecraft_jfr_profile_flag"
+            if jfr_option
+            else "external_jfr_fallback"
         ),
         recording=recording,
         native_events=native_events,
