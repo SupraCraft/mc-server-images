@@ -328,6 +328,19 @@ class RuntimeCausalCalibrationTests(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertEqual(41,len(path))
 
+    def test_runtime_path_search_horizon_remains_bounded_at_64_hops(self):
+        graph={}
+        for i in range(66):
+            graph[f"n{i}"]=[]
+        for i in range(65):
+            graph[f"n{i}"].append((
+                f"n{i+1}",
+                {"edge_type":"exact","certainty":"adequate"},
+            ))
+        self.assertIsNone(cal.shortest_path(graph,"n0",{"n65"}))
+        self.assertIsNotNone(cal.shortest_path(graph,"n0",{"n64"}))
+        self.assertEqual(64,len(cal.shortest_path(graph,"n0",{"n64"})))
+
 
 
 if __name__=="__main__":
