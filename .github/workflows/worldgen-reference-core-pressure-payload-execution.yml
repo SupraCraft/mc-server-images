@@ -177,7 +177,7 @@ jobs:
 
           timeline=row["diagnostic_success_observation"]
           assert set(timeline)=={"control","activated"}
-          checkpoints=("pre_trigger","t250ms","t1000ms","t3500ms")
+          checkpoints=("pre_trigger","t250ms","t1000ms","t3500ms","t15000ms")
           sentinel=2147483647
           for arm in ("control","activated"):
               assert set(timeline[arm])==set(checkpoints)
