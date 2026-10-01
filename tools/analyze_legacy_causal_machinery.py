@@ -117,11 +117,13 @@ KNOWN_LEGACY_VANILLA_VERBS = set(COMMAND_ROLE) | {
 
 ABS_INT = re.compile(r"^-?\d+$")
 ABS_NUM = re.compile(r"^-?(?:\d+(?:\.\d*)?|\.\d+)$")
+# Minecraft 1.8.8 EnumFacing.getHorizontal indexes HORIZONTALS in
+# S-W-N-E order. Repeaters and comparators serialize FACING with that index.
 DIR4 = {
-    0: ("north", (0, 0, -1)),
-    1: ("east", (1, 0, 0)),
-    2: ("south", (0, 0, 1)),
-    3: ("west", (-1, 0, 0)),
+    0: ("south", (0, 0, 1)),
+    1: ("west", (-1, 0, 0)),
+    2: ("north", (0, 0, -1)),
+    3: ("east", (1, 0, 0)),
 }
 DIR6 = {
     0: ("down", (0, -1, 0)),
