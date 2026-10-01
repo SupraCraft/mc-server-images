@@ -10,7 +10,7 @@ on:
       runtime_source_run_id:
         description: Accepted exact-1.8.8 pressure runtime run
         required: true
-        default: "36886202606"
+        default: "36890898790"
   pull_request:
     branches:
       - main
@@ -35,7 +35,7 @@ jobs:
     env:
       WORLDGEN_RUNNER_LABEL: ubuntu-latest
       DEFAULT_STATIC_SOURCE_RUN_ID: "36559943983"
-      DEFAULT_RUNTIME_SOURCE_RUN_ID: "36886202606"
+      DEFAULT_RUNTIME_SOURCE_RUN_ID: "36890898790"
 
     steps:
       - name: Fail closed outside public standard runners
@@ -154,8 +154,32 @@ jobs:
           )
           assert hard["runtime_feedback"]["self_effect_delta_observed"] is True
           assert hard["runtime_feedback"][
+              "presentation_delivery_candidate_observed"
+          ] is True
+          assert hard["runtime_feedback"][
               "scoped_feedback_command_state_change_count"
           ]==2
+
+          death=next(w for w in d["witnesses"] if w["probe_node_id"]=="327,75,-23")
+          assert death["runtime_feedback"]["outcome_event_delta_observed"] is True
+          assert death["runtime_feedback"][
+              "presentation_delivery_candidate_observed"
+          ] is False
+          assert death["runtime_feedback"]["protocol_semantic_class_counts"]=={
+              "death":1
+          }
+          assert death["calibration_class"]=="no_runtime_feedback_witness"
+
+          literal=next(w for w in d["witnesses"] if w["probe_node_id"]=="392,109,-86")
+          assert literal["runtime_feedback"][
+              "presentation_delivery_candidate_observed"
+          ] is True
+          assert literal["runtime_feedback"]["protocol_semantic_class_counts"]=={
+              "literal_text":2
+          }
+          assert literal["calibration_class"]==(
+              "runtime_feedback_without_static_feedback_path"
+          )
 
           print(json.dumps({
               "provenance":d["provenance"],
