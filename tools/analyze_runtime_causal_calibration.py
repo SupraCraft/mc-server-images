@@ -222,6 +222,58 @@ def feedback_delta_summary(delta):
     }
 
 
+def authored_literal_payload_matches(nodes,delta,probe,trusted,candidate):
+    """Cross-check rendered-message hashes against text-free authored payload hashes.
+
+    A match is payload identity evidence only. It does not establish that the
+    matched command executed, that the probe caused it, or that a player
+    perceived or understood the delivery.
+    """
+    delta=delta or {}
+    protocol_rows=(
+        delta.get("protocol_chat_events_added",[])+
+        delta.get("protocol_chat_events_removed",[])
+    )
+    if not any(
+        row.get("semantic_class")=="literal_text" for row in protocol_rows
+    ):
+        return []
+
+    authored=defaultdict(list)
+    for node_id,node in nodes.items():
+        fp=((node.get("command") or {}).get(
+            "presentation_payload_fingerprints"
+        ) or {})
+        digest=fp.get("literal_text_sha256")
+        if digest:
+            authored[digest].append(node_id)
+
+    matches=[]
+    for direction,key in (
+        ("added","message_events_added"),
+        ("removed","message_events_removed"),
+    ):
+        for row in delta.get(key,[]):
+            digest=row.get("sha256")
+            node_ids=sorted(authored.get(digest,[]))
+            if not digest or not node_ids:
+                continue
+            matches.append({
+                "sha256":digest,
+                "direction":direction,
+                "runtime_count":int(row.get("count",0)),
+                "static_node_ids":node_ids,
+                "unique_static_match":len(node_ids)==1,
+                "static_support":{
+                    node_id:path_support(
+                        trusted,candidate,probe,{node_id}
+                    )
+                    for node_id in node_ids
+                },
+            })
+    return matches
+
+
 def analyze(static_doc,runtime_doc,static_source_run_id=None,runtime_source_run_id=None):
     nodes=graph_nodes(static_doc)
     trusted,candidate=path_graphs(static_doc,nodes)
@@ -236,7 +288,11 @@ def analyze(static_doc,runtime_doc,static_source_run_id=None,runtime_source_run_
         if not probe:
             continue
 
-        client=feedback_delta_summary(row.get("client_feedback_delta"))
+        raw_client_delta=row.get("client_feedback_delta")
+        client=feedback_delta_summary(raw_client_delta)
+        payload_matches=authored_literal_payload_matches(
+            nodes,raw_client_delta,probe,trusted,candidate
+        )
         feedback_changes=row.get("presentation_feedback_command_state_changes",[])
         changed_nodes=sorted({
             change.get("node_id")
@@ -270,6 +326,8 @@ def analyze(static_doc,runtime_doc,static_source_run_id=None,runtime_source_run_
             attribution="scoped_feedback_command_execution_plus_client_delivery"
         elif changed_nodes:
             attribution="scoped_feedback_command_execution_without_client_delta"
+        elif payload_matches and client["presentation_delivery_candidate_observed"]:
+            attribution="client_literal_payload_identity_match_without_command_execution_state_delta"
         elif client["presentation_delivery_candidate_observed"]:
             attribution="client_presentation_delivery_without_scoped_feedback_command_state_delta"
         elif client["outcome_event_delta_observed"]:
@@ -289,8 +347,17 @@ def analyze(static_doc,runtime_doc,static_source_run_id=None,runtime_source_run_
                 **client,
                 "scoped_feedback_command_state_change_count":len(feedback_changes),
                 "scoped_feedback_command_nodes":changed_nodes,
+                "authored_literal_payload_hash_match_count":sum(
+                    int(match.get("runtime_count",0))
+                    for match in payload_matches
+                ),
+                "authored_literal_payload_unique_static_match_count":sum(
+                    1 for match in payload_matches
+                    if match.get("unique_static_match")
+                ),
                 "attribution_class":attribution,
             },
+            "payload_identity_matches":payload_matches,
             "static_support":{
                 "to_any_presentation_feedback":any_feedback_support,
                 "to_runtime_feedback_command_nodes":command_support,
