@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:supracraft:schema:causal-version-discovery:1",
+  "title": "SupraCraft causal microscope exact-version discovery receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "channel",
+    "minecraft_version",
+    "edition",
+    "side",
+    "fail_closed",
+    "release_time",
+    "java_major",
+    "symbol_mode",
+    "symbol_witnesses",
+    "artifact_provenance",
+    "native_observability",
+    "semantic_coverage",
+    "qualification_status",
+    "boundaries"
+  ],
+  "properties": {
+    "schema": {
+      "const": "supracraft-causal-version-discovery/1"
+    },
+    "channel": {
+      "enum": ["release", "snapshot"]
+    },
+    "minecraft_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "edition": {
+      "const": "java"
+    },
+    "side": {
+      "const": "dedicated_server"
+    },
+    "fail_closed": {
+      "const": true
+    },
+    "release_time": {
+      "type": ["string", "null"]
+    },
+    "java_major": {
+      "type": "integer",
+      "minimum": 8
+    },
+    "symbol_mode": {
+      "enum": ["obfuscated", "mapped", "unobfuscated", "structural"]
+    },
+    "symbol_witnesses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifact_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frontier_manifest_url",
+        "version_metadata_url",
+        "server_url",
+        "server_sha1_expected",
+        "server_sha1_observed",
+        "server_size"
+      ],
+      "properties": {
+        "frontier_manifest_url": {
+          "type": "string"
+        },
+        "version_metadata_url": {
+          "type": "string"
+        },
+        "server_url": {
+          "type": "string"
+        },
+        "server_sha1_expected": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "server_sha1_observed": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "server_size": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "native_observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jfr_profile_flag_detected",
+        "activation_mode",
+        "recording_file",
+        "minecraft_event_count",
+        "minecraft_events"
+      ],
+      "properties": {
+        "jfr_profile_flag_detected": {
+          "type": "boolean"
+        },
+        "activation_mode": {
+          "enum": [
+            "minecraft_jfr_profile_flag",
+            "external_jfr_fallback"
+          ]
+        },
+        "recording_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minecraft_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minecraft_events": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^minecraft\\."
+          }
+        }
+      }
+    },
+    "semantic_coverage": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_family",
+          "status",
+          "native_event_candidates",
+          "direct_hook_required"
+        ],
+        "properties": {
+          "event_family": {
+            "type": "string"
+          },
+          "status": {
+            "enum": ["native_candidate", "missing"]
+          },
+          "native_event_candidates": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "direct_hook_required": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "qualification_status": {
+      "const": "discovery_only_not_adapter_qualified"
+    },
+    "boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
