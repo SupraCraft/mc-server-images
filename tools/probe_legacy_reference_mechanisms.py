@@ -345,6 +345,16 @@ def client_feedback_delta(control_observation, activated_observation):
             if row.get("sha256")
         )
 
+    def protocol_chat_counter(doc):
+        return Counter(
+            (
+                row.get("sha256"),row.get("position"),row.get("component_kind"),
+                row.get("semantic_class"),row.get("command_verb"),
+            )
+            for row in doc.get("protocol_chat_events",[])
+            if row.get("sha256")
+        )
+
     def effect_counter(doc):
         return Counter(
             (
@@ -361,6 +371,20 @@ def client_feedback_delta(control_observation, activated_observation):
             if count > 0
         ]
 
+    def protocol_chat_rows(counter):
+        return [
+            {
+                "sha256":key[0],
+                "position":key[1],
+                "component_kind":key[2],
+                "semantic_class":key[3],
+                "command_verb":key[4],
+                "count":count,
+            }
+            for key,count in sorted(counter.items(),key=lambda item:str(item[0]))
+            if count > 0
+        ]
+
     def effect_rows(counter):
         return [
             {
@@ -372,16 +396,18 @@ def client_feedback_delta(control_observation, activated_observation):
         ]
 
     cm=message_counter(control); am=message_counter(activated)
+    cp=protocol_chat_counter(control); ap=protocol_chat_counter(activated)
     ce=effect_counter(control); ae=effect_counter(activated)
     return {
         "message_events_added":message_rows(am-cm),
         "message_events_removed":message_rows(cm-am),
+        "protocol_chat_events_added":protocol_chat_rows(ap-cp),
+        "protocol_chat_events_removed":protocol_chat_rows(cp-ap),
         "self_effect_events_added":effect_rows(ae-ce),
         "self_effect_events_removed":effect_rows(ce-ae),
         "control_truncated":bool(control.get("truncated")),
         "activated_truncated":bool(activated.get("truncated")),
     }
-
 
 def live_testforblock(proc, log_path, probe, expected_meta):
     """Query exact live sensor block state without retaining raw console feedback."""
@@ -692,6 +718,10 @@ def main():
                     feedback_delta["message_events_added"] or
                     feedback_delta["message_events_removed"]
                 ),
+                "client_protocol_chat_delta_observed":bool(
+                    feedback_delta["protocol_chat_events_added"] or
+                    feedback_delta["protocol_chat_events_removed"]
+                ),
                 "client_self_effect_delta_observed":bool(
                     feedback_delta["self_effect_events_added"] or
                     feedback_delta["self_effect_events_removed"]
@@ -699,6 +729,8 @@ def main():
                 "client_feedback_delta_observed":bool(
                     feedback_delta["message_events_added"] or
                     feedback_delta["message_events_removed"] or
+                    feedback_delta["protocol_chat_events_added"] or
+                    feedback_delta["protocol_chat_events_removed"] or
                     feedback_delta["self_effect_events_added"] or
                     feedback_delta["self_effect_events_removed"]
                 ),
@@ -729,7 +761,7 @@ def main():
         "Pressure-plate activation is observed both by an exact 1.8.8 testforblock metadata query and by the paired exact-version player client's block-state stream; only compact metadata/boolean evidence is retained, and later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "Presentation-feedback command state changes are reported only for commands inside the selected compact command scope and retain verb, node id, changed field names, and SuccessCount values only; they do not prove client delivery, perception, comprehension, or qualitative value.",
-        "Client feedback observations retain only message hashes/positions and self-effect numeric id/amplifier/duration events. Paired deltas can establish client-visible delivery candidates without retaining message text; they do not identify message semantics or establish perception/comprehension.",
+        "Client feedback observations retain rendered-message hashes/positions, bounded protocol-chat component classes without component text or arguments, and self-effect numeric id/amplifier/duration events. Protocol chat classes can distinguish broad vanilla delivery mechanisms such as command feedback, death, achievement, or literal text without retaining message text; they do not establish player perception/comprehension or qualitative value.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
       ]
