@@ -167,6 +167,43 @@ class CausalMachineryPrimitiveTests(unittest.TestCase):
         self.assertFalse(any(e["target"]=="9,65,10" for e in edges))
         self.assertTrue(all(e["certainty"]=="strong" for e in edges))
 
+    def test_repeater_command_block_conduction_is_collinear_and_narrow(self):
+        repeater=(0,65,0)
+        conductor=(0,65,1)
+        dust=(0,65,2)
+        side_dust=(1,65,1)
+        machinery={
+            repeater:{
+                "family":"repeater_off",
+                "metadata_semantics":causal.metadata_semantics(
+                    "repeater_off",2
+                ),
+            },
+            conductor:{
+                "family":"command_block",
+                "metadata_semantics":{},
+            },
+            dust:{
+                "family":"redstone_wire",
+                "metadata_semantics":{},
+            },
+            side_dust:{
+                "family":"redstone_wire",
+                "metadata_semantics":{},
+            },
+        }
+        edges=causal.legacy_repeater_command_block_conduction_edges(machinery)
+        self.assertEqual(1,len(edges))
+        edge=edges[0]
+        self.assertEqual("0,65,0",edge["source"])
+        self.assertEqual("0,65,2",edge["target"])
+        self.assertEqual("0,65,1",edge["via"])
+        self.assertEqual(
+            "legacy_repeater_through_command_block_to_dust_power",
+            edge["edge_type"],
+        )
+        self.assertEqual("strong",edge["certainty"])
+
     def test_fill_emits_both_region_boundaries(self):
         _,parts=causal.normalize_command("fill 1 2 3 4 5 6 minecraft:stone")
         targets=causal.command_targets(parts,(0,0,0))
