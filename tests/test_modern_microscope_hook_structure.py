@@ -35,6 +35,24 @@ class ModernHookStructureTests(unittest.TestCase):
         self.assertFalse(any("packet" in row["id"] for row in mod.TARGETS))
         self.assertFalse(any("wire" in row["id"] for row in mod.TARGETS))
 
+    def test_redstone_targets_are_bounded_and_distinct(self):
+        ids={row["id"] for row in mod.REDSTONE_TARGETS}
+        self.assertEqual(
+            ids,
+            {
+                "wire_update_power_strength",
+                "wire_get_block_signal",
+                "wire_get_signal",
+                "wire_get_direct_signal",
+                "wire_neighbor_changed",
+                "level_neighbor_changed",
+                "level_update_neighbors_at",
+            },
+        )
+        self.assertTrue(all("packet" not in row["id"] for row in mod.REDSTONE_TARGETS))
+        self.assertTrue(all("command" not in row["id"] for row in mod.REDSTONE_TARGETS))
+        self.assertEqual(set(mod.TARGET_SETS),{"core","redstone"})
+
     def test_parse_sections_selects_exact_descriptor(self):
         text = """
 public class net.minecraft.Example {
