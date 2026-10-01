@@ -222,6 +222,60 @@ def normalize_command(command: str):
     return verb, parts
 
 
+def presentation_payload_fingerprints(command: str, verb: str):
+    """Return text-free hashes for exact authored presentation payloads.
+
+    Minecraft 1.8.8 tellraw syntax is: tellraw <target> <json>. Preserve only
+    cryptographic fingerprints and coarse JSON shape so runtime packet hashes
+    can be cross-checked without retaining authored message text.
+    """
+    if verb != "tellraw":
+        return None
+    text=command.strip()
+    if text.startswith("/"):
+        text=text[1:]
+    fields=text.split(None,2)
+    if len(fields) < 3:
+        return {
+            "kind":"tellraw_json",
+            "parse_status":"missing_payload",
+        }
+
+    payload=fields[2].strip()
+    out={
+        "kind":"tellraw_json",
+        "parse_status":"unparsed",
+        "wire_json_sha256":hashlib.sha256(
+            payload.encode("utf-8")
+        ).hexdigest(),
+    }
+    try:
+        parsed=json.loads(payload)
+    except Exception:
+        return out
+
+    canonical=json.dumps(
+        parsed,ensure_ascii=False,separators=(",",":")
+    )
+    out.update({
+        "parse_status":"parsed",
+        "json_kind":(
+            "string" if isinstance(parsed,str)
+            else "array" if isinstance(parsed,list)
+            else "object" if isinstance(parsed,dict)
+            else type(parsed).__name__
+        ),
+        "canonical_json_sha256":hashlib.sha256(
+            canonical.encode("utf-8")
+        ).hexdigest(),
+    })
+    if isinstance(parsed,str):
+        out["literal_text_sha256"]=hashlib.sha256(
+            parsed.encode("utf-8")
+        ).hexdigest()
+    return out
+
+
 def add_pos(a, delta):
     return (a[0] + delta[0], a[1] + delta[1], a[2] + delta[2])
 
@@ -663,6 +717,9 @@ def analyze(world: Path):
             "last_output_sha256": (
                 hashlib.sha256(str(plain(te.get("LastOutput"))).encode("utf-8")).hexdigest()
                 if te.get("LastOutput") is not None else None
+            ),
+            "presentation_payload_fingerprints":presentation_payload_fingerprints(
+                command,verb
             ),
         }
         if verb == "scoreboard" and len(parts) >= 3:
