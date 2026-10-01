@@ -69,9 +69,19 @@ jobs:
           mvn -q -f tools/causal-microscope/modern-26.3-agent/pom.xml \
             -DskipTests package
           agent="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar"
+          bridge="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar"
           test -s "$agent"
+          test -s "$bridge"
           unzip -p "$agent" META-INF/MANIFEST.MF | grep -q \
             'Premain-Class: org.supracraft.microscope.Agent'
+          unzip -p "$agent" META-INF/MANIFEST.MF | grep -q \
+            'Boot-Class-Path: causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar'
+          unzip -l "$bridge" | grep -q \
+            'org/supracraft/microscope/TraceRuntime.class'
+          ! unzip -l "$bridge" | grep -q 'org/objectweb/asm/'
+          unzip -l "$agent" | grep -q \
+            'org/supracraft/microscope/internal/asm/ClassReader.class'
+          ! unzip -l "$agent" | grep -q 'org/objectweb/asm/ClassReader.class'
           echo "MICROSCOPE_AGENT=$PWD/$agent" >> "$GITHUB_ENV"
 
       - name: Stock exact 26.3 canary

@@ -14,6 +14,18 @@ public final class Agent {
             System.err.println("SupraCraft causal microscope: unsupported adapter "+adapter);
             Runtime.getRuntime().halt(73);
         }
+
+        // Modern Minecraft runs game classes in a child URLClassLoader.
+        // The injected call target must therefore live in bootstrap visibility.
+        // Boot-Class-Path in the agent manifest supplies a bridge jar containing
+        // only TraceRuntime. Fail closed if packaging/class loading regresses.
+        if (TraceRuntime.class.getClassLoader()!=null) {
+            System.err.println(
+                "SupraCraft causal microscope: TraceRuntime is not bootstrap-visible"
+            );
+            Runtime.getRuntime().halt(73);
+        }
+
         String out=value(args,"out","supracraft-causal-trace.jsonl");
         String gate=value(args,"gate","");
         TraceRuntime.start(adapter,out,gate);
