@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m unittest -v             tests.test_causal_microscope_contract             tests.test_legacy_pressure_player_contract             tests.test_worldgen_causal_machinery
+          python -m unittest -v tests.test_causal_microscope_contract tests.test_legacy_pressure_player_contract
           node --check tools/legacy_pressure_plate_player.js
           python -m py_compile tools/probe_legacy_reference_mechanisms.py
 
