@@ -338,8 +338,9 @@ def live_testforblock(proc, log_path, probe, expected_meta):
     }
 
 
-def start_legacy_player_actor(script, trial_dir, port=25579):
+def start_legacy_player_actor(script, trial_dir, sensor_position, port=25579):
     ready_path=trial_dir/"player-actor-ready.json"
+    observation_path=trial_dir/"player-sensor-observation.json"
     log_path=trial_dir/"player-actor.log"
     log=log_path.open("w",encoding="utf-8")
     proc=subprocess.Popen(
@@ -349,6 +350,10 @@ def start_legacy_player_actor(script, trial_dir, port=25579):
             "--port",str(port),
             "--username","SupraPlateBot",
             "--ready",str(ready_path),
+            "--observation",str(observation_path),
+            "--observe-x",str(int(sensor_position[0])),
+            "--observe-y",str(int(sensor_position[1])),
+            "--observe-z",str(int(sensor_position[2])),
         ],
         stdout=log,stderr=subprocess.STDOUT,text=True,
     )
@@ -375,13 +380,20 @@ def start_legacy_player_actor(script, trial_dir, port=25579):
         "minecraft_version":receipt.get("minecraft_version"),
         "protocol_version":receipt.get("protocol_version"),
         "mineflayer_version":receipt.get("mineflayer_version"),
-    }
+    },observation_path
 
 
 def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_script=None):
     world=trial_dir/"world"
     materialize_world(source_zip,world)
-    set_spawn(world,probe["position"])
+    family=probe["family"]
+    x,y,z=probe["position"]
+    if family in PRESSURE_PLATE_ACTIVATABLE:
+        # Keep both arms' login/spawn away from the mechanism while retaining
+        # the target chunk in client view for transient block-state observation.
+        set_spawn(world,(x+64,250,z+64))
+    else:
+        set_spawn(world,probe["position"])
     (trial_dir/"eula.txt").write_text("eula=true\n")
     (trial_dir/"server.properties").write_text("\n".join([
       "online-mode=false","server-port=25579","level-name=world",
@@ -397,29 +409,27 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
         )
         ready=wait_ready(p,log_path,180)
         time.sleep(3)
-        family=probe["family"]
         if family not in ACTIVATABLE:
             raise RuntimeError(f"probe family not activatable: {family}")
         live_sensor_query=None
         player_proc=None
         player_log=None
         player_actor=None
-        x,y,z=probe["position"]
+        player_observation_path=None
+        player_sensor_observation=None
 
         if family in PRESSURE_PLATE_ACTIVATABLE:
             if player_client_script is None:
                 raise RuntimeError("pressure-plate probes require --player-client-script")
-            player_proc,player_log,player_actor=start_legacy_player_actor(
-                player_client_script,trial_dir
-            )
-            # Keep player presence and gamemode paired across both arms. The
-            # neutral platform is far outside the local causal snapshot; only
-            # the activated arm moves that same player onto the plate.
-            nx,nz=x+128,z+128
-            send(p,f"gamemode 3 SupraPlateBot")
+            # The neutral platform exists before login. It is 64 blocks away
+            # and high above authored machinery, but still within view-distance
+            # so the client can observe a transient target block-state update.
+            nx,nz=x+64,z+64
             send(p,f"setblock {nx} 249 {nz} minecraft:barrier 0 replace")
-            send(p,f"tp SupraPlateBot {nx + 0.5} 250 {nz + 0.5}")
-            time.sleep(0.5)
+            time.sleep(0.25)
+            player_proc,player_log,player_actor,player_observation_path=start_legacy_player_actor(
+                player_client_script,trial_dir,probe["position"]
+            )
             send(p,f"gamemode 2 SupraPlateBot")
             time.sleep(0.5)
 
@@ -435,7 +445,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                 send(p,f"setblock {x} {y} {z} {block} {powered} replace")
                 time.sleep(4)
             elif family in PRESSURE_PLATE_ACTIVATABLE:
-                send(p,f"tp SupraPlateBot {x + 0.5} {y} {z + 0.5}")
+                send(p,f"tp SupraPlateBot {x + 0.5} {y + 0.05} {z + 0.5}")
                 time.sleep(0.25)
                 live_sensor_query=live_testforblock(p,log_path,probe,1)
                 time.sleep(3.5)
@@ -466,6 +476,8 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
             sensor_node_id=probe.get("node_id"),
             target_command_ids=target_command_ids or None,
         )
+        if player_observation_path is not None and player_observation_path.exists():
+            player_sensor_observation=json.loads(player_observation_path.read_text())
 
         send(p,"stop")
         rc=p.wait(timeout=60)
@@ -487,6 +499,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
         "snapshot":snap,
         "live_sensor_query":live_sensor_query,
         "player_actor":player_actor,
+        "player_sensor_observation":player_sensor_observation,
     }
 
 def main():
@@ -557,6 +570,10 @@ def main():
                 "control":control.get("live_sensor_query"),
                 "activated":active.get("live_sensor_query"),
               },
+              "player_sensor_observation":{
+                "control":control.get("player_sensor_observation"),
+                "activated":active.get("player_sensor_observation"),
+              },
               "sensor_state":{
                 "control":control_sensor,
                 "activated":active_sensor,
@@ -567,6 +584,10 @@ def main():
                 "sensor_state_change_observed":sensor_state_changed,
                 "live_sensor_activation_observed":bool(
                     (active.get("live_sensor_query") or {}).get("matched")
+                    or
+                    (active.get("player_sensor_observation") or {}).get(
+                        "positive_metadata_observed"
+                    )
                 ),
                 "command_block_change_count":len(diff["command_block_changes"]),
                 "scoreboard_change_count":len(diff["scoreboard_changes"]),
@@ -593,7 +614,7 @@ def main():
         "Resolved integer command world-target positions are sampled as legacy block id/metadata so paired target-state deltas can prove observable world-state actuation without retaining command text.",
         "World-target sampling is scoped to the feedback-blind command set in the selected probe component. Older selection artifacts without embedded command IDs are reconciled against the current static candidate graph; nearby command-state changes remain observable but cannot borrow attribution merely because they share a target coordinate.",
         "Stable lever/button activation remains a server-side powered-block-state surrogate; pressure-plate control and activated arms both use the same exact-1.8.8 offline player actor, with only the activated arm moving that player from an identical neutral platform onto the plate.",
-        "Pressure-plate activation is checked immediately with exact 1.8.8 testforblock metadata and only a boolean plus response hash is retained; later saved metadata may legitimately return to zero after the trigger leaves.",
+        "Pressure-plate activation is observed both by an exact 1.8.8 testforblock metadata query and by the paired exact-version player client's block-state stream; only compact metadata/boolean evidence is retained, and later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
