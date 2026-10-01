@@ -1,0 +1,78 @@
+{
+  "schema": "supracraft-exact-version-source-evidence/1",
+  "subject": "Minecraft Java 1.8.8 repeater/comparator horizontal facing metadata and redstone port direction",
+  "minecraft_version": "1.8.8",
+  "source": {
+    "repository": "ZeroedInOnTech/1.8.8",
+    "commit": "47c636a70ff7fc60c52ac3ac4bca426e8b55743a",
+    "mcp_build": 918,
+    "files": [
+      "1.8.8/Build 918/src/minecraft/net/minecraft/util/EnumFacing.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneRepeater.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneComparator.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneDiode.java"
+    ]
+  },
+  "observed_source_semantics": {
+    "horizontal_index_order": "EnumFacing.HORIZONTALS is populated in S-W-N-E horizontalIndex order; EnumFacing.getHorizontal(index) reads that array.",
+    "repeater_metadata": "BlockRedstoneRepeater.getStateFromMeta(meta) assigns FACING = EnumFacing.getHorizontal(meta); low two metadata bits therefore decode 0=south, 1=west, 2=north, 3=east.",
+    "comparator_metadata": "BlockRedstoneComparator.getStateFromMeta(meta) assigns FACING = EnumFacing.getHorizontal(meta); low two metadata bits therefore use the same S-W-N-E mapping.",
+    "rear_input": "BlockRedstoneDiode.calculateInputStrength reads the block at pos.offset(FACING), so FACING identifies the rear/input side.",
+    "output_direction": "BlockRedstoneDiode.getWeakPower emits only when state FACING equals the queried side; the causal front/output neighbor is opposite the stored FACING vector."
+  },
+  "supported_relation": {
+    "families": [
+      "repeater_off",
+      "repeater_on",
+      "comparator_off",
+      "comparator_on"
+    ],
+    "metadata_low_two_bits": {
+      "0": {
+        "facing": "south",
+        "vector": [
+          0,
+          0,
+          1
+        ]
+      },
+      "1": {
+        "facing": "west",
+        "vector": [
+          -1,
+          0,
+          0
+        ]
+      },
+      "2": {
+        "facing": "north",
+        "vector": [
+          0,
+          0,
+          -1
+        ]
+      },
+      "3": {
+        "facing": "east",
+        "vector": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    "port_semantics": "rear input is +FACING; front output is -FACING",
+    "certainty": "strong"
+  },
+  "correction": {
+    "prior_analyzer_mapping": "N-E-S-W",
+    "exact_1_8_8_mapping": "S-W-N-E",
+    "scope": "repeater/comparator DIR4 decode only"
+  },
+  "inference_boundary": [
+    "This receipt supports only Minecraft Java 1.8.8 repeater/comparator horizontal metadata and their rear-input/front-output direction.",
+    "It does not change command-block six-direction metadata, button attachment metadata, chest facing metadata, or other block encodings.",
+    "It does not establish opaque-solid conduction, quasi-connectivity, generic physical adjacency, or transient command-authored world-state causality.",
+    "Static port recovery remains distinct from runtime execution, client delivery, player perception, comprehension, and qualitative value."
+  ]
+}
