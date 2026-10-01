@@ -20,7 +20,7 @@ import inventory_modern_microscope_symbols as inventory
 
 SCHEMA = "supracraft-causal-hook-structure/1"
 
-TARGETS = (
+CORE_TARGETS = (
     {
         "id": "server_tick",
         "event_family": "tick_boundary",
@@ -95,6 +95,97 @@ TARGETS = (
         ),
     },
 )
+
+TARGETS = CORE_TARGETS
+
+REDSTONE_TARGETS = (
+    {
+        "id": "wire_update_power_strength",
+        "event_family": "wire_recompute",
+        "role": "redstone_wire",
+        "name": "updatePowerStrength",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/Level;"
+            "Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/world/level/block/state/BlockState;"
+            "Lnet/minecraft/world/level/redstone/Orientation;Z)V"
+        ),
+    },
+    {
+        "id": "wire_get_block_signal",
+        "event_family": "redstone_power_query",
+        "role": "redstone_wire",
+        "name": "getBlockSignal",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/Level;"
+            "Lnet/minecraft/core/BlockPos;)I"
+        ),
+    },
+    {
+        "id": "wire_get_signal",
+        "event_family": "wire_signal_output",
+        "role": "redstone_wire",
+        "name": "getSignal",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/block/state/BlockState;"
+            "Lnet/minecraft/world/level/BlockGetter;"
+            "Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/core/Direction;)I"
+        ),
+    },
+    {
+        "id": "wire_get_direct_signal",
+        "event_family": "wire_direct_signal_output",
+        "role": "redstone_wire",
+        "name": "getDirectSignal",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/block/state/BlockState;"
+            "Lnet/minecraft/world/level/BlockGetter;"
+            "Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/core/Direction;)I"
+        ),
+    },
+    {
+        "id": "wire_neighbor_changed",
+        "event_family": "wire_neighbor_change",
+        "role": "redstone_wire",
+        "name": "neighborChanged",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/block/state/BlockState;"
+            "Lnet/minecraft/world/level/Level;"
+            "Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/world/level/block/Block;"
+            "Lnet/minecraft/world/level/redstone/Orientation;Z)V"
+        ),
+    },
+    {
+        "id": "level_neighbor_changed",
+        "event_family": "neighbor_notify",
+        "role": "world_state_host",
+        "name": "neighborChanged",
+        "descriptor": (
+            "(Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/world/level/block/Block;"
+            "Lnet/minecraft/world/level/redstone/Orientation;)V"
+        ),
+    },
+    {
+        "id": "level_update_neighbors_at",
+        "event_family": "neighbor_notify",
+        "role": "world_state_host",
+        "name": "updateNeighborsAt",
+        "descriptor": (
+            "(Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/world/level/block/Block;"
+            "Lnet/minecraft/world/level/redstone/Orientation;)V"
+        ),
+    },
+)
+
+TARGET_SETS = {
+    "core": CORE_TARGETS,
+    "redstone": REDSTONE_TARGETS,
+}
 
 
 def sha256_text(text: str) -> str:
@@ -245,8 +336,9 @@ def inspect_command(args: argparse.Namespace) -> None:
             inventory.class_bytes(runtime_jar, class_name)
         )
 
+    targets = TARGET_SETS[args.target_set]
     class_outputs = {}
-    for target in TARGETS:
+    for target in targets:
         role = target["role"]
         class_name = roles[role]
         key = (target["name"], target["descriptor"])
@@ -266,7 +358,7 @@ def inspect_command(args: argparse.Namespace) -> None:
             )
 
     results = []
-    for target in TARGETS:
+    for target in targets:
         role = target["role"]
         class_name = roles[role]
         key = (target["name"], target["descriptor"])
@@ -296,6 +388,7 @@ def inspect_command(args: argparse.Namespace) -> None:
         "minecraft_version": row["minecraft_version"],
         "java_major": row["java_major"],
         "server_sha1": row["server_sha1"],
+        "target_set": args.target_set,
         "methods": results,
         "qualification_status": "structure_only_not_hook_qualified",
         "boundaries": [
@@ -349,6 +442,10 @@ def compare_command(args: argparse.Namespace) -> None:
         raise RuntimeError(
             f"expected release+snapshot structures, got {sorted(by_channel)}"
         )
+    target_sets={doc.get("target_set") for doc in by_channel.values()}
+    if len(target_sets)!=1:
+        raise RuntimeError(f"target set changed across frontier: {sorted(target_sets)}")
+    target_set=next(iter(target_sets))
     release = {row["id"]: row for row in by_channel["release"]["methods"]}
     snapshot = {row["id"]: row for row in by_channel["snapshot"]["methods"]}
     if set(release) != set(snapshot):
@@ -403,6 +500,7 @@ def compare_command(args: argparse.Namespace) -> None:
         "schema": "supracraft-causal-hook-frontier-comparison/1",
         "release": by_channel["release"]["minecraft_version"],
         "snapshot": by_channel["snapshot"]["minecraft_version"],
+        "target_set": target_set,
         "methods": methods,
         "boundary": (
             "shared method identity/fingerprint/references are structural evidence; "
@@ -455,6 +553,9 @@ def parser() -> argparse.ArgumentParser:
     inspect.add_argument("--channel", choices=("release", "snapshot"), required=True)
     inspect.add_argument("--expected-version", required=True)
     inspect.add_argument("--expected-java", type=int, required=True)
+    inspect.add_argument(
+        "--target-set", choices=sorted(TARGET_SETS), default="core"
+    )
     inspect.add_argument("--work-dir", required=True)
     inspect.add_argument("--output", required=True)
     inspect.set_defaults(func=inspect_command)
