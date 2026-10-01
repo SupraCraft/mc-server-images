@@ -1,0 +1,117 @@
+{
+  "schema": "supracraft-causal-capability-manifest/1",
+  "adapter_id": "legacy-1.8.8-mcp918",
+  "minecraft_version": "1.8.8",
+  "edition": "java",
+  "side": "dedicated_server",
+  "java_major": 8,
+  "symbol_mode": "obfuscated",
+  "fail_closed": true,
+  "mapping_provenance": {
+    "repository": "ZeroedInOnTech/1.8.8",
+    "commit": "47c636a70ff7fc60c52ac3ac4bca426e8b55743a",
+    "mapping_artifact": "1.8.8/Build 918/conf/joined.srg",
+    "mapping_blob_sha": "f04cb796b25a21ed76d93c80bd7086864feeb50f"
+  },
+  "bindings": [
+    {
+      "id": "server_tick",
+      "event_family": "tick_boundary",
+      "runtime_class": "net/minecraft/server/MinecraftServer",
+      "runtime_method": "A",
+      "runtime_descriptor": "()V",
+      "semantic_symbol": "MinecraftServer.tick",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "command_block_neighbor",
+      "event_family": "command_block_neighbor",
+      "runtime_class": "afw",
+      "runtime_method": "a",
+      "runtime_descriptor": "(Ladm;Lcj;Lalz;Lafh;)V",
+      "semantic_symbol": "BlockCommandBlock.onNeighborBlockChange",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "command_block_tick",
+      "event_family": "command_block_scheduled_tick",
+      "runtime_class": "afw",
+      "runtime_method": "b",
+      "runtime_descriptor": "(Ladm;Lcj;Lalz;Ljava/util/Random;)V",
+      "semantic_symbol": "BlockCommandBlock.updateTick",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "command_trigger",
+      "event_family": "command_trigger",
+      "runtime_class": "adc",
+      "runtime_method": "a",
+      "runtime_descriptor": "(Ladm;)V",
+      "semantic_symbol": "CommandBlockLogic.trigger",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "schedule_update",
+      "event_family": "scheduled_tick_enqueue",
+      "runtime_class": "adm",
+      "runtime_method": "a",
+      "runtime_descriptor": "(Lcj;Lafh;I)V",
+      "semantic_symbol": "World.scheduleUpdate",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "neighbor_notify",
+      "event_family": "neighbor_notify",
+      "runtime_class": "adm",
+      "runtime_method": "c",
+      "runtime_descriptor": "(Lcj;Lafh;)V",
+      "semantic_symbol": "World.notifyNeighborsOfStateChange",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "block_state_write",
+      "event_family": "block_state_write",
+      "runtime_class": "adm",
+      "runtime_method": "a",
+      "runtime_descriptor": "(Lcj;Lalz;I)Z",
+      "semantic_symbol": "World.setBlockState",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "redstone_power",
+      "event_family": "redstone_power_query",
+      "runtime_class": "adm",
+      "runtime_method": "c",
+      "runtime_descriptor": "(Lcj;Lcq;)I",
+      "semantic_symbol": "World.getRedstonePower",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "block_power",
+      "event_family": "block_power_query",
+      "runtime_class": "adm",
+      "runtime_method": "z",
+      "runtime_descriptor": "(Lcj;)Z",
+      "semantic_symbol": "World.isBlockPowered",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "wire_recompute",
+      "event_family": "wire_recompute",
+      "runtime_class": "ajb",
+      "runtime_method": "a",
+      "runtime_descriptor": "(Ladm;Lcj;Lcj;Lalz;)Lalz;",
+      "semantic_symbol": "BlockRedstoneWire.calculateCurrentChanges",
+      "expected_bind_count": 1
+    },
+    {
+      "id": "packet_send",
+      "event_family": "packet_send",
+      "runtime_class": "lm",
+      "runtime_method": "a",
+      "runtime_descriptor": "(Lff;)V",
+      "semantic_symbol": "NetHandlerPlayServer.sendPacket",
+      "expected_bind_count": 1
+    }
+  ]
+}

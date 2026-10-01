@@ -558,7 +558,7 @@ def start_legacy_player_actor(script, trial_dir, sensor_position, port=25579):
     },observation_path
 
 
-def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_script=None, diagnostic_command_ids=None):
+def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_script=None, diagnostic_command_ids=None, java_agent=None, microscope_trace_path=None):
     world=trial_dir/"world"
     materialize_world(source_zip,world)
     family=probe["family"]
@@ -578,8 +578,19 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
     ])+"\n")
     log_path=trial_dir/"server.log"
     with log_path.open("w",encoding="utf-8") as log:
+        java_cmd=["java","-Xms512M","-Xmx2G"]
+        if java_agent is not None:
+            if microscope_trace_path is None:
+                raise RuntimeError("java agent requires microscope trace path")
+            agent_path=Path(java_agent).resolve()
+            trace_path=Path(microscope_trace_path).resolve()
+            trace_path.parent.mkdir(parents=True,exist_ok=True)
+            java_cmd.append(
+                f"-javaagent:{agent_path}=adapter=legacy-1.8.8,out={trace_path}"
+            )
+        java_cmd += ["-jar",str(server_jar),"nogui"]
         p=subprocess.Popen(
-          ["java","-Xms512M","-Xmx2G","-jar",str(server_jar),"nogui"],
+          java_cmd,
           cwd=trial_dir,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.STDOUT,text=True
         )
         ready=wait_ready(p,log_path,180)
@@ -747,6 +758,33 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
     text=log_path.read_text("utf-8",errors="replace")
     if rc!=0 or "Exception in server tick loop" in text:
         raise RuntimeError(f"trial failed activate={activate} rc={rc}")
+    trace_summary=None
+    if microscope_trace_path is not None:
+        trace_path=Path(microscope_trace_path).resolve()
+        if not trace_path.exists():
+            raise RuntimeError(f"microscope trace missing: {trace_path}")
+        raw=trace_path.read_bytes()
+        rows=[
+            json.loads(line)
+            for line in raw.decode("utf-8").splitlines()
+            if line.strip()
+        ]
+        counts={}
+        for row in rows:
+            event=row.get("event_type")
+            counts[event]=counts.get(event,0)+1
+        dropped=(
+            rows[-1].get("data",{}).get("dropped_events")
+            if rows and rows[-1].get("event_type")=="trace_end"
+            else None
+        )
+        trace_summary={
+            "path":str(trace_path),
+            "sha256":hashlib.sha256(raw).hexdigest(),
+            "event_count":len(rows),
+            "event_counts":counts,
+            "dropped_events":dropped,
+        }
     return {
         "ready_seconds":round(ready,3),
         "snapshot":snap,
@@ -755,6 +793,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
         "player_sensor_observation":player_sensor_observation,
         "diagnostic_success_observation":diagnostic_success_observation,
         "trigger_epoch_ms":trigger_epoch_ms,
+        "microscope_trace":trace_summary,
     }
 
 def main():
@@ -765,8 +804,22 @@ def main():
     ap.add_argument("--limit",type=int,default=3)
     ap.add_argument("--player-client-script",type=Path)
     ap.add_argument("--diagnostic-command-node-id",action="append",default=[])
+    ap.add_argument("--java-agent",type=Path)
+    ap.add_argument("--microscope-trace-dir",type=Path)
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
+
+    if (args.java_agent is None) != (args.microscope_trace_dir is None):
+        raise RuntimeError(
+            "--java-agent and --microscope-trace-dir must be supplied together"
+        )
+    java_agent=args.java_agent.resolve() if args.java_agent is not None else None
+    trace_dir=(
+        args.microscope_trace_dir.resolve()
+        if args.microscope_trace_dir is not None else None
+    )
+    if trace_dir is not None:
+        trace_dir.mkdir(parents=True,exist_ok=True)
 
     selection=json.loads(args.selection.read_text())
     probes=[p for p in selection["selected"] if p["family"] in ACTIVATABLE][:args.limit]
@@ -784,13 +837,21 @@ def main():
                 args.player_client_script.resolve()
                 if args.player_client_script is not None else None
             )
+            control_trace=(
+                trace_dir/f"probe-{i}-control.jsonl"
+                if trace_dir is not None else None
+            )
+            active_trace=(
+                trace_dir/f"probe-{i}-activated.jsonl"
+                if trace_dir is not None else None
+            )
             control=run_trial(
                 server,args.world_zip,probe,control_dir,False,player_script,
-                args.diagnostic_command_node_id,
+                args.diagnostic_command_node_id,java_agent,control_trace,
             )
             active=run_trial(
                 server,args.world_zip,probe,active_dir,True,player_script,
-                args.diagnostic_command_node_id,
+                args.diagnostic_command_node_id,java_agent,active_trace,
             )
             diff=delta(control["snapshot"],active["snapshot"])
             control_scope=control["snapshot"].get("world_target_source_scope",[])
@@ -834,6 +895,12 @@ def main():
                   "control":control.get("trigger_epoch_ms"),
                   "activated":active.get("trigger_epoch_ms"),
               },
+              **({
+                  "microscope_trace":{
+                      "control":control.get("microscope_trace"),
+                      "activated":active.get("microscope_trace"),
+                  }
+              } if java_agent is not None else {}),
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
               "presentation_feedback_command_state_changes":feedback_command_changes,

@@ -1,0 +1,233 @@
+name: worldgen causal microscope legacy 1.8.8
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bench/worldgen/observability/**'
+      - 'tools/causal-microscope/**'
+      - 'tools/probe_legacy_reference_mechanisms.py'
+      - 'tools/legacy_pressure_plate_player.js'
+      - 'tests/test_causal_microscope_contract.py'
+      - 'tests/test_legacy_pressure_player_contract.py'
+      - '.github/workflows/worldgen-causal-microscope-legacy-188.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: worldgen-causal-microscope-legacy-188-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Contract and source controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v             tests.test_causal_microscope_contract             tests.test_legacy_pressure_player_contract             tests.test_worldgen_causal_machinery
+          node --check tools/legacy_pressure_plate_player.js
+          python -m py_compile tools/probe_legacy_reference_mechanisms.py
+
+      - name: Build shaded Java 8 agent
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -f tools/causal-microscope/legacy-1.8.8-agent/pom.xml             -DskipTests package
+          agent="tools/causal-microscope/legacy-1.8.8-agent/target/causal-microscope-agent-0.1.0-SNAPSHOT.jar"
+          test -s "$agent"
+          unzip -p "$agent" META-INF/MANIFEST.MF | grep -q             'Premain-Class: org.supracraft.microscope.Agent'
+          echo "MICROSCOPE_AGENT=$PWD/$agent" >> "$GITHUB_ENV"
+
+      - name: Agent attach smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/smoke
+          cat > out/smoke/Smoke.java <<'JAVA'
+          public final class Smoke {
+              public static void main(String[] args) {}
+          }
+          JAVA
+          javac out/smoke/Smoke.java
+          java             -javaagent:"$MICROSCOPE_AGENT"=adapter=legacy-1.8.8,out="$PWD/out/smoke/trace.jsonl"             -cp out/smoke Smoke
+          python - <<'PY'
+          import json,pathlib
+          rows=[json.loads(x) for x in pathlib.Path("out/smoke/trace.jsonl").read_text().splitlines()]
+          assert [rows[0]["event_type"],rows[-1]["event_type"]]==["trace_start","trace_end"]
+          assert rows[-1]["data"]["dropped_events"]==0
+          assert [r["seq"] for r in rows]==list(range(1,len(rows)+1))
+          PY
+
+      - name: Install bounded legacy runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check nbtlib==2.0.4
+          mkdir -p pressure-player-runtime
+          cd pressure-player-runtime
+          npm init -y >/dev/null
+          npm install --save-exact mineflayer@4.39.0
+          echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Isolate fixed 392 pressure fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py             --world-zip source/original-world.zip             --output out/core.json
+          python tools/select_legacy_runtime_probes.py             --graph out/core.json             --sensor-mode pressure_plates             --limit 3             --output out/selection-all.json
+          python - <<'PY'
+          import json,pathlib
+          src=json.loads(pathlib.Path("out/selection-all.json").read_text())
+          target=next(x for x in src["selected"] if x["node_id"]=="392,109,-86")
+          pathlib.Path("out/selection.json").write_text(json.dumps({
+              "schema":src.get("schema"),
+              "sensor_mode":"pressure_plates",
+              "selected_count":1,
+              "selected":[target],
+              "selection_origin":"causal_microscope_fixed_392_fixture",
+          },indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Stock vanilla control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_legacy_reference_mechanisms.py             --version 1.8.8             --world-zip source/original-world.zip             --selection out/selection.json             --limit 1             --player-client-script tools/legacy_pressure_plate_player.js             --diagnostic-command-node-id 388,85,-75             --diagnostic-command-node-id 392,86,-63             --output out/stock.json
+
+      - name: Instrumented vanilla observation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/traces
+          python tools/probe_legacy_reference_mechanisms.py             --version 1.8.8             --world-zip source/original-world.zip             --selection out/selection.json             --limit 1             --player-client-script tools/legacy_pressure_plate_player.js             --diagnostic-command-node-id 388,85,-75             --diagnostic-command-node-id 392,86,-63             --java-agent "$MICROSCOPE_AGENT"             --microscope-trace-dir out/traces             --output out/instrumented.json
+
+      - name: Validate observer effect and causal correlation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import collections,hashlib,json,pathlib
+          stock=json.loads(pathlib.Path("out/stock.json").read_text())["results"][0]
+          inst=json.loads(pathlib.Path("out/instrumented.json").read_text())["results"][0]
+
+          assert stock["probe"]==inst["probe"]
+          assert stock["evidence"]["live_sensor_activation_observed"] is True
+          assert inst["evidence"]["live_sensor_activation_observed"] is True
+          assert stock["execution_receipt"]["outcome_class"]==inst["execution_receipt"]["outcome_class"]
+          assert stock["delta"]["world_target_changes"]==inst["delta"]["world_target_changes"]
+          assert stock["client_feedback_delta"]==inst["client_feedback_delta"]
+          assert stock["sensor_state"]==inst["sensor_state"]
+
+          summaries=inst["microscope_trace"]
+          assert set(summaries)=={"control","activated"}
+          for arm,summary in summaries.items():
+              assert summary["dropped_events"]==0
+              assert summary["event_count"]>0
+              assert summary["sha256"]
+              assert summary["event_counts"]["tick_start"]>0
+              assert summary["event_counts"]["tick_end"]>0
+
+          active_path=pathlib.Path(summaries["activated"]["path"])
+          rows=[json.loads(x) for x in active_path.read_text().splitlines()]
+          assert [r["seq"] for r in rows]==list(range(1,len(rows)+1))
+          assert rows[0]["event_type"]=="trace_start"
+          assert rows[-1]["event_type"]=="trace_end"
+          assert rows[-1]["data"]["dropped_events"]==0
+
+          tells={
+              (r["data"].get("x"),r["data"].get("y"),r["data"].get("z")):
+                  (r["data"].get("command_verb"),r["data"].get("command_sha256"),r["tick"])
+              for r in rows if r["event_type"]=="command_trigger_start"
+              and r["data"].get("command_verb")=="tellraw"
+          }
+          assert (388,85,-75) in tells
+          assert (392,86,-63) in tells
+
+          sent={
+              r["data"]["payload_sha256"]
+              for r in rows if r["event_type"]=="packet_send"
+          }
+          received={
+              x["sha256"]
+              for x in inst["player_sensor_observation"]["activated"][
+                  "client_feedback"
+              ]["protocol_chat_events"]
+          }
+          common=sent & received
+          assert len(common)>=2
+
+          report={
+              "schema":"supracraft-causal-microscope-observer-ab/1",
+              "minecraft_version":"1.8.8",
+              "stock_outcome":stock["execution_receipt"]["outcome_class"],
+              "instrumented_outcome":inst["execution_receipt"]["outcome_class"],
+              "semantic_divergence":False,
+              "activated_tellraw_ticks":{
+                  "388,85,-75":tells[(388,85,-75)][2],
+                  "392,86,-63":tells[(392,86,-63)][2],
+              },
+              "server_client_packet_hash_matches":len(common),
+              "trace_event_counts":summaries["activated"]["event_counts"],
+              "dropped_events":0,
+              "boundary":"observer A/B and packet correlation do not establish presentation meaning or human comprehension",
+          }
+          pathlib.Path("out/observer-ab-report.json").write_text(
+              json.dumps(report,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: causal-microscope-legacy-1.8.8
+          path: |
+            bench/worldgen/observability/*.json
+            tools/causal-microscope/legacy-1.8.8-agent/target/causal-microscope-agent-0.1.0-SNAPSHOT.jar
+            out/smoke/trace.jsonl
+            out/stock.json
+            out/instrumented.json
+            out/observer-ab-report.json
+            out/traces/*.jsonl
+          retention-days: 14
