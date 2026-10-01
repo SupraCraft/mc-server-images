@@ -16,8 +16,21 @@ def node(nid,*roles):
     return {"node_id":nid,"roles":list(roles)}
 
 
-def runtime_row(probe, *, message=False, effect=False, changed_feedback=None):
+def runtime_row(
+    probe, *, message=False, effect=False, protocol_class=None,
+    changed_feedback=None
+):
     changed_feedback=changed_feedback or []
+    protocol_added=[]
+    if protocol_class is not None:
+        protocol_added=[{
+            "sha256":"1"*64,
+            "position":1,
+            "component_kind":"translate" if protocol_class=="death" else "string",
+            "semantic_class":protocol_class,
+            "command_verb":None,
+            "count":1,
+        }]
     return {
         "probe":{"node_id":probe,"family":"wooden_pressure_plate"},
         "execution_receipt":{"outcome_class":"fixture"},
@@ -38,6 +51,8 @@ def runtime_row(probe, *, message=False, effect=False, changed_feedback=None):
                 if message else []
             ),
             "message_events_removed":[],
+            "protocol_chat_events_added":protocol_added,
+            "protocol_chat_events_removed":[],
             "self_effect_events_added":(
                 [{"event":"start","id":1,"amplifier":0,"duration":20,"count":1}]
                 if effect else []
@@ -107,7 +122,9 @@ class RuntimeCausalCalibrationTests(unittest.TestCase):
         }
         runtime={
             "schema":"fixture/runtime",
-            "results":[runtime_row("sensor",message=True)],
+            "results":[runtime_row(
+                "sensor",message=True,protocol_class="literal_text"
+            )],
         }
         d=cal.analyze(graph,runtime)
         w=d["witnesses"][0]
@@ -120,8 +137,63 @@ class RuntimeCausalCalibrationTests(unittest.TestCase):
             w["static_support"]["to_any_presentation_feedback"]["support_class"],
         )
         self.assertEqual(
-            "client_delivery_without_scoped_feedback_command_state_delta",
+            "client_presentation_delivery_without_scoped_feedback_command_state_delta",
             w["runtime_feedback"]["attribution_class"],
+        )
+
+    def test_death_packet_is_preserved_as_outcome_not_presentation_feedback(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[
+                node("sensor","sensor_input"),
+                node("feedback","presentation_feedback"),
+            ],
+            "edges":[{
+                "source":"sensor","target":"feedback",
+                "edge_type":"exact","certainty":"strong",
+            }],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row(
+                "sensor",message=True,protocol_class="death"
+            )],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual("no_runtime_feedback_witness",w["calibration_class"])
+        self.assertTrue(w["runtime_feedback"]["client_delivery_observed"])
+        self.assertTrue(w["runtime_feedback"]["outcome_event_delta_observed"])
+        self.assertFalse(
+            w["runtime_feedback"]["presentation_delivery_candidate_observed"]
+        )
+        self.assertEqual(
+            {"death":1},
+            w["runtime_feedback"]["protocol_semantic_class_counts"],
+        )
+        self.assertEqual(
+            "client_outcome_event_without_presentation_feedback_attribution",
+            w["runtime_feedback"]["attribution_class"],
+        )
+
+    def test_unclassified_legacy_message_is_not_promoted_to_presentation_feedback(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[node("sensor","sensor_input")],
+            "edges":[],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row("sensor",message=True)],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual("no_runtime_feedback_witness",w["calibration_class"])
+        self.assertTrue(
+            w["runtime_feedback"]["unclassified_message_delta_observed"]
+        )
+        self.assertFalse(
+            w["runtime_feedback"]["presentation_delivery_candidate_observed"]
         )
 
     def test_trusted_static_path_is_reported_without_edge_mutation(self):
@@ -172,7 +244,10 @@ class RuntimeCausalCalibrationTests(unittest.TestCase):
         d=cal.analyze(graph,runtime)
         w=d["witnesses"][0]
         self.assertEqual("no_runtime_feedback_witness",w["calibration_class"])
-        self.assertFalse(w["runtime_feedback"]["feedback_delta_observed"])
+        self.assertFalse(w["runtime_feedback"]["client_delivery_observed"])
+        self.assertFalse(
+            w["runtime_feedback"]["presentation_delivery_candidate_observed"]
+        )
 
 
 if __name__=="__main__":
