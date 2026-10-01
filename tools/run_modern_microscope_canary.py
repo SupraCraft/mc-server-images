@@ -21,6 +21,59 @@ def digest_bytes(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
+def bounded_diagnostics(server_log: str) -> list[str]:
+    markers=(
+        "ERROR","Exception","Caused by:","\tat ","SupraCraft causal microscope",
+        "Stopping server","Crash","FAILED","Failed","failed",
+    )
+    rows=[
+        line[:800]
+        for line in server_log.splitlines()
+        if any(marker in line for marker in markers)
+    ]
+    return rows[-120:]
+
+
+def fail_early(stage: str, process: subprocess.Popen[str],
+               log_path: Path, output_dir: Path, exc: Exception | None=None) -> None:
+    try:
+        rc=process.poll()
+        if rc is None:
+            rc=process.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        rc=process.poll()
+    server_log=log_path.read_text("utf-8",errors="replace") if log_path.exists() else ""
+    receipt={
+        "schema":"supracraft-modern-microscope-early-exit/1",
+        "stage":stage,
+        "exit_code":rc,
+        "exception_type":type(exc).__name__ if exc is not None else None,
+        "server_log_sha256":hashlib.sha256(
+            server_log.encode("utf-8",errors="replace")
+        ).hexdigest(),
+        "diagnostic_lines":bounded_diagnostics(server_log),
+        "boundary":"diagnostic receipt contains bounded error/stack evidence only; raw console commands and authored payloads are not retained",
+    }
+    (output_dir/"diagnostic.json").write_text(
+        json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+    )
+    print("CANARY_EARLY_EXIT_DIAGNOSTIC")
+    print(json.dumps(receipt,indent=2,sort_keys=True))
+    raise SystemExit(
+        f"modern microscope server exited during {stage}; rc={rc}"
+    )
+
+
+def checked_command(process: subprocess.Popen[str], line: str, stage: str,
+                    log_path: Path, output_dir: Path) -> None:
+    if process.poll() is not None:
+        fail_early(stage,process,log_path,output_dir)
+    try:
+        command(process,line)
+    except (BrokenPipeError,OSError) as exc:
+        fail_early(stage,process,log_path,output_dir,exc)
+
+
 def main() -> None:
     ap=argparse.ArgumentParser()
     ap.add_argument("--evidence",type=Path,required=True)
@@ -83,14 +136,24 @@ def main() -> None:
             )
             ready_seconds=wait_ready(p,log_path,180)
 
-            command(p,"forceload add -16 -16 16 16")
+            checked_command(
+                p,"forceload add -16 -16 16 16","forceload",
+                log_path,args.output_dir,
+            )
             time.sleep(1)
-            command(p,"fill -2 99 -2 6 102 2 minecraft:air")
-            command(p,"fill -2 99 -2 6 99 2 minecraft:stone")
-            command(
+            checked_command(
+                p,"fill -2 99 -2 6 102 2 minecraft:air","clear_workspace",
+                log_path,args.output_dir,
+            )
+            checked_command(
+                p,"fill -2 99 -2 6 99 2 minecraft:stone","build_floor",
+                log_path,args.output_dir,
+            )
+            checked_command(
                 p,
                 'setblock 0 100 0 minecraft:command_block[facing=east]'
                 '{Command:"setblock 4 100 0 minecraft:redstone_block"}',
+                "place_command_block",log_path,args.output_dir,
             )
             time.sleep(0.15)
             if args.java_agent:
@@ -98,16 +161,22 @@ def main() -> None:
                 time.sleep(0.15)
             else:
                 time.sleep(0.15)
-            command(p,"setblock 0 99 0 minecraft:redstone_block")
+            checked_command(
+                p,"setblock 0 99 0 minecraft:redstone_block","activate_canary",
+                log_path,args.output_dir,
+            )
             time.sleep(2)
-            command(
+            checked_command(
                 p,
                 "execute if block 4 100 0 minecraft:redstone_block "
                 "run say SUPRACRAFT_MICROSCOPE_CANARY_PASS",
+                "verify_target",log_path,args.output_dir,
             )
-            command(p,"save-all flush")
+            checked_command(
+                p,"save-all flush","save_flush",log_path,args.output_dir
+            )
             time.sleep(1)
-            command(p,"stop")
+            checked_command(p,"stop","stop",log_path,args.output_dir)
             rc=p.wait(timeout=60)
         elapsed=time.monotonic()-started
 
