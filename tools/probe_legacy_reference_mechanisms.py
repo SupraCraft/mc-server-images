@@ -765,7 +765,10 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
                 player_log.close()
     text=log_path.read_text("utf-8",errors="replace")
     if rc!=0 or "Exception in server tick loop" in text:
-        raise RuntimeError(f"trial failed activate={activate} rc={rc}")
+        server_tail="\n".join(text.splitlines()[-120:])
+        raise RuntimeError(
+            f"trial failed activate={activate} rc={rc}\n{server_tail}"
+        )
     trace_summary=None
     if microscope_trace_path is not None:
         trace_path=Path(microscope_trace_path).resolve()
