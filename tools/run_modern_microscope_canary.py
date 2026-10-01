@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run an exact Minecraft 26.3 server-only causal-microscope canary."""
+"""Run an exact modern Minecraft server-only causal-microscope canary."""
 
 from __future__ import annotations
 
@@ -80,17 +80,31 @@ def main() -> None:
     ap.add_argument("--server-jar",type=Path,required=True)
     ap.add_argument("--output-dir",type=Path,required=True)
     ap.add_argument("--java-agent",type=Path)
+    ap.add_argument("--adapter-id")
+    ap.add_argument("--expected-version")
     args=ap.parse_args()
 
     evidence=json.loads(args.evidence.read_text())
-    if evidence["minecraft_version"]!="26.3":
-        raise SystemExit("exact 26.3 evidence required")
-    if int(evidence["artifact_version_json"]["java_version"])!=25:
-        raise SystemExit("exact 26.3 Java 25 runtime required")
+    version=evidence["minecraft_version"]
+    java_major=int(
+        (evidence.get("artifact_version_json") or {}).get(
+            "java_version",evidence.get("java_major",0)
+        )
+    )
+    if args.expected_version and version!=args.expected_version:
+        raise SystemExit(
+            f"exact version mismatch expected={args.expected_version} observed={version}"
+        )
+    if java_major!=25:
+        raise SystemExit(f"exact modern Java 25 runtime required; observed={java_major}")
 
     args.output_dir.mkdir(parents=True,exist_ok=True)
     args.server_jar.parent.mkdir(parents=True,exist_ok=True)
     if not args.server_jar.exists():
+        if "server_artifact" not in evidence:
+            raise SystemExit(
+                "server jar must already exist when using a discovery receipt"
+            )
         download_server(evidence,args.server_jar)
 
     with tempfile.TemporaryDirectory(prefix="modern-microscope-canary-") as td:
@@ -111,7 +125,7 @@ def main() -> None:
             "difficulty":"peaceful",
             "level-name":"world",
             "level-seed":"263263",
-            "motd":"SupraCraft causal microscope 26.3 canary",
+            "motd":f"SupraCraft causal microscope {version} canary",
         }
         (root/"server.properties").write_text(
             "\n".join(f"{k}={v}" for k,v in props.items())+"\n"
@@ -121,9 +135,10 @@ def main() -> None:
         gate_path=root/"capture.gate"
         cmd=["java","-Xms512M","-Xmx3G"]
         if args.java_agent:
+            adapter=args.adapter_id or f"modern-{version}-java25"
             cmd.append(
                 f"-javaagent:{args.java_agent.resolve()}="
-                f"adapter=modern-26.3-java25,out={trace_path.resolve()},"
+                f"adapter={adapter},out={trace_path.resolve()},"
                 f"gate={gate_path.resolve()}"
             )
         cmd.extend(["-jar",str(server),"nogui"])
@@ -202,8 +217,8 @@ def main() -> None:
 
         result={
             "schema":"supracraft-modern-microscope-canary/1",
-            "minecraft_version":"26.3",
-            "java_major":25,
+            "minecraft_version":version,
+            "java_major":java_major,
             "instrumented":bool(args.java_agent),
             "canary_pass":True,
             "target_position":[4,100,0],
