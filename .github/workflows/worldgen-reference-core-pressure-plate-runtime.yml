@@ -188,6 +188,22 @@ jobs:
                   assert set(command["control"])==allowed_command_fields
                   assert set(command["activated"])==allowed_command_fields
 
+              feedback_changes=row["presentation_feedback_command_state_changes"]
+              assert row["evidence"]["presentation_feedback_command_state_change_count"]==len(feedback_changes)
+              assert row["evidence"]["presentation_feedback_success_count_change_count"]==sum(
+                  1 for change in feedback_changes if change["success_count_changed"]
+              )
+              for change in feedback_changes:
+                  assert change["node_id"] in scope
+                  assert change["verb"] in {
+                      "effect","particle","playsound","title","tellraw","say"
+                  }
+                  assert change["changed_fields"]
+                  assert set(change)=={
+                      "node_id","verb","changed_fields","success_count_changed",
+                      "control_success_count","activated_success_count",
+                  }
+
           print(json.dumps({
               "selected":[
                   {
@@ -207,6 +223,7 @@ jobs:
                       "saved_sensor_state":x["sensor_state"],
                       "command_block_change_count":x["evidence"]["command_block_change_count"],
                       "world_target_change_count":x["evidence"]["world_target_change_count"],
+                      "presentation_feedback_command_state_changes":x["presentation_feedback_command_state_changes"],
                       "outcome_class":x["execution_receipt"]["outcome_class"],
                   }
                   for x in d["results"]
