@@ -100,6 +100,53 @@ def class_bytes(runtime_jar: Path, class_name: str) -> bytes:
         return zf.read(path)
 
 
+def parse_javap_methods(output: str, class_name: str) -> list[dict]:
+    methods = []
+    pending = None
+    simple = class_name.rsplit(".", 1)[-1]
+    for raw in output.splitlines():
+        line = raw.strip()
+        if line.startswith("descriptor:"):
+            if pending is None:
+                # javap -s prints field descriptors too. They are intentionally
+                # outside the method inventory and do not authorize a hook.
+                continue
+            descriptor = line.split(":", 1)[1].strip()
+            before = pending.split("(", 1)[0].strip()
+            token = before.split()[-1]
+            if token == simple or token.endswith(simple):
+                name = "<init>"
+            else:
+                name = token
+            methods.append(
+                {
+                    "name": name,
+                    "descriptor": descriptor,
+                    "declaration_sha256": sha256_bytes(
+                        pending.encode("utf-8")
+                    ),
+                }
+            )
+            pending = None
+        elif "(" in line and (
+            line.endswith(";")
+            or line.endswith(")")
+            or " throws " in line
+        ):
+            if pending is not None:
+                raise RuntimeError(
+                    f"{class_name}: method declaration missing descriptor: {pending}"
+                )
+            pending = line
+        elif line.startswith("static {}"):
+            pending = None
+    if pending is not None:
+        raise RuntimeError(
+            f"{class_name}: final method declaration missing descriptor: {pending}"
+        )
+    return sorted(methods, key=lambda row: (row["name"], row["descriptor"]))
+
+
 def javap_methods(runtime_jar: Path, class_name: str) -> list[dict]:
     javap = discovery.java_executable("javap")
     proc = subprocess.run(
@@ -117,44 +164,7 @@ def javap_methods(runtime_jar: Path, class_name: str) -> list[dict]:
         timeout=90,
         check=True,
     )
-    methods = []
-    pending = None
-    simple = class_name.rsplit(".", 1)[-1]
-    for raw in proc.stdout.splitlines():
-        line = raw.strip()
-        if line.startswith("descriptor:"):
-            if not pending:
-                raise RuntimeError(
-                    f"{class_name}: descriptor without declaration: {line}"
-                )
-            descriptor = line.split(":", 1)[1].strip()
-            before = pending.split("(", 1)[0].strip()
-            token = before.split()[-1]
-            if token == simple:
-                name = "<init>"
-            elif token.endswith(simple):
-                name = "<init>"
-            else:
-                name = token
-            methods.append(
-                {
-                    "name": name,
-                    "descriptor": descriptor,
-                    "declaration_sha256": sha256_bytes(
-                        pending.encode("utf-8")
-                    ),
-                }
-            )
-            pending = None
-        elif "(" in line and (
-            line.endswith(";")
-            or line.endswith(")")
-            or line.endswith(" throws")
-        ):
-            pending = line
-        elif line.startswith("static {}"):
-            pending = None
-    return sorted(methods, key=lambda row: (row["name"], row["descriptor"]))
+    return parse_javap_methods(proc.stdout, class_name)
 
 
 def candidate_methods(role: str, methods: list[dict]) -> list[dict]:
