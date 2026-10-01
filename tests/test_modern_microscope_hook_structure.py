@@ -62,6 +62,28 @@ public class net.minecraft.Example {
             },
         )
 
+    def test_method_suffix_collision_is_not_constructor(self):
+        text = """
+public class net.minecraft.world.level.Level {
+  protected net.minecraft.world.level.Level(float);
+    descriptor: (F)V
+    Code:
+       0: return
+
+  public float getRainLevel(float);
+    descriptor: (F)F
+    Code:
+       0: fconst_0
+       1: freturn
+}
+"""
+        sections = mod.parse_javap_sections(
+            text,
+            "net.minecraft.world.level.Level",
+        )
+        self.assertIn(("<init>", "(F)V"), sections)
+        self.assertIn(("getRainLevel", "(F)F"), sections)
+
     def test_normalization_removes_offsets_and_constant_pool_indices(self):
         a = [
             "    Code:",
