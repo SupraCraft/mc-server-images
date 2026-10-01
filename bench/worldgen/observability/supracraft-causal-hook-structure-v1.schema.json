@@ -10,6 +10,7 @@
     "minecraft_version",
     "java_major",
     "server_sha1",
+    "target_set",
     "methods",
     "qualification_status",
     "boundaries"
@@ -19,7 +20,10 @@
       "const": "supracraft-causal-hook-structure/1"
     },
     "channel": {
-      "enum": ["release", "snapshot"]
+      "enum": [
+        "release",
+        "snapshot"
+      ]
     },
     "minecraft_version": {
       "type": "string",
@@ -89,17 +93,23 @@
           "method_refs": {
             "type": "array",
             "uniqueItems": true,
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
           "field_refs": {
             "type": "array",
             "uniqueItems": true,
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
           "class_refs": {
             "type": "array",
             "uniqueItems": true,
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
@@ -110,7 +120,15 @@
     "boundaries": {
       "type": "array",
       "minItems": 1,
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_set": {
+      "enum": [
+        "core",
+        "redstone"
+      ]
     }
   }
 }
