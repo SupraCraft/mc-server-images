@@ -265,5 +265,6 @@ jobs:
             out/stock/result.json
             out/instrumented/result.json
             out/instrumented/trace.jsonl
+            out/instrumented/diagnostic.json
             out/observer-ab-report.json
           retention-days: 14
