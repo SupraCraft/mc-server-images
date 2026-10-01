@@ -315,5 +315,20 @@ class RuntimeCausalCalibrationTests(unittest.TestCase):
         )
 
 
+    def test_runtime_path_search_horizon_covers_long_bounded_chain(self):
+        graph={}
+        for i in range(42):
+            graph[f"n{i}"]=[]
+        for i in range(41):
+            graph[f"n{i}"].append((
+                f"n{i+1}",
+                {"edge_type":"exact","certainty":"adequate"},
+            ))
+        path=cal.shortest_path(graph,"n0",{"n41"})
+        self.assertIsNotNone(path)
+        self.assertEqual(41,len(path))
+
+
+
 if __name__=="__main__":
     unittest.main()
