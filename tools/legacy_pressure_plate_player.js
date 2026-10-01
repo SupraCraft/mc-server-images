@@ -38,7 +38,9 @@ const observation = observePos
 
 function persistObservation () {
   if (!observation || !observationPath) return
-  fs.writeFileSync(observationPath, JSON.stringify(observation, null, 2) + '\n')
+  const tmpPath = observationPath + '.tmp'
+  fs.writeFileSync(tmpPath, JSON.stringify(observation, null, 2) + '\n')
+  fs.renameSync(tmpPath, observationPath)
 }
 
 function observeBlock (block, source) {
