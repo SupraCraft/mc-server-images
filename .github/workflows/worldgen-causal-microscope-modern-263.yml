@@ -70,20 +70,53 @@ jobs:
             -DskipTests package
           agent="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar"
           bridge="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar"
-          test -s "$agent"
-          test -s "$bridge"
-          manifest="$(unzip -p "$agent" META-INF/MANIFEST.MF | tr -d '\\r\\n ')"
-          grep -q \
-            'Premain-Class:org.supracraft.microscope.Agent' <<<"$manifest"
-          grep -q \
-            'Boot-Class-Path:causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar' \
-            <<<"$manifest"
-          unzip -l "$bridge" | grep -q \
-            'org/supracraft/microscope/TraceRuntime.class'
-          ! unzip -l "$bridge" | grep -q 'org/objectweb/asm/'
-          unzip -l "$agent" | grep -q \
-            'org/supracraft/microscope/internal/asm/ClassReader.class'
-          ! unzip -l "$agent" | grep -q 'org/objectweb/asm/ClassReader.class'
+          AGENT_JAR="$agent" BRIDGE_JAR="$bridge" python - <<'PY'
+          import json,os,pathlib,zipfile
+          agent=pathlib.Path(os.environ["AGENT_JAR"])
+          bridge=pathlib.Path(os.environ["BRIDGE_JAR"])
+          assert agent.is_file() and agent.stat().st_size>0,agent
+          assert bridge.is_file() and bridge.stat().st_size>0,bridge
+          with zipfile.ZipFile(agent) as z:
+              names=set(z.namelist())
+              manifest=z.read("META-INF/MANIFEST.MF").decode(
+                  "utf-8",errors="replace"
+              ).replace("\r\n ","").replace("\n ","")
+          with zipfile.ZipFile(bridge) as z:
+              bridge_names=set(z.namelist())
+          checks={
+              "premain":(
+                  "Premain-Class: org.supracraft.microscope.Agent"
+                  in manifest
+              ),
+              "boot_class_path":(
+                  "Boot-Class-Path: "
+                  "causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar"
+                  in manifest
+              ),
+              "bridge_trace_runtime":(
+                  "org/supracraft/microscope/TraceRuntime.class"
+                  in bridge_names
+              ),
+              "bridge_no_asm":not any(
+                  name.startswith("org/objectweb/asm/")
+                  for name in bridge_names
+              ),
+              "agent_relocated_asm":(
+                  "org/supracraft/microscope/internal/asm/ClassReader.class"
+                  in names
+              ),
+              "agent_no_unrelocated_asm":(
+                  "org/objectweb/asm/ClassReader.class" not in names
+              ),
+          }
+          print(json.dumps({
+              "schema":"supracraft-modern-agent-packaging-check/1",
+              "agent_size":agent.stat().st_size,
+              "bridge_size":bridge.stat().st_size,
+              "checks":checks,
+          },indent=2,sort_keys=True))
+          assert all(checks.values()),checks
+          PY
           echo "MICROSCOPE_AGENT=$PWD/$agent" >> "$GITHUB_ENV"
 
       - name: Stock exact 26.3 canary
@@ -274,6 +307,8 @@ jobs:
           name: causal-microscope-modern-26.3
           path: |
             bench/worldgen/observability/modern-26.3-java25-capability-manifest.json
+            tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar
+            tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar
             out/stock/result.json
             out/instrumented/result.json
             out/instrumented/trace.jsonl
