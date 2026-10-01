@@ -9,6 +9,7 @@ from pathlib import Path
 import nbtlib
 
 from analyze_legacy_causal_machinery import (
+    COMMAND_ROLE,
     analyze as analyze_machinery,
     byte_values,
     chunk_level,
@@ -301,6 +302,36 @@ def scoped_execution_receipt(control, active, scope, diff):
         "interpretation_limit":"No target delta does not distinguish failure, no-op, same-state actuation, or an effect outside captured targets.",
     }
 
+def presentation_feedback_command_state_changes(receipt, diff):
+    """Return compact scoped changes for commands classified as feedback surfaces.
+
+    This is execution-state evidence only. It deliberately does not claim that a
+    player received, perceived, understood, or benefited from the feedback.
+    """
+    scoped={row.get("node_id"):row for row in receipt.get("commands",[])}
+    rows=[]
+    for change in diff.get("command_block_changes",[]):
+        nid=change.get("node_id")
+        command=scoped.get(nid)
+        if command is None:
+            continue
+        control=command.get("control") or {}
+        activated=command.get("activated") or {}
+        verb=control.get("verb") or activated.get("verb")
+        if "presentation_feedback" not in COMMAND_ROLE.get(verb,[]):
+            continue
+        changed_fields=sorted((change.get("changes") or {}).keys())
+        rows.append({
+            "node_id":nid,
+            "verb":verb,
+            "changed_fields":changed_fields,
+            "success_count_changed":"success_count" in changed_fields,
+            "control_success_count":control.get("success_count"),
+            "activated_success_count":activated.get("success_count"),
+        })
+    return rows
+
+
 def live_testforblock(proc, log_path, probe, expected_meta):
     """Query exact live sensor block state without retaining raw console feedback."""
     family=probe["family"]
@@ -548,6 +579,9 @@ def main():
                 control_scope,
                 diff,
             )
+            feedback_command_changes=presentation_feedback_command_state_changes(
+                receipt,diff
+            )
             control_sensor=control["snapshot"].get("sensor_state")
             active_sensor=active["snapshot"].get("sensor_state")
             sensor_state_changed=control_sensor != active_sensor
@@ -560,6 +594,7 @@ def main():
               ),
               "world_target_source_scope":control_scope,
               "execution_receipt":receipt,
+              "presentation_feedback_command_state_changes":feedback_command_changes,
               "control_ready_seconds":control["ready_seconds"],
               "activated_ready_seconds":active["ready_seconds"],
               "player_actor":{
@@ -590,6 +625,13 @@ def main():
                     )
                 ),
                 "command_block_change_count":len(diff["command_block_changes"]),
+                "presentation_feedback_command_state_change_count":len(
+                    feedback_command_changes
+                ),
+                "presentation_feedback_success_count_change_count":sum(
+                    1 for row in feedback_command_changes
+                    if row["success_count_changed"]
+                ),
                 "scoreboard_change_count":len(diff["scoreboard_changes"]),
                 "world_target_change_count":len(diff["world_target_changes"]),
                 "world_target_actuation_observed":bool(diff["world_target_changes"]),
@@ -616,6 +658,7 @@ def main():
         "Stable lever/button activation remains a server-side powered-block-state surrogate; pressure-plate control and activated arms both use the same exact-1.8.8 offline player actor, with only the activated arm moving that player from an identical neutral platform onto the plate.",
         "Pressure-plate activation is observed both by an exact 1.8.8 testforblock metadata query and by the paired exact-version player client's block-state stream; only compact metadata/boolean evidence is retained, and later saved metadata may legitimately return to zero after the trigger leaves.",
         "Compact execution receipts retain selected command hashes/verbs/state fields and scoped target block states for both trials, including unchanged values; raw command/message text is not retained.",
+        "Presentation-feedback command state changes are reported only for commands inside the selected compact command scope and retain verb, node id, changed field names, and SuccessCount values only; they do not prove client delivery, perception, comprehension, or qualitative value.",
         "A missing observed target delta does not distinguish failure, no-op, same-state actuation, entity effects, unresolved/dynamic targets, or changes outside captured target positions.",
         "Every control and activated trial starts from a fresh copy of the exact source artifact."
       ]
