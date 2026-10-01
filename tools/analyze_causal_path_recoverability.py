@@ -37,6 +37,14 @@ def iter_edges(doc):
 
 def normalize(doc):
     nodes={n["node_id"]:n for n in doc.get("nodes",[]) if n.get("node_id")}
+    # Legacy causal extraction emits scoreboard objectives as declared semantic
+    # state nodes outside the physical machinery node list. Admit those exact
+    # declared nodes so their read/write edges are not silently unresolved.
+    semantic_state=doc.get("semantic_state",{})
+    if isinstance(semantic_state,dict):
+        for n in semantic_state.get("objectives",[]):
+            if isinstance(n,dict) and n.get("node_id"):
+                nodes.setdefault(n["node_id"],n)
     edges=list(iter_edges(doc))
     trusted=defaultdict(set); candidate=defaultdict(set)
     unresolved=[]
