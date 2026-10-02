@@ -13,6 +13,12 @@ on:
       - 'tools/infer_redstone_mechanisms.py'
       - 'tools/validate_modern_redstone_microscope.py'
       - 'tools/run_modern_redstone_microscope_canary.py'
+      - 'tests/test_redstone_netlist.py'
+      - 'tools/correlate_redstone_template_netlist.py'
+      - 'tools/validate_modern_redstone_templates.py'
+      - 'tools/run_modern_redstone_template_canary.py'
+      - 'tools/correlate_redstone_netlist_runtime.py'
+      - 'tools/build_redstone_netlist.py'
       - 'tools/discover_minecraft_observability.py'
       - 'tests/test_causal_microscope_contract.py'
       - '.github/workflows/worldgen-causal-microscope-modern-264-snapshot-2.yml'
@@ -28,7 +34,7 @@ permissions:
 jobs:
   qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       WORLDGEN_RUNNER_LABEL: ubuntu-latest
       EXPECTED_VERSION: 26.4-snapshot-2
@@ -72,13 +78,19 @@ jobs:
           set -euo pipefail
           python -m unittest -v \
             tests.test_causal_microscope_contract \
-            tests.test_redstone_mechanism_inference
+            tests.test_redstone_mechanism_inference \
+            tests.test_redstone_netlist
           python -m py_compile \
             tools/run_modern_microscope_canary.py \
             tools/run_modern_redstone_microscope_canary.py \
             tools/validate_modern_redstone_microscope.py \
             tools/infer_redstone_mechanisms.py \
             tools/correlate_redstone_mechanism_runtime.py \
+            tools/build_redstone_netlist.py \
+            tools/correlate_redstone_netlist_runtime.py \
+            tools/run_modern_redstone_template_canary.py \
+            tools/validate_modern_redstone_templates.py \
+            tools/correlate_redstone_template_netlist.py \
             tools/analyze_modern_causal_machinery.py \
             tools/discover_minecraft_observability.py
 
@@ -376,6 +388,11 @@ jobs:
               --graph "out/redstone-$fixture-machinery.json" \
               --output "out/redstone-$fixture-mechanism.json" \
               --dot-output "out/redstone-$fixture-schematic.dot"
+            python tools/build_redstone_netlist.py \
+              --graph "out/redstone-$fixture-machinery.json" \
+              --output "out/redstone-$fixture-netlist.json" \
+              --dot-output "out/redstone-$fixture-functional.dot" \
+              --layers-output "out/redstone-$fixture-layers.json"
           done
 
       - name: Correlate snapshot inferred schematic with observed behavior
@@ -389,6 +406,107 @@ jobs:
             --positive-result out/redstone-positive-instrumented/result.json \
             --gap-result out/redstone-gap-instrumented/result.json \
             --output out/redstone-mechanism-runtime-correlation.json
+
+      - name: Correlate snapshot collapsed wire netlist with observed behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/correlate_redstone_netlist_runtime.py \
+            --positive-netlist out/redstone-positive-netlist.json \
+            --gap-netlist out/redstone-gap-netlist.json \
+            --runtime-report out/redstone-observer-ab-report.json \
+            --output out/redstone-netlist-runtime-correlation.json
+
+      - name: Stock exact snapshot standard redstone templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p \
+            out/repeater-d1-stock out/repeater-d1-instrumented \
+            out/repeater-d4-stock out/repeater-d4-instrumented \
+            out/not-gate-stock out/not-gate-instrumented
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture repeater_delay --delay 1 \
+            --output-dir out/repeater-d1-stock \
+            --expected-version "$EXPECTED_VERSION"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture repeater_delay --delay 4 \
+            --output-dir out/repeater-d4-stock \
+            --expected-version "$EXPECTED_VERSION"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture not_gate \
+            --output-dir out/not-gate-stock \
+            --expected-version "$EXPECTED_VERSION"
+
+      - name: Instrumented exact snapshot standard redstone templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture repeater_delay --delay 1 \
+            --output-dir out/repeater-d1-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id modern-26.4-snapshot-2-java25 \
+            --expected-version "$EXPECTED_VERSION"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture repeater_delay --delay 4 \
+            --output-dir out/repeater-d4-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id modern-26.4-snapshot-2-java25 \
+            --expected-version "$EXPECTED_VERSION"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture not_gate \
+            --output-dir out/not-gate-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id modern-26.4-snapshot-2-java25 \
+            --expected-version "$EXPECTED_VERSION"
+
+      - name: Validate exact snapshot standard template runtime contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/validate_modern_redstone_templates.py \
+            --root out \
+            --version "$EXPECTED_VERSION" \
+            --output out/redstone-template-runtime-report.json
+
+      - name: Recover exact snapshot standard template netlists
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fixture in repeater-d1 repeater-d4 not-gate; do
+            python tools/analyze_modern_causal_machinery.py \
+              --world-zip "out/$fixture-stock/world.zip" \
+              --output "out/$fixture-machinery.json"
+            python tools/build_redstone_netlist.py \
+              --graph "out/$fixture-machinery.json" \
+              --output "out/$fixture-netlist.json" \
+              --dot-output "out/$fixture-functional.dot" \
+              --layers-output "out/$fixture-layers.json"
+          done
+
+      - name: Correlate exact snapshot templates with runtime contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/correlate_redstone_template_netlist.py \
+            --runtime-report out/redstone-template-runtime-report.json \
+            --repeater-d1-netlist out/repeater-d1-netlist.json \
+            --repeater-d4-netlist out/repeater-d4-netlist.json \
+            --not-netlist out/not-gate-netlist.json \
+            --output out/redstone-template-netlist-runtime-correlation.json
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -420,4 +538,37 @@ jobs:
             out/redstone-gap-mechanism.json
             out/redstone-gap-schematic.dot
             out/redstone-mechanism-runtime-correlation.json
+            out/redstone-positive-netlist.json
+            out/redstone-positive-functional.dot
+            out/redstone-positive-layers.json
+            out/redstone-gap-netlist.json
+            out/redstone-gap-functional.dot
+            out/redstone-gap-layers.json
+            out/redstone-netlist-runtime-correlation.json
+            out/repeater-d1-stock/result.json
+            out/repeater-d1-stock/world.zip
+            out/repeater-d1-instrumented/result.json
+            out/repeater-d1-instrumented/trace.jsonl
+            out/repeater-d4-stock/result.json
+            out/repeater-d4-stock/world.zip
+            out/repeater-d4-instrumented/result.json
+            out/repeater-d4-instrumented/trace.jsonl
+            out/not-gate-stock/result.json
+            out/not-gate-stock/world.zip
+            out/not-gate-instrumented/result.json
+            out/not-gate-instrumented/trace.jsonl
+            out/repeater-d1-machinery.json
+            out/repeater-d1-netlist.json
+            out/repeater-d1-functional.dot
+            out/repeater-d1-layers.json
+            out/repeater-d4-machinery.json
+            out/repeater-d4-netlist.json
+            out/repeater-d4-functional.dot
+            out/repeater-d4-layers.json
+            out/not-gate-machinery.json
+            out/not-gate-netlist.json
+            out/not-gate-functional.dot
+            out/not-gate-layers.json
+            out/redstone-template-runtime-report.json
+            out/redstone-template-netlist-runtime-correlation.json
           retention-days: 14
