@@ -101,12 +101,21 @@
     {
       "id": "or_gate",
       "family": "boolean",
-      "status": "reference_candidate_only",
+      "status": "qualified_template",
       "runtime_contract": "truth table 00->0, 10->1, 01->1, 11->1",
       "reference_ids": [
         "minecraft_education_boolean_logic",
         "minecraft_education_logic_gates"
-      ]
+      ],
+      "qualification_evidence": {
+        "authority_issue": "SupraCraft/mc-server-images#11",
+        "authority_comment_id": 5955156894,
+        "exact_versions": [
+          "26.3",
+          "26.4-snapshot-2"
+        ],
+        "contract": "complete_four_row_truth_table_plus_static_netlist_match"
+      }
     },
     {
       "id": "and_gate",
