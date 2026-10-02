@@ -1241,7 +1241,7 @@ def diagnose_xor_state(process,log_path,output_dir,phase):
         ("not_a_input",-1,100,-2),
         ("not_b_input",-1,100,2),
         ("nand_junction",-4,101,0),
-        ("nand_route_end",6,102,3),
+        ("nand_route_end",6,102,4),
         ("intermediate_join",9,103,0),
         ("intermediate_feed",10,103,0),
         ("output_wire",12,104,0),
@@ -1256,7 +1256,7 @@ def diagnose_xor_state(process,log_path,output_dir,phase):
         ("not_a_inverter",-2,101,-2),
         ("not_b_inverter",-2,101,2),
         ("or_stage_inverter",7,103,-3),
-        ("nand_stage_inverter",7,103,3),
+        ("nand_stage_inverter",7,103,4),
         ("final_inverter",11,104,0),
     ):
         for lit in (False,True):
@@ -1403,8 +1403,8 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
 
             # Merge NOT A and NOT B into the NAND-equivalent branch at y=101.
             nand_wire_positions=[
-                (-3,-2),(-4,-2),(-4,-1),(-4,0),(-4,1),(-4,2),(-4,3),
-                (-3,3),(-2,3),(-1,3),(0,3),(1,3),(2,3),(3,3),
+                (-3,-2),(-4,-2),(-4,-1),(-4,0),(-4,1),(-4,2),(-4,3),(-4,4),
+                (-3,4),(-2,4),(-1,4),(0,4),(1,4),(2,4),(3,4),
             ]
             for x,z in nand_wire_positions:
                 if not (x==-3 and z in {-2,2}):
@@ -1426,9 +1426,9 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 (5,101,-2,"or_route_support_2"),
                 (5,101,-3,"or_route_support_3"),
                 (6,101,-3,"or_route_support_4"),
-                (4,101,3,"nand_rise_support"),
-                (5,101,3,"nand_route_support_5"),
-                (6,101,3,"nand_route_support_6"),
+                (4,101,4,"nand_rise_support"),
+                (5,101,4,"nand_route_support_5"),
+                (6,101,4,"nand_route_support_6"),
             ):
                 checked_command(
                     p,f"setblock {x} {y} {z} minecraft:stone",
@@ -1441,9 +1441,9 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 (5,102,-2,"or_route_2"),
                 (5,102,-3,"or_route_3"),
                 (6,102,-3,"or_route_4"),
-                (4,102,3,"nand_rise"),
-                (5,102,3,"nand_route_5"),
-                (6,102,3,"nand_route_6"),
+                (4,102,4,"nand_rise"),
+                (5,102,4,"nand_route_5"),
+                (6,102,4,"nand_route_6"),
             ):
                 checked_command(
                     p,f"setblock {x} {y} {z} minecraft:redstone_wire",
@@ -1454,16 +1454,17 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
             # merge those inverter outputs, then invert once more.
             for x,y,z,name in (
                 (7,102,-3,"xor_or_input_support"),
-                (7,102,3,"xor_nand_input_support"),
+                (7,102,4,"xor_nand_input_support"),
                 (8,102,-3,"xor_mid_a_support"),
                 (9,102,-3,"xor_mid_a2_support"),
                 (9,102,-2,"xor_mid_a3_support"),
                 (9,102,-1,"xor_mid_a4_support"),
                 (9,102,0,"xor_mid_join_support"),
-                (9,102,1,"xor_mid_b4_support"),
-                (9,102,2,"xor_mid_b3_support"),
-                (9,102,3,"xor_mid_b2_support"),
-                (8,102,3,"xor_mid_b_support"),
+                (9,102,1,"xor_mid_b5_support"),
+                (9,102,2,"xor_mid_b4_support"),
+                (9,102,3,"xor_mid_b3_support"),
+                (9,102,4,"xor_mid_b2_support"),
+                (8,102,4,"xor_mid_b_support"),
                 (10,102,0,"xor_mid_feed_support"),
                 (11,103,0,"xor_final_support"),
                 (12,103,0,"xor_output_support"),
@@ -1473,12 +1474,12 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                     name,log_path,output_dir,
                 )
             checked_command(p,"setblock 7 103 -3 minecraft:redstone_torch","xor_or_input_inverter",log_path,output_dir)
-            checked_command(p,"setblock 7 103 3 minecraft:redstone_torch","xor_nand_input_inverter",log_path,output_dir)
+            checked_command(p,"setblock 7 103 4 minecraft:redstone_torch","xor_nand_input_inverter",log_path,output_dir)
             for x,z,name in (
                 (8,-3,"xor_mid_a"),(9,-3,"xor_mid_a2"),(9,-2,"xor_mid_a3"),
                 (9,-1,"xor_mid_a4"),(9,0,"xor_mid_join"),
-                (9,1,"xor_mid_b4"),(9,2,"xor_mid_b3"),(9,3,"xor_mid_b2"),
-                (8,3,"xor_mid_b"),(10,0,"xor_mid_feed"),
+                (9,1,"xor_mid_b5"),(9,2,"xor_mid_b4"),(9,3,"xor_mid_b3"),
+                (9,4,"xor_mid_b2"),(8,4,"xor_mid_b"),(10,0,"xor_mid_feed"),
             ):
                 checked_command(
                     p,f"setblock {x} 103 {z} minecraft:redstone_wire",
@@ -1620,7 +1621,7 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
             "input_b_high_command_sha256":digest_bytes(XOR_B_HIGH_COMMAND),
             "input_b_low_command_sha256":digest_bytes(XOR_B_LOW_COMMAND),
             "input_inverter_positions":[[-2,101,-2],[-2,101,2]],
-            "stage_inverter_positions":[[7,103,-3],[7,103,3]],
+            "stage_inverter_positions":[[7,103,-3],[7,103,4]],
             "final_inverter_position":[11,104,0],
             "output_wire_position":[12,104,0],
             "output_lamp_position":[13,104,0],
@@ -1629,14 +1630,14 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 [2,100,1],[2,100,2],[1,100,2],[3,100,0],
                 [-1,100,-2],[-1,100,2],
                 [-3,101,-2],[-4,101,-2],[-4,101,-1],[-4,101,0],
-                [-4,101,1],[-4,101,2],[-4,101,3],[-3,101,3],
-                [-2,101,3],[-1,101,3],[0,101,3],[1,101,3],
-                [2,101,3],[3,101,3],
+                [-4,101,1],[-4,101,2],[-4,101,3],[-4,101,4],
+                [-3,101,4],[-2,101,4],[-1,101,4],[0,101,4],
+                [1,101,4],[2,101,4],[3,101,4],
                 [4,101,0],[5,102,0],[5,102,-1],[5,102,-2],
-                [5,102,-3],[6,102,-3],[4,102,3],[5,102,3],[6,102,3],
+                [5,102,-3],[6,102,-3],[4,102,4],[5,102,4],[6,102,4],
                 [8,103,-3],[9,103,-3],[9,103,-2],[9,103,-1],
-                [9,103,0],[9,103,1],[9,103,2],[9,103,3],
-                [8,103,3],[10,103,0],
+                [9,103,0],[9,103,1],[9,103,2],[9,103,3],[9,103,4],
+                [8,103,4],[10,103,0],
             ],
             "truth_table_sequence":[
                 {"phase":"00","a":False,"b":False,"final_inverter_lit":False,
