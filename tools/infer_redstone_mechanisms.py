@@ -337,22 +337,90 @@ def infer_component(
     else:
         bounds=None
 
-    signature_rows=[]
-    for n in sorted(members):
+    origin=(
+        [min(p[i] for p in positions) for i in range(3)]
+        if positions else [0,0,0]
+    )
+    normalized_nodes=[]
+    for n in members:
         node=nodes[n]
-        signature_rows.append({
+        p=pos_tuple(node)
+        rel=[p[i]-origin[i] for i in range(3)] if p is not None else None
+        normalized_nodes.append({
             "node_id":n,
+            "relative_position":rel,
             "block":node.get("block"),
             "properties":node.get("properties") or {},
             "primitive":primitive(node),
         })
-    for e in sorted(
-        (x for x in functional_links if x["source"] in member_set and x["target"] in member_set),
-        key=lambda x:(x["source"],x["target"],str(x["edge_type"])),
-    ):
-        signature_rows.append({"edge":e})
+    normalized_nodes.sort(
+        key=lambda x:(
+            tuple(x["relative_position"] or ()),
+            str(x["block"]),
+            str(x["primitive"]),
+            json.dumps(x["properties"],sort_keys=True),
+        )
+    )
+    canonical_id={
+        row["node_id"]:f"n{i}"
+        for i,row in enumerate(normalized_nodes)
+    }
+    topology_rows=[
+        {
+            "id":canonical_id[row["node_id"]],
+            "relative_position":row["relative_position"],
+            "block":row["block"],
+            "properties":row["properties"],
+            "primitive":row["primitive"],
+        }
+        for row in normalized_nodes
+    ]
+    functional_rows=[
+        {
+            "source":canonical_id[e["source"]],
+            "target":canonical_id[e["target"]],
+            "edge_type":e.get("edge_type"),
+            "certainty":e.get("certainty"),
+        }
+        for e in functional_links
+        if e["source"] in member_set and e["target"] in member_set
+    ]
+    functional_rows.sort(
+        key=lambda x:(x["source"],x["target"],str(x["edge_type"]),str(x["certainty"]))
+    )
     topology_sha256=hashlib.sha256(
-        json.dumps(signature_rows,sort_keys=True,separators=(",",":")).encode()
+        json.dumps(
+            {"nodes":topology_rows,"links":functional_rows},
+            sort_keys=True,separators=(",",":")
+        ).encode()
+    ).hexdigest()
+    functional_sha256=hashlib.sha256(
+        json.dumps(
+            {
+                "primitives":sorted(row["primitive"] for row in normalized_nodes),
+                "links":[
+                    {
+                        "source_primitive":primitive(nodes[e["source"]]),
+                        "target_primitive":primitive(nodes[e["target"]]),
+                        "edge_type":e.get("edge_type"),
+                        "certainty":e.get("certainty"),
+                    }
+                    for e in sorted(
+                        (
+                            x for x in functional_links
+                            if x["source"] in member_set and x["target"] in member_set
+                        ),
+                        key=lambda x:(
+                            primitive(nodes[x["source"]]),
+                            primitive(nodes[x["target"]]),
+                            str(x.get("edge_type")),
+                            str(x.get("certainty")),
+                        ),
+                    )
+                ],
+            },
+            sort_keys=True,separators=(",",":")
+        ).encode()
     ).hexdigest()
 
     return {
@@ -360,6 +428,8 @@ def infer_component(
         "node_count":len(members),
         "bounds":bounds,
         "topology_sha256":topology_sha256,
+        "functional_signature_sha256":functional_sha256,
+        "signature_normalization":"translation_invariant_rotation_sensitive",
         "block_counts":dict(sorted(block_counts.items())),
         "primitive_counts":dict(sorted(primitive_counts.items())),
         "input_nodes":sorted(inputs),
