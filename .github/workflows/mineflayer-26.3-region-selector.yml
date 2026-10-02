@@ -1,0 +1,82 @@
+name: Vanilla Java 26.3 player-region selector qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - probe/mineflayer-26.3-region-selector
+    paths:
+      - .github/workflows/mineflayer-26.3-region-selector.yml
+      - tools/probe_mineflayer_region_selector_26_3.py
+      - tools/probe_mineflayer_presence.js
+      - tools/smoke_vanilla_runtime.py
+      - tools/install_experimental_prismarine_26_3.sh
+      - tools/apply_mineflayer_tick_end_26_3.py
+      - probes/26.3-release-identity.json
+      - probes/mineflayer-runtime/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/mineflayer-26.3-region-selector.yml
+      - tools/probe_mineflayer_region_selector_26_3.py
+      - tools/probe_mineflayer_presence.js
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mineflayer-26-3-region-selector-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Assemble pinned experimental Prismarine stack
+        shell: bash
+        run: |
+          runtime_root="/tmp/supracraft-prismarine-26.3"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
+
+      - name: Qualify official-server player-region selectors
+        shell: bash
+        run: |
+          mkdir -p out
+          python tools/probe_mineflayer_region_selector_26_3.py \
+            --evidence probes/26.3-release-identity.json \
+            --output out/26.3-player-region-selector.json
+
+      - name: Publish compact evidence
+        shell: bash
+        run: |
+          {
+            echo "## Minecraft Java 26.3 vanilla player-region selector"
+            echo
+            echo '~~~json'
+            cat out/26.3-player-region-selector.json
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vanilla-26.3-player-region-selector
+          path: out/26.3-player-region-selector.json
+          if-no-files-found: error
