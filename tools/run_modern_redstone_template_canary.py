@@ -703,6 +703,7 @@ def run_and_gate(args,evidence,server_jar,output_dir):
                 (2,100,-1,"intermediate_support_a"),
                 (2,100,0,"intermediate_support_junction"),
                 (2,100,1,"intermediate_support_b"),
+                (3,100,0,"intermediate_stub_support"),
                 (4,101,0,"final_torch_support"),
                 (5,101,0,"output_wire_support"),
             ):
