@@ -1320,6 +1320,19 @@ def diagnose_xor_state(process,log_path,output_dir,phase):
                 "final_inverter":"unlit",
                 "output_wire":"unpowered",
             },
+            "01_timeout":{
+                "source_a":"air",
+                "source_b":"redstone_block",
+                "or_branch":"powered",
+                "not_a_inverter":"lit",
+                "not_b_inverter":"unlit",
+                "nand_branch":"powered",
+                "or_stage_inverter":"unlit",
+                "nand_stage_inverter":"unlit",
+                "intermediate_branch":"unpowered",
+                "final_inverter":"lit",
+                "output_wire":"powered",
+            },
         }.get(phase,{}),
         "observed":compact,
         "nonsemantic_observations":{
@@ -1571,12 +1584,38 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 raise
 
             checked_command(p,XOR_B_HIGH_COMMAND,"xor_b_high",log_path,output_dir)
-            b_attempts,b_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_XOR_01_PASS",
-                xor_probe(False,True,True,15),
-                "xor_01",timeout_seconds=10.0,
-            )
+            try:
+                b_attempts,b_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_XOR_01_PASS",
+                    xor_probe(False,True,True,15),
+                    "xor_01",timeout_seconds=10.0,
+                )
+            except SystemExit as exc:
+                receipt=diagnose_xor_state(
+                    p,log_path,output_dir,"01_timeout"
+                )
+                checked_command(
+                    p,"save-all flush","xor_01_diagnostic_save",
+                    log_path,output_dir,
+                )
+                time.sleep(0.5)
+                checked_command(
+                    p,"stop","xor_01_diagnostic_stop",
+                    log_path,output_dir,
+                )
+                rc=p.wait(timeout=60)
+                zip_world(root/"world",output_dir/"world.zip")
+                receipt["original_failure"]=str(exc)
+                receipt["server_exit_code"]=rc
+                receipt["world_sha256"]=hashlib.sha256(
+                    (output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                (output_dir/"diagnostic.json").write_text(
+                    json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+                )
+                print(json.dumps(receipt,indent=2,sort_keys=True))
+                raise
 
             checked_command(p,XOR_A_HIGH_COMMAND,"xor_both_high",log_path,output_dir)
             both_attempts,both_wait=wait_for_marker(
