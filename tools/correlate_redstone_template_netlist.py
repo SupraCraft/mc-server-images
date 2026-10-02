@@ -218,6 +218,41 @@ def validate_xor(doc):
     }
 
 
+
+def validate_rising_edge(doc):
+    rows=motifs(doc,"rising_edge_detector")
+    assert rows,"missing rising_edge_detector"
+    qualified=[
+        r for r in rows
+        if r.get("input_source_component_id")
+        and r.get("delay_component_id")
+        and r.get("direct_inverter_component_id")
+        and r.get("intermediate_net_id")
+        and r.get("final_inverter_component_id")
+        and len(set(r.get("output_sink_component_ids") or []))>=1
+    ]
+    assert qualified,rows
+    row=qualified[0]
+    cmap=component_map(doc)
+    assert cmap[row["delay_component_id"]]["primitive"]=="buffer_delay",row
+    assert cmap[row["direct_inverter_component_id"]]["primitive"]=="inverter",row
+    assert cmap[row["final_inverter_component_id"]]["primitive"]=="inverter",row
+    return {
+        "motif_count":len(rows),
+        "matched_component_ids":row["component_ids"],
+        "input_source_component_id":row["input_source_component_id"],
+        "input_net_id":row["input_net_id"],
+        "delay_component_id":row["delay_component_id"],
+        "configured_delay":row.get("configured_delay"),
+        "direct_inverter_component_id":row["direct_inverter_component_id"],
+        "intermediate_net_id":row["intermediate_net_id"],
+        "final_inverter_component_id":row["final_inverter_component_id"],
+        "output_sink_component_ids":sorted(set(row["output_sink_component_ids"])),
+        "net_ids":row["net_ids"],
+        "functional_netlist_sha256":doc["signatures"]["functional_netlist_sha256"],
+        "horizontal_d4_topology_sha256":doc["signatures"]["horizontal_d4_topology_sha256"],
+    }
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--runtime-report",type=Path,required=True)
@@ -228,6 +263,7 @@ def main():
     ap.add_argument("--nor-netlist",type=Path,required=True)
     ap.add_argument("--and-netlist",type=Path,required=True)
     ap.add_argument("--xor-netlist",type=Path,required=True)
+    ap.add_argument("--rising-edge-netlist",type=Path,required=True)
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
 
@@ -239,6 +275,7 @@ def main():
     nor=validate_nor(load(args.nor_netlist))
     conj=validate_and(load(args.and_netlist))
     xor=validate_xor(load(args.xor_netlist))
+    rising=validate_rising_edge(load(args.rising_edge_netlist))
 
     rt_repeater=runtime["repeater_delay_line"]
     assert rt_repeater["ordering_pass"] is True
@@ -251,6 +288,7 @@ def main():
     assert runtime["nor_gate"]["truth_table_pass"] is True
     assert runtime["and_gate"]["truth_table_pass"] is True
     assert runtime["xor_gate"]["truth_table_pass"] is True
+    assert runtime["rising_edge_detector"]["temporal_contract_pass"] is True
 
     report={
         "schema":"supracraft-redstone-netlist-runtime-correlation/1",
@@ -294,6 +332,17 @@ def main():
             "runtime_truth_table":runtime["xor_gate"]["truth_table_sequence"],
             "correlation_class":
                 "xor_gate_template_supported_by_runtime_truth_table",
+        },
+        "rising_edge_detector":{
+            "static":rising,
+            "runtime_temporal_sequence":
+                runtime["rising_edge_detector"]["temporal_sequence"],
+            "first_rising_pulse_tick_width":
+                runtime["rising_edge_detector"]["first_rising_pulse_tick_width"],
+            "second_rising_pulse_tick_width":
+                runtime["rising_edge_detector"]["second_rising_pulse_tick_width"],
+            "correlation_class":
+                "rising_edge_detector_template_supported_by_runtime_edge_pulse_contract",
         },
         "boundary":"template identification is exact-fixture/version evidence; broader motif recognition still requires independent examples and hard negatives",
     }

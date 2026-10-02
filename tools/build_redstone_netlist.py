@@ -85,6 +85,8 @@ RUNTIME_CONTRACTS={
         "truth table: exercise 00, 10, 01, and 11; qualified output must be high only for 11 and low for all other input states",
     "xor_gate":
         "truth table: exercise 00, 10, 01, and 11; qualified output must be high exactly when one of the two inputs is asserted",
+    "rising_edge_detector":
+        "temporal contract: a low-to-high source edge must produce one bounded positive output pulse that returns low while the source remains high; high-to-low must not produce a positive pulse; a second low-to-high edge after settling must retrigger",
     "rs_latch":
         "set/reset/hold sequence must demonstrate complementary outputs and retained state after stimulus removal; simultaneous set+reset is measured as an invalid-state boundary and post-invalid resolution is observed, not assumed",
 }
@@ -535,6 +537,124 @@ def motifs(components,nets):
                     "evidence":["explicit_repeater_rear_input","explicit_repeater_front_output"],
                     "required_runtime_contract":RUNTIME_CONTRACTS["repeater_delay_line"],
                 })
+
+
+    # Rising-edge detector: one source/input net fans out to a direct inverter
+    # and a repeater delay.  The direct-inverter output and repeater output
+    # merge on one intermediate net that drives a final inverter.  Structural
+    # recognition is candidate-only until the temporal edge/pulse contract is
+    # observed at runtime.
+    for delay_comp in components:
+        if delay_comp["primitive"]!="buffer_delay":
+            continue
+        delay_inputs=[
+            p for p in delay_comp["ports"]
+            if p["kind"]=="input" and p.get("net_id")
+        ]
+        delay_outputs=[
+            p for p in delay_comp["ports"]
+            if p["kind"]=="output" and p.get("net_id")
+        ]
+        for din in delay_inputs:
+            input_net_id=din["net_id"]
+            input_net=net_by_id.get(input_net_id) or {}
+            source_ids=sorted({
+                p["component_id"]
+                for p in input_net.get("ports",[])
+                if p.get("kind")=="output"
+                and p.get("component_id") in by_id
+                and by_id[p["component_id"]]["primitive"] in SOURCE_PRIMITIVES
+            })
+            if len(source_ids)!=1:
+                continue
+            for dout in delay_outputs:
+                intermediate_id=dout["net_id"]
+                if not intermediate_id or intermediate_id==input_net_id:
+                    continue
+                direct_inverters=[]
+                for inv in components:
+                    if inv["primitive"]!="inverter":
+                        continue
+                    support_ids={
+                        nid
+                        for p in inv["ports"]
+                        if p.get("kind")=="input_support"
+                        for nid in p.get("support_net_ids",[])
+                    }
+                    output_ids={
+                        p["net_id"] for p in inv["ports"]
+                        if p.get("kind")=="output" and p.get("net_id")
+                    }
+                    if input_net_id in support_ids and intermediate_id in output_ids:
+                        direct_inverters.append(inv)
+                for direct_inv in direct_inverters:
+                    for final in components:
+                        if (
+                            final["primitive"]!="inverter"
+                            or final["component_id"]==direct_inv["component_id"]
+                        ):
+                            continue
+                        final_support_ids={
+                            nid
+                            for p in final["ports"]
+                            if p.get("kind")=="input_support"
+                            for nid in p.get("support_net_ids",[])
+                        }
+                        if intermediate_id not in final_support_ids:
+                            continue
+                        output_net_ids=sorted({
+                            p["net_id"] for p in final["ports"]
+                            if p.get("kind")=="output"
+                            and p.get("net_id")
+                            and p["net_id"]!=intermediate_id
+                        })
+                        if not output_net_ids:
+                            continue
+                        sink_ids=set()
+                        for output_net_id in output_net_ids:
+                            net=net_by_id.get(output_net_id) or {}
+                            for port in net.get("ports",[]):
+                                cid=port.get("component_id")
+                                if (
+                                    port.get("kind")=="input"
+                                    and cid in by_id
+                                    and by_id[cid]["primitive"] in SINK_PRIMITIVES
+                                ):
+                                    sink_ids.add(cid)
+                        if not sink_ids:
+                            continue
+                        out.append({
+                            "template":"rising_edge_detector",
+                            "confidence":"structural_candidate_only",
+                            "component_ids":sorted(set(
+                                source_ids+
+                                [delay_comp["component_id"],
+                                 direct_inv["component_id"],
+                                 final["component_id"]]+list(sink_ids)
+                            )),
+                            "net_ids":sorted(set(
+                                [input_net_id,intermediate_id]+output_net_ids
+                            )),
+                            "input_source_component_id":source_ids[0],
+                            "input_net_id":input_net_id,
+                            "delay_component_id":delay_comp["component_id"],
+                            "configured_delay":
+                                (delay_comp.get("properties") or {}).get("delay"),
+                            "direct_inverter_component_id":
+                                direct_inv["component_id"],
+                            "intermediate_net_id":intermediate_id,
+                            "final_inverter_component_id":final["component_id"],
+                            "output_net_ids":output_net_ids,
+                            "output_sink_component_ids":sorted(sink_ids),
+                            "evidence":[
+                                "single_source_fans_out_to_direct_inverter_and_repeater",
+                                "direct_inverter_and_repeater_outputs_share_intermediate_net",
+                                "intermediate_net_drives_final_inverter",
+                                "final_inverter_output_reaches_distinct_sink_net",
+                            ],
+                            "required_runtime_contract":
+                                RUNTIME_CONTRACTS["rising_edge_detector"],
+                        })
 
     # AND via De Morgan: two independently sourced inverter outputs feed a
     # shared intermediate net that drives a third inverter. Structural shape

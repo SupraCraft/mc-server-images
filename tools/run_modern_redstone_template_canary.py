@@ -42,6 +42,8 @@ XOR_A_HIGH_COMMAND="setblock 0 100 -2 minecraft:redstone_block"
 XOR_A_LOW_COMMAND="setblock 0 100 -2 minecraft:air"
 XOR_B_HIGH_COMMAND="setblock 0 100 2 minecraft:redstone_block"
 XOR_B_LOW_COMMAND="setblock 0 100 2 minecraft:air"
+EDGE_INPUT_HIGH_COMMAND="setblock 0 100 0 minecraft:redstone_block"
+EDGE_INPUT_LOW_COMMAND="setblock 0 100 0 minecraft:air"
 
 
 def evidence_java_major(evidence: dict) -> int:
@@ -1718,12 +1720,289 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
         print(json.dumps(result,indent=2,sort_keys=True))
 
 
+
+def edge_probe(source_high,final_lit,output_power):
+    source="minecraft:redstone_block" if source_high else "minecraft:air"
+    lit="true" if final_lit else "false"
+    return (
+        f"execute if block 0 100 0 {source} "
+        f"if block 5 102 0 minecraft:redstone_torch[lit={lit}] "
+        f"if block 6 102 0 minecraft:redstone_wire[power={output_power}]"
+    )
+
+
+def prove_no_edge_pulse(process,log_path,output_dir,duration_seconds=0.9):
+    marker="SUPRACRAFT_RISING_EDGE_FALLING_VIOLATION"
+    started=time.monotonic()
+    attempts=0
+    while time.monotonic()-started<duration_seconds:
+        checked_command(
+            process,
+            "execute if block 5 102 0 minecraft:redstone_torch[lit=true] "
+            f"run say {marker}",
+            "rising_edge_falling_torch_guard",log_path,output_dir,
+        )
+        checked_command(
+            process,
+            "execute if block 6 102 0 minecraft:redstone_wire[power=15] "
+            f"run say {marker}",
+            "rising_edge_falling_wire_guard",log_path,output_dir,
+        )
+        attempts+=1
+        time.sleep(0.05)
+        if marker in log_path.read_text("utf-8",errors="replace"):
+            raise SystemExit("rising-edge detector emitted a positive pulse on falling edge")
+    return attempts,time.monotonic()-started
+
+
+def run_rising_edge_detector(args,evidence,server_jar,output_dir):
+    """Qualify direct input AND NOT(delay-4 input) as a rising-edge detector."""
+    version=evidence["minecraft_version"]
+    delay=4
+    with tempfile.TemporaryDirectory(prefix="modern-redstone-rising-edge-") as td:
+        root=Path(td); server=root/"server.jar"
+        shutil.copy2(server_jar,server)
+        common_setup(root,version)
+        log_path=root/"server.log"
+        trace_path=output_dir/"trace.jsonl"
+        gate_path=root/"capture.gate"
+        started=time.monotonic()
+        with log_path.open("w",encoding="utf-8") as log:
+            p=subprocess.Popen(
+                launch_command(args,server,trace_path,gate_path),
+                cwd=root,stdin=subprocess.PIPE,stdout=log,
+                stderr=subprocess.STDOUT,text=True,
+            )
+            ready=wait_ready(p,log_path,180)
+            checked_command(p,"forceload add -16 -16 16 16","forceload",log_path,output_dir)
+            time.sleep(1)
+            checked_command(p,"fill -2 99 -4 8 104 2 minecraft:air","clear",log_path,output_dir)
+            checked_command(p,"fill -2 99 -4 8 99 2 minecraft:stone","floor",log_path,output_dir)
+            checked_command(p,EDGE_INPUT_LOW_COMMAND,"edge_input_low_setup",log_path,output_dir)
+
+            # One source fans out across one collapsed input net to:
+            #   (1) a direct inverter, and
+            #   (2) a delay-4 repeater.
+            for x,y,z,name in (
+                (2,100,-2,"edge_direct_inverter_support"),
+                (3,100,-2,"edge_direct_output_support"),
+                (4,100,-2,"edge_direct_route_support"),
+                (4,100,-1,"edge_direct_turn_support"),
+                (4,100,0,"edge_delayed_rise_support"),
+                (5,101,0,"edge_final_inverter_support"),
+                (6,101,0,"edge_output_support"),
+            ):
+                checked_command(
+                    p,f"setblock {x} {y} {z} minecraft:stone",
+                    name,log_path,output_dir,
+                )
+
+            for x,z,name in (
+                (1,0,"edge_input_main"),
+                (1,-1,"edge_input_branch_1"),
+                (1,-2,"edge_input_branch_2"),
+            ):
+                checked_command(
+                    p,f"setblock {x} 100 {z} minecraft:redstone_wire",
+                    name,log_path,output_dir,
+                )
+
+            checked_command(
+                p,
+                f"setblock 2 100 0 minecraft:repeater[facing=west,delay={delay},locked=false,powered=false]",
+                "edge_delay_repeater",log_path,output_dir,
+            )
+            checked_command(
+                p,"setblock 3 100 0 minecraft:redstone_wire",
+                "edge_delay_output",log_path,output_dir,
+            )
+            checked_command(
+                p,"setblock 2 101 -2 minecraft:redstone_torch",
+                "edge_direct_inverter",log_path,output_dir,
+            )
+            for x,z,name in (
+                (3,-2,"edge_direct_output"),
+                (4,-2,"edge_direct_route"),
+                (4,-1,"edge_direct_turn"),
+                (4,0,"edge_intermediate_merge"),
+            ):
+                checked_command(
+                    p,f"setblock {x} 101 {z} minecraft:redstone_wire",
+                    name,log_path,output_dir,
+                )
+            checked_command(
+                p,"setblock 5 102 0 minecraft:redstone_torch",
+                "edge_final_inverter",log_path,output_dir,
+            )
+            checked_command(
+                p,"setblock 6 102 0 minecraft:redstone_wire",
+                "edge_output_wire",log_path,output_dir,
+            )
+            checked_command(
+                p,"setblock 7 102 0 minecraft:redstone_lamp",
+                "edge_output_lamp",log_path,output_dir,
+            )
+
+            baseline_attempts,baseline_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_RISING_EDGE_BASELINE_PASS",
+                edge_probe(False,False,0),
+                "rising_edge_baseline",timeout_seconds=10.0,
+            )
+            barrier=setup_barrier(
+                p,log_path,output_dir,"SUPRACRAFT_RISING_EDGE_SETUP_READY"
+            )
+            if args.java_agent:
+                gate_path.write_text("capture\n")
+                time.sleep(0.15)
+
+            # Rising edge #1: output must pulse high then settle low while the
+            # input remains high.
+            checked_command(
+                p,EDGE_INPUT_HIGH_COMMAND,"rising_edge_input_high_1",
+                log_path,output_dir,
+            )
+            rise1_attempts,rise1_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_RISING_EDGE_PULSE_1_HIGH",
+                edge_probe(True,True,15),
+                "rising_edge_pulse_1_high",timeout_seconds=5.0,
+                poll_seconds=0.05,
+            )
+            settle1_attempts,settle1_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_RISING_EDGE_PULSE_1_LOW",
+                edge_probe(True,False,0),
+                "rising_edge_pulse_1_low",timeout_seconds=5.0,
+                poll_seconds=0.05,
+            )
+
+            # Falling edge: detector must remain low throughout delayed reset.
+            checked_command(
+                p,EDGE_INPUT_LOW_COMMAND,"rising_edge_input_low",
+                log_path,output_dir,
+            )
+            falling_attempts,falling_guard=prove_no_edge_pulse(
+                p,log_path,output_dir,0.9
+            )
+            low_attempts,low_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_RISING_EDGE_LOW_SETTLED",
+                edge_probe(False,False,0),
+                "rising_edge_low_settled",timeout_seconds=5.0,
+                poll_seconds=0.05,
+            )
+
+            # Rising edge #2 proves retriggerability after full low settling.
+            checked_command(
+                p,EDGE_INPUT_HIGH_COMMAND,"rising_edge_input_high_2",
+                log_path,output_dir,
+            )
+            rise2_attempts,rise2_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_RISING_EDGE_PULSE_2_HIGH",
+                edge_probe(True,True,15),
+                "rising_edge_pulse_2_high",timeout_seconds=5.0,
+                poll_seconds=0.05,
+            )
+            settle2_attempts,settle2_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_RISING_EDGE_PULSE_2_LOW",
+                edge_probe(True,False,0),
+                "rising_edge_pulse_2_low",timeout_seconds=5.0,
+                poll_seconds=0.05,
+            )
+
+            checked_command(p,"save-all flush","save",log_path,output_dir)
+            time.sleep(1)
+            checked_command(p,"stop","stop",log_path,output_dir)
+            rc=p.wait(timeout=60)
+
+        elapsed=time.monotonic()-started
+        zip_world(root/"world",output_dir/"world.zip")
+        text=log_path.read_text("utf-8",errors="replace")
+        diagnostics=[
+            line for line in text.splitlines()
+            if any(x in line for x in (
+                "Incorrect argument","Unknown or incomplete command",
+                "[Server thread/ERROR]",
+                "SupraCraft causal microscope fail-closed binding",
+            ))
+        ]
+        if rc!=0 or diagnostics:
+            for line in diagnostics[-80:]:
+                print(line)
+            raise SystemExit(
+                f"rising-edge template failed rc={rc} diagnostics={len(diagnostics)}"
+            )
+
+        result={
+            "schema":"supracraft-modern-redstone-template-canary/1",
+            "template":"rising_edge_detector",
+            "minecraft_version":version,
+            "java_major":evidence_java_major(evidence),
+            "instrumented":bool(args.java_agent),
+            "input_control":"fixture_controller_single_source_fanout",
+            "configured_delay":delay,
+            "input_source_position":[0,100,0],
+            "input_net_wire_positions":[[1,100,0],[1,100,-1],[1,100,-2]],
+            "delay_repeater_position":[2,100,0],
+            "delay_output_wire_position":[3,100,0],
+            "direct_inverter_position":[2,101,-2],
+            "intermediate_wire_positions":[
+                [3,101,-2],[4,101,-2],[4,101,-1],[4,101,0]
+            ],
+            "final_inverter_position":[5,102,0],
+            "output_wire_position":[6,102,0],
+            "output_lamp_position":[7,102,0],
+            "input_high_command_sha256":digest_bytes(EDGE_INPUT_HIGH_COMMAND),
+            "input_low_command_sha256":digest_bytes(EDGE_INPUT_LOW_COMMAND),
+            "temporal_sequence":[
+                {"phase":"baseline_low","input_high":False,"output_high":False,"verified":True},
+                {"phase":"rising_1_pulse","input_high":True,"output_high":True,"verified":True},
+                {"phase":"rising_1_settled","input_high":True,"output_high":False,"verified":True},
+                {"phase":"falling_edge_guard","input_high":False,"positive_pulse_observed":False,"verified":True},
+                {"phase":"low_settled","input_high":False,"output_high":False,"verified":True},
+                {"phase":"rising_2_pulse","input_high":True,"output_high":True,"verified":True},
+                {"phase":"rising_2_settled","input_high":True,"output_high":False,"verified":True},
+            ],
+            "ready_seconds":round(ready,6),
+            "setup_barrier_seconds":round(barrier,6),
+            "baseline_attempts":baseline_attempts,
+            "baseline_wait_seconds":round(baseline_wait,6),
+            "rising_1_high_attempts":rise1_attempts,
+            "rising_1_high_wait_seconds":round(rise1_wait,6),
+            "rising_1_low_attempts":settle1_attempts,
+            "rising_1_low_wait_seconds":round(settle1_wait,6),
+            "falling_guard_attempts":falling_attempts,
+            "falling_guard_seconds":round(falling_guard,6),
+            "low_settled_attempts":low_attempts,
+            "low_settled_wait_seconds":round(low_wait,6),
+            "rising_2_high_attempts":rise2_attempts,
+            "rising_2_high_wait_seconds":round(rise2_wait,6),
+            "rising_2_low_attempts":settle2_attempts,
+            "rising_2_low_wait_seconds":round(settle2_wait,6),
+            "saved_input_state":"high_settled",
+            "elapsed_seconds":round(elapsed,6),
+            "trace_present":trace_path.is_file(),
+            "world_sha256":hashlib.sha256(
+                (output_dir/"world.zip").read_bytes()
+            ).hexdigest(),
+            "output_lamp_semantic_authority":False,
+            "boolean_temporal_composition":"A AND NOT(delay4(A))",
+            "boundary":"rising-edge qualification requires a bounded positive pulse only after low-to-high input transitions, no positive pulse on the falling edge, low output while high is settled, and retrigger after low settling; lamp state is diagnostic only",
+        }
+        (output_dir/"result.json").write_text(
+            json.dumps(result,indent=2,sort_keys=True)+"\n"
+        )
+        print(json.dumps(result,indent=2,sort_keys=True))
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--evidence",type=Path,required=True)
     ap.add_argument("--server-jar",type=Path,required=True)
     ap.add_argument("--output-dir",type=Path,required=True)
-    ap.add_argument("--fixture",choices=("repeater_delay","not_gate","or_gate","nor_gate","and_gate","xor_gate"),required=True)
+    ap.add_argument("--fixture",choices=("repeater_delay","not_gate","or_gate","nor_gate","and_gate","xor_gate","rising_edge_detector"),required=True)
     ap.add_argument("--delay",type=int)
     ap.add_argument("--java-agent",type=Path)
     ap.add_argument("--adapter-id")
@@ -1759,8 +2038,10 @@ def main():
         run_nor_gate(args,evidence,args.server_jar,args.output_dir)
     elif args.fixture=="and_gate":
         run_and_gate(args,evidence,args.server_jar,args.output_dir)
-    else:
+    elif args.fixture=="xor_gate":
         run_xor_gate(args,evidence,args.server_jar,args.output_dir)
+    else:
+        run_rising_edge_detector(args,evidence,args.server_jar,args.output_dir)
 
 
 if __name__=="__main__":

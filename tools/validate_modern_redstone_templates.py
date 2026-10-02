@@ -745,6 +745,135 @@ def validate_xor(root:Path):
     }
 
 
+
+def validate_rising_edge(root:Path):
+    name="rising-edge"
+    stock=load_result(root,name,"stock")
+    inst=load_result(root,name,"instrumented")
+    for k in (
+        "template","minecraft_version","java_major","input_control",
+        "configured_delay","input_source_position","input_net_wire_positions",
+        "delay_repeater_position","delay_output_wire_position",
+        "direct_inverter_position","intermediate_wire_positions",
+        "final_inverter_position","output_wire_position","output_lamp_position",
+        "input_high_command_sha256","input_low_command_sha256",
+        "temporal_sequence","output_lamp_semantic_authority",
+        "boolean_temporal_composition",
+    ):
+        assert stock[k]==inst[k],(k,stock[k],inst[k])
+    assert stock["instrumented"] is False
+    assert inst["instrumented"] is True
+    assert inst["trace_present"] is True
+    assert inst["configured_delay"]==4
+    assert inst["output_lamp_semantic_authority"] is False
+
+    expected=[
+        ("baseline_low",False,False),
+        ("rising_1_pulse",True,True),
+        ("rising_1_settled",True,False),
+        ("falling_edge_guard",False,False),
+        ("low_settled",False,False),
+        ("rising_2_pulse",True,True),
+        ("rising_2_settled",True,False),
+    ]
+    observed=[]
+    for row in inst["temporal_sequence"]:
+        if row["phase"]=="falling_edge_guard":
+            observed.append((
+                row["phase"],row["input_high"],
+                bool(row["positive_pulse_observed"]),
+            ))
+        else:
+            observed.append((row["phase"],row["input_high"],row["output_high"]))
+        assert row["verified"] is True,row
+    assert observed==expected,observed
+
+    rows=load_trace(root,name)
+    counts=trace_contract(rows)
+    for required in (
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result","command_dispatch",
+        "block_state_write",
+    ):
+        assert counts[required]>0,(required,counts)
+
+    high1=dispatch_after(rows,inst["input_high_command_sha256"])
+    low=dispatch_after(rows,inst["input_low_command_sha256"],high1["seq"])
+    high2=dispatch_after(rows,inst["input_high_command_sha256"],low["seq"])
+    assert high1["seq"]<low["seq"]<high2["seq"]
+
+    source_writes={}
+    for label,dispatch in (("high1",high1),("low",low),("high2",high2)):
+        found=[
+            r for r in rows
+            if r["seq"]>dispatch["seq"]
+            and r["event_type"]=="block_state_write"
+            and position(r)==inst["input_source_position"]
+        ]
+        assert found,(label,"source write",counts)
+        source_writes[label]=found[0]["seq"]
+
+    final_pos=inst["final_inverter_position"]
+    first_pulse_writes=[
+        r for r in rows
+        if high1["seq"]<r["seq"]<low["seq"]
+        and r["event_type"]=="block_state_write"
+        and position(r)==final_pos
+    ]
+    assert len(first_pulse_writes)>=2,("first rising pulse transitions",first_pulse_writes)
+    first_tick_width=first_pulse_writes[-1]["tick"]-first_pulse_writes[0]["tick"]
+    assert first_tick_width>0,("first rising pulse tick width",first_tick_width)
+
+    falling_final_writes=[
+        r for r in rows
+        if low["seq"]<r["seq"]<high2["seq"]
+        and r["event_type"]=="block_state_write"
+        and position(r)==final_pos
+    ]
+    assert not falling_final_writes,(
+        "falling edge must not toggle final inverter",falling_final_writes
+    )
+
+    second_pulse_writes=[
+        r for r in rows
+        if r["seq"]>high2["seq"]
+        and r["event_type"]=="block_state_write"
+        and position(r)==final_pos
+    ]
+    assert len(second_pulse_writes)>=2,("second rising pulse transitions",second_pulse_writes)
+    second_tick_width=second_pulse_writes[-1]["tick"]-second_pulse_writes[0]["tick"]
+    assert second_tick_width>0,("second rising pulse tick width",second_tick_width)
+
+    output_pos=inst["output_wire_position"]
+    output_power_results=[
+        r for r in rows
+        if r["event_type"]=="redstone_power_result"
+        and position(r)==output_pos
+    ]
+    assert output_power_results,("output power observations",counts)
+
+    return {
+        "temporal_sequence":inst["temporal_sequence"],
+        "input_dispatch_seq":{
+            "high1":high1["seq"],"low":low["seq"],"high2":high2["seq"],
+        },
+        "source_write_seq":source_writes,
+        "first_rising_final_inverter_write_count":len(first_pulse_writes),
+        "first_rising_pulse_tick_width":first_tick_width,
+        "falling_final_inverter_write_count":0,
+        "second_rising_final_inverter_write_count":len(second_pulse_writes),
+        "second_rising_pulse_tick_width":second_tick_width,
+        "output_power_observation_count":len(output_power_results),
+        "event_counts":dict(sorted(counts.items())),
+        "dropped_events":0,
+        "semantic_divergence":False,
+        "temporal_contract_pass":True,
+        "stock_elapsed_seconds":stock["elapsed_seconds"],
+        "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+        "output_lamp_semantic_authority":False,
+        "measurement_boundary":"runtime probes define positive-pulse semantics; trace ordering independently proves positive-width final-inverter transitions on rising edges and no final-inverter transition during the falling-edge window",
+    }
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--root",type=Path,required=True)
@@ -764,6 +893,7 @@ def main():
     nor=validate_nor(args.root)
     conj=validate_and(args.root)
     xor=validate_xor(args.root)
+    rising=validate_rising_edge(args.root)
 
     report={
         "schema":"supracraft-redstone-template-runtime-qualification/1",
@@ -799,6 +929,11 @@ def main():
             **xor,
             "truth_table_contract":"00->0, 10->1, 01->1, 11->0",
             "truth_table_pass":True,
+        },
+        "rising_edge_detector":{
+            **rising,
+            "temporal_contract":"low->high emits one bounded positive pulse then settles low; high->low emits no positive pulse; second rise retriggers after low settling",
+            "temporal_contract_pass":True,
         },
         "boundary":"runtime qualification applies to these exact generated fixtures and versions; template generalization remains separately gated by static netlist matching",
     }
