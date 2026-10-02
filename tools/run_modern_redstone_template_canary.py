@@ -1294,18 +1294,33 @@ def diagnose_xor_state(process,log_path,output_dir,phase):
         "schema":"supracraft-modern-xor-fixture-diagnostic/1",
         "phase":phase,
         "expected_logic":{
-            "source_a":"redstone_block",
-            "source_b":"air",
-            "or_branch":"powered",
-            "not_a_inverter":"unlit",
-            "not_b_inverter":"lit",
-            "nand_branch":"powered",
-            "or_stage_inverter":"unlit",
-            "nand_stage_inverter":"unlit",
-            "intermediate_branch":"unpowered",
-            "final_inverter":"lit",
-            "output_wire":"powered",
-        },
+            "10_timeout":{
+                "source_a":"redstone_block",
+                "source_b":"air",
+                "or_branch":"powered",
+                "not_a_inverter":"unlit",
+                "not_b_inverter":"lit",
+                "nand_branch":"powered",
+                "or_stage_inverter":"unlit",
+                "nand_stage_inverter":"unlit",
+                "intermediate_branch":"unpowered",
+                "final_inverter":"lit",
+                "output_wire":"powered",
+            },
+            "00_reset_timeout":{
+                "source_a":"air",
+                "source_b":"air",
+                "or_branch":"unpowered",
+                "not_a_inverter":"lit",
+                "not_b_inverter":"lit",
+                "nand_branch":"powered",
+                "or_stage_inverter":"lit",
+                "nand_stage_inverter":"unlit",
+                "intermediate_branch":"powered",
+                "final_inverter":"unlit",
+                "output_wire":"unpowered",
+            },
+        }.get(phase,{}),
         "observed":compact,
         "nonsemantic_observations":{
             "output_lamp":compact.get("output_lamp"),
@@ -1521,12 +1536,38 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 raise
 
             checked_command(p,XOR_A_LOW_COMMAND,"xor_a_low_reset",log_path,output_dir)
-            reset_attempts,reset_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_XOR_00_RESET_PASS",
-                xor_probe(False,False,False,0),
-                "xor_00_reset",timeout_seconds=10.0,
-            )
+            try:
+                reset_attempts,reset_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_XOR_00_RESET_PASS",
+                    xor_probe(False,False,False,0),
+                    "xor_00_reset",timeout_seconds=10.0,
+                )
+            except SystemExit as exc:
+                receipt=diagnose_xor_state(
+                    p,log_path,output_dir,"00_reset_timeout"
+                )
+                checked_command(
+                    p,"save-all flush","xor_00_reset_diagnostic_save",
+                    log_path,output_dir,
+                )
+                time.sleep(0.5)
+                checked_command(
+                    p,"stop","xor_00_reset_diagnostic_stop",
+                    log_path,output_dir,
+                )
+                rc=p.wait(timeout=60)
+                zip_world(root/"world",output_dir/"world.zip")
+                receipt["original_failure"]=str(exc)
+                receipt["server_exit_code"]=rc
+                receipt["world_sha256"]=hashlib.sha256(
+                    (output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                (output_dir/"diagnostic.json").write_text(
+                    json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+                )
+                print(json.dumps(receipt,indent=2,sort_keys=True))
+                raise
 
             checked_command(p,XOR_B_HIGH_COMMAND,"xor_b_high",log_path,output_dir)
             b_attempts,b_wait=wait_for_marker(
