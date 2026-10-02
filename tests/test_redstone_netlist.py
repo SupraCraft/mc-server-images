@@ -205,7 +205,8 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(by_id["repeater_delay_line"]["status"],"qualified_template")
         self.assertEqual(by_id["not_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["or_gate"]["status"],"qualified_template")
-        self.assertEqual(by_id["and_gate"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["and_gate"]["status"],"qualified_template")
+        self.assertEqual(by_id["rs_latch"]["status"],"reference_candidate_only")
         self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 
     def test_d4_and_functional_signatures_match_rotated_equivalent(self):
@@ -333,6 +334,64 @@ class RedstoneNetlistTests(unittest.TestCase):
         doc,_=mod.build(graph)
         self.assertFalse(any(
             x["template"]=="and_gate" for x in doc["motif_candidates"]
+        ))
+
+
+    def test_cross_coupled_two_inverter_shape_is_rs_latch_candidate_only(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a_support",(0,100,0),"minecraft:stone"),
+                n("a_torch",(1,100,0),"minecraft:redstone_wall_torch",
+                  ["signal_transport","logic_gate"],{"facing":"east","lit":"true"}),
+                n("a1",(2,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("a2",(3,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("a3",(4,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("a4",(4,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("b_support",(4,100,2),"minecraft:stone"),
+                n("b_torch",(3,100,2),"minecraft:redstone_wall_torch",
+                  ["signal_transport","logic_gate"],{"facing":"west","lit":"false"}),
+                n("b1",(2,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("b2",(1,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("b3",(0,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("b4",(0,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("q_lamp",(3,100,-1),"minecraft:redstone_lamp",["presentation_feedback"]),
+                n("qb_lamp",(1,100,3),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("a1","a2"),edge("a2","a1"),edge("a2","a3"),edge("a3","a2"),
+                edge("a3","a4"),edge("a4","a3"),
+                edge("b1","b2"),edge("b2","b1"),edge("b2","b3"),edge("b3","b2"),
+                edge("b3","b4"),edge("b4","b3"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        rows=[x for x in doc["motif_candidates"] if x["template"]=="rs_latch"]
+        self.assertEqual(len(rows),1)
+        row=rows[0]
+        self.assertEqual(row["confidence"],"structural_candidate_only")
+        self.assertEqual(row["inverter_component_ids"],["a_torch","b_torch"])
+        self.assertEqual(len(row["feedback_a_to_b_net_ids"]),1)
+        self.assertEqual(len(row["feedback_b_to_a_net_ids"]),1)
+        self.assertIn("retained state",row["required_runtime_contract"].lower())
+
+    def test_two_inverters_without_closed_cross_coupling_are_not_rs_latch(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a_torch",(1,100,0),"minecraft:redstone_wall_torch",
+                  ["signal_transport","logic_gate"],{"facing":"east","lit":"true"}),
+                n("a1",(2,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("a2",(3,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("b_torch",(3,100,2),"minecraft:redstone_wall_torch",
+                  ["signal_transport","logic_gate"],{"facing":"west","lit":"false"}),
+                n("b1",(2,100,2),"minecraft:redstone_wire",["signal_transport"]),
+            ],
+            "edges":[edge("a1","a2"),edge("a2","a1")],
+        }
+        doc,_=mod.build(graph)
+        self.assertFalse(any(
+            x["template"]=="rs_latch" for x in doc["motif_candidates"]
         ))
 
 
