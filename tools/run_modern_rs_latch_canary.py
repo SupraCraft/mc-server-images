@@ -128,13 +128,13 @@ def diagnose_reset_failure(p,log_path,output_dir):
     )
     add_bool(
         "q_lamp_lit",
-        "execute if block 3 100 -1 minecraft:redstone_lamp[lit=true]",
-        "execute if block 3 100 -1 minecraft:redstone_lamp[lit=false]",
+        "execute if block 3 100 -2 minecraft:redstone_lamp[lit=true]",
+        "execute if block 3 100 -2 minecraft:redstone_lamp[lit=false]",
     )
     add_bool(
         "qbar_lamp_lit",
-        "execute if block 1 100 3 minecraft:redstone_lamp[lit=true]",
-        "execute if block 1 100 3 minecraft:redstone_lamp[lit=false]",
+        "execute if block 1 100 4 minecraft:redstone_lamp[lit=true]",
+        "execute if block 1 100 4 minecraft:redstone_lamp[lit=false]",
     )
 
     power_points={
@@ -204,8 +204,10 @@ def diagnose_reset_failure(p,log_path,output_dir):
             "qbar_wire":[2,100,2],
             "feedback_a_endpoint":[4,100,1],
             "feedback_b_endpoint":[0,100,1],
-            "q_lamp":[3,100,-1],
-            "qbar_lamp":[1,100,3],
+            "q_output_repeater":[3,100,-1],
+            "qbar_output_repeater":[1,100,3],
+            "q_lamp":[3,100,-2],
+            "qbar_lamp":[1,100,4],
         },
         "expected_reset":{
             "reset_source_present":True,
@@ -328,12 +330,25 @@ def main():
                     p,f"setblock {x} 100 {z} minecraft:redstone_wire",
                     f"wire_{x}_{z}",log_path,args.output_dir,
                 )
+            # One-way observation branches keep presentation sinks out of the
+            # reciprocal latch feedback. Each output dust net drives a repeater,
+            # then a lamp.
             checked_command(
-                p,"setblock 3 100 -1 minecraft:redstone_lamp",
+                p,
+                "setblock 3 100 -1 minecraft:repeater[facing=north,delay=1]",
+                "q_output_repeater",log_path,args.output_dir,
+            )
+            checked_command(
+                p,"setblock 3 100 -2 minecraft:redstone_lamp",
                 "q_lamp",log_path,args.output_dir,
             )
             checked_command(
-                p,"setblock 1 100 3 minecraft:redstone_lamp",
+                p,
+                "setblock 1 100 3 minecraft:repeater[facing=south,delay=1]",
+                "qbar_output_repeater",log_path,args.output_dir,
+            )
+            checked_command(
+                p,"setblock 1 100 4 minecraft:redstone_lamp",
                 "qbar_lamp",log_path,args.output_dir,
             )
             checked_command(p,R_LOW,"r_low_setup",log_path,args.output_dir)
@@ -509,8 +524,10 @@ def main():
             "inverter_b_position":[3,100,2],
             "q_wire_position":[2,100,0],
             "qbar_wire_position":[2,100,2],
-            "q_lamp_position":[3,100,-1],
-            "qbar_lamp_position":[1,100,3],
+            "q_output_repeater_position":[3,100,-1],
+            "qbar_output_repeater_position":[1,100,3],
+            "q_lamp_position":[3,100,-2],
+            "qbar_lamp_position":[1,100,4],
             "feedback_a_wire_positions":[[2,100,0],[3,100,0],[4,100,0],[4,100,1]],
             "feedback_b_wire_positions":[[2,100,2],[1,100,2],[0,100,2],[0,100,1]],
             "reset_high_command_sha256":digest_bytes(R_HIGH),
