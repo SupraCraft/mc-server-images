@@ -30,6 +30,7 @@ def validate_fixture(root: Path, fixture: str) -> dict:
         "minecraft_version","java_major","fixture","expected_actuation",
         "actual_actuation","source_position","wire_positions","gap_position",
         "command_block_position","target_position","command_sha256",
+        "source_command_sha256",
     ):
         assert stock[key]==inst[key],(fixture,key,stock[key],inst[key])
     assert stock["instrumented"] is False
@@ -54,12 +55,20 @@ def validate_fixture(root: Path, fixture: str) -> dict:
     ):
         assert counts[required]>0,(fixture,required,counts)
 
+    source_dispatch=[
+        r for r in rows
+        if r["event_type"]=="command_dispatch"
+        and r["data"].get("command_sha256")==inst["source_command_sha256"]
+    ]
+    assert source_dispatch,(fixture,"source activation dispatch")
+    activation_seq=max(r["seq"] for r in source_dispatch)
     source=[
         r for r in rows
-        if r["event_type"]=="block_state_write"
+        if r["seq"]>activation_seq
+        and r["event_type"]=="block_state_write"
         and pos(r)==inst["source_position"]
     ]
-    assert source,(fixture,"source write")
+    assert source,(fixture,"source write after activation dispatch")
     source=source[0]
 
     downstream=[
@@ -117,6 +126,7 @@ def validate_fixture(root: Path, fixture: str) -> dict:
         ]
         assert positive_values,("positive power result",counts)
         causal={
+            "source_activation_dispatch":activation_seq,
             "source_write":source["seq"],
             "first_wire_event":min(r["seq"] for r in downstream),
             "command_trigger_start":start["seq"],
@@ -127,6 +137,7 @@ def validate_fixture(root: Path, fixture: str) -> dict:
         assert not command_starts
         assert not targets
         causal={
+            "source_activation_dispatch":activation_seq,
             "source_write":source["seq"],
             "first_wire_event":min(r["seq"] for r in downstream),
             "command_trigger_count":0,
