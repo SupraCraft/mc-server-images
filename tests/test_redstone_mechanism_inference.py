@@ -62,11 +62,11 @@ class RedstoneMechanismInferenceTests(unittest.TestCase):
         }
         doc=mod.infer(graph)
         self.assertEqual(doc["component_count"],2)
-        self.assertFalse(any(
-            c["mechanism_candidates"]
-            for c in doc["components"]
+        source_component=next(
+            c for c in doc["components"]
             if "0,0,0" in {n["node_id"] for n in c["nodes"]}
-        ))
+        )
+        self.assertEqual(source_component["mechanism_candidates"],[])
 
     def test_cycle_is_candidate_not_claimed_clock(self):
         graph={
