@@ -81,6 +81,8 @@ RUNTIME_CONTRACTS={
         "truth table: exercise 00, 10, 01, and 11; qualified output must be low only for 00 and high for every state with at least one asserted input",
     "and_gate":
         "truth table: exercise 00, 10, 01, and 11; qualified output must be high only for 11 and low for all other input states",
+    "rs_latch":
+        "set/reset/hold sequence must demonstrate complementary outputs and retained state after stimulus removal; simultaneous set+reset is measured as an invalid-state boundary and post-invalid resolution is observed, not assumed",
 }
 
 D4=(
@@ -559,6 +561,88 @@ def motifs(components,nets):
                     ],
                     "required_runtime_contract":RUNTIME_CONTRACTS["and_gate"],
                 })
+
+    # RS latch candidate: exactly two cross-coupled inverter primitives.
+    # Each inverter output net must appear in the other inverter's support-net
+    # inputs. External S/R sources and sinks are optional observations; the
+    # feedback topology is the minimum static requirement. Runtime set/reset/
+    # hold evidence is mandatory before promotion.
+    inverters=[x for x in components if x["primitive"]=="inverter"]
+    seen_latches=set()
+    for i,a in enumerate(inverters):
+        a_outputs=sorted({
+            p["net_id"] for p in a["ports"]
+            if p["kind"]=="output" and p.get("net_id")
+        })
+        a_supports=sorted({
+            net_id
+            for p in a["ports"] if p["kind"]=="input_support"
+            for net_id in p.get("support_net_ids",[])
+        })
+        if not a_outputs or not a_supports:
+            continue
+        for b in inverters[i+1:]:
+            b_outputs=sorted({
+                p["net_id"] for p in b["ports"]
+                if p["kind"]=="output" and p.get("net_id")
+            })
+            b_supports=sorted({
+                net_id
+                for p in b["ports"] if p["kind"]=="input_support"
+                for net_id in p.get("support_net_ids",[])
+            })
+            if not b_outputs or not b_supports:
+                continue
+            a_to_b=sorted(set(a_outputs)&set(b_supports))
+            b_to_a=sorted(set(b_outputs)&set(a_supports))
+            if not a_to_b or not b_to_a:
+                continue
+            key=tuple(sorted((a["component_id"],b["component_id"])))
+            if key in seen_latches:
+                continue
+            seen_latches.add(key)
+
+            source_by_inverter={}
+            for inv in (a,b):
+                source_by_inverter[inv["component_id"]]=sorted({
+                    peer
+                    for p in inv["ports"] if p["kind"]=="input_support"
+                    for peer in p.get("peer_component_ids",[])
+                })
+
+            output_net_ids=sorted(set(a_outputs+b_outputs))
+            sink_ids=set()
+            for net_id in output_net_ids:
+                net=net_by_id.get(net_id) or {}
+                for port in net.get("ports",[]):
+                    cid=port.get("component_id")
+                    if (
+                        port.get("kind")=="input"
+                        and cid in by_id
+                        and by_id[cid]["primitive"] in SINK_PRIMITIVES
+                    ):
+                        sink_ids.add(cid)
+
+            out.append({
+                "template":"rs_latch",
+                "confidence":"structural_candidate_only",
+                "component_ids":sorted(
+                    {a["component_id"],b["component_id"]}|sink_ids
+                ),
+                "net_ids":output_net_ids,
+                "inverter_component_ids":list(key),
+                "feedback_a_to_b_net_ids":a_to_b,
+                "feedback_b_to_a_net_ids":b_to_a,
+                "input_source_component_ids_by_inverter":source_by_inverter,
+                "output_sink_component_ids":sorted(sink_ids),
+                "evidence":[
+                    "two_inverter_primitives",
+                    "first_inverter_output_drives_second_support_net",
+                    "second_inverter_output_drives_first_support_net",
+                    "closed_cross_coupled_feedback",
+                ],
+                "required_runtime_contract":RUNTIME_CONTRACTS["rs_latch"],
+            })
 
     # A torch is an inverter primitive. Full NOT-gate acceptance requires
     # runtime truth-table evidence and an input-support relation; unresolved
