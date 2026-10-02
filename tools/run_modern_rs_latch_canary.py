@@ -79,15 +79,11 @@ def setup_barrier(p,log_path,output_dir,marker):
 def state_probe(q:int,q_lit:bool,qb:int,qb_lit:bool)->str:
     qlit="true" if q_lit else "false"
     qblit="true" if qb_lit else "false"
-    qlamp="true" if q>0 else "false"
-    qblamp="true" if qb>0 else "false"
     return (
         f"execute if block 1 100 0 minecraft:redstone_wall_torch[facing=east,lit={qlit}] "
         f"if block 2 100 0 minecraft:redstone_wire[power={q}] "
         f"if block 3 100 2 minecraft:redstone_wall_torch[facing=west,lit={qblit}] "
-        f"if block 2 100 2 minecraft:redstone_wire[power={qb}] "
-        f"if block 3 100 -1 minecraft:redstone_lamp[lit={qlamp}] "
-        f"if block 1 100 3 minecraft:redstone_lamp[lit={qblamp}]"
+        f"if block 2 100 2 minecraft:redstone_wire[power={qb}]"
     )
 
 
@@ -220,8 +216,6 @@ def diagnose_reset_failure(p,log_path,output_dir):
             "inverter_b_lit":True,
             "q_wire_power":0,
             "qbar_wire_power":15,
-            "q_lamp_lit":False,
-            "qbar_lamp_lit":True,
         },
         "boundary":"diagnostic-only exact block-state receipt; no latch semantic promotion and no raw authored commands retained",
     }
@@ -550,7 +544,7 @@ def main():
             "world_sha256":hashlib.sha256(
                 (args.output_dir/"world.zip").read_bytes()
             ).hexdigest(),
-            "boundary":"cross-coupled inverter topology plus explicit source-to-input-dust-to-support coupling and set/reset/hold persistence qualify only this generated RS latch; post-invalid resolution is observed but not treated as a stable contract",
+            "boundary":"cross-coupled inverter topology plus explicit source-to-input-dust-to-support coupling and set/reset/hold persistence qualify only this generated RS latch; Q/Q-bar authority is exact dust power plus inverter state, lamps are diagnostic only, and post-invalid resolution is observed but not treated as a stable contract",
         }
         (args.output_dir/"result.json").write_text(
             json.dumps(result,indent=2,sort_keys=True)+"\n"
