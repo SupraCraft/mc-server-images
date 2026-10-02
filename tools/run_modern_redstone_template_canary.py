@@ -615,17 +615,26 @@ def diagnose_nor_state(process,log_path,output_dir,phase):
         label:(values[0] if len(values)==1 else values)
         for label,values in sorted(observed.items())
     }
-    expected={
-        "source_a":"air",
-        "source_b":"air",
-        "input_a":0,
-        "join_a":0,
-        "input_b":0,
-        "join_b":0,
-        "junction":0,
-        "inverter":"lit",
-        "output_wire":15,
+    expected_by_phase={
+        "baseline_00_timeout":{
+            "source_a":"air",
+            "source_b":"air",
+            "input_a":0,
+            "join_a":0,
+            "input_b":0,
+            "join_b":0,
+            "junction":0,
+            "inverter":"lit",
+            "output_wire":15,
+        },
+        "10_timeout":{
+            "source_a":"redstone_block",
+            "source_b":"air",
+            "inverter":"unlit",
+            "output_wire":0,
+        },
     }
+    expected=expected_by_phase.get(phase,{})
     receipt={
         "schema":"supracraft-modern-nor-fixture-diagnostic/1",
         "phase":phase,
@@ -739,12 +748,38 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
                 time.sleep(0.15)
 
             checked_command(p,NOR_A_HIGH_COMMAND,"nor_a_high",log_path,output_dir)
-            a_attempts,a_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_NOR_10_PASS",
-                nor_probe(True,False,False,0),
-                "nor_10",timeout_seconds=8.0,
-            )
+            try:
+                a_attempts,a_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_NOR_10_PASS",
+                    nor_probe(True,False,False,0),
+                    "nor_10",timeout_seconds=8.0,
+                )
+            except SystemExit as exc:
+                receipt=diagnose_nor_state(
+                    p,log_path,output_dir,"10_timeout"
+                )
+                checked_command(
+                    p,"save-all flush","nor_10_diagnostic_save",
+                    log_path,output_dir,
+                )
+                time.sleep(0.5)
+                checked_command(
+                    p,"stop","nor_10_diagnostic_stop",
+                    log_path,output_dir,
+                )
+                rc=p.wait(timeout=60)
+                zip_world(root/"world",output_dir/"world.zip")
+                receipt["original_failure"]=str(exc)
+                receipt["server_exit_code"]=rc
+                receipt["world_sha256"]=hashlib.sha256(
+                    (output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                (output_dir/"diagnostic.json").write_text(
+                    json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+                )
+                print(json.dumps(receipt,indent=2,sort_keys=True))
+                raise
 
             checked_command(p,NOR_A_LOW_COMMAND,"nor_a_low_reset",log_path,output_dir)
             reset_attempts,reset_wait=wait_for_marker(
