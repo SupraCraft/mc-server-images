@@ -342,13 +342,14 @@ def attach_ports(nodes,groups):
                 sort_keys=True,separators=(",",":")
             ).encode()
         ).hexdigest()
-    resolve_torch_support_peers(components,nodes)
+    resolve_torch_support_peers(components,nodes,wire_pos_to_net,nets)
     return components,nets
 
 
-def resolve_torch_support_peers(components,nodes):
+def resolve_torch_support_peers(components,nodes,wire_pos_to_net,nets):
     by_pos={pos(n):nid for nid,n in nodes.items() if pos(n) is not None}
     comp_by_id={c["component_id"]:c for c in components}
+    net_by_id={n["net_id"]:n for n in nets}
     for c in components:
         if c["primitive"]!="inverter":
             continue
@@ -368,18 +369,35 @@ def resolve_torch_support_peers(components,nodes):
         if support is None:
             continue
         peers=[]
+        support_nets=[]
         for d in DIR6.values():
-            nid=by_pos.get(add(support,d))
+            q=add(support,d)
+            net_id=wire_pos_to_net.get(q)
+            if net_id is not None:
+                support_nets.append(net_id)
+            nid=by_pos.get(q)
             if nid is None or nid==c["component_id"] or nid not in comp_by_id:
                 continue
             peer=comp_by_id[nid]
             if peer["primitive"] in SOURCE_PRIMITIVES:
                 peers.append(nid)
+        support_nets=sorted(set(support_nets))
+        for net_id in support_nets:
+            net=net_by_id[net_id]
+            for p in net.get("ports",[]):
+                peer_id=p.get("component_id")
+                if peer_id in comp_by_id and p.get("kind")=="output":
+                    if comp_by_id[peer_id]["primitive"] in SOURCE_PRIMITIVES:
+                        peers.append(peer_id)
         for port in c["ports"]:
             if port["kind"]=="input_support":
                 port["support_position"]=list(support)
+                port["support_net_ids"]=support_nets
                 port["peer_component_ids"]=sorted(set(peers))
-                if peers:
+                if support_nets:
+                    port["basis"]="topology_support_wire_net_candidate"
+                    port["certainty"]="topology_candidate"
+                elif peers:
                     port["basis"]="topology_support_source_candidate"
                     port["certainty"]="topology_candidate"
 
@@ -443,9 +461,14 @@ def motifs(components,nets):
                 "component_ids":[c["component_id"]],
                 "net_ids":sorted({p["net_id"] for p in outputs if p["net_id"]}),
                 "input_support_resolved":any(
-                    p.get("net_id") or p.get("peer_component_ids")
+                    p.get("net_id") or p.get("support_net_ids") or p.get("peer_component_ids")
                     for p in support
                 ),
+                "input_support_net_ids":sorted({
+                    net_id
+                    for p in support
+                    for net_id in p.get("support_net_ids",[])
+                }),
                 "input_source_component_ids":sorted({
                     peer
                     for p in support
@@ -544,6 +567,7 @@ def functional_signature(components,nets):
                         "certainty":p["certainty"],
                         "connected":(
                             p["net_id"] is not None
+                            or bool(p.get("support_net_ids"))
                             or bool(p.get("peer_component_ids"))
                         ),
                     }
@@ -599,6 +623,11 @@ def render_dot(doc):
         for p in c["ports"]:
             if p["kind"]!="input_support":
                 continue
+            for net_id in p.get("support_net_ids",[]):
+                rows.append(
+                    f'  "{escape(net_id)}" -> "{escape(c["component_id"])}" '
+                    f'[style=dashed,label="support-net input candidate"];'
+                )
             for peer in p.get("peer_component_ids",[]):
                 rows.append(
                     f'  "{escape(peer)}" -> "{escape(c["component_id"])}" '
