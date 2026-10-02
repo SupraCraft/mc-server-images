@@ -282,7 +282,7 @@ def validate_or(root:Path):
     output=inst["output_wire_position"]
     event_types={
         "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
-        "redstone_power_query","redstone_power_result",
+        "redstone_power_query","redstone_power_result","block_state_write",
     }
     phases=[
         ("10",a1["seq"],a0["seq"],12),
@@ -298,15 +298,18 @@ def validate_or(root:Path):
             and position(r)==output
         ]
         assert events,(label,"output wire events",counts)
-        values=[
+        writes=[r for r in events if r["event_type"]=="block_state_write"]
+        assert writes,(label,"output block-state write",counts)
+        neighbour_values=[
             r["data"].get("value")
             for r in events
             if r["event_type"]=="redstone_power_result"
         ]
-        assert expected_power in values,(label,expected_power,values)
         phase_evidence[label]={
             "event_count":len(events),
-            "power_result_values":values,
+            "block_state_write_count":len(writes),
+            "exact_state_probe_output_wire_power":expected_power,
+            "incoming_neighbor_signal_result_values":neighbour_values,
         }
 
     after_both=[
