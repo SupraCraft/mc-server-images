@@ -103,5 +103,32 @@ class RedstoneMechanismInferenceTests(unittest.TestCase):
         self.assertNotIn("tellraw",dot)
 
 
+    def test_topology_signature_is_translation_invariant(self):
+        def make(offset):
+            ox,oy,oz=offset
+            a=f"{ox},{oy},{oz}"
+            b=f"{ox+1},{oy},{oz}"
+            return {
+                "schema":"supracraft-modern-causal-machinery/1",
+                "nodes":[
+                    node(a,(ox,oy,oz),"minecraft:redstone_block",["power_source"]),
+                    node(b,(ox+1,oy,oz),"minecraft:redstone_wire",["signal_transport"]),
+                ],
+                "edges":[],
+            }
+        first=mod.infer(make((0,0,0)))["components"][0]
+        moved=mod.infer(make((40,12,-90)))["components"][0]
+        self.assertEqual(first["topology_sha256"],moved["topology_sha256"])
+        self.assertEqual(
+            first["functional_signature_sha256"],
+            moved["functional_signature_sha256"],
+        )
+        self.assertEqual(
+            first["signature_normalization"],
+            "translation_invariant_rotation_sensitive",
+        )
+
+
+
 if __name__=="__main__":
     unittest.main()
