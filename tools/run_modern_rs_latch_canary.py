@@ -20,10 +20,10 @@ from run_modern_redstone_microscope_canary import (
     wait_for_marker,
 )
 
-R_HIGH="setblock -1 100 0 minecraft:redstone_block"
-R_LOW="setblock -1 100 0 minecraft:air"
-S_HIGH="setblock 5 100 2 minecraft:redstone_block"
-S_LOW="setblock 5 100 2 minecraft:air"
+R_HIGH="setblock -2 100 0 minecraft:redstone_block"
+R_LOW="setblock -2 100 0 minecraft:air"
+S_HIGH="setblock 6 100 2 minecraft:redstone_block"
+S_LOW="setblock 6 100 2 minecraft:air"
 
 
 def evidence_java_major(evidence:dict)->int:
@@ -112,13 +112,13 @@ def diagnose_reset_failure(p,log_path,output_dir):
 
     add_bool(
         "reset_source_present",
-        "execute if block -1 100 0 minecraft:redstone_block",
-        "execute if block -1 100 0 minecraft:air",
+        "execute if block -2 100 0 minecraft:redstone_block",
+        "execute if block -2 100 0 minecraft:air",
     )
     add_bool(
         "set_source_present",
-        "execute if block 5 100 2 minecraft:redstone_block",
-        "execute if block 5 100 2 minecraft:air",
+        "execute if block 6 100 2 minecraft:redstone_block",
+        "execute if block 6 100 2 minecraft:air",
     )
     add_bool(
         "inverter_a_lit",
@@ -142,6 +142,8 @@ def diagnose_reset_failure(p,log_path,output_dir):
     )
 
     power_points={
+        "reset_input_wire_power":(-1,100,0),
+        "set_input_wire_power":(5,100,2),
         "q_wire_power":(2,100,0),
         "qbar_wire_power":(2,100,2),
         "feedback_a_endpoint_power":(4,100,1),
@@ -196,8 +198,10 @@ def diagnose_reset_failure(p,log_path,output_dir):
         "stage":"rs_reset_asserted",
         "observed":values,
         "positions":{
-            "reset_source":[-1,100,0],
-            "set_source":[5,100,2],
+            "reset_source":[-2,100,0],
+            "reset_input_wire":[-1,100,0],
+            "set_source":[6,100,2],
+            "set_input_wire":[5,100,2],
             "inverter_a":[1,100,0],
             "inverter_b":[3,100,2],
             "q_wire":[2,100,0],
@@ -209,7 +213,9 @@ def diagnose_reset_failure(p,log_path,output_dir):
         },
         "expected_reset":{
             "reset_source_present":True,
+            "reset_input_wire_power":15,
             "set_source_present":False,
+            "set_input_wire_power":0,
             "inverter_a_lit":False,
             "inverter_b_lit":True,
             "q_wire_power":0,
@@ -338,6 +344,14 @@ def main():
             )
             checked_command(p,R_LOW,"r_low_setup",log_path,args.output_dir)
             checked_command(p,S_LOW,"s_low_setup",log_path,args.output_dir)
+            checked_command(
+                p,"setblock -1 100 0 minecraft:redstone_wire",
+                "reset_input_wire",log_path,args.output_dir,
+            )
+            checked_command(
+                p,"setblock 5 100 2 minecraft:redstone_wire",
+                "set_input_wire",log_path,args.output_dir,
+            )
 
             barrier=setup_barrier(
                 p,log_path,args.output_dir,"SUPRACRAFT_RS_SETUP_READY"
@@ -466,8 +480,10 @@ def main():
             "java_major":evidence_java_major(evidence),
             "instrumented":bool(args.java_agent),
             "input_control":"fixture_controller_set_reset_source_injection",
-            "reset_source_position":[-1,100,0],
-            "set_source_position":[5,100,2],
+            "reset_source_position":[-2,100,0],
+            "reset_input_wire_position":[-1,100,0],
+            "set_source_position":[6,100,2],
+            "set_input_wire_position":[5,100,2],
             "inverter_a_position":[1,100,0],
             "inverter_b_position":[3,100,2],
             "q_wire_position":[2,100,0],
@@ -507,7 +523,7 @@ def main():
             "world_sha256":hashlib.sha256(
                 (args.output_dir/"world.zip").read_bytes()
             ).hexdigest(),
-            "boundary":"cross-coupled inverter topology plus set/reset/hold persistence qualifies only this generated RS latch; post-invalid resolution is observed but not treated as a stable contract",
+            "boundary":"cross-coupled inverter topology plus explicit source-to-input-dust-to-support coupling and set/reset/hold persistence qualify only this generated RS latch; post-invalid resolution is observed but not treated as a stable contract",
         }
         (args.output_dir/"result.json").write_text(
             json.dumps(result,indent=2,sort_keys=True)+"\n"
