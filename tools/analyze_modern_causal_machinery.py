@@ -18,6 +18,7 @@ DIR={
 }
 MACHINERY_ROLES={
   "minecraft:redstone_wire":["signal_transport"],
+  "minecraft:redstone_block":["power_source"],
   "minecraft:repeater":["signal_transport","timer_clock"],
   "minecraft:comparator":["signal_transport","condition_query"],
   "minecraft:redstone_torch":["signal_transport","logic_gate"],
@@ -295,6 +296,7 @@ def analyze(world:Path):
       "edges":edges,
       "limitations":[
         "Wire edges use saved block-state connection shapes but do not model all solid-block conduction or quasi-connectivity.",
+        "Redstone blocks are retained as power-source nodes; adjacency alone is not promoted to a causal power edge.",
         "Trapped-chest opening power and comparator inventory reads are separate causal channels.",
         "Display/interaction entities are first-class surfaces but are not automatically linked to nearby blocks without stronger evidence.",
         "Static command and scoreboard references do not prove runtime execution or player understanding.",
