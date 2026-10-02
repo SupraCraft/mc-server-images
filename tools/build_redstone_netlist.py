@@ -79,6 +79,8 @@ RUNTIME_CONTRACTS={
         "truth table: exercise input low and high; qualified output must be high for low input and low for high input, including reset back to high",
     "or_gate":
         "truth table: exercise 00, 10, 01, and 11; qualified output must be low only for 00 and high for every state with at least one asserted input",
+    "and_gate":
+        "truth table: exercise 00, 10, 01, and 11; qualified output must be high only for 11 and low for all other input states",
 }
 
 D4=(
@@ -460,6 +462,102 @@ def motifs(components,nets):
                     "configured_delay":delay,
                     "evidence":["explicit_repeater_rear_input","explicit_repeater_front_output"],
                     "required_runtime_contract":RUNTIME_CONTRACTS["repeater_delay_line"],
+                })
+
+    # AND via De Morgan: two independently sourced inverter outputs feed a
+    # shared intermediate net that drives a third inverter. Structural shape
+    # alone remains candidate-only until the complete four-row truth table is
+    # observed at runtime.
+    net_by_id={n["net_id"]:n for n in nets}
+    for final in components:
+        if final["primitive"]!="inverter":
+            continue
+        final_support=[p for p in final["ports"] if p["kind"]=="input_support"]
+        final_outputs=[p for p in final["ports"] if p["kind"]=="output" and p["net_id"]]
+        if not final_support or not final_outputs:
+            continue
+        for support in final_support:
+            intermediate_ids=sorted(set(support.get("support_net_ids",[])))
+            for intermediate_id in intermediate_ids:
+                intermediate=net_by_id.get(intermediate_id)
+                if intermediate is None:
+                    continue
+                upstream_ids=sorted({
+                    p["component_id"]
+                    for p in intermediate.get("ports",[])
+                    if p.get("kind")=="output"
+                    and p.get("component_id") in by_id
+                    and by_id[p["component_id"]]["primitive"]=="inverter"
+                    and p["component_id"]!=final["component_id"]
+                })
+                if len(upstream_ids)!=2:
+                    continue
+                source_ids=set()
+                input_net_ids=set()
+                resolved=True
+                for upstream_id in upstream_ids:
+                    upstream=by_id[upstream_id]
+                    supports=[
+                        p for p in upstream["ports"]
+                        if p["kind"]=="input_support"
+                    ]
+                    if not supports:
+                        resolved=False
+                        break
+                    this_resolved=False
+                    for pin in supports:
+                        input_net_ids.update(pin.get("support_net_ids",[]))
+                        source_ids.update(pin.get("peer_component_ids",[]))
+                        if (
+                            pin.get("support_net_ids")
+                            or pin.get("peer_component_ids")
+                        ):
+                            this_resolved=True
+                    if not this_resolved:
+                        resolved=False
+                        break
+                source_ids=sorted(source_ids)
+                if not resolved or len(set(source_ids))<2:
+                    continue
+
+                output_net_ids=sorted({
+                    p["net_id"] for p in final_outputs if p.get("net_id")
+                })
+                sink_ids=set()
+                for net_id in output_net_ids:
+                    net=net_by_id.get(net_id) or {}
+                    for port in net.get("ports",[]):
+                        cid=port.get("component_id")
+                        if (
+                            port.get("kind")=="input"
+                            and cid in by_id
+                            and by_id[cid]["primitive"] in SINK_PRIMITIVES
+                        ):
+                            sink_ids.add(cid)
+                if not sink_ids:
+                    continue
+
+                out.append({
+                    "template":"and_gate",
+                    "confidence":"structural_candidate_only",
+                    "component_ids":sorted(
+                        set(source_ids+upstream_ids+[final["component_id"]]+list(sink_ids))
+                    ),
+                    "net_ids":sorted(
+                        set(input_net_ids)|{intermediate_id}|set(output_net_ids)
+                    ),
+                    "input_source_component_ids":source_ids,
+                    "input_inverter_component_ids":upstream_ids,
+                    "intermediate_net_id":intermediate_id,
+                    "final_inverter_component_id":final["component_id"],
+                    "output_sink_component_ids":sorted(sink_ids),
+                    "evidence":[
+                        "two_independent_sources_feed_two_inverters",
+                        "upstream_inverter_outputs_share_intermediate_net",
+                        "intermediate_net_drives_final_inverter",
+                        "final_inverter_output_reaches_sink",
+                    ],
+                    "required_runtime_contract":RUNTIME_CONTRACTS["and_gate"],
                 })
 
     # A torch is an inverter primitive. Full NOT-gate acceptance requires
