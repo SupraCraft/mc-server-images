@@ -1748,7 +1748,8 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
         ("direct_route",4,101,-2),
         ("direct_turn",4,101,-1),
         ("intermediate",4,101,0),
-        ("output_wire",6,102,0),
+        ("support_feed",5,101,0),
+        ("output_wire",7,102,0),
     ):
         for power in range(16):
             add(
@@ -1765,7 +1766,7 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
 
     for label,x,y,z in (
         ("direct_inverter",2,101,-2),
-        ("final_inverter",5,102,0),
+        ("final_inverter",6,102,0),
     ):
         for lit in (False,True):
             state="true" if lit else "false"
@@ -1778,7 +1779,7 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
         state="true" if lit else "false"
         add(
             "output_lamp","lit" if lit else "unlit",
-            f"execute if block 7 102 0 minecraft:redstone_lamp[lit={state}]",
+            f"execute if block 8 102 0 minecraft:redstone_lamp[lit={state}]",
         )
 
     for label,value,marker,condition in checks:
@@ -1804,7 +1805,6 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
             "source":"air",
             "input_net":"unpowered",
             "delay_repeater":"unpowered",
-            "delay_output":"unpowered",
             "direct_inverter":"lit",
             "intermediate":"powered",
             "final_inverter":"unlit",
@@ -1829,8 +1829,8 @@ def edge_probe(source_high,final_lit,output_power):
     lit="true" if final_lit else "false"
     return (
         f"execute if block 0 100 0 {source} "
-        f"if block 5 102 0 minecraft:redstone_torch[lit={lit}] "
-        f"if block 6 102 0 minecraft:redstone_wire[power={output_power}]"
+        f"if block 6 102 0 minecraft:redstone_torch[lit={lit}] "
+        f"if block 7 102 0 minecraft:redstone_wire[power={output_power}]"
     )
 
 
@@ -1841,13 +1841,13 @@ def prove_no_edge_pulse(process,log_path,output_dir,duration_seconds=0.9):
     while time.monotonic()-started<duration_seconds:
         checked_command(
             process,
-            "execute if block 5 102 0 minecraft:redstone_torch[lit=true] "
+            "execute if block 6 102 0 minecraft:redstone_torch[lit=true] "
             f"run say {marker}",
             "rising_edge_falling_torch_guard",log_path,output_dir,
         )
         checked_command(
             process,
-            "execute if block 6 102 0 minecraft:redstone_wire[power=15] "
+            "execute if block 7 102 0 minecraft:redstone_wire[power=15] "
             f"run say {marker}",
             "rising_edge_falling_wire_guard",log_path,output_dir,
         )
@@ -1892,8 +1892,9 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
                 (4,100,-2,"edge_direct_route_support"),
                 (4,100,-1,"edge_direct_turn_support"),
                 (4,100,0,"edge_delayed_rise_support"),
-                (5,101,0,"edge_final_inverter_support"),
-                (6,101,0,"edge_output_support"),
+                (5,100,0,"edge_final_support_feed_support"),
+                (6,101,0,"edge_final_inverter_support"),
+                (7,101,0,"edge_output_support"),
             ):
                 checked_command(
                     p,f"setblock {x} {y} {z} minecraft:stone",
@@ -1928,21 +1929,22 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
                 (4,-2,"edge_direct_route"),
                 (4,-1,"edge_direct_turn"),
                 (4,0,"edge_intermediate_merge"),
+                (5,0,"edge_final_support_feed"),
             ):
                 checked_command(
                     p,f"setblock {x} 101 {z} minecraft:redstone_wire",
                     name,log_path,output_dir,
                 )
             checked_command(
-                p,"setblock 5 102 0 minecraft:redstone_torch",
+                p,"setblock 6 102 0 minecraft:redstone_torch",
                 "edge_final_inverter",log_path,output_dir,
             )
             checked_command(
-                p,"setblock 6 102 0 minecraft:redstone_wire",
+                p,"setblock 7 102 0 minecraft:redstone_wire",
                 "edge_output_wire",log_path,output_dir,
             )
             checked_command(
-                p,"setblock 7 102 0 minecraft:redstone_lamp",
+                p,"setblock 8 102 0 minecraft:redstone_lamp",
                 "edge_output_lamp",log_path,output_dir,
             )
 
@@ -2079,11 +2081,11 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
             "delay_output_wire_position":[3,100,0],
             "direct_inverter_position":[2,101,-2],
             "intermediate_wire_positions":[
-                [3,101,-2],[4,101,-2],[4,101,-1],[4,101,0]
+                [3,101,-2],[4,101,-2],[4,101,-1],[4,101,0],[5,101,0]
             ],
-            "final_inverter_position":[5,102,0],
-            "output_wire_position":[6,102,0],
-            "output_lamp_position":[7,102,0],
+            "final_inverter_position":[6,102,0],
+            "output_wire_position":[7,102,0],
+            "output_lamp_position":[8,102,0],
             "input_high_command_sha256":digest_bytes(EDGE_INPUT_HIGH_COMMAND),
             "input_low_command_sha256":digest_bytes(EDGE_INPUT_LOW_COMMAND),
             "temporal_sequence":[
