@@ -169,5 +169,30 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(layers["layers"][0]["cells"][0]["position"],[3,90,4])
 
 
+    def test_floor_torch_support_candidate_resolves_adjacent_lever(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("lever",(0,100,0),"minecraft:lever",["sensor_input","state_memory"],
+                  {"face":"wall","facing":"west","powered":"false"}),
+                n("torch",(1,101,0),"minecraft:redstone_torch",["signal_transport","logic_gate"],
+                  {"lit":"true"}),
+                n("wire",(2,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(3,101,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[],
+        }
+        doc,_=mod.build(graph)
+        motif=next(x for x in doc["motif_candidates"] if x["template"]=="not_gate")
+        self.assertIs(motif["input_support_resolved"],True)
+        self.assertEqual(motif["input_source_component_ids"],["lever"])
+        torch=next(x for x in doc["components"] if x["component_id"]=="torch")
+        support=next(p for p in torch["ports"] if p["kind"]=="input_support")
+        self.assertEqual(support["support_position"],[1,100,0])
+        self.assertEqual(support["peer_component_ids"],["lever"])
+        self.assertEqual(support["certainty"],"topology_candidate")
+
+
+
 if __name__=="__main__":
     unittest.main()
