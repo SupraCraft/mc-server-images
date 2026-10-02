@@ -53,7 +53,8 @@ def main():
     assert stock["minecraft_version"]==inst["minecraft_version"]==args.version
     for key in (
         "java_major","input_control",
-        "reset_source_position","set_source_position",
+        "reset_source_position","reset_input_wire_position",
+        "set_source_position","set_input_wire_position",
         "inverter_a_position","inverter_b_position",
         "q_wire_position","qbar_wire_position",
         "q_lamp_position","qbar_lamp_position",
