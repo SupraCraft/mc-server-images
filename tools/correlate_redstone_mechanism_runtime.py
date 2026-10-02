@@ -73,10 +73,13 @@ def main():
     )
 
     p_candidates=candidate_names(p_source_comp)
+    g_source_candidates=candidate_names(g_source_comp)
     assert positive_same
     assert "command_actuation_chain" in p_candidates
     assert "transmission_path" in p_candidates
+    assert "oscillator_or_state_loop" not in p_candidates
     assert not gap_same
+    assert "oscillator_or_state_loop" not in g_source_candidates
 
     observed_positive=runtime["fixtures"]["positive"]["actual_actuation"]
     observed_gap=runtime["fixtures"]["gap"]["actual_actuation"]
