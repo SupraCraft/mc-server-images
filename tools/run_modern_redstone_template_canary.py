@@ -552,6 +552,101 @@ def run_or_gate(args,evidence,server_jar,output_dir):
         print(json.dumps(result,indent=2,sort_keys=True))
 
 
+def diagnose_nor_state(process,log_path,output_dir,phase):
+    """Emit bounded exact block-state probes without changing NOR state."""
+    checks=[]
+
+    def add(label,value,condition):
+        token=(
+            f"P{value:02d}" if isinstance(value,int)
+            else str(value).replace("-","NEG").replace(".","_").upper()
+        )
+        marker=f"SUPRACRAFT_NOR_DIAG_{label.upper()}_{token}"
+        checks.append((label,value,marker,condition))
+
+    for label,x,y,z in (
+        ("source_a",-1,100,-1),
+        ("source_b",-1,100,1),
+    ):
+        add(label,"air",f"execute if block {x} {y} {z} minecraft:air")
+        add(
+            label,"redstone_block",
+            f"execute if block {x} {y} {z} minecraft:redstone_block",
+        )
+
+    for label,x,y,z in (
+        ("input_a",0,100,-1),
+        ("join_a",1,100,-1),
+        ("input_b",0,100,1),
+        ("join_b",1,100,1),
+        ("junction",1,100,0),
+        ("output_wire",3,101,0),
+    ):
+        for power in range(16):
+            add(
+                label,power,
+                f"execute if block {x} {y} {z} minecraft:redstone_wire[power={power}]",
+            )
+
+    for lit in (False,True):
+        state="true" if lit else "false"
+        label="lit" if lit else "unlit"
+        add(
+            "inverter",label,
+            f"execute if block 2 101 0 minecraft:redstone_torch[lit={state}]",
+        )
+        add(
+            "output_lamp",label,
+            f"execute if block 4 101 0 minecraft:redstone_lamp[lit={state}]",
+        )
+
+    for label,value,marker,condition in checks:
+        checked_command(
+            process,f"{condition} run say {marker}",
+            f"nor_diagnostic_{phase}_{label}",log_path,output_dir,
+        )
+    time.sleep(0.75)
+    text=log_path.read_text("utf-8",errors="replace")
+    observed={}
+    for label,value,marker,_ in checks:
+        if marker in text:
+            observed.setdefault(label,[]).append(value)
+    compact={
+        label:(values[0] if len(values)==1 else values)
+        for label,values in sorted(observed.items())
+    }
+    expected={
+        "source_a":"air",
+        "source_b":"air",
+        "input_a":0,
+        "join_a":0,
+        "input_b":0,
+        "join_b":0,
+        "junction":0,
+        "inverter":"lit",
+        "output_wire":15,
+        "output_lamp":"lit",
+    }
+    receipt={
+        "schema":"supracraft-modern-nor-fixture-diagnostic/1",
+        "phase":phase,
+        "expected":expected,
+        "observed":compact,
+        "mismatched":{
+            key:{"expected":value,"observed":compact.get(key)}
+            for key,value in expected.items()
+            if compact.get(key)!=value
+        },
+        "boundary":"diagnostic receipt records bounded block-state values only; it does not alter the NOR truth-table contract or promote semantics",
+    }
+    (output_dir/"diagnostic.json").write_text(
+        json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+    )
+    print("NOR_FIXTURE_DIAGNOSTIC")
+    print(json.dumps(receipt,indent=2,sort_keys=True))
+    return receipt
+
+
 def nor_probe(a_high,b_high,torch_lit,output_power,lamp_lit):
     a_block="minecraft:redstone_block" if a_high else "minecraft:air"
     b_block="minecraft:redstone_block" if b_high else "minecraft:air"
@@ -604,12 +699,38 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             checked_command(p,"setblock 3 101 0 minecraft:redstone_wire","output_wire",log_path,output_dir)
             checked_command(p,"setblock 4 101 0 minecraft:redstone_lamp","output_lamp",log_path,output_dir)
 
-            baseline_attempts,baseline_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_NOR_00_PASS",
-                nor_probe(False,False,True,15,True),
-                "nor_00",timeout_seconds=8.0,
-            )
+            try:
+                baseline_attempts,baseline_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_NOR_00_PASS",
+                    nor_probe(False,False,True,15,True),
+                    "nor_00",timeout_seconds=8.0,
+                )
+            except SystemExit as exc:
+                receipt=diagnose_nor_state(
+                    p,log_path,output_dir,"baseline_00_timeout"
+                )
+                checked_command(
+                    p,"save-all flush","nor_diagnostic_save",
+                    log_path,output_dir,
+                )
+                time.sleep(0.5)
+                checked_command(
+                    p,"stop","nor_diagnostic_stop",
+                    log_path,output_dir,
+                )
+                rc=p.wait(timeout=60)
+                zip_world(root/"world",output_dir/"world.zip")
+                receipt["original_failure"]=str(exc)
+                receipt["server_exit_code"]=rc
+                receipt["world_sha256"]=hashlib.sha256(
+                    (output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                (output_dir/"diagnostic.json").write_text(
+                    json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+                )
+                print(json.dumps(receipt,indent=2,sort_keys=True))
+                raise
             barrier=setup_barrier(
                 p,log_path,output_dir,"SUPRACRAFT_NOR_SETUP_READY"
             )
