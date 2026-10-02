@@ -24,8 +24,8 @@ from run_modern_redstone_microscope_canary import (
 
 REPEATER_COMMAND="setblock 6 100 0 minecraft:redstone_block"
 REPEATER_SOURCE_COMMAND="setblock 0 100 0 minecraft:redstone_block"
-NOT_INPUT_HIGH_COMMAND="setblock 0 100 0 minecraft:redstone_block"
-NOT_INPUT_LOW_COMMAND="setblock 0 100 0 minecraft:air"
+NOT_INPUT_HIGH_COMMAND="setblock -1 100 0 minecraft:redstone_block"
+NOT_INPUT_LOW_COMMAND="setblock -1 100 0 minecraft:air"
 
 
 def evidence_java_major(evidence: dict) -> int:
@@ -185,11 +185,12 @@ def run_repeater(args,evidence,server_jar,output_dir):
         print(json.dumps(result,indent=2,sort_keys=True))
 
 
-def not_probe(torch_lit,wire_power):
+def not_probe(input_wire_power,torch_lit,output_wire_power):
     lit="true" if torch_lit else "false"
     return (
-        f"execute if block 1 101 0 minecraft:redstone_torch[lit={lit}] "
-        f"if block 2 101 0 minecraft:redstone_wire[power={wire_power}]"
+        f"execute if block 0 100 0 minecraft:redstone_wire[power={input_wire_power}] "
+        f"if block 1 101 0 minecraft:redstone_torch[lit={lit}] "
+        f"if block 2 101 0 minecraft:redstone_wire[power={output_wire_power}]"
     )
 
 
@@ -216,7 +217,8 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             checked_command(p,"fill -2 99 -2 5 99 2 minecraft:stone","floor",log_path,output_dir)
             checked_command(p,"setblock 1 100 0 minecraft:stone","torch_support",log_path,output_dir)
             checked_command(p,"setblock 2 100 0 minecraft:stone","wire_support",log_path,output_dir)
-            checked_command(p,NOT_INPUT_LOW_COMMAND,"lever_low_setup",log_path,output_dir)
+            checked_command(p,NOT_INPUT_LOW_COMMAND,"input_low_setup",log_path,output_dir)
+            checked_command(p,"setblock 0 100 0 minecraft:redstone_wire","input_wire",log_path,output_dir)
             checked_command(p,"setblock 1 101 0 minecraft:redstone_torch","torch",log_path,output_dir)
             checked_command(p,"setblock 2 101 0 minecraft:redstone_wire","output_wire",log_path,output_dir)
             checked_command(p,"setblock 3 101 0 minecraft:redstone_lamp","lamp",log_path,output_dir)
@@ -224,7 +226,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             baseline_attempts,baseline_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOT_BASELINE_PASS",
-                not_probe(True,15),
+                not_probe(0,True,15),
                 "not_baseline",
                 timeout_seconds=8.0,
             )
@@ -241,7 +243,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             high_attempts,high_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOT_HIGH_LOW_PASS",
-                not_probe(False,0),
+                not_probe(15,False,0),
                 "not_high_low",
                 timeout_seconds=8.0,
             )
@@ -252,7 +254,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             reset_attempts,reset_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOT_RESET_PASS",
-                not_probe(True,15),
+                not_probe(0,True,15),
                 "not_reset",
                 timeout_seconds=8.0,
             )
@@ -269,7 +271,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             static_attempts,static_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOT_STATIC_HIGH_PASS",
-                not_probe(False,0),
+                not_probe(15,False,0),
                 "not_static_high",
                 timeout_seconds=8.0,
             )
@@ -301,8 +303,9 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             "minecraft_version":version,
             "java_major":evidence_java_major(evidence),
             "instrumented":bool(args.java_agent),
-            "input_component_position":[0,100,0],
-            "input_control":"fixture_controller_source_injection",
+            "input_component_position":[-1,100,0],
+            "input_wire_position":[0,100,0],
+            "input_control":"fixture_controller_source_injection_via_dust",
             "input_low_block":"minecraft:air",
             "input_high_block":"minecraft:redstone_block",
             "support_position":[1,100,0],
@@ -315,6 +318,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
                 {
                     "phase":"baseline",
                     "input_powered":False,
+                    "input_wire_power":0,
                     "torch_lit":True,
                     "output_wire_power":15,
                     "verified":True,
@@ -322,6 +326,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
                 {
                     "phase":"assert_input",
                     "input_powered":True,
+                    "input_wire_power":15,
                     "torch_lit":False,
                     "output_wire_power":0,
                     "verified":True,
@@ -329,6 +334,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
                 {
                     "phase":"reset_input",
                     "input_powered":False,
+                    "input_wire_power":0,
                     "torch_lit":True,
                     "output_wire_power":15,
                     "verified":True,
@@ -350,7 +356,7 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             "world_sha256":hashlib.sha256(
                 (output_dir/"world.zip").read_bytes()
             ).hexdigest(),
-            "boundary":"truth-table sequence qualifies this exact torch inverter under fixture-controller source injection; saved high-state topology supports static source/support recovery, but no player-operated input-device semantics are claimed",
+            "boundary":"truth-table sequence qualifies this exact torch inverter under fixture-controller source injection through an explicit input dust net; saved high-state topology supports static source/net/support recovery, but no player-operated input-device semantics are claimed",
         }
         (output_dir/"result.json").write_text(
             json.dumps(result,indent=2,sort_keys=True)+"\n"
