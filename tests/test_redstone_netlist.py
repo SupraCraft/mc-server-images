@@ -204,7 +204,7 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(by_id["wire_transmission_path"]["status"],"qualified_template")
         self.assertEqual(by_id["repeater_delay_line"]["status"],"qualified_template")
         self.assertEqual(by_id["not_gate"]["status"],"qualified_template")
-        self.assertEqual(by_id["or_gate"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["or_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["and_gate"]["status"],"reference_candidate_only")
         self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 
@@ -275,6 +275,65 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(support["peer_component_ids"],["lever"])
         self.assertEqual(support["certainty"],"topology_candidate")
 
+
+
+    def test_three_inverter_de_morgan_shape_is_and_candidate_only(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("sa",(-1,100,-1),"minecraft:redstone_block",["power_source"]),
+                n("aw",(0,100,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("ia",(1,101,-1),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("ib",(1,101,1),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("bw",(0,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("sb",(-1,100,1),"minecraft:redstone_block",["power_source"]),
+                n("m1",(2,101,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("mj",(2,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("m2",(2,101,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("final",(3,102,0),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"true"}),
+                n("out",(4,102,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(5,102,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("m1","mj"),edge("mj","m1"),
+                edge("mj","m2"),edge("m2","mj"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        rows=[x for x in doc["motif_candidates"] if x["template"]=="and_gate"]
+        self.assertEqual(len(rows),1)
+        row=rows[0]
+        self.assertEqual(row["confidence"],"structural_candidate_only")
+        self.assertEqual(row["input_source_component_ids"],["sa","sb"])
+        self.assertEqual(row["input_inverter_component_ids"],["ia","ib"])
+        self.assertEqual(row["final_inverter_component_id"],"final")
+        self.assertEqual(row["output_sink_component_ids"],["lamp"])
+        self.assertIn("truth table",row["required_runtime_contract"].lower())
+
+    def test_two_inverter_shared_net_without_final_inverter_is_not_and(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("sa",(-1,100,-1),"minecraft:redstone_block",["power_source"]),
+                n("aw",(0,100,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("ia",(1,101,-1),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("ib",(1,101,1),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("bw",(0,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("sb",(-1,100,1),"minecraft:redstone_block",["power_source"]),
+                n("m1",(2,101,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("mj",(2,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("m2",(2,101,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(3,101,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("m1","mj"),edge("mj","m1"),
+                edge("mj","m2"),edge("m2","mj"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        self.assertFalse(any(
+            x["template"]=="and_gate" for x in doc["motif_candidates"]
+        ))
 
 
 if __name__=="__main__":
