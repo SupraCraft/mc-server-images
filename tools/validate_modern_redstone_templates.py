@@ -173,28 +173,26 @@ def validate_not(root:Path):
 
     in_pos=inst["input_wire_position"]
     out_pos=inst["output_wire_position"]
-    between=[
+    between_phase=[
         r for r in rows
         if high["seq"]<r["seq"]<low["seq"]
         and r["event_type"] in {
             "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
             "redstone_power_query","redstone_power_result",
         }
-        and position(r)==out_pos
     ]
-    after=[
+    after_phase=[
         r for r in rows
         if r["seq"]>low["seq"]
         and r["event_type"] in {
             "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
             "redstone_power_query","redstone_power_result",
         }
-        and position(r)==out_pos
     ]
-    between_input=[r for r in between if position(r)==in_pos]
-    between_output=[r for r in between if position(r)==out_pos]
-    after_input=[r for r in after if position(r)==in_pos]
-    after_output=[r for r in after if position(r)==out_pos]
+    between_input=[r for r in between_phase if position(r)==in_pos]
+    between_output=[r for r in between_phase if position(r)==out_pos]
+    after_input=[r for r in after_phase if position(r)==in_pos]
+    after_output=[r for r in after_phase if position(r)==out_pos]
     assert between_input,("high input dust recomputation",counts)
     assert between_output,("high->low output recomputation",counts)
     assert after_input,("reset input dust recomputation",counts)
@@ -204,8 +202,8 @@ def validate_not(root:Path):
         "truth_table_sequence":inst["truth_table_sequence"],
         "input_high_dispatch_seq":high["seq"],
         "input_low_reset_dispatch_seq":low["seq"],
-        "wire_events_high_to_low":len(between),
-        "wire_events_low_to_high":len(after),
+        "wire_events_high_to_low":len(between_phase),
+        "wire_events_low_to_high":len(after_phase),
         "input_wire_events_high":len(between_input),
         "output_wire_events_high":len(between_output),
         "input_wire_events_reset":len(after_input),
