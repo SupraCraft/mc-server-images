@@ -1392,15 +1392,15 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 (-3,3),(-2,3),(-1,3),(0,3),(1,3),(2,3),(3,3),
             ]
             for x,z in nand_wire_positions:
-                checked_command(
-                    p,f"setblock {x} 101 {z} minecraft:redstone_wire",
-                    f"nand_wire_{x}_{z}",log_path,output_dir,
-                )
                 if not (x==-3 and z in {-2,2}):
                     checked_command(
                         p,f"setblock {x} 100 {z} minecraft:stone",
                         f"nand_support_{x}_{z}",log_path,output_dir,
                     )
+                checked_command(
+                    p,f"setblock {x} 101 {z} minecraft:redstone_wire",
+                    f"nand_wire_{x}_{z}",log_path,output_dir,
+                )
 
             # Raise the direct OR branch twice so its final-stage input remains
             # physically separated from the NAND-equivalent branch.
