@@ -12,7 +12,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from generate_vanilla_worldgen_bootstrap import command, download_server, wait_ready
+from generate_vanilla_worldgen_bootstrap import command, download_server, wait_ready, zip_world
 
 CANARY_COMMAND="setblock 6 100 0 minecraft:redstone_block"
 SOURCE_POSITION=[0,100,0]
@@ -281,10 +281,14 @@ def main() -> None:
                 )
                 actual_actuation=False
 
+            checked_command(p,"save-all flush","save_flush",log_path,args.output_dir)
+            time.sleep(1)
             checked_command(p,"stop","stop",log_path,args.output_dir)
             rc=p.wait(timeout=60)
         elapsed=time.monotonic()-started
 
+        zip_world(root/"world",args.output_dir/"world.zip")
+        world_sha256=hashlib.sha256((args.output_dir/"world.zip").read_bytes()).hexdigest()
         server_log=log_path.read_text("utf-8",errors="replace")
         diagnostics=[
             line for line in server_log.splitlines()
@@ -323,6 +327,8 @@ def main() -> None:
             "verification_attempts":verification_attempts,
             "settle_seconds":round(settle_seconds,6),
             "trace_present":trace_path.is_file(),
+            "world_present":(args.output_dir/"world.zip").is_file(),
+            "world_sha256":world_sha256,
             "boundary":"fixture outcome plus bounded wire-event ordering is causal evidence for this exact redstone shape only",
         }
         (args.output_dir/"result.json").write_text(
