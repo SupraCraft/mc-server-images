@@ -580,7 +580,8 @@ def diagnose_nor_state(process,log_path,output_dir,phase):
         ("input_b",0,100,1),
         ("join_b",1,100,1),
         ("junction",1,100,0),
-        ("output_wire",3,101,0),
+        ("support_feed",2,100,0),
+        ("output_wire",4,101,0),
     ):
         for power in range(16):
             add(
@@ -593,11 +594,11 @@ def diagnose_nor_state(process,log_path,output_dir,phase):
         label="lit" if lit else "unlit"
         add(
             "inverter",label,
-            f"execute if block 2 101 0 minecraft:redstone_torch[lit={state}]",
+            f"execute if block 3 101 0 minecraft:redstone_torch[lit={state}]",
         )
         add(
             "output_lamp",label,
-            f"execute if block 4 101 0 minecraft:redstone_lamp[lit={state}]",
+            f"execute if block 5 101 0 minecraft:redstone_lamp[lit={state}]",
         )
 
     for label,value,marker,condition in checks:
@@ -624,6 +625,7 @@ def diagnose_nor_state(process,log_path,output_dir,phase):
             "input_b":0,
             "join_b":0,
             "junction":0,
+            "support_feed":0,
             "inverter":"lit",
             "output_wire":15,
         },
@@ -665,8 +667,8 @@ def nor_probe(a_high,b_high,torch_lit,output_power):
     return (
         f"execute if block -1 100 -1 {a_block} "
         f"if block -1 100 1 {b_block} "
-        f"if block 2 101 0 minecraft:redstone_torch[lit={torch}] "
-        f"if block 3 101 0 minecraft:redstone_wire[power={output_power}]"
+        f"if block 3 101 0 minecraft:redstone_torch[lit={torch}] "
+        f"if block 4 101 0 minecraft:redstone_wire[power={output_power}]"
     )
 
 
@@ -696,17 +698,17 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             for x,z,name in (
                 (0,-1,"a_input_wire"),(1,-1,"a_join_wire"),
                 (0,1,"b_input_wire"),(1,1,"b_join_wire"),
-                (1,0,"junction_wire"),
+                (1,0,"junction_wire"),(2,0,"support_feed_wire"),
             ):
                 checked_command(
                     p,f"setblock {x} 100 {z} minecraft:redstone_wire",
                     name,log_path,output_dir,
                 )
-            checked_command(p,"setblock 2 100 0 minecraft:stone","inverter_support",log_path,output_dir)
-            checked_command(p,"setblock 3 100 0 minecraft:stone","output_wire_support",log_path,output_dir)
-            checked_command(p,"setblock 2 101 0 minecraft:redstone_torch","inverter",log_path,output_dir)
-            checked_command(p,"setblock 3 101 0 minecraft:redstone_wire","output_wire",log_path,output_dir)
-            checked_command(p,"setblock 4 101 0 minecraft:redstone_lamp","output_lamp",log_path,output_dir)
+            checked_command(p,"setblock 3 100 0 minecraft:stone","inverter_support",log_path,output_dir)
+            checked_command(p,"setblock 4 100 0 minecraft:stone","output_wire_support",log_path,output_dir)
+            checked_command(p,"setblock 3 101 0 minecraft:redstone_torch","inverter",log_path,output_dir)
+            checked_command(p,"setblock 4 101 0 minecraft:redstone_wire","output_wire",log_path,output_dir)
+            checked_command(p,"setblock 5 101 0 minecraft:redstone_lamp","output_lamp",log_path,output_dir)
 
             try:
                 baseline_attempts,baseline_wait=wait_for_marker(
@@ -839,12 +841,13 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             "input_b_wire_position":[0,100,1],
             "junction_wire_position":[1,100,0],
             "input_net_wire_positions":[
-                [0,100,-1],[1,100,-1],[0,100,1],[1,100,1],[1,100,0]
+                [0,100,-1],[1,100,-1],[0,100,1],[1,100,1],
+                [1,100,0],[2,100,0]
             ],
-            "inverter_support_position":[2,100,0],
-            "inverter_position":[2,101,0],
-            "output_wire_position":[3,101,0],
-            "output_lamp_position":[4,101,0],
+            "inverter_support_position":[3,100,0],
+            "inverter_position":[3,101,0],
+            "output_wire_position":[4,101,0],
+            "output_lamp_position":[5,101,0],
             "input_a_high_command_sha256":digest_bytes(NOR_A_HIGH_COMMAND),
             "input_a_low_command_sha256":digest_bytes(NOR_A_LOW_COMMAND),
             "input_b_high_command_sha256":digest_bytes(NOR_B_HIGH_COMMAND),
@@ -880,7 +883,7 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
                 (output_dir/"world.zip").read_bytes()
             ).hexdigest(),
             "output_lamp_semantic_authority":False,
-            "boundary":"complete NOR truth table is qualified by exact inverter state plus output-dust power; the adjacent lamp remains structural/diagnostic only and does not define NOR semantics",
+            "boundary":"complete NOR truth table is qualified by exact inverter state plus output-dust power through an explicit merged-net support-feed segment; the adjacent lamp remains structural/diagnostic only and does not define NOR semantics",
         }
         (output_dir/"result.json").write_text(
             json.dumps(result,indent=2,sort_keys=True)+"\n"

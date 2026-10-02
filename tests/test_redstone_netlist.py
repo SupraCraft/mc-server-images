@@ -179,6 +179,11 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(row["input_source_component_ids"],["a","b"])
         self.assertEqual(row["output_sink_component_ids"],["lamp"])
         self.assertIn("truth table",row["required_runtime_contract"].lower())
+        # Hard negative for NOR: a joined two-source net is insufficient
+        # without the required downstream inverter composition.
+        self.assertFalse(any(
+            x["template"]=="nor_gate" for x in doc["motif_candidates"]
+        ))
 
     def test_single_source_shared_net_is_not_or_candidate(self):
         graph={
@@ -207,14 +212,15 @@ class RedstoneNetlistTests(unittest.TestCase):
                 n("bw",(0,100,1),"minecraft:redstone_wire",["signal_transport"]),
                 n("bj",(1,100,1),"minecraft:redstone_wire",["signal_transport"]),
                 n("j",(1,100,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("inv",(2,101,0),"minecraft:redstone_torch",
+                n("feed",(2,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("inv",(3,101,0),"minecraft:redstone_torch",
                   ["signal_transport","logic_gate"],{"lit":"false"}),
-                n("out",(3,101,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("lamp",(4,101,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+                n("out",(4,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(5,101,0),"minecraft:redstone_lamp",["presentation_feedback"]),
             ],
             "edges":[
                 edge("aw","aj"),edge("aj","j"),edge("j","bj"),
-                edge("bj","bw"),
+                edge("bj","bw"),edge("j","feed"),
             ],
         }
         doc,_=mod.build(graph)
