@@ -481,16 +481,22 @@ def functional_signature(components,nets):
             "block":c["block"],
             "properties":{
                 k:v for k,v in sorted(c["properties"].items())
-                if k not in {"powered","lit","power","triggered"}
+                if k not in {
+                    "powered","lit","power","triggered",
+                    "facing","north","east","south","west",
+                }
             },
             "ports":sorted(
-                {
-                    "kind":p["kind"],
-                    "certainty":p["certainty"],
-                    "connected":p["net_id"] is not None,
-                }
-                for p in c["ports"]
-            , key=lambda x:(x["kind"],x["certainty"],x["connected"])),
+                [
+                    {
+                        "kind":p["kind"],
+                        "certainty":p["certainty"],
+                        "connected":p["net_id"] is not None,
+                    }
+                    for p in c["ports"]
+                ],
+                key=lambda x:(x["kind"],x["certainty"],x["connected"]),
+            ),
         }
         for c in components
     ]
