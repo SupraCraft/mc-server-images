@@ -15,6 +15,7 @@ from pathlib import Path
 from generate_vanilla_worldgen_bootstrap import command, download_server, wait_ready, zip_world
 
 CANARY_COMMAND="setblock 6 100 0 minecraft:redstone_block"
+SOURCE_COMMAND="setblock 0 100 0 minecraft:redstone_block"
 SOURCE_POSITION=[0,100,0]
 COMMAND_BLOCK_POSITION=[4,100,0]
 TARGET_POSITION=[6,100,0]
@@ -110,6 +111,27 @@ def wait_for_marker(
         f"modern redstone state condition timed out during {stage}; "
         f"attempts={attempts}"
     )
+
+
+def wait_for_log_marker(
+    process: subprocess.Popen[str],
+    log_path: Path,
+    output_dir: Path,
+    marker: str,
+    stage: str,
+    timeout_seconds: float=5.0,
+) -> float:
+    started=time.monotonic()
+    deadline=started+timeout_seconds
+    while time.monotonic()<deadline:
+        if process.poll() is not None:
+            fail_early(stage,process,log_path,output_dir)
+        if log_path.exists() and marker in log_path.read_text(
+            "utf-8",errors="replace"
+        ):
+            return time.monotonic()-started
+        time.sleep(0.05)
+    raise SystemExit(f"server marker timed out during {stage}: {marker}")
 
 
 def prove_non_actuation(
@@ -258,13 +280,20 @@ def main() -> None:
                     p,"setblock 2 100 0 minecraft:air","enforce_gap",
                     log_path,args.output_dir,
                 )
-            time.sleep(0.20)
+            setup_marker="SUPRACRAFT_REDSTONE_SETUP_READY"
+            checked_command(
+                p,f"say {setup_marker}","setup_barrier",
+                log_path,args.output_dir,
+            )
+            setup_barrier_seconds=wait_for_log_marker(
+                p,log_path,args.output_dir,setup_marker,"setup_barrier"
+            )
             if args.java_agent:
                 gate_path.write_text("capture\n")
                 time.sleep(0.15)
 
             checked_command(
-                p,"setblock 0 100 0 minecraft:redstone_block",
+                p,SOURCE_COMMAND,
                 "activate_source",log_path,args.output_dir,
             )
             if expected_actuation:
@@ -322,6 +351,8 @@ def main() -> None:
             "command_block_position":COMMAND_BLOCK_POSITION,
             "target_position":TARGET_POSITION,
             "command_sha256":digest_bytes(CANARY_COMMAND),
+            "source_command_sha256":digest_bytes(SOURCE_COMMAND),
+            "setup_barrier_seconds":round(setup_barrier_seconds,6),
             "ready_seconds":round(ready_seconds,6),
             "elapsed_seconds":round(elapsed,6),
             "verification_attempts":verification_attempts,
