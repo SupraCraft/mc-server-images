@@ -15,7 +15,7 @@ from typing import Any
 from smoke_vanilla_runtime import download_verified_server, status_query
 
 
-BOT_NAME = "SupraCraftSelectorProbe"
+BOT_NAME = "SupraCraftProbe"
 PORT = 25568
 
 AABB_SELECTOR = "@a[x=-1,y=69,z=-1,dx=2,dy=3,dz=2]"
