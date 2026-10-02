@@ -338,7 +338,46 @@ def attach_ports(nodes,groups):
                 sort_keys=True,separators=(",",":")
             ).encode()
         ).hexdigest()
+    resolve_torch_support_peers(components,nodes)
     return components,nets
+
+
+def resolve_torch_support_peers(components,nodes):
+    by_pos={pos(n):nid for nid,n in nodes.items() if pos(n) is not None}
+    comp_by_id={c["component_id"]:c for c in components}
+    for c in components:
+        if c["primitive"]!="inverter":
+            continue
+        p=tuple(c["position"]) if c.get("position") else None
+        if p is None:
+            continue
+        block=c["block"]
+        props=c.get("properties") or {}
+        support=None
+        if block=="minecraft:redstone_torch":
+            support=(p[0],p[1]-1,p[2])
+        elif block=="minecraft:redstone_wall_torch":
+            facing=props.get("facing")
+            if facing in HORIZONTAL:
+                fv=HORIZONTAL[facing]
+                support=(p[0]-fv[0],p[1]-fv[1],p[2]-fv[2])
+        if support is None:
+            continue
+        peers=[]
+        for d in DIR6.values():
+            nid=by_pos.get(add(support,d))
+            if nid is None or nid==c["component_id"] or nid not in comp_by_id:
+                continue
+            peer=comp_by_id[nid]
+            if peer["primitive"] in SOURCE_PRIMITIVES:
+                peers.append(nid)
+        for port in c["ports"]:
+            if port["kind"]=="input_support":
+                port["support_position"]=list(support)
+                port["peer_component_ids"]=sorted(set(peers))
+                if peers:
+                    port["basis"]="topology_support_source_candidate"
+                    port["certainty"]="topology_candidate"
 
 
 def motifs(components,nets):
@@ -399,7 +438,15 @@ def motifs(components,nets):
                 "confidence":"structural_candidate_only",
                 "component_ids":[c["component_id"]],
                 "net_ids":sorted({p["net_id"] for p in outputs if p["net_id"]}),
-                "input_support_resolved":any(p["net_id"] for p in support),
+                "input_support_resolved":any(
+                    p.get("net_id") or p.get("peer_component_ids")
+                    for p in support
+                ),
+                "input_source_component_ids":sorted({
+                    peer
+                    for p in support
+                    for peer in p.get("peer_component_ids",[])
+                }),
                 "evidence":["redstone_torch_inverter_primitive","output_net_present"],
                 "required_runtime_contract":RUNTIME_CONTRACTS["not_gate"],
             })
@@ -491,7 +538,10 @@ def functional_signature(components,nets):
                     {
                         "kind":p["kind"],
                         "certainty":p["certainty"],
-                        "connected":p["net_id"] is not None,
+                        "connected":(
+                            p["net_id"] is not None
+                            or bool(p.get("peer_component_ids"))
+                        ),
                     }
                     for p in c["ports"]
                 ],
@@ -541,6 +591,15 @@ def render_dot(doc):
             f'  "{escape(c["component_id"])}" '
             f'[shape=box,label="{escape(label)}"];'
         )
+    for c in doc["components"]:
+        for p in c["ports"]:
+            if p["kind"]!="input_support":
+                continue
+            for peer in p.get("peer_component_ids",[]):
+                rows.append(
+                    f'  "{escape(peer)}" -> "{escape(c["component_id"])}" '
+                    f'[style=dashed,label="support input candidate"];'
+                )
     for n in doc["nets"]:
         rows.append(
             f'  "{n["net_id"]}" [shape=ellipse,label="{n["net_id"]}\\n'
