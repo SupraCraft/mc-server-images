@@ -8,6 +8,9 @@ on:
       - 'bench/worldgen/observability/redstone-mechanism-taxonomy-v1.json'
       - 'bench/worldgen/observability/supracraft-redstone-netlist-v1.schema.json'
       - 'tools/run_modern_redstone_template_canary.py'
+      - 'tools/run_modern_rs_latch_canary.py'
+      - 'tools/validate_modern_rs_latch.py'
+      - 'tools/correlate_rs_latch_netlist.py'
       - 'tools/validate_modern_redstone_templates.py'
       - 'tools/correlate_redstone_template_netlist.py'
       - 'tools/build_redstone_netlist.py'
@@ -94,7 +97,10 @@ jobs:
           python -m unittest -v tests.test_redstone_netlist
           python -m py_compile \
             tools/run_modern_redstone_template_canary.py \
+            tools/run_modern_rs_latch_canary.py \
             tools/validate_modern_redstone_templates.py \
+            tools/validate_modern_rs_latch.py \
+            tools/correlate_rs_latch_netlist.py \
             tools/correlate_redstone_template_netlist.py \
             tools/build_redstone_netlist.py \
             tools/analyze_modern_causal_machinery.py \
@@ -130,7 +136,8 @@ jobs:
             out/repeater-d4-stock out/repeater-d4-instrumented \
             out/not-gate-stock out/not-gate-instrumented \
             out/or-gate-stock out/or-gate-instrumented \
-            out/and-gate-stock out/and-gate-instrumented
+            out/and-gate-stock out/and-gate-instrumented \
+            out/rs-latch-stock out/rs-latch-instrumented
 
           python tools/run_modern_redstone_template_canary.py \
             --evidence "${{ matrix.evidence_path }}" \
@@ -162,6 +169,11 @@ jobs:
             --fixture and_gate \
             --output-dir out/and-gate-stock \
             --expected-version "${{ matrix.version }}"
+          python tools/run_modern_rs_latch_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --output-dir out/rs-latch-stock \
+            --expected-version "${{ matrix.version }}"
 
       - name: Run instrumented standard templates
         shell: bash
@@ -189,6 +201,14 @@ jobs:
             python tools/run_modern_redstone_template_canary.py "${args[@]}"
           done
 
+          python tools/run_modern_rs_latch_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --output-dir out/rs-latch-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id "${{ matrix.adapter_id }}" \
+            --expected-version "${{ matrix.version }}"
+
       - name: Validate exact runtime contracts
         shell: bash
         run: |
@@ -197,12 +217,18 @@ jobs:
             --root out \
             --version "${{ matrix.version }}" \
             --output out/redstone-template-runtime-report.json
+          python tools/validate_modern_rs_latch.py \
+            --stock out/rs-latch-stock/result.json \
+            --instrumented out/rs-latch-instrumented/result.json \
+            --trace out/rs-latch-instrumented/trace.jsonl \
+            --version "${{ matrix.version }}" \
+            --output out/rs-latch-runtime-report.json
 
       - name: Recover standard template netlists and schematics
         shell: bash
         run: |
           set -euo pipefail
-          for fixture in repeater-d1 repeater-d4 not-gate or-gate and-gate; do
+          for fixture in repeater-d1 repeater-d4 not-gate or-gate and-gate rs-latch; do
             python tools/analyze_modern_causal_machinery.py \
               --world-zip "out/$fixture-stock/world.zip" \
               --output "out/$fixture-machinery.json"
@@ -225,6 +251,10 @@ jobs:
             --or-netlist out/or-gate-netlist.json \
             --and-netlist out/and-gate-netlist.json \
             --output out/redstone-template-netlist-runtime-correlation.json
+          python tools/correlate_rs_latch_netlist.py \
+            --runtime-report out/rs-latch-runtime-report.json \
+            --netlist out/rs-latch-netlist.json \
+            --output out/rs-latch-netlist-runtime-correlation.json
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -244,4 +274,6 @@ jobs:
             out/*-layers.json
             out/redstone-template-runtime-report.json
             out/redstone-template-netlist-runtime-correlation.json
+            out/rs-latch-runtime-report.json
+            out/rs-latch-netlist-runtime-correlation.json
           retention-days: 14
