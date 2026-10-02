@@ -132,8 +132,8 @@ def validate_not(root:Path):
     inst=load_result(root,name,"instrumented")
     for k in (
         "template","minecraft_version","java_major",
-        "input_component_position","support_position","inverter_position",
-        "output_wire_position","output_lamp_position",
+        "input_component_position","input_wire_position","input_control",
+        "support_position","inverter_position","output_wire_position","output_lamp_position",
         "input_high_command_sha256","input_low_command_sha256",
         "truth_table_sequence",
     ):
@@ -143,13 +143,14 @@ def validate_not(root:Path):
     assert inst["trace_present"] is True
 
     expected=[
-        (False,True,15),
-        (True,False,0),
-        (False,True,15),
+        (False,0,True,15),
+        (True,15,False,0),
+        (False,0,True,15),
     ]
     observed=[
         (
             row["input_powered"],
+            row["input_wire_power"],
             row["torch_lit"],
             row["output_wire_power"],
         )
@@ -170,6 +171,7 @@ def validate_not(root:Path):
     low=dispatch_after(rows,inst["input_low_command_sha256"],high["seq"])
     assert high["seq"]<low["seq"]
 
+    in_pos=inst["input_wire_position"]
     out_pos=inst["output_wire_position"]
     between=[
         r for r in rows
@@ -189,8 +191,14 @@ def validate_not(root:Path):
         }
         and position(r)==out_pos
     ]
-    assert between,("high->low output recomputation",counts)
-    assert after,("low->high reset recomputation",counts)
+    between_input=[r for r in between if position(r)==in_pos]
+    between_output=[r for r in between if position(r)==out_pos]
+    after_input=[r for r in after if position(r)==in_pos]
+    after_output=[r for r in after if position(r)==out_pos]
+    assert between_input,("high input dust recomputation",counts)
+    assert between_output,("high->low output recomputation",counts)
+    assert after_input,("reset input dust recomputation",counts)
+    assert after_output,("low->high output recomputation",counts)
 
     return {
         "truth_table_sequence":inst["truth_table_sequence"],
@@ -198,6 +206,10 @@ def validate_not(root:Path):
         "input_low_reset_dispatch_seq":low["seq"],
         "wire_events_high_to_low":len(between),
         "wire_events_low_to_high":len(after),
+        "input_wire_events_high":len(between_input),
+        "output_wire_events_high":len(between_output),
+        "input_wire_events_reset":len(after_input),
+        "output_wire_events_reset":len(after_output),
         "event_counts":dict(sorted(counts.items())),
         "dropped_events":0,
         "semantic_divergence":False,
