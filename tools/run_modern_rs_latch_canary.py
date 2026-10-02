@@ -101,6 +101,126 @@ def wait_state(p,log_path,output_dir,phase,q,q_lit,qb,qb_lit):
     )
 
 
+def diagnose_reset_failure(p,log_path,output_dir):
+    """Measure the failed forced-reset state without changing fixture semantics."""
+    prefix=f"SUPRACRAFT_RS_DIAG_{time.time_ns()}"
+    probes=[]
+
+    def add_bool(name,command_true,command_false):
+        probes.append((name,True,command_true,f"{prefix}_{name}_TRUE"))
+        probes.append((name,False,command_false,f"{prefix}_{name}_FALSE"))
+
+    add_bool(
+        "reset_source_present",
+        "execute if block -1 100 0 minecraft:redstone_block",
+        "execute if block -1 100 0 minecraft:air",
+    )
+    add_bool(
+        "set_source_present",
+        "execute if block 5 100 2 minecraft:redstone_block",
+        "execute if block 5 100 2 minecraft:air",
+    )
+    add_bool(
+        "inverter_a_lit",
+        "execute if block 1 100 0 minecraft:redstone_wall_torch[facing=east,lit=true]",
+        "execute if block 1 100 0 minecraft:redstone_wall_torch[facing=east,lit=false]",
+    )
+    add_bool(
+        "inverter_b_lit",
+        "execute if block 3 100 2 minecraft:redstone_wall_torch[facing=west,lit=true]",
+        "execute if block 3 100 2 minecraft:redstone_wall_torch[facing=west,lit=false]",
+    )
+    add_bool(
+        "q_lamp_lit",
+        "execute if block 3 100 -1 minecraft:redstone_lamp[lit=true]",
+        "execute if block 3 100 -1 minecraft:redstone_lamp[lit=false]",
+    )
+    add_bool(
+        "qbar_lamp_lit",
+        "execute if block 1 100 3 minecraft:redstone_lamp[lit=true]",
+        "execute if block 1 100 3 minecraft:redstone_lamp[lit=false]",
+    )
+
+    power_points={
+        "q_wire_power":(2,100,0),
+        "qbar_wire_power":(2,100,2),
+        "feedback_a_endpoint_power":(4,100,1),
+        "feedback_b_endpoint_power":(0,100,1),
+    }
+    power_markers={}
+    for name,(x,y,z) in power_points.items():
+        power_markers[name]=[]
+        for value in range(16):
+            marker=f"{prefix}_{name}_P{value:02d}"
+            power_markers[name].append((value,marker))
+            checked_command(
+                p,
+                f"execute if block {x} {y} {z} "
+                f"minecraft:redstone_wire[power={value}] run say {marker}",
+                "rs_reset_diagnostic",log_path,output_dir,
+            )
+
+    for _,_,probe,marker in probes:
+        checked_command(
+            p,f"{probe} run say {marker}",
+            "rs_reset_diagnostic",log_path,output_dir,
+        )
+    end_marker=f"{prefix}_END"
+    checked_command(
+        p,f"say {end_marker}",
+        "rs_reset_diagnostic",log_path,output_dir,
+    )
+    wait_for_log_marker(
+        p,log_path,output_dir,end_marker,
+        "rs_reset_diagnostic",timeout_seconds=5.0,
+    )
+    text=log_path.read_text("utf-8",errors="replace")
+
+    values={}
+    for name in (
+        "reset_source_present","set_source_present",
+        "inverter_a_lit","inverter_b_lit",
+        "q_lamp_lit","qbar_lamp_lit",
+    ):
+        t=f"{prefix}_{name}_TRUE" in text
+        f_=f"{prefix}_{name}_FALSE" in text
+        values[name]=True if t and not f_ else False if f_ and not t else None
+
+    for name,rows in power_markers.items():
+        matched=[value for value,marker in rows if marker in text]
+        values[name]=matched[0] if len(matched)==1 else None
+        values[name+"_matched_values"]=matched
+
+    return {
+        "schema":"supracraft-rs-latch-reset-diagnostic/1",
+        "stage":"rs_reset_asserted",
+        "observed":values,
+        "positions":{
+            "reset_source":[-1,100,0],
+            "set_source":[5,100,2],
+            "inverter_a":[1,100,0],
+            "inverter_b":[3,100,2],
+            "q_wire":[2,100,0],
+            "qbar_wire":[2,100,2],
+            "feedback_a_endpoint":[4,100,1],
+            "feedback_b_endpoint":[0,100,1],
+            "q_lamp":[3,100,-1],
+            "qbar_lamp":[1,100,3],
+        },
+        "expected_reset":{
+            "reset_source_present":True,
+            "set_source_present":False,
+            "inverter_a_lit":False,
+            "inverter_b_lit":True,
+            "q_wire_power":0,
+            "qbar_wire_power":15,
+            "q_lamp_lit":False,
+            "qbar_lamp_lit":True,
+        },
+        "boundary":"diagnostic-only exact block-state receipt; no latch semantic promotion and no raw authored commands retained",
+    }
+
+
 def observe_post_invalid(p,log_path,output_dir):
     prefix=f"SUPRACRAFT_RS_INVALID_RESOLVE_{time.time_ns()}"
     combos=[
@@ -228,9 +348,38 @@ def main():
 
             # Force reset then prove state retention after R stimulus removal.
             checked_command(p,R_HIGH,"r_assert_1",log_path,args.output_dir)
-            waits["reset_asserted"]=wait_state(
-                p,log_path,args.output_dir,"RESET_ASSERTED",0,False,15,True
-            )
+            try:
+                waits["reset_asserted"]=wait_state(
+                    p,log_path,args.output_dir,"RESET_ASSERTED",0,False,15,True
+                )
+            except SystemExit as exc:
+                diagnostic=diagnose_reset_failure(
+                    p,log_path,args.output_dir
+                )
+                checked_command(
+                    p,"save-all flush","rs_reset_diagnostic_save",
+                    log_path,args.output_dir,
+                )
+                time.sleep(1)
+                checked_command(
+                    p,"stop","rs_reset_diagnostic_stop",
+                    log_path,args.output_dir,
+                )
+                diagnostic["server_exit_code"]=p.wait(timeout=60)
+                zip_world(root/"world",args.output_dir/"world.zip")
+                diagnostic["world_sha256"]=hashlib.sha256(
+                    (args.output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                diagnostic["original_failure"]=str(exc)
+                (args.output_dir/"diagnostic.json").write_text(
+                    json.dumps(diagnostic,indent=2,sort_keys=True)+"\n"
+                )
+                print("RS_LATCH_RESET_DIAGNOSTIC")
+                print(json.dumps(diagnostic,indent=2,sort_keys=True))
+                raise SystemExit(
+                    "RS latch forced-reset state failed; "
+                    "bounded diagnostic receipt written"
+                )
             checked_command(p,R_LOW,"r_release_1",log_path,args.output_dir)
             waits["reset_hold_1"]=wait_state(
                 p,log_path,args.output_dir,"RESET_HOLD_1",0,False,15,True
