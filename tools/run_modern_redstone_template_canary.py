@@ -625,7 +625,6 @@ def diagnose_nor_state(process,log_path,output_dir,phase):
         "junction":0,
         "inverter":"lit",
         "output_wire":15,
-        "output_lamp":"lit",
     }
     receipt={
         "schema":"supracraft-modern-nor-fixture-diagnostic/1",
@@ -637,7 +636,10 @@ def diagnose_nor_state(process,log_path,output_dir,phase):
             for key,value in expected.items()
             if compact.get(key)!=value
         },
-        "boundary":"diagnostic receipt records bounded block-state values only; it does not alter the NOR truth-table contract or promote semantics",
+        "nonsemantic_observations":{
+            "output_lamp":compact.get("output_lamp"),
+        },
+        "boundary":"diagnostic receipt records bounded block-state values; NOR semantics are exact inverter plus output-dust state, while the adjacent lamp is diagnostic only",
     }
     (output_dir/"diagnostic.json").write_text(
         json.dumps(receipt,indent=2,sort_keys=True)+"\n"
@@ -647,17 +649,15 @@ def diagnose_nor_state(process,log_path,output_dir,phase):
     return receipt
 
 
-def nor_probe(a_high,b_high,torch_lit,output_power,lamp_lit):
+def nor_probe(a_high,b_high,torch_lit,output_power):
     a_block="minecraft:redstone_block" if a_high else "minecraft:air"
     b_block="minecraft:redstone_block" if b_high else "minecraft:air"
     torch="true" if torch_lit else "false"
-    lamp="true" if lamp_lit else "false"
     return (
         f"execute if block -1 100 -1 {a_block} "
         f"if block -1 100 1 {b_block} "
         f"if block 2 101 0 minecraft:redstone_torch[lit={torch}] "
-        f"if block 3 101 0 minecraft:redstone_wire[power={output_power}] "
-        f"if block 4 101 0 minecraft:redstone_lamp[lit={lamp}]"
+        f"if block 3 101 0 minecraft:redstone_wire[power={output_power}]"
     )
 
 
@@ -703,7 +703,7 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
                 baseline_attempts,baseline_wait=wait_for_marker(
                     p,log_path,output_dir,
                     "SUPRACRAFT_NOR_00_PASS",
-                    nor_probe(False,False,True,15,True),
+                    nor_probe(False,False,True,15),
                     "nor_00",timeout_seconds=8.0,
                 )
             except SystemExit as exc:
@@ -742,7 +742,7 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             a_attempts,a_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOR_10_PASS",
-                nor_probe(True,False,False,0,False),
+                nor_probe(True,False,False,0),
                 "nor_10",timeout_seconds=8.0,
             )
 
@@ -750,7 +750,7 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             reset_attempts,reset_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOR_00_RESET_PASS",
-                nor_probe(False,False,True,15,True),
+                nor_probe(False,False,True,15),
                 "nor_00_reset",timeout_seconds=8.0,
             )
 
@@ -758,7 +758,7 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             b_attempts,b_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOR_01_PASS",
-                nor_probe(False,True,False,0,False),
+                nor_probe(False,True,False,0),
                 "nor_01",timeout_seconds=8.0,
             )
 
@@ -766,7 +766,7 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             both_attempts,both_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_NOR_11_PASS",
-                nor_probe(True,True,False,0,False),
+                nor_probe(True,True,False,0),
                 "nor_11",timeout_seconds=8.0,
             )
 
@@ -816,15 +816,15 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             "input_b_low_command_sha256":digest_bytes(NOR_B_LOW_COMMAND),
             "truth_table_sequence":[
                 {"phase":"00","a":False,"b":False,"torch_lit":True,
-                 "output_wire_power":15,"output_lamp_lit":True,"verified":True},
+                 "output_wire_power":15,"verified":True},
                 {"phase":"10","a":True,"b":False,"torch_lit":False,
-                 "output_wire_power":0,"output_lamp_lit":False,"verified":True},
+                 "output_wire_power":0,"verified":True},
                 {"phase":"00_reset","a":False,"b":False,"torch_lit":True,
-                 "output_wire_power":15,"output_lamp_lit":True,"verified":True},
+                 "output_wire_power":15,"verified":True},
                 {"phase":"01","a":False,"b":True,"torch_lit":False,
-                 "output_wire_power":0,"output_lamp_lit":False,"verified":True},
+                 "output_wire_power":0,"verified":True},
                 {"phase":"11","a":True,"b":True,"torch_lit":False,
-                 "output_wire_power":0,"output_lamp_lit":False,"verified":True},
+                 "output_wire_power":0,"verified":True},
             ],
             "ready_seconds":round(ready,6),
             "setup_barrier_seconds":round(barrier,6),
@@ -844,7 +844,8 @@ def run_nor_gate(args,evidence,server_jar,output_dir):
             "world_sha256":hashlib.sha256(
                 (output_dir/"world.zip").read_bytes()
             ).hexdigest(),
-            "boundary":"complete NOR truth table qualifies only this two-source shared-input-net plus single-inverter composition; OR and NOT substructure alone do not imply arbitrary NOR networks",
+            "output_lamp_semantic_authority":False,
+            "boundary":"complete NOR truth table is qualified by exact inverter state plus output-dust power; the adjacent lamp remains structural/diagnostic only and does not define NOR semantics",
         }
         (output_dir/"result.json").write_text(
             json.dumps(result,indent=2,sort_keys=True)+"\n"

@@ -354,24 +354,25 @@ def validate_nor(root:Path):
         "output_wire_position","output_lamp_position",
         "input_a_high_command_sha256","input_a_low_command_sha256",
         "input_b_high_command_sha256","input_b_low_command_sha256",
-        "truth_table_sequence",
+        "truth_table_sequence","output_lamp_semantic_authority",
     ):
         assert stock[k]==inst[k],(k,stock[k],inst[k])
     assert stock["instrumented"] is False
     assert inst["instrumented"] is True
     assert inst["trace_present"] is True
 
+    assert inst["output_lamp_semantic_authority"] is False
     expected=[
-        (False,False,True,15,True),
-        (True,False,False,0,False),
-        (False,False,True,15,True),
-        (False,True,False,0,False),
-        (True,True,False,0,False),
+        (False,False,True,15),
+        (True,False,False,0),
+        (False,False,True,15),
+        (False,True,False,0),
+        (True,True,False,0),
     ]
     observed=[
         (
             row["a"],row["b"],row["torch_lit"],
-            row["output_wire_power"],row["output_lamp_lit"],
+            row["output_wire_power"],
         )
         for row in inst["truth_table_sequence"]
     ]
@@ -474,6 +475,8 @@ def validate_nor(root:Path):
         "semantic_divergence":False,
         "stock_elapsed_seconds":stock["elapsed_seconds"],
         "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+        "output_lamp_semantic_authority":False,
+        "measurement_boundary":"NOR truth-table authority is exact inverter state plus output-dust power; adjacent lamp state is intentionally diagnostic only",
     }
 
 
