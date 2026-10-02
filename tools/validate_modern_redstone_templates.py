@@ -341,6 +341,142 @@ def validate_or(root:Path):
     }
 
 
+def validate_nor(root:Path):
+    name="nor-gate"
+    stock=load_result(root,name,"stock")
+    inst=load_result(root,name,"instrumented")
+    for k in (
+        "template","minecraft_version","java_major","input_control",
+        "input_a_position","input_b_position",
+        "input_a_wire_position","input_b_wire_position",
+        "junction_wire_position","input_net_wire_positions",
+        "inverter_support_position","inverter_position",
+        "output_wire_position","output_lamp_position",
+        "input_a_high_command_sha256","input_a_low_command_sha256",
+        "input_b_high_command_sha256","input_b_low_command_sha256",
+        "truth_table_sequence",
+    ):
+        assert stock[k]==inst[k],(k,stock[k],inst[k])
+    assert stock["instrumented"] is False
+    assert inst["instrumented"] is True
+    assert inst["trace_present"] is True
+
+    expected=[
+        (False,False,True,15,True),
+        (True,False,False,0,False),
+        (False,False,True,15,True),
+        (False,True,False,0,False),
+        (True,True,False,0,False),
+    ]
+    observed=[
+        (
+            row["a"],row["b"],row["torch_lit"],
+            row["output_wire_power"],row["output_lamp_lit"],
+        )
+        for row in inst["truth_table_sequence"]
+    ]
+    assert observed==expected,observed
+    assert all(row["verified"] is True for row in inst["truth_table_sequence"])
+
+    rows=load_trace(root,name)
+    counts=trace_contract(rows)
+    for required in (
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result",
+        "command_dispatch","block_state_write",
+    ):
+        assert counts[required]>0,(required,counts)
+
+    a1=dispatch_after(rows,inst["input_a_high_command_sha256"])
+    a0=dispatch_after(rows,inst["input_a_low_command_sha256"],a1["seq"])
+    b1=dispatch_after(rows,inst["input_b_high_command_sha256"],a0["seq"])
+    a2=dispatch_after(rows,inst["input_a_high_command_sha256"],b1["seq"])
+    assert a1["seq"]<a0["seq"]<b1["seq"]<a2["seq"]
+
+    source_writes={}
+    for label,dispatch,pos in (
+        ("a_high",a1,inst["input_a_position"]),
+        ("a_low",a0,inst["input_a_position"]),
+        ("b_high",b1,inst["input_b_position"]),
+        ("both_high",a2,inst["input_a_position"]),
+    ):
+        found=[
+            r for r in rows
+            if r["seq"]>dispatch["seq"]
+            and r["event_type"]=="block_state_write"
+            and position(r)==pos
+        ]
+        assert found,(label,"source block write",counts)
+        source_writes[label]=found[0]["seq"]
+
+    event_types={
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result","block_state_write",
+    }
+    input_positions={tuple(p) for p in inst["input_net_wire_positions"]}
+    output=inst["output_wire_position"]
+    phases=[
+        ("10",a1["seq"],a0["seq"]),
+        ("00_reset",a0["seq"],b1["seq"]),
+        ("01",b1["seq"],a2["seq"]),
+    ]
+    phase_evidence={}
+    for label,start,end in phases:
+        input_events=[
+            r for r in rows
+            if start<r["seq"]<end
+            and r["event_type"] in event_types
+            and tuple(position(r)) in input_positions
+        ]
+        output_events=[
+            r for r in rows
+            if start<r["seq"]<end
+            and r["event_type"] in event_types
+            and position(r)==output
+        ]
+        assert input_events,(label,"input net activity",counts)
+        assert output_events,(label,"output activity",counts)
+        assert any(
+            r["event_type"]=="block_state_write" for r in output_events
+        ),(label,"output block-state write",counts)
+        phase_evidence[label]={
+            "input_event_count":len(input_events),
+            "output_event_count":len(output_events),
+        }
+
+    after_11=[
+        r for r in rows
+        if r["seq"]>a2["seq"]
+        and r["event_type"] in event_types
+        and tuple(position(r)) in input_positions
+    ]
+    assert after_11,("11","input causal activity",counts)
+
+    inverter_writes=[
+        r for r in rows
+        if r["event_type"]=="block_state_write"
+        and position(r)==inst["inverter_position"]
+    ]
+    assert inverter_writes,("inverter state writes",counts)
+
+    return {
+        "truth_table_sequence":inst["truth_table_sequence"],
+        "input_dispatch_seq":{
+            "a_high":a1["seq"],"a_low_reset":a0["seq"],
+            "b_high":b1["seq"],"both_high":a2["seq"],
+        },
+        "source_write_seq":source_writes,
+        "phase_evidence":phase_evidence,
+        "post_11_input_event_count":len(after_11),
+        "inverter_write_count":len(inverter_writes),
+        "event_counts":dict(sorted(counts.items())),
+        "dropped_events":0,
+        "semantic_divergence":False,
+        "stock_elapsed_seconds":stock["elapsed_seconds"],
+        "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+    }
+
+
 def validate_and(root:Path):
     name="and-gate"
     stock=load_result(root,name,"stock")
@@ -498,6 +634,7 @@ def main():
     )
     inv=validate_not(args.root)
     disj=validate_or(args.root)
+    nor=validate_nor(args.root)
     conj=validate_and(args.root)
 
     report={
@@ -518,6 +655,11 @@ def main():
         "or_gate":{
             **disj,
             "truth_table_contract":"00->0, 10->1, 01->1, 11->1",
+            "truth_table_pass":True,
+        },
+        "nor_gate":{
+            **nor,
+            "truth_table_contract":"00->1, 10->0, 01->0, 11->0",
             "truth_table_pass":True,
         },
         "and_gate":{

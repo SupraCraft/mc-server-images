@@ -147,6 +147,16 @@
       }
     },
     {
+      "id": "nor_gate",
+      "family": "boolean",
+      "status": "reference_candidate_only",
+      "runtime_contract": "truth table 00->1, 10->0, 01->0, 11->0",
+      "reference_ids": [
+        "minecraft_education_boolean_logic",
+        "minecraft_education_logic_gates"
+      ]
+    },
+    {
       "id": "xor_gate",
       "family": "boolean",
       "status": "reference_candidate_only",

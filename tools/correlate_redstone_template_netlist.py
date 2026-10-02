@@ -97,6 +97,42 @@ def validate_or(doc):
     }
 
 
+def validate_nor(doc):
+    rows=motifs(doc,"nor_gate")
+    assert rows,"missing nor_gate"
+    qualified=[
+        r for r in rows
+        if len(set(r.get("input_source_component_ids") or []))>=2
+        and r.get("input_net_id")
+        and r.get("inverter_component_id")
+        and len(set(r.get("output_sink_component_ids") or []))>=1
+    ]
+    assert qualified,rows
+    row=qualified[0]
+    cmap=component_map(doc)
+    source_ids=sorted(set(row["input_source_component_ids"]))
+    inverter_id=row["inverter_component_id"]
+    sink_ids=sorted(set(row["output_sink_component_ids"]))
+    assert all(
+        source_id in cmap and cmap[source_id]["primitive"] in {
+            "constant_power_source","manual_state_input","pulse_input","input_sensor"
+        }
+        for source_id in source_ids
+    ),(source_ids,cmap)
+    assert inverter_id in cmap and cmap[inverter_id]["primitive"]=="inverter"
+    return {
+        "motif_count":len(rows),
+        "matched_component_ids":row["component_ids"],
+        "input_source_component_ids":source_ids,
+        "input_net_id":row["input_net_id"],
+        "inverter_component_id":inverter_id,
+        "output_net_ids":row["output_net_ids"],
+        "output_sink_component_ids":sink_ids,
+        "functional_netlist_sha256":doc["signatures"]["functional_netlist_sha256"],
+        "horizontal_d4_topology_sha256":doc["signatures"]["horizontal_d4_topology_sha256"],
+    }
+
+
 def validate_and(doc):
     rows=motifs(doc,"and_gate")
     assert rows,"missing and_gate"
@@ -145,6 +181,7 @@ def main():
     ap.add_argument("--repeater-d4-netlist",type=Path,required=True)
     ap.add_argument("--not-netlist",type=Path,required=True)
     ap.add_argument("--or-netlist",type=Path,required=True)
+    ap.add_argument("--nor-netlist",type=Path,required=True)
     ap.add_argument("--and-netlist",type=Path,required=True)
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
@@ -154,6 +191,7 @@ def main():
     d4=validate_repeater(load(args.repeater_d4_netlist),4)
     inv=validate_not(load(args.not_netlist))
     disj=validate_or(load(args.or_netlist))
+    nor=validate_nor(load(args.nor_netlist))
     conj=validate_and(load(args.and_netlist))
 
     rt_repeater=runtime["repeater_delay_line"]
@@ -164,6 +202,7 @@ def main():
     )
     assert runtime["not_gate"]["truth_table_pass"] is True
     assert runtime["or_gate"]["truth_table_pass"] is True
+    assert runtime["nor_gate"]["truth_table_pass"] is True
     assert runtime["and_gate"]["truth_table_pass"] is True
 
     report={
@@ -190,6 +229,12 @@ def main():
             "runtime_truth_table":runtime["or_gate"]["truth_table_sequence"],
             "correlation_class":
                 "or_gate_template_supported_by_runtime_truth_table",
+        },
+        "nor_gate":{
+            "static":nor,
+            "runtime_truth_table":runtime["nor_gate"]["truth_table_sequence"],
+            "correlation_class":
+                "nor_gate_template_supported_by_runtime_truth_table",
         },
         "and_gate":{
             "static":conj,

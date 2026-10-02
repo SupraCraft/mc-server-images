@@ -79,6 +79,8 @@ RUNTIME_CONTRACTS={
         "truth table: exercise input low and high; qualified output must be high for low input and low for high input, including reset back to high",
     "or_gate":
         "truth table: exercise 00, 10, 01, and 11; qualified output must be low only for 00 and high for every state with at least one asserted input",
+    "nor_gate":
+        "truth table: exercise 00, 10, 01, and 11; qualified output must be high only for 00 and low for every state with at least one asserted input",
     "and_gate":
         "truth table: exercise 00, 10, 01, and 11; qualified output must be high only for 11 and low for all other input states",
     "rs_latch":
@@ -410,6 +412,7 @@ def resolve_torch_support_peers(components,nodes,wire_pos_to_net,nets):
 
 def motifs(components,nets):
     by_id={c["component_id"]:c for c in components}
+    net_by_id={n["net_id"]:n for n in nets}
     out=[]
 
     for net in nets:
@@ -444,6 +447,71 @@ def motifs(components,nets):
                 "evidence":["multiple_independent_sources_share_output_net"],
                 "required_runtime_contract":RUNTIME_CONTRACTS["or_gate"],
             })
+
+
+    # NOR composition: at least two independent source outputs share one
+    # collapsed input net, that net drives exactly one inverter support, and
+    # the inverter reaches a distinct output net/sink. Structural recognition
+    # remains candidate-only until the complete truth table passes at runtime.
+    for final in components:
+        if final["primitive"]!="inverter":
+            continue
+        supports=[p for p in final["ports"] if p["kind"]=="input_support"]
+        outputs=[p for p in final["ports"] if p["kind"]=="output" and p.get("net_id")]
+        if not supports or not outputs:
+            continue
+        for support in supports:
+            for input_net_id in sorted(set(support.get("support_net_ids",[]))):
+                input_net=net_by_id.get(input_net_id)
+                if input_net is None:
+                    continue
+                source_ids=sorted({
+                    p["component_id"]
+                    for p in input_net.get("ports",[])
+                    if p.get("kind")=="output"
+                    and p.get("component_id") in by_id
+                    and by_id[p["component_id"]]["primitive"] in SOURCE_PRIMITIVES
+                })
+                if len(source_ids)<2:
+                    continue
+                output_net_ids=sorted({
+                    p["net_id"] for p in outputs
+                    if p.get("net_id") and p["net_id"]!=input_net_id
+                })
+                if not output_net_ids:
+                    continue
+                sink_ids=set()
+                for output_net_id in output_net_ids:
+                    net=net_by_id.get(output_net_id) or {}
+                    for port in net.get("ports",[]):
+                        cid=port.get("component_id")
+                        if (
+                            port.get("kind")=="input"
+                            and cid in by_id
+                            and by_id[cid]["primitive"] in SINK_PRIMITIVES
+                        ):
+                            sink_ids.add(cid)
+                if not sink_ids:
+                    continue
+                out.append({
+                    "template":"nor_gate",
+                    "confidence":"structural_candidate_only",
+                    "component_ids":sorted(
+                        set(source_ids+[final["component_id"]]+list(sink_ids))
+                    ),
+                    "net_ids":[input_net_id]+output_net_ids,
+                    "input_source_component_ids":source_ids,
+                    "input_net_id":input_net_id,
+                    "inverter_component_id":final["component_id"],
+                    "output_net_ids":output_net_ids,
+                    "output_sink_component_ids":sorted(sink_ids),
+                    "evidence":[
+                        "multiple_independent_sources_share_input_net",
+                        "shared_input_net_drives_inverter_support",
+                        "inverter_output_reaches_distinct_sink_net",
+                    ],
+                    "required_runtime_contract":RUNTIME_CONTRACTS["nor_gate"],
+                })
 
     # Repeater/delay: input net -> repeater -> output net.
     for c in components:

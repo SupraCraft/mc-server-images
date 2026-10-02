@@ -195,6 +195,56 @@ class RedstoneNetlistTests(unittest.TestCase):
             x["template"]=="or_gate" for x in doc["motif_candidates"]
         ))
 
+
+    def test_two_source_shared_net_driving_inverter_is_nor_candidate_only(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("sa",(-1,100,-1),"minecraft:redstone_block",["power_source"]),
+                n("aw",(0,100,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("aj",(1,100,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("sb",(-1,100,1),"minecraft:redstone_block",["power_source"]),
+                n("bw",(0,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("bj",(1,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("j",(1,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("inv",(2,101,0),"minecraft:redstone_torch",
+                  ["signal_transport","logic_gate"],{"lit":"false"}),
+                n("out",(3,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(4,101,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("aw","aj"),edge("aj","j"),edge("j","bj"),
+                edge("bj","bw"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        rows=[x for x in doc["motif_candidates"] if x["template"]=="nor_gate"]
+        self.assertEqual(len(rows),1)
+        row=rows[0]
+        self.assertEqual(row["confidence"],"structural_candidate_only")
+        self.assertEqual(row["input_source_component_ids"],["sa","sb"])
+        self.assertEqual(row["inverter_component_id"],"inv")
+        self.assertEqual(row["output_sink_component_ids"],["lamp"])
+        self.assertIn("truth table",row["required_runtime_contract"].lower())
+
+    def test_single_source_inverter_is_not_nor_candidate(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("sa",(-1,100,0),"minecraft:redstone_block",["power_source"]),
+                n("w",(0,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("inv",(1,101,0),"minecraft:redstone_torch",
+                  ["signal_transport","logic_gate"],{"lit":"false"}),
+                n("out",(2,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(3,101,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[],
+        }
+        doc,_=mod.build(graph)
+        self.assertFalse(any(
+            x["template"]=="nor_gate" for x in doc["motif_candidates"]
+        ))
+
     def test_reference_catalog_keeps_unqualified_families_candidate_only(self):
         catalog=json.loads(
             (ROOT/"bench"/"worldgen"/"observability"/
@@ -206,7 +256,8 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(by_id["not_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["or_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["and_gate"]["status"],"qualified_template")
-        self.assertEqual(by_id["rs_latch"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["nor_gate"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["rs_latch"]["status"],"qualified_template")
         self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 
     def test_d4_and_functional_signatures_match_rotated_equivalent(self):
