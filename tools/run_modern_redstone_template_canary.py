@@ -24,12 +24,8 @@ from run_modern_redstone_microscope_canary import (
 
 REPEATER_COMMAND="setblock 6 100 0 minecraft:redstone_block"
 REPEATER_SOURCE_COMMAND="setblock 0 100 0 minecraft:redstone_block"
-NOT_INPUT_HIGH_COMMAND=(
-    "setblock 0 100 0 minecraft:lever[face=wall,facing=west,powered=true]"
-)
-NOT_INPUT_LOW_COMMAND=(
-    "setblock 0 100 0 minecraft:lever[face=wall,facing=west,powered=false]"
-)
+NOT_INPUT_HIGH_COMMAND="setblock 0 100 0 minecraft:redstone_block"
+NOT_INPUT_LOW_COMMAND="setblock 0 100 0 minecraft:air"
 
 
 def evidence_java_major(evidence: dict) -> int:
@@ -261,6 +257,23 @@ def run_not_gate(args,evidence,server_jar,output_dir):
                 timeout_seconds=8.0,
             )
 
+            # Materialize a source-present high state for static netlist
+            # recovery after the low/high/low truth table has already passed.
+            # The controller drives the logical input by source injection;
+            # no player-operated lever semantics are claimed by this rep.
+            checked_command(
+                p,NOT_INPUT_HIGH_COMMAND,
+                "not_static_materialization_high",
+                log_path,output_dir,
+            )
+            static_attempts,static_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_NOT_STATIC_HIGH_PASS",
+                not_probe(False,0),
+                "not_static_high",
+                timeout_seconds=8.0,
+            )
+
             checked_command(p,"save-all flush","save",log_path,output_dir)
             time.sleep(1)
             checked_command(p,"stop","stop",log_path,output_dir)
@@ -289,6 +302,9 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             "java_major":evidence_java_major(evidence),
             "instrumented":bool(args.java_agent),
             "input_component_position":[0,100,0],
+            "input_control":"fixture_controller_source_injection",
+            "input_low_block":"minecraft:air",
+            "input_high_block":"minecraft:redstone_block",
             "support_position":[1,100,0],
             "inverter_position":[1,101,0],
             "output_wire_position":[2,101,0],
@@ -326,12 +342,15 @@ def run_not_gate(args,evidence,server_jar,output_dir):
             "high_wait_seconds":round(high_wait,6),
             "reset_attempts":reset_attempts,
             "reset_wait_seconds":round(reset_wait,6),
+            "static_materialization_attempts":static_attempts,
+            "static_materialization_wait_seconds":round(static_wait,6),
+            "saved_input_state":"high",
             "elapsed_seconds":round(elapsed,6),
             "trace_present":trace_path.is_file(),
             "world_sha256":hashlib.sha256(
                 (output_dir/"world.zip").read_bytes()
             ).hexdigest(),
-            "boundary":"truth-table sequence qualifies this exact torch inverter fixture; topology alone remains only structural evidence",
+            "boundary":"truth-table sequence qualifies this exact torch inverter under fixture-controller source injection; saved high-state topology supports static source/support recovery, but no player-operated input-device semantics are claimed",
         }
         (output_dir/"result.json").write_text(
             json.dumps(result,indent=2,sort_keys=True)+"\n"
