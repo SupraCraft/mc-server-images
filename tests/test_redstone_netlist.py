@@ -263,7 +263,7 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(by_id["or_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["and_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["nor_gate"]["status"],"qualified_template")
-        self.assertEqual(by_id["xor_gate"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["xor_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["rs_latch"]["status"],"qualified_template")
         self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 
