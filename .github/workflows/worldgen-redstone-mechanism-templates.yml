@@ -233,8 +233,10 @@ jobs:
           path: |
             out/discovery/discovery.json
             out/*-stock/result.json
+            out/*-stock/diagnostic.json
             out/*-stock/world.zip
             out/*-instrumented/result.json
+            out/*-instrumented/diagnostic.json
             out/*-instrumented/trace.jsonl
             out/*-machinery.json
             out/*-netlist.json
