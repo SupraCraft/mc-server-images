@@ -1241,7 +1241,7 @@ def diagnose_xor_state(process,log_path,output_dir,phase):
         ("not_a_input",-1,100,-2),
         ("not_b_input",-1,100,2),
         ("nand_junction",-4,101,0),
-        ("nand_route_end",6,102,4),
+        ("nand_route_end",3,101,4),
         ("intermediate_join",9,103,0),
         ("intermediate_feed",10,103,0),
         ("output_wire",12,104,0),
@@ -1256,7 +1256,7 @@ def diagnose_xor_state(process,log_path,output_dir,phase):
         ("not_a_inverter",-2,101,-2),
         ("not_b_inverter",-2,101,2),
         ("or_stage_inverter",7,103,-3),
-        ("nand_stage_inverter",7,103,4),
+        ("nand_stage_inverter",4,102,4),
         ("final_inverter",11,104,0),
     ):
         for lit in (False,True):
@@ -1439,9 +1439,9 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 (5,101,-2,"or_route_support_2"),
                 (5,101,-3,"or_route_support_3"),
                 (6,101,-3,"or_route_support_4"),
-                (4,101,4,"nand_rise_support"),
-                (5,101,4,"nand_route_support_5"),
-                (6,101,4,"nand_route_support_6"),
+                (4,101,4,"xor_nand_stage_support"),
+                (5,101,4,"xor_nand_output_support_1"),
+                (6,101,4,"xor_nand_output_support_2"),
             ):
                 checked_command(
                     p,f"setblock {x} {y} {z} minecraft:stone",
@@ -1454,9 +1454,8 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 (5,102,-2,"or_route_2"),
                 (5,102,-3,"or_route_3"),
                 (6,102,-3,"or_route_4"),
-                (4,102,4,"nand_rise"),
-                (5,102,4,"nand_route_5"),
-                (6,102,4,"nand_route_6"),
+                (5,102,4,"xor_nand_stage_output_1"),
+                (6,102,4,"xor_nand_stage_output_2"),
             ):
                 checked_command(
                     p,f"setblock {x} {y} {z} minecraft:redstone_wire",
@@ -1467,7 +1466,7 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
             # merge those inverter outputs, then invert once more.
             for x,y,z,name in (
                 (7,102,-3,"xor_or_input_support"),
-                (7,102,4,"xor_nand_input_support"),
+                (7,102,4,"xor_nand_output_rise_support"),
                 (8,102,-3,"xor_mid_a_support"),
                 (9,102,-3,"xor_mid_a2_support"),
                 (9,102,-2,"xor_mid_a3_support"),
@@ -1487,12 +1486,13 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                     name,log_path,output_dir,
                 )
             checked_command(p,"setblock 7 103 -3 minecraft:redstone_torch","xor_or_input_inverter",log_path,output_dir)
-            checked_command(p,"setblock 7 103 4 minecraft:redstone_torch","xor_nand_input_inverter",log_path,output_dir)
+            checked_command(p,"setblock 4 102 4 minecraft:redstone_torch","xor_nand_input_inverter",log_path,output_dir)
             for x,z,name in (
                 (8,-3,"xor_mid_a"),(9,-3,"xor_mid_a2"),(9,-2,"xor_mid_a3"),
                 (9,-1,"xor_mid_a4"),(9,0,"xor_mid_join"),
                 (9,1,"xor_mid_b5"),(9,2,"xor_mid_b4"),(9,3,"xor_mid_b3"),
-                (9,4,"xor_mid_b2"),(8,4,"xor_mid_b"),(10,0,"xor_mid_feed"),
+                (9,4,"xor_mid_b2"),(8,4,"xor_mid_b"),(7,4,"xor_mid_b_rise"),
+                (10,0,"xor_mid_feed"),
             ):
                 checked_command(
                     p,f"setblock {x} 103 {z} minecraft:redstone_wire",
@@ -1660,7 +1660,7 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
             "input_b_high_command_sha256":digest_bytes(XOR_B_HIGH_COMMAND),
             "input_b_low_command_sha256":digest_bytes(XOR_B_LOW_COMMAND),
             "input_inverter_positions":[[-2,101,-2],[-2,101,2]],
-            "stage_inverter_positions":[[7,103,-3],[7,103,4]],
+            "stage_inverter_positions":[[7,103,-3],[4,102,4]],
             "final_inverter_position":[11,104,0],
             "output_wire_position":[12,104,0],
             "output_lamp_position":[13,104,0],
@@ -1673,10 +1673,10 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 [-3,101,4],[-2,101,4],[-1,101,4],[0,101,4],
                 [1,101,4],[2,101,4],[3,101,4],
                 [4,101,0],[5,102,0],[5,102,-1],[5,102,-2],
-                [5,102,-3],[6,102,-3],[4,102,4],[5,102,4],[6,102,4],
+                [5,102,-3],[6,102,-3],[5,102,4],[6,102,4],
                 [8,103,-3],[9,103,-3],[9,103,-2],[9,103,-1],
                 [9,103,0],[9,103,1],[9,103,2],[9,103,3],[9,103,4],
-                [8,103,4],[10,103,0],
+                [8,103,4],[7,103,4],[10,103,0],
             ],
             "truth_table_sequence":[
                 {"phase":"00","a":False,"b":False,"final_inverter_lit":False,
