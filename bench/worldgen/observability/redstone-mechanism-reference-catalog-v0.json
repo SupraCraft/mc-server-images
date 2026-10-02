@@ -1,0 +1,182 @@
+{
+  "schema": "supracraft-redstone-mechanism-reference-catalog/1",
+  "authority": "reference_vocabulary_not_execution_authority",
+  "promotion_states": [
+    "reference_candidate_only",
+    "structural_candidate",
+    "runtime_supported",
+    "qualified_template"
+  ],
+  "normalization": {
+    "translation": true,
+    "horizontal_d4_rotation_reflection": true,
+    "vertical_reflection": false,
+    "note": "vertical reflection is excluded because vertical topology can change Minecraft semantics"
+  },
+  "references": [
+    {
+      "id": "mojang_researching_redstone",
+      "title": "Researching Redstone",
+      "url": "https://www.minecraft.net/en-us/creator/article/redstone",
+      "scope": [
+        "circuitry",
+        "timing",
+        "attenuation",
+        "automation"
+      ]
+    },
+    {
+      "id": "official_guide_redstone_updated",
+      "title": "Minecraft: Guide to Redstone (Updated)",
+      "url": "https://www.penguinrandomhouse.com/books/625087/minecraft-guide-to-redstone-updated-by-mojang-ab-and-the-official-minecraft-team/",
+      "scope": [
+        "components",
+        "circuits",
+        "contraptions"
+      ]
+    },
+    {
+      "id": "minecraft_education_boolean_logic",
+      "title": "Minecraft Boolean Logic",
+      "url": "https://education.minecraft.net/en-us/lessons/minecraft-boolean-logic",
+      "scope": [
+        "boolean_logic",
+        "truth_tables"
+      ]
+    },
+    {
+      "id": "minecraft_education_logic_gates",
+      "title": "Logic Gates",
+      "url": "https://education.minecraft.net/lessonsupportfiles/Microsoft-Workshop-Logic-Gates.pdf",
+      "scope": [
+        "not",
+        "and",
+        "or",
+        "truth_tables"
+      ]
+    },
+    {
+      "id": "official_piston_clock_example",
+      "title": "How to Build a Mob Farm Trap",
+      "url": "https://www.minecraft.net/de-de/article/how-build-mob-farm-trap",
+      "scope": [
+        "piston_clock",
+        "automation"
+      ]
+    },
+    {
+      "id": "official_hidden_door",
+      "title": "How to build hidden doors",
+      "url": "https://www.minecraft.net/ru-ru/article/how-build-hidden-doors",
+      "scope": [
+        "piston_door",
+        "repeaters",
+        "redstone",
+        "orientation"
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "id": "wire_transmission_path",
+      "family": "transport",
+      "status": "qualified_template",
+      "runtime_contract": "input transition reaches specified sink; explicit broken-path hard negative must not",
+      "durable_authority": "SupraCraft/mc-server-images#11 comment 5954736905"
+    },
+    {
+      "id": "repeater_delay_line",
+      "family": "timing",
+      "status": "qualified_template",
+      "runtime_contract": "downstream transition occurs after positive server-tick delay and larger configured delay preserves ordering",
+      "durable_authority": "SupraCraft/mc-server-images#11 comment 5954736905"
+    },
+    {
+      "id": "not_gate",
+      "family": "boolean",
+      "status": "qualified_template",
+      "runtime_contract": "truth table low->high and high->low including reset",
+      "durable_authority": "SupraCraft/mc-server-images#11 comment 5954736905"
+    },
+    {
+      "id": "or_gate",
+      "family": "boolean",
+      "status": "reference_candidate_only",
+      "runtime_contract": "truth table 00->0, 10->1, 01->1, 11->1",
+      "reference_ids": [
+        "minecraft_education_boolean_logic",
+        "minecraft_education_logic_gates"
+      ]
+    },
+    {
+      "id": "and_gate",
+      "family": "boolean",
+      "status": "reference_candidate_only",
+      "runtime_contract": "truth table 00->0, 10->0, 01->0, 11->1",
+      "reference_ids": [
+        "minecraft_education_boolean_logic",
+        "minecraft_education_logic_gates"
+      ]
+    },
+    {
+      "id": "xor_gate",
+      "family": "boolean",
+      "status": "reference_candidate_only",
+      "runtime_contract": "truth table 00->0, 10->1, 01->1, 11->0"
+    },
+    {
+      "id": "pulse_edge_detector",
+      "family": "pulse",
+      "status": "reference_candidate_only",
+      "runtime_contract": "bounded input pulse sweep establishes output edge relation and pulse width"
+    },
+    {
+      "id": "oscillator",
+      "family": "clock",
+      "status": "reference_candidate_only",
+      "runtime_contract": "multiple repeated transitions establish bounded period/jitter plus stop/start control"
+    },
+    {
+      "id": "rs_latch",
+      "family": "state",
+      "status": "reference_candidate_only",
+      "runtime_contract": "set/reset/hold sequence establishes retained state after stimulus removal"
+    },
+    {
+      "id": "comparator_transform",
+      "family": "analog",
+      "status": "reference_candidate_only",
+      "runtime_contract": "multi-level input sweep establishes exact output-strength relation"
+    },
+    {
+      "id": "piston_clock",
+      "family": "mechanical_timing",
+      "status": "reference_candidate_only",
+      "runtime_contract": "repeated piston state transitions establish bounded periodicity and control",
+      "reference_ids": [
+        "official_piston_clock_example"
+      ]
+    },
+    {
+      "id": "piston_door",
+      "family": "mechanical",
+      "status": "reference_candidate_only",
+      "runtime_contract": "open/close input sequence establishes actuator choreography and terminal geometry",
+      "reference_ids": [
+        "official_hidden_door"
+      ]
+    },
+    {
+      "id": "hopper_clock",
+      "family": "inventory_timing",
+      "status": "reference_candidate_only",
+      "runtime_contract": "inventory transfer establishes repeated bounded timing with stop/start control"
+    },
+    {
+      "id": "item_sorter",
+      "family": "inventory",
+      "status": "reference_candidate_only",
+      "runtime_contract": "accepted/rejected item hard negatives establish routing behavior"
+    }
+  ]
+}

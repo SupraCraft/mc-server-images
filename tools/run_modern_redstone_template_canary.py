@@ -26,6 +26,10 @@ REPEATER_COMMAND="setblock 6 100 0 minecraft:redstone_block"
 REPEATER_SOURCE_COMMAND="setblock 0 100 0 minecraft:redstone_block"
 NOT_INPUT_HIGH_COMMAND="setblock -1 100 0 minecraft:redstone_block"
 NOT_INPUT_LOW_COMMAND="setblock -1 100 0 minecraft:air"
+OR_A_HIGH_COMMAND="setblock -1 100 -1 minecraft:redstone_block"
+OR_A_LOW_COMMAND="setblock -1 100 -1 minecraft:air"
+OR_B_HIGH_COMMAND="setblock -1 100 1 minecraft:redstone_block"
+OR_B_LOW_COMMAND="setblock -1 100 1 minecraft:air"
 
 
 def evidence_java_major(evidence: dict) -> int:
@@ -364,12 +368,188 @@ def run_not_gate(args,evidence,server_jar,output_dir):
         print(json.dumps(result,indent=2,sort_keys=True))
 
 
+def or_probe(a_high,b_high,output_power,lamp_lit):
+    a_block="minecraft:redstone_block" if a_high else "minecraft:air"
+    b_block="minecraft:redstone_block" if b_high else "minecraft:air"
+    lamp="true" if lamp_lit else "false"
+    return (
+        f"execute if block -1 100 -1 {a_block} "
+        f"if block -1 100 1 {b_block} "
+        f"if block 2 100 0 minecraft:redstone_wire[power={output_power}] "
+        f"if block 3 100 0 minecraft:redstone_lamp[lit={lamp}]"
+    )
+
+
+def run_or_gate(args,evidence,server_jar,output_dir):
+    version=evidence["minecraft_version"]
+    with tempfile.TemporaryDirectory(prefix="modern-redstone-or-") as td:
+        root=Path(td); server=root/"server.jar"
+        shutil.copy2(server_jar,server)
+        common_setup(root,version)
+        log_path=root/"server.log"
+        trace_path=output_dir/"trace.jsonl"
+        gate_path=root/"capture.gate"
+        started=time.monotonic()
+        with log_path.open("w",encoding="utf-8") as log:
+            p=subprocess.Popen(
+                launch_command(args,server,trace_path,gate_path),
+                cwd=root,stdin=subprocess.PIPE,stdout=log,
+                stderr=subprocess.STDOUT,text=True,
+            )
+            ready=wait_ready(p,log_path,180)
+            checked_command(p,"forceload add -16 -16 16 16","forceload",log_path,output_dir)
+            time.sleep(1)
+            checked_command(p,"fill -3 99 -3 5 102 3 minecraft:air","clear",log_path,output_dir)
+            checked_command(p,"fill -3 99 -3 5 99 3 minecraft:stone","floor",log_path,output_dir)
+            checked_command(p,OR_A_LOW_COMMAND,"or_a_low_setup",log_path,output_dir)
+            checked_command(p,OR_B_LOW_COMMAND,"or_b_low_setup",log_path,output_dir)
+            for x,z,name in (
+                (0,-1,"a_input_wire"),(1,-1,"a_join_wire"),
+                (0,1,"b_input_wire"),(1,1,"b_join_wire"),
+                (1,0,"junction_wire"),(2,0,"output_wire"),
+            ):
+                checked_command(
+                    p,f"setblock {x} 100 {z} minecraft:redstone_wire",
+                    name,log_path,output_dir,
+                )
+            checked_command(
+                p,"setblock 3 100 0 minecraft:redstone_lamp",
+                "output_lamp",log_path,output_dir,
+            )
+
+            baseline_attempts,baseline_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_OR_00_PASS",
+                or_probe(False,False,0,False),
+                "or_00",
+                timeout_seconds=8.0,
+            )
+            barrier=setup_barrier(
+                p,log_path,output_dir,"SUPRACRAFT_OR_SETUP_READY"
+            )
+            if args.java_agent:
+                gate_path.write_text("capture\n")
+                time.sleep(0.15)
+
+            checked_command(p,OR_A_HIGH_COMMAND,"or_a_high",log_path,output_dir)
+            a_attempts,a_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_OR_10_PASS",
+                or_probe(True,False,12,True),
+                "or_10",
+                timeout_seconds=8.0,
+            )
+
+            checked_command(p,OR_A_LOW_COMMAND,"or_a_low_reset",log_path,output_dir)
+            reset_attempts,reset_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_OR_00_RESET_PASS",
+                or_probe(False,False,0,False),
+                "or_00_reset",
+                timeout_seconds=8.0,
+            )
+
+            checked_command(p,OR_B_HIGH_COMMAND,"or_b_high",log_path,output_dir)
+            b_attempts,b_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_OR_01_PASS",
+                or_probe(False,True,12,True),
+                "or_01",
+                timeout_seconds=8.0,
+            )
+
+            checked_command(p,OR_A_HIGH_COMMAND,"or_both_high",log_path,output_dir)
+            both_attempts,both_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_OR_11_PASS",
+                or_probe(True,True,12,True),
+                "or_11",
+                timeout_seconds=8.0,
+            )
+
+            checked_command(p,"save-all flush","save",log_path,output_dir)
+            time.sleep(1)
+            checked_command(p,"stop","stop",log_path,output_dir)
+            rc=p.wait(timeout=60)
+        elapsed=time.monotonic()-started
+        zip_world(root/"world",output_dir/"world.zip")
+        text=log_path.read_text("utf-8",errors="replace")
+        diagnostics=[
+            line for line in text.splitlines()
+            if any(x in line for x in (
+                "Incorrect argument","Unknown or incomplete command",
+                "[Server thread/ERROR]",
+                "SupraCraft causal microscope fail-closed binding",
+            ))
+        ]
+        if rc!=0 or diagnostics:
+            for line in diagnostics[-80:]:
+                print(line)
+            raise SystemExit(
+                f"or-gate template failed rc={rc} diagnostics={len(diagnostics)}"
+            )
+        result={
+            "schema":"supracraft-modern-redstone-template-canary/1",
+            "template":"or_gate",
+            "minecraft_version":version,
+            "java_major":evidence_java_major(evidence),
+            "instrumented":bool(args.java_agent),
+            "input_control":"fixture_controller_two_source_injection",
+            "input_a_position":[-1,100,-1],
+            "input_b_position":[-1,100,1],
+            "input_a_wire_position":[0,100,-1],
+            "input_b_wire_position":[0,100,1],
+            "junction_wire_position":[1,100,0],
+            "output_wire_position":[2,100,0],
+            "output_lamp_position":[3,100,0],
+            "input_a_high_command_sha256":digest_bytes(OR_A_HIGH_COMMAND),
+            "input_a_low_command_sha256":digest_bytes(OR_A_LOW_COMMAND),
+            "input_b_high_command_sha256":digest_bytes(OR_B_HIGH_COMMAND),
+            "input_b_low_command_sha256":digest_bytes(OR_B_LOW_COMMAND),
+            "truth_table_sequence":[
+                {"phase":"00","a":False,"b":False,"output_wire_power":0,
+                 "output_lamp_lit":False,"verified":True},
+                {"phase":"10","a":True,"b":False,"output_wire_power":12,
+                 "output_lamp_lit":True,"verified":True},
+                {"phase":"00_reset","a":False,"b":False,"output_wire_power":0,
+                 "output_lamp_lit":False,"verified":True},
+                {"phase":"01","a":False,"b":True,"output_wire_power":12,
+                 "output_lamp_lit":True,"verified":True},
+                {"phase":"11","a":True,"b":True,"output_wire_power":12,
+                 "output_lamp_lit":True,"verified":True},
+            ],
+            "ready_seconds":round(ready,6),
+            "setup_barrier_seconds":round(barrier,6),
+            "baseline_attempts":baseline_attempts,
+            "baseline_wait_seconds":round(baseline_wait,6),
+            "a_high_attempts":a_attempts,
+            "a_high_wait_seconds":round(a_wait,6),
+            "reset_attempts":reset_attempts,
+            "reset_wait_seconds":round(reset_wait,6),
+            "b_high_attempts":b_attempts,
+            "b_high_wait_seconds":round(b_wait,6),
+            "both_high_attempts":both_attempts,
+            "both_high_wait_seconds":round(both_wait,6),
+            "saved_input_state":"11",
+            "elapsed_seconds":round(elapsed,6),
+            "trace_present":trace_path.is_file(),
+            "world_sha256":hashlib.sha256(
+                (output_dir/"world.zip").read_bytes()
+            ).hexdigest(),
+            "boundary":"full two-input OR truth table qualifies this exact joined-dust topology under fixture-controller source injection; arbitrary multi-source buses remain structural candidates until independently validated",
+        }
+        (output_dir/"result.json").write_text(
+            json.dumps(result,indent=2,sort_keys=True)+"\n"
+        )
+        print(json.dumps(result,indent=2,sort_keys=True))
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--evidence",type=Path,required=True)
     ap.add_argument("--server-jar",type=Path,required=True)
     ap.add_argument("--output-dir",type=Path,required=True)
-    ap.add_argument("--fixture",choices=("repeater_delay","not_gate"),required=True)
+    ap.add_argument("--fixture",choices=("repeater_delay","not_gate","or_gate"),required=True)
     ap.add_argument("--delay",type=int)
     ap.add_argument("--java-agent",type=Path)
     ap.add_argument("--adapter-id")
@@ -397,8 +577,10 @@ def main():
 
     if args.fixture=="repeater_delay":
         run_repeater(args,evidence,args.server_jar,args.output_dir)
-    else:
+    elif args.fixture=="not_gate":
         run_not_gate(args,evidence,args.server_jar,args.output_dir)
+    else:
+        run_or_gate(args,evidence,args.server_jar,args.output_dir)
 
 
 if __name__=="__main__":

@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import pathlib
 import unittest
 
@@ -149,6 +150,63 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(support["peer_component_ids"],["source"])
         self.assertEqual(support["support_net_ids"],motif["input_support_net_ids"])
         self.assertEqual(support["basis"],"topology_support_wire_net_candidate")
+
+
+    def test_two_sources_shared_net_is_or_candidate_pending_runtime_truth_table(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a",(-1,0,-1),"minecraft:redstone_block",["power_source"]),
+                n("aw",(0,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("aj",(1,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("b",(-1,0,1),"minecraft:redstone_block",["power_source"]),
+                n("bw",(0,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("bj",(1,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("j",(1,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("out",(2,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(3,0,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("aw","aj"),edge("aj","j"),edge("j","bj"),
+                edge("bj","bw"),edge("j","out"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        rows=[x for x in doc["motif_candidates"] if x["template"]=="or_gate"]
+        self.assertEqual(len(rows),1)
+        row=rows[0]
+        self.assertEqual(row["confidence"],"structural_candidate_only")
+        self.assertEqual(row["input_source_component_ids"],["a","b"])
+        self.assertEqual(row["output_sink_component_ids"],["lamp"])
+        self.assertIn("truth table",row["required_runtime_contract"].lower())
+
+    def test_single_source_shared_net_is_not_or_candidate(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a",(0,0,0),"minecraft:redstone_block",["power_source"]),
+                n("w",(1,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(2,0,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[],
+        }
+        doc,_=mod.build(graph)
+        self.assertFalse(any(
+            x["template"]=="or_gate" for x in doc["motif_candidates"]
+        ))
+
+    def test_reference_catalog_keeps_unqualified_families_candidate_only(self):
+        catalog=json.loads(
+            (ROOT/"bench"/"worldgen"/"observability"/
+             "redstone-mechanism-reference-catalog-v0.json").read_text()
+        )
+        by_id={x["id"]:x for x in catalog["entries"]}
+        self.assertEqual(by_id["wire_transmission_path"]["status"],"qualified_template")
+        self.assertEqual(by_id["repeater_delay_line"]["status"],"qualified_template")
+        self.assertEqual(by_id["not_gate"]["status"],"qualified_template")
+        self.assertEqual(by_id["or_gate"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["and_gate"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 
     def test_d4_and_functional_signatures_match_rotated_equivalent(self):
         first={

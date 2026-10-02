@@ -424,7 +424,8 @@ jobs:
           mkdir -p \
             out/repeater-d1-stock out/repeater-d1-instrumented \
             out/repeater-d4-stock out/repeater-d4-instrumented \
-            out/not-gate-stock out/not-gate-instrumented
+            out/not-gate-stock out/not-gate-instrumented \
+            out/or-gate-stock out/or-gate-instrumented
           python tools/run_modern_redstone_template_canary.py \
             --evidence out/discovery/discovery.json \
             --server-jar out/discovery/server.jar \
@@ -442,6 +443,12 @@ jobs:
             --server-jar out/discovery/server.jar \
             --fixture not_gate \
             --output-dir out/not-gate-stock \
+            --expected-version "$EXPECTED_VERSION"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture or_gate \
+            --output-dir out/or-gate-stock \
             --expected-version "$EXPECTED_VERSION"
 
       - name: Instrumented exact snapshot standard redstone templates
@@ -472,6 +479,14 @@ jobs:
             --java-agent "$MICROSCOPE_AGENT" \
             --adapter-id modern-26.4-snapshot-2-java25 \
             --expected-version "$EXPECTED_VERSION"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture or_gate \
+            --output-dir out/or-gate-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id modern-26.4-snapshot-2-java25 \
+            --expected-version "$EXPECTED_VERSION"
 
       - name: Validate exact snapshot standard template runtime contracts
         shell: bash
@@ -486,7 +501,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for fixture in repeater-d1 repeater-d4 not-gate; do
+          for fixture in repeater-d1 repeater-d4 not-gate or-gate; do
             python tools/analyze_modern_causal_machinery.py \
               --world-zip "out/$fixture-stock/world.zip" \
               --output "out/$fixture-machinery.json"
@@ -506,6 +521,7 @@ jobs:
             --repeater-d1-netlist out/repeater-d1-netlist.json \
             --repeater-d4-netlist out/repeater-d4-netlist.json \
             --not-netlist out/not-gate-netlist.json \
+            --or-netlist out/or-gate-netlist.json \
             --output out/redstone-template-netlist-runtime-correlation.json
 
       - uses: actions/upload-artifact@v4
@@ -557,6 +573,10 @@ jobs:
             out/not-gate-stock/world.zip
             out/not-gate-instrumented/result.json
             out/not-gate-instrumented/trace.jsonl
+            out/or-gate-stock/result.json
+            out/or-gate-stock/world.zip
+            out/or-gate-instrumented/result.json
+            out/or-gate-instrumented/trace.jsonl
             out/repeater-d1-machinery.json
             out/repeater-d1-netlist.json
             out/repeater-d1-functional.dot
@@ -569,6 +589,10 @@ jobs:
             out/not-gate-netlist.json
             out/not-gate-functional.dot
             out/not-gate-layers.json
+            out/or-gate-machinery.json
+            out/or-gate-netlist.json
+            out/or-gate-functional.dot
+            out/or-gate-layers.json
             out/redstone-template-runtime-report.json
             out/redstone-template-netlist-runtime-correlation.json
           retention-days: 14

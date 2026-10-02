@@ -216,6 +216,128 @@ def validate_not(root:Path):
     }
 
 
+def validate_or(root:Path):
+    name="or-gate"
+    stock=load_result(root,name,"stock")
+    inst=load_result(root,name,"instrumented")
+    for k in (
+        "template","minecraft_version","java_major","input_control",
+        "input_a_position","input_b_position",
+        "input_a_wire_position","input_b_wire_position",
+        "junction_wire_position","output_wire_position","output_lamp_position",
+        "input_a_high_command_sha256","input_a_low_command_sha256",
+        "input_b_high_command_sha256","input_b_low_command_sha256",
+        "truth_table_sequence",
+    ):
+        assert stock[k]==inst[k],(k,stock[k],inst[k])
+    assert stock["instrumented"] is False
+    assert inst["instrumented"] is True
+    assert inst["trace_present"] is True
+
+    expected=[
+        (False,False,0,False),
+        (True,False,12,True),
+        (False,False,0,False),
+        (False,True,12,True),
+        (True,True,12,True),
+    ]
+    observed=[
+        (row["a"],row["b"],row["output_wire_power"],row["output_lamp_lit"])
+        for row in inst["truth_table_sequence"]
+    ]
+    assert observed==expected,observed
+    assert all(row["verified"] is True for row in inst["truth_table_sequence"])
+
+    rows=load_trace(root,name)
+    counts=trace_contract(rows)
+    for required in (
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result","command_dispatch",
+        "block_state_write",
+    ):
+        assert counts[required]>0,(required,counts)
+
+    a1=dispatch_after(rows,inst["input_a_high_command_sha256"])
+    a0=dispatch_after(rows,inst["input_a_low_command_sha256"],a1["seq"])
+    b1=dispatch_after(rows,inst["input_b_high_command_sha256"],a0["seq"])
+    a2=dispatch_after(rows,inst["input_a_high_command_sha256"],b1["seq"])
+    assert a1["seq"]<a0["seq"]<b1["seq"]<a2["seq"]
+
+    source_writes={}
+    for label,dispatch,pos in (
+        ("a_high",a1,inst["input_a_position"]),
+        ("a_low",a0,inst["input_a_position"]),
+        ("b_high",b1,inst["input_b_position"]),
+        ("both_high",a2,inst["input_a_position"]),
+    ):
+        found=[
+            r for r in rows
+            if r["seq"]>dispatch["seq"]
+            and r["event_type"]=="block_state_write"
+            and position(r)==pos
+        ]
+        assert found,(label,"source block write",counts)
+        source_writes[label]=found[0]["seq"]
+
+    output=inst["output_wire_position"]
+    event_types={
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result",
+    }
+    phases=[
+        ("10",a1["seq"],a0["seq"],12),
+        ("00_reset",a0["seq"],b1["seq"],0),
+        ("01",b1["seq"],a2["seq"],12),
+    ]
+    phase_evidence={}
+    for label,start,end,expected_power in phases:
+        events=[
+            r for r in rows
+            if start<r["seq"]<end
+            and r["event_type"] in event_types
+            and position(r)==output
+        ]
+        assert events,(label,"output wire events",counts)
+        values=[
+            r["data"].get("value")
+            for r in events
+            if r["event_type"]=="redstone_power_result"
+        ]
+        assert expected_power in values,(label,expected_power,values)
+        phase_evidence[label]={
+            "event_count":len(events),
+            "power_result_values":values,
+        }
+
+    after_both=[
+        r for r in rows
+        if r["seq"]>a2["seq"]
+        and r["event_type"] in event_types
+        and position(r) in (
+            inst["input_a_wire_position"],
+            inst["input_b_wire_position"],
+            inst["junction_wire_position"],
+            output,
+        )
+    ]
+
+    return {
+        "truth_table_sequence":inst["truth_table_sequence"],
+        "input_dispatch_seq":{
+            "a_high":a1["seq"],"a_low_reset":a0["seq"],
+            "b_high":b1["seq"],"both_high":a2["seq"],
+        },
+        "source_write_seq":source_writes,
+        "output_phase_evidence":phase_evidence,
+        "post_11_wire_event_count":len(after_both),
+        "event_counts":dict(sorted(counts.items())),
+        "dropped_events":0,
+        "semantic_divergence":False,
+        "stock_elapsed_seconds":stock["elapsed_seconds"],
+        "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--root",type=Path,required=True)
@@ -231,6 +353,7 @@ def main():
         d1["server_tick_delta"],d4["server_tick_delta"]
     )
     inv=validate_not(args.root)
+    disj=validate_or(args.root)
 
     report={
         "schema":"supracraft-redstone-template-runtime-qualification/1",
@@ -245,6 +368,11 @@ def main():
         "not_gate":{
             **inv,
             "truth_table_contract":"low->high, high->low, reset low->high",
+            "truth_table_pass":True,
+        },
+        "or_gate":{
+            **disj,
+            "truth_table_contract":"00->0, 10->1, 01->1, 11->1",
             "truth_table_pass":True,
         },
         "boundary":"runtime qualification applies to these exact generated fixtures and versions; template generalization remains separately gated by static netlist matching",

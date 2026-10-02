@@ -77,6 +77,8 @@ RUNTIME_CONTRACTS={
         "input transition must traverse repeater input/output ports and produce a downstream transition after a positive server-tick delay consistent with the configured delay setting",
     "not_gate":
         "truth table: exercise input low and high; qualified output must be high for low input and low for high input, including reset back to high",
+    "or_gate":
+        "truth table: exercise 00, 10, 01, and 11; qualified output must be low only for 00 and high for every state with at least one asserted input",
 }
 
 D4=(
@@ -423,6 +425,20 @@ def motifs(components,nets):
                 "net_ids":[net["net_id"]],
                 "evidence":["source_output_and_sink_input_share_collapsed_dust_net"],
                 "required_runtime_contract":RUNTIME_CONTRACTS["wire_transmission_path"],
+            })
+
+        source_ids=sorted({p["component_id"] for p in sources})
+        sink_ids=sorted({p["component_id"] for p in sinks})
+        if len(source_ids)>=2 and sink_ids:
+            out.append({
+                "template":"or_gate",
+                "confidence":"structural_candidate_only",
+                "component_ids":source_ids+sink_ids,
+                "net_ids":[net["net_id"]],
+                "input_source_component_ids":source_ids,
+                "output_sink_component_ids":sink_ids,
+                "evidence":["multiple_independent_sources_share_output_net"],
+                "required_runtime_contract":RUNTIME_CONTRACTS["or_gate"],
             })
 
     # Repeater/delay: input net -> repeater -> output net.
