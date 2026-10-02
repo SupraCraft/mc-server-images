@@ -38,6 +38,10 @@ NOR_A_HIGH_COMMAND=OR_A_HIGH_COMMAND
 NOR_A_LOW_COMMAND=OR_A_LOW_COMMAND
 NOR_B_HIGH_COMMAND=OR_B_HIGH_COMMAND
 NOR_B_LOW_COMMAND=OR_B_LOW_COMMAND
+XOR_A_HIGH_COMMAND="setblock 0 100 -2 minecraft:redstone_block"
+XOR_A_LOW_COMMAND="setblock 0 100 -2 minecraft:air"
+XOR_B_HIGH_COMMAND="setblock 0 100 2 minecraft:redstone_block"
+XOR_B_LOW_COMMAND="setblock 0 100 2 minecraft:air"
 
 
 def evidence_java_major(evidence: dict) -> int:
@@ -1206,12 +1210,304 @@ def run_and_gate(args,evidence,server_jar,output_dir):
         print(json.dumps(result,indent=2,sort_keys=True))
 
 
+
+def xor_probe(a_high,b_high,final_torch_lit,output_power):
+    a_block="minecraft:redstone_block" if a_high else "minecraft:air"
+    b_block="minecraft:redstone_block" if b_high else "minecraft:air"
+    final_torch="true" if final_torch_lit else "false"
+    return (
+        f"execute if block 0 100 -2 {a_block} "
+        f"if block 0 100 2 {b_block} "
+        f"if block 11 104 0 minecraft:redstone_torch[lit={final_torch}] "
+        f"if block 12 104 0 minecraft:redstone_wire[power={output_power}]"
+    )
+
+
+def run_xor_gate(args,evidence,server_jar,output_dir):
+    """Qualify one bounded XOR composition: (A OR B) AND (NOT A OR NOT B)."""
+    version=evidence["minecraft_version"]
+    with tempfile.TemporaryDirectory(prefix="modern-redstone-xor-") as td:
+        root=Path(td); server=root/"server.jar"
+        shutil.copy2(server_jar,server)
+        common_setup(root,version)
+        log_path=root/"server.log"
+        trace_path=output_dir/"trace.jsonl"
+        gate_path=root/"capture.gate"
+        started=time.monotonic()
+        with log_path.open("w",encoding="utf-8") as log:
+            p=subprocess.Popen(
+                launch_command(args,server,trace_path,gate_path),
+                cwd=root,stdin=subprocess.PIPE,stdout=log,
+                stderr=subprocess.STDOUT,text=True,
+            )
+            ready=wait_ready(p,log_path,180)
+            checked_command(p,"forceload add -16 -16 16 16","forceload",log_path,output_dir)
+            time.sleep(1)
+            checked_command(p,"fill -6 99 -5 14 106 5 minecraft:air","clear",log_path,output_dir)
+            checked_command(p,"fill -6 99 -5 14 99 5 minecraft:stone","floor",log_path,output_dir)
+            checked_command(p,XOR_A_LOW_COMMAND,"xor_a_low_setup",log_path,output_dir)
+            checked_command(p,XOR_B_LOW_COMMAND,"xor_b_low_setup",log_path,output_dir)
+
+            # One physical fixture source per logical input fans out into two
+            # isolated branches: east into the direct OR net, west into that
+            # input's inverter.  This avoids duplicate logical input sources.
+            for x,z,name in (
+                (1,-2,"or_a_input"),(2,-2,"or_a_join"),
+                (1,2,"or_b_input"),(2,2,"or_b_join"),
+                (2,-1,"or_a_turn"),(2,0,"or_junction"),(2,1,"or_b_turn"),
+                (3,0,"or_rise_feed"),
+                (-1,-2,"not_a_input"),(-1,2,"not_b_input"),
+            ):
+                checked_command(
+                    p,f"setblock {x} 100 {z} minecraft:redstone_wire",
+                    name,log_path,output_dir,
+                )
+
+            # Per-input NOT branches.
+            for x,y,z,name in (
+                (-2,100,-2,"not_a_support"),
+                (-2,100,2,"not_b_support"),
+                (-3,100,-2,"not_a_output_support"),
+                (-3,100,2,"not_b_output_support"),
+            ):
+                checked_command(
+                    p,f"setblock {x} {y} {z} minecraft:stone",
+                    name,log_path,output_dir,
+                )
+            checked_command(p,"setblock -2 101 -2 minecraft:redstone_torch","not_a",log_path,output_dir)
+            checked_command(p,"setblock -2 101 2 minecraft:redstone_torch","not_b",log_path,output_dir)
+
+            # Merge NOT A and NOT B into the NAND-equivalent branch at y=101.
+            nand_wire_positions=[
+                (-3,-2),(-4,-2),(-4,-1),(-4,0),(-4,1),(-4,2),(-4,3),
+                (-3,3),(-2,3),(-1,3),(0,3),(1,3),(2,3),(3,3),
+            ]
+            for x,z in nand_wire_positions:
+                checked_command(
+                    p,f"setblock {x} 101 {z} minecraft:redstone_wire",
+                    f"nand_wire_{x}_{z}",log_path,output_dir,
+                )
+                if not (x==-3 and z in {-2,2}):
+                    checked_command(
+                        p,f"setblock {x} 100 {z} minecraft:stone",
+                        f"nand_support_{x}_{z}",log_path,output_dir,
+                    )
+
+            # Raise the direct OR branch twice so its final-stage input remains
+            # physically separated from the NAND-equivalent branch.
+            for x,y,z,name in (
+                (4,100,0,"or_rise_1_support"),
+                (5,101,0,"or_rise_2_support"),
+                (5,101,-1,"or_route_support_1"),
+                (5,101,-2,"or_route_support_2"),
+                (5,101,-3,"or_route_support_3"),
+                (6,101,-3,"or_route_support_4"),
+                (4,101,3,"nand_rise_support"),
+                (5,101,3,"nand_route_support_5"),
+                (6,101,3,"nand_route_support_6"),
+            ):
+                checked_command(
+                    p,f"setblock {x} {y} {z} minecraft:stone",
+                    name,log_path,output_dir,
+                )
+            for x,y,z,name in (
+                (4,101,0,"or_rise_1"),
+                (5,102,0,"or_rise_2"),
+                (5,102,-1,"or_route_1"),
+                (5,102,-2,"or_route_2"),
+                (5,102,-3,"or_route_3"),
+                (6,102,-3,"or_route_4"),
+                (4,102,3,"nand_rise"),
+                (5,102,3,"nand_route_5"),
+                (6,102,3,"nand_route_6"),
+            ):
+                checked_command(
+                    p,f"setblock {x} {y} {z} minecraft:redstone_wire",
+                    name,log_path,output_dir,
+                )
+
+            # Final AND stage: invert the OR and NAND-equivalent branches,
+            # merge those inverter outputs, then invert once more.
+            for x,y,z,name in (
+                (7,102,-3,"xor_or_input_support"),
+                (7,102,3,"xor_nand_input_support"),
+                (8,102,-3,"xor_mid_a_support"),
+                (9,102,-3,"xor_mid_a2_support"),
+                (9,102,-2,"xor_mid_a3_support"),
+                (9,102,-1,"xor_mid_a4_support"),
+                (9,102,0,"xor_mid_join_support"),
+                (9,102,1,"xor_mid_b4_support"),
+                (9,102,2,"xor_mid_b3_support"),
+                (9,102,3,"xor_mid_b2_support"),
+                (8,102,3,"xor_mid_b_support"),
+                (10,102,0,"xor_mid_feed_support"),
+                (11,103,0,"xor_final_support"),
+                (12,103,0,"xor_output_support"),
+            ):
+                checked_command(
+                    p,f"setblock {x} {y} {z} minecraft:stone",
+                    name,log_path,output_dir,
+                )
+            checked_command(p,"setblock 7 103 -3 minecraft:redstone_torch","xor_or_input_inverter",log_path,output_dir)
+            checked_command(p,"setblock 7 103 3 minecraft:redstone_torch","xor_nand_input_inverter",log_path,output_dir)
+            for x,z,name in (
+                (8,-3,"xor_mid_a"),(9,-3,"xor_mid_a2"),(9,-2,"xor_mid_a3"),
+                (9,-1,"xor_mid_a4"),(9,0,"xor_mid_join"),
+                (9,1,"xor_mid_b4"),(9,2,"xor_mid_b3"),(9,3,"xor_mid_b2"),
+                (8,3,"xor_mid_b"),(10,0,"xor_mid_feed"),
+            ):
+                checked_command(
+                    p,f"setblock {x} 103 {z} minecraft:redstone_wire",
+                    name,log_path,output_dir,
+                )
+            checked_command(p,"setblock 11 104 0 minecraft:redstone_torch","xor_final_inverter",log_path,output_dir)
+            checked_command(p,"setblock 12 104 0 minecraft:redstone_wire","xor_output_wire",log_path,output_dir)
+            checked_command(p,"setblock 13 104 0 minecraft:redstone_lamp","xor_output_lamp",log_path,output_dir)
+
+            baseline_attempts,baseline_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_XOR_00_PASS",
+                xor_probe(False,False,False,0),
+                "xor_00",timeout_seconds=10.0,
+            )
+            barrier=setup_barrier(
+                p,log_path,output_dir,"SUPRACRAFT_XOR_SETUP_READY"
+            )
+            if args.java_agent:
+                gate_path.write_text("capture\n")
+                time.sleep(0.15)
+
+            checked_command(p,XOR_A_HIGH_COMMAND,"xor_a_high",log_path,output_dir)
+            a_attempts,a_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_XOR_10_PASS",
+                xor_probe(True,False,True,15),
+                "xor_10",timeout_seconds=10.0,
+            )
+
+            checked_command(p,XOR_A_LOW_COMMAND,"xor_a_low_reset",log_path,output_dir)
+            reset_attempts,reset_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_XOR_00_RESET_PASS",
+                xor_probe(False,False,False,0),
+                "xor_00_reset",timeout_seconds=10.0,
+            )
+
+            checked_command(p,XOR_B_HIGH_COMMAND,"xor_b_high",log_path,output_dir)
+            b_attempts,b_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_XOR_01_PASS",
+                xor_probe(False,True,True,15),
+                "xor_01",timeout_seconds=10.0,
+            )
+
+            checked_command(p,XOR_A_HIGH_COMMAND,"xor_both_high",log_path,output_dir)
+            both_attempts,both_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_XOR_11_PASS",
+                xor_probe(True,True,False,0),
+                "xor_11",timeout_seconds=10.0,
+            )
+
+            checked_command(p,"save-all flush","save",log_path,output_dir)
+            time.sleep(1)
+            checked_command(p,"stop","stop",log_path,output_dir)
+            rc=p.wait(timeout=60)
+        elapsed=time.monotonic()-started
+        zip_world(root/"world",output_dir/"world.zip")
+        text=log_path.read_text("utf-8",errors="replace")
+        diagnostics=[
+            line for line in text.splitlines()
+            if any(x in line for x in (
+                "Incorrect argument","Unknown or incomplete command",
+                "[Server thread/ERROR]",
+                "SupraCraft causal microscope fail-closed binding",
+            ))
+        ]
+        if rc!=0 or diagnostics:
+            for line in diagnostics[-80:]:
+                print(line)
+            raise SystemExit(
+                f"xor-gate template failed rc={rc} diagnostics={len(diagnostics)}"
+            )
+        result={
+            "schema":"supracraft-modern-redstone-template-canary/1",
+            "template":"xor_gate",
+            "minecraft_version":version,
+            "java_major":evidence_java_major(evidence),
+            "instrumented":bool(args.java_agent),
+            "input_control":"fixture_controller_two_source_single_component_fanout",
+            "input_a_position":[0,100,-2],
+            "input_b_position":[0,100,2],
+            "input_a_high_command_sha256":digest_bytes(XOR_A_HIGH_COMMAND),
+            "input_a_low_command_sha256":digest_bytes(XOR_A_LOW_COMMAND),
+            "input_b_high_command_sha256":digest_bytes(XOR_B_HIGH_COMMAND),
+            "input_b_low_command_sha256":digest_bytes(XOR_B_LOW_COMMAND),
+            "input_inverter_positions":[[-2,101,-2],[-2,101,2]],
+            "stage_inverter_positions":[[7,103,-3],[7,103,3]],
+            "final_inverter_position":[11,104,0],
+            "output_wire_position":[12,104,0],
+            "output_lamp_position":[13,104,0],
+            "branch_wire_positions":[
+                [1,100,-2],[2,100,-2],[2,100,-1],[2,100,0],
+                [2,100,1],[2,100,2],[1,100,2],[3,100,0],
+                [-1,100,-2],[-1,100,2],
+                [-3,101,-2],[-4,101,-2],[-4,101,-1],[-4,101,0],
+                [-4,101,1],[-4,101,2],[-4,101,3],[-3,101,3],
+                [-2,101,3],[-1,101,3],[0,101,3],[1,101,3],
+                [2,101,3],[3,101,3],
+                [4,101,0],[5,102,0],[5,102,-1],[5,102,-2],
+                [5,102,-3],[6,102,-3],[4,102,3],[5,102,3],[6,102,3],
+                [8,103,-3],[9,103,-3],[9,103,-2],[9,103,-1],
+                [9,103,0],[9,103,1],[9,103,2],[9,103,3],
+                [8,103,3],[10,103,0],
+            ],
+            "truth_table_sequence":[
+                {"phase":"00","a":False,"b":False,"final_inverter_lit":False,
+                 "output_wire_power":0,"verified":True},
+                {"phase":"10","a":True,"b":False,"final_inverter_lit":True,
+                 "output_wire_power":15,"verified":True},
+                {"phase":"00_reset","a":False,"b":False,"final_inverter_lit":False,
+                 "output_wire_power":0,"verified":True},
+                {"phase":"01","a":False,"b":True,"final_inverter_lit":True,
+                 "output_wire_power":15,"verified":True},
+                {"phase":"11","a":True,"b":True,"final_inverter_lit":False,
+                 "output_wire_power":0,"verified":True},
+            ],
+            "ready_seconds":round(ready,6),
+            "setup_barrier_seconds":round(barrier,6),
+            "baseline_attempts":baseline_attempts,
+            "baseline_wait_seconds":round(baseline_wait,6),
+            "a_high_attempts":a_attempts,
+            "a_high_wait_seconds":round(a_wait,6),
+            "reset_attempts":reset_attempts,
+            "reset_wait_seconds":round(reset_wait,6),
+            "b_high_attempts":b_attempts,
+            "b_high_wait_seconds":round(b_wait,6),
+            "both_high_attempts":both_attempts,
+            "both_high_wait_seconds":round(both_wait,6),
+            "saved_input_state":"11",
+            "elapsed_seconds":round(elapsed,6),
+            "trace_present":trace_path.is_file(),
+            "world_sha256":hashlib.sha256(
+                (output_dir/"world.zip").read_bytes()
+            ).hexdigest(),
+            "output_lamp_semantic_authority":False,
+            "boolean_composition":"(A OR B) AND (NOT A OR NOT B)",
+            "boundary":"complete XOR truth table qualifies only this generated two-source composed topology; semantic authority is the final inverter plus output dust, while the presentation lamp remains diagnostic only",
+        }
+        (output_dir/"result.json").write_text(
+            json.dumps(result,indent=2,sort_keys=True)+"\n"
+        )
+        print(json.dumps(result,indent=2,sort_keys=True))
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--evidence",type=Path,required=True)
     ap.add_argument("--server-jar",type=Path,required=True)
     ap.add_argument("--output-dir",type=Path,required=True)
-    ap.add_argument("--fixture",choices=("repeater_delay","not_gate","or_gate","nor_gate","and_gate"),required=True)
+    ap.add_argument("--fixture",choices=("repeater_delay","not_gate","or_gate","nor_gate","and_gate","xor_gate"),required=True)
     ap.add_argument("--delay",type=int)
     ap.add_argument("--java-agent",type=Path)
     ap.add_argument("--adapter-id")
@@ -1245,8 +1541,10 @@ def main():
         run_or_gate(args,evidence,args.server_jar,args.output_dir)
     elif args.fixture=="nor_gate":
         run_nor_gate(args,evidence,args.server_jar,args.output_dir)
-    else:
+    elif args.fixture=="and_gate":
         run_and_gate(args,evidence,args.server_jar,args.output_dir)
+    else:
+        run_xor_gate(args,evidence,args.server_jar,args.output_dir)
 
 
 if __name__=="__main__":

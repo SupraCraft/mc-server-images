@@ -174,6 +174,50 @@ def validate_and(doc):
     }
 
 
+
+def validate_xor(doc):
+    rows=motifs(doc,"xor_gate")
+    assert rows,"missing xor_gate"
+    qualified=[
+        r for r in rows
+        if len(set(r.get("input_source_component_ids") or []))==2
+        and len(set(r.get("input_inverter_component_ids") or []))==2
+        and len(set(r.get("stage_inverter_component_ids") or []))==2
+        and r.get("direct_or_net_id")
+        and r.get("nand_net_id")
+        and r.get("intermediate_net_id")
+        and r.get("final_inverter_component_id")
+        and len(set(r.get("output_sink_component_ids") or []))>=1
+    ]
+    assert qualified,rows
+    row=qualified[0]
+    cmap=component_map(doc)
+    inverter_ids=sorted(set(
+        (row.get("input_inverter_component_ids") or [])+
+        (row.get("stage_inverter_component_ids") or [])+
+        [row["final_inverter_component_id"]]
+    ))
+    assert all(
+        cid in cmap and cmap[cid]["primitive"]=="inverter"
+        for cid in inverter_ids
+    ),(inverter_ids,cmap)
+    return {
+        "motif_count":len(rows),
+        "matched_component_ids":row["component_ids"],
+        "input_source_component_ids":sorted(set(row["input_source_component_ids"])),
+        "input_inverter_component_ids":sorted(set(row["input_inverter_component_ids"])),
+        "stage_inverter_component_ids":sorted(set(row["stage_inverter_component_ids"])),
+        "direct_or_net_id":row["direct_or_net_id"],
+        "nand_net_id":row["nand_net_id"],
+        "intermediate_net_id":row["intermediate_net_id"],
+        "final_inverter_component_id":row["final_inverter_component_id"],
+        "output_sink_component_ids":sorted(set(row["output_sink_component_ids"])),
+        "net_ids":row["net_ids"],
+        "functional_netlist_sha256":doc["signatures"]["functional_netlist_sha256"],
+        "horizontal_d4_topology_sha256":doc["signatures"]["horizontal_d4_topology_sha256"],
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--runtime-report",type=Path,required=True)
@@ -183,6 +227,7 @@ def main():
     ap.add_argument("--or-netlist",type=Path,required=True)
     ap.add_argument("--nor-netlist",type=Path,required=True)
     ap.add_argument("--and-netlist",type=Path,required=True)
+    ap.add_argument("--xor-netlist",type=Path,required=True)
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
 
@@ -193,6 +238,7 @@ def main():
     disj=validate_or(load(args.or_netlist))
     nor=validate_nor(load(args.nor_netlist))
     conj=validate_and(load(args.and_netlist))
+    xor=validate_xor(load(args.xor_netlist))
 
     rt_repeater=runtime["repeater_delay_line"]
     assert rt_repeater["ordering_pass"] is True
@@ -204,6 +250,7 @@ def main():
     assert runtime["or_gate"]["truth_table_pass"] is True
     assert runtime["nor_gate"]["truth_table_pass"] is True
     assert runtime["and_gate"]["truth_table_pass"] is True
+    assert runtime["xor_gate"]["truth_table_pass"] is True
 
     report={
         "schema":"supracraft-redstone-netlist-runtime-correlation/1",
@@ -241,6 +288,12 @@ def main():
             "runtime_truth_table":runtime["and_gate"]["truth_table_sequence"],
             "correlation_class":
                 "and_gate_template_supported_by_runtime_truth_table",
+        },
+        "xor_gate":{
+            "static":xor,
+            "runtime_truth_table":runtime["xor_gate"]["truth_table_sequence"],
+            "correlation_class":
+                "xor_gate_template_supported_by_runtime_truth_table",
         },
         "boundary":"template identification is exact-fixture/version evidence; broader motif recognition still requires independent examples and hard negatives",
     }

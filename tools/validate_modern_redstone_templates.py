@@ -621,6 +621,130 @@ def validate_and(root:Path):
     }
 
 
+
+def validate_xor(root:Path):
+    name="xor-gate"
+    stock=load_result(root,name,"stock")
+    inst=load_result(root,name,"instrumented")
+    for k in (
+        "template","minecraft_version","java_major","input_control",
+        "input_a_position","input_b_position",
+        "input_a_high_command_sha256","input_a_low_command_sha256",
+        "input_b_high_command_sha256","input_b_low_command_sha256",
+        "input_inverter_positions","stage_inverter_positions",
+        "final_inverter_position","output_wire_position","output_lamp_position",
+        "branch_wire_positions","truth_table_sequence",
+        "output_lamp_semantic_authority","boolean_composition",
+    ):
+        assert stock[k]==inst[k],(k,stock[k],inst[k])
+    assert stock["instrumented"] is False
+    assert inst["instrumented"] is True
+    assert inst["trace_present"] is True
+    assert inst["output_lamp_semantic_authority"] is False
+
+    expected=[
+        (False,False,False,0),
+        (True,False,True,15),
+        (False,False,False,0),
+        (False,True,True,15),
+        (True,True,False,0),
+    ]
+    observed=[
+        (
+            row["a"],row["b"],row["final_inverter_lit"],
+            row["output_wire_power"],
+        )
+        for row in inst["truth_table_sequence"]
+    ]
+    assert observed==expected,observed
+    assert all(row["verified"] is True for row in inst["truth_table_sequence"])
+
+    rows=load_trace(root,name)
+    counts=trace_contract(rows)
+    for required in (
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result",
+        "command_dispatch","block_state_write",
+    ):
+        assert counts[required]>0,(required,counts)
+
+    a1=dispatch_after(rows,inst["input_a_high_command_sha256"])
+    a0=dispatch_after(rows,inst["input_a_low_command_sha256"],a1["seq"])
+    b1=dispatch_after(rows,inst["input_b_high_command_sha256"],a0["seq"])
+    a2=dispatch_after(rows,inst["input_a_high_command_sha256"],b1["seq"])
+    assert a1["seq"]<a0["seq"]<b1["seq"]<a2["seq"]
+
+    branch_positions={tuple(p) for p in inst["branch_wire_positions"]}
+    output=inst["output_wire_position"]
+    event_types={
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result","block_state_write",
+    }
+    phases=[
+        ("10",a1["seq"],a0["seq"]),
+        ("00_reset",a0["seq"],b1["seq"]),
+        ("01",b1["seq"],a2["seq"]),
+    ]
+    phase_activity={}
+    for label,start,end in phases:
+        branch_events=[
+            r for r in rows
+            if start<r["seq"]<end
+            and r["event_type"] in event_types
+            and tuple(position(r)) in branch_positions
+        ]
+        output_events=[
+            r for r in rows
+            if start<r["seq"]<end
+            and r["event_type"] in event_types
+            and position(r)==output
+        ]
+        assert branch_events,(label,"branch causal activity",counts)
+        assert output_events,(label,"output causal activity",counts)
+        assert any(
+            r["event_type"]=="block_state_write" for r in output_events
+        ),(label,"output block-state write",counts)
+        phase_activity[label]={
+            "branch_event_count":len(branch_events),
+            "output_event_count":len(output_events),
+        }
+
+    after_11=[
+        r for r in rows
+        if r["seq"]>a2["seq"]
+        and r["event_type"] in event_types
+        and (
+            tuple(position(r)) in branch_positions
+            or position(r)==output
+        )
+    ]
+    assert after_11,("11","causal activity",counts)
+    final_writes=[
+        r for r in rows
+        if r["event_type"]=="block_state_write"
+        and position(r)==inst["final_inverter_position"]
+    ]
+    assert final_writes,("final inverter writes",counts)
+
+    return {
+        "truth_table_sequence":inst["truth_table_sequence"],
+        "input_dispatch_seq":{
+            "a_high":a1["seq"],"a_low_reset":a0["seq"],
+            "b_high":b1["seq"],"both_high":a2["seq"],
+        },
+        "phase_activity":phase_activity,
+        "post_11_event_count":len(after_11),
+        "final_inverter_write_count":len(final_writes),
+        "event_counts":dict(sorted(counts.items())),
+        "dropped_events":0,
+        "semantic_divergence":False,
+        "stock_elapsed_seconds":stock["elapsed_seconds"],
+        "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+        "output_lamp_semantic_authority":False,
+        "measurement_boundary":"XOR authority is exact final-inverter state plus output-dust power; the presentation lamp is diagnostic only",
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--root",type=Path,required=True)
@@ -639,6 +763,7 @@ def main():
     disj=validate_or(args.root)
     nor=validate_nor(args.root)
     conj=validate_and(args.root)
+    xor=validate_xor(args.root)
 
     report={
         "schema":"supracraft-redstone-template-runtime-qualification/1",
@@ -668,6 +793,11 @@ def main():
         "and_gate":{
             **conj,
             "truth_table_contract":"00->0, 10->0, 01->0, 11->1",
+            "truth_table_pass":True,
+        },
+        "xor_gate":{
+            **xor,
+            "truth_table_contract":"00->0, 10->1, 01->1, 11->0",
             "truth_table_pass":True,
         },
         "boundary":"runtime qualification applies to these exact generated fixtures and versions; template generalization remains separately gated by static netlist matching",

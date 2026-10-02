@@ -83,6 +83,8 @@ RUNTIME_CONTRACTS={
         "truth table: exercise 00, 10, 01, and 11; qualified output must be high only for 00 and low for every state with at least one asserted input",
     "and_gate":
         "truth table: exercise 00, 10, 01, and 11; qualified output must be high only for 11 and low for all other input states",
+    "xor_gate":
+        "truth table: exercise 00, 10, 01, and 11; qualified output must be high exactly when one of the two inputs is asserted",
     "rs_latch":
         "set/reset/hold sequence must demonstrate complementary outputs and retained state after stimulus removal; simultaneous set+reset is measured as an invalid-state boundary and post-invalid resolution is observed, not assumed",
 }
@@ -629,6 +631,164 @@ def motifs(components,nets):
                     ],
                     "required_runtime_contract":RUNTIME_CONTRACTS["and_gate"],
                 })
+
+
+
+    # XOR composition: the same two physical sources fan out into a direct OR
+    # net and into independent input inverters.  Those inverter outputs merge
+    # into NOT A OR NOT B.  The direct-OR and NAND-equivalent nets feed the
+    # two input inverters of a final De-Morgan AND stage.
+    seen_xor=set()
+    for direct_net in nets:
+        primary_sources=sorted({
+            p["component_id"]
+            for p in direct_net.get("ports",[])
+            if p.get("kind")=="output"
+            and p.get("component_id") in by_id
+            and by_id[p["component_id"]]["primitive"] in SOURCE_PRIMITIVES
+        })
+        if len(primary_sources)!=2:
+            continue
+
+        input_inverters=[]
+        for inv in components:
+            if inv["primitive"]!="inverter":
+                continue
+            support_sources=sorted({
+                peer
+                for p in inv.get("ports",[])
+                if p.get("kind")=="input_support"
+                for peer in p.get("peer_component_ids",[])
+                if peer in primary_sources
+            })
+            if len(support_sources)!=1:
+                continue
+            output_nets=sorted({
+                p["net_id"] for p in inv.get("ports",[])
+                if p.get("kind")=="output" and p.get("net_id")
+            })
+            if output_nets:
+                input_inverters.append((inv,support_sources[0],output_nets))
+
+        by_source={}
+        for inv,source_id,output_nets in input_inverters:
+            by_source.setdefault(source_id,[]).append((inv,output_nets))
+        if any(source_id not in by_source for source_id in primary_sources):
+            continue
+
+        for inv_a,nets_a in by_source[primary_sources[0]]:
+            for inv_b,nets_b in by_source[primary_sources[1]]:
+                if inv_a["component_id"]==inv_b["component_id"]:
+                    continue
+                for nand_id in sorted(set(nets_a)&set(nets_b)):
+                    if nand_id==direct_net["net_id"]:
+                        continue
+
+                    stage_direct=[]
+                    stage_nand=[]
+                    for inv in components:
+                        if inv["primitive"]!="inverter":
+                            continue
+                        if inv["component_id"] in {
+                            inv_a["component_id"],inv_b["component_id"]
+                        }:
+                            continue
+                        support_ids={
+                            net_id
+                            for p in inv.get("ports",[])
+                            if p.get("kind")=="input_support"
+                            for net_id in p.get("support_net_ids",[])
+                        }
+                        output_ids=sorted({
+                            p["net_id"] for p in inv.get("ports",[])
+                            if p.get("kind")=="output" and p.get("net_id")
+                        })
+                        if direct_net["net_id"] in support_ids and output_ids:
+                            stage_direct.append((inv,output_ids))
+                        if nand_id in support_ids and output_ids:
+                            stage_nand.append((inv,output_ids))
+
+                    for direct_inv,direct_outputs in stage_direct:
+                        for nand_inv,nand_outputs in stage_nand:
+                            if direct_inv["component_id"]==nand_inv["component_id"]:
+                                continue
+                            for mid_id in sorted(set(direct_outputs)&set(nand_outputs)):
+                                for final in components:
+                                    if final["primitive"]!="inverter":
+                                        continue
+                                    if final["component_id"] in {
+                                        inv_a["component_id"],inv_b["component_id"],
+                                        direct_inv["component_id"],nand_inv["component_id"],
+                                    }:
+                                        continue
+                                    final_support_ids={
+                                        net_id
+                                        for p in final.get("ports",[])
+                                        if p.get("kind")=="input_support"
+                                        for net_id in p.get("support_net_ids",[])
+                                    }
+                                    if mid_id not in final_support_ids:
+                                        continue
+                                    output_net_ids=sorted({
+                                        p["net_id"] for p in final.get("ports",[])
+                                        if p.get("kind")=="output" and p.get("net_id")
+                                    })
+                                    sink_ids=set()
+                                    for output_net_id in output_net_ids:
+                                        net=net_by_id.get(output_net_id) or {}
+                                        for port in net.get("ports",[]):
+                                            cid=port.get("component_id")
+                                            if (
+                                                port.get("kind")=="input"
+                                                and cid in by_id
+                                                and by_id[cid]["primitive"] in SINK_PRIMITIVES
+                                            ):
+                                                sink_ids.add(cid)
+                                    if not sink_ids:
+                                        continue
+                                    key=(
+                                        tuple(primary_sources),
+                                        tuple(sorted((inv_a["component_id"],inv_b["component_id"]))),
+                                        tuple(sorted((direct_inv["component_id"],nand_inv["component_id"]))),
+                                        final["component_id"],
+                                    )
+                                    if key in seen_xor:
+                                        continue
+                                    seen_xor.add(key)
+                                    out.append({
+                                        "template":"xor_gate",
+                                        "confidence":"structural_candidate_only",
+                                        "component_ids":sorted(set(
+                                            primary_sources+
+                                            [inv_a["component_id"],inv_b["component_id"],
+                                             direct_inv["component_id"],nand_inv["component_id"],
+                                             final["component_id"]]+list(sink_ids)
+                                        )),
+                                        "net_ids":sorted({
+                                            direct_net["net_id"],nand_id,mid_id,*output_net_ids
+                                        }),
+                                        "input_source_component_ids":primary_sources,
+                                        "direct_or_net_id":direct_net["net_id"],
+                                        "input_inverter_component_ids":sorted(
+                                            [inv_a["component_id"],inv_b["component_id"]]
+                                        ),
+                                        "nand_net_id":nand_id,
+                                        "stage_inverter_component_ids":sorted(
+                                            [direct_inv["component_id"],nand_inv["component_id"]]
+                                        ),
+                                        "intermediate_net_id":mid_id,
+                                        "final_inverter_component_id":final["component_id"],
+                                        "output_net_ids":output_net_ids,
+                                        "output_sink_component_ids":sorted(sink_ids),
+                                        "evidence":[
+                                            "same_two_sources_feed_direct_or_net",
+                                            "same_sources_feed_individual_input_inverters",
+                                            "input_inverter_outputs_merge_as_nand_equivalent_net",
+                                            "direct_or_and_nand_nets_feed_final_and_stage",
+                                            "final_inverter_output_reaches_distinct_sink_net",
+                                        ],
+                                        "required_runtime_contract":RUNTIME_CONTRACTS["xor_gate"],
+                                    })
 
     # RS latch candidate: exactly two cross-coupled inverter primitives.
     # Each inverter output net must appear in the other inverter's support-net

@@ -263,6 +263,7 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(by_id["or_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["and_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["nor_gate"]["status"],"qualified_template")
+        self.assertEqual(by_id["xor_gate"]["status"],"reference_candidate_only")
         self.assertEqual(by_id["rs_latch"]["status"],"qualified_template")
         self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 
@@ -393,6 +394,129 @@ class RedstoneNetlistTests(unittest.TestCase):
             x["template"]=="and_gate" for x in doc["motif_candidates"]
         ))
 
+
+
+
+    def test_composed_xor_shape_is_candidate_only(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("sa",(0,100,-2),"minecraft:redstone_block",["power_source"]),
+                n("sb",(0,100,2),"minecraft:redstone_block",["power_source"]),
+                n("oa",(1,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("oaj",(2,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("oat",(2,100,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("oj",(2,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("obt",(2,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("obj",(2,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("ob",(1,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("ofeed",(3,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("orise1",(4,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("orise2",(5,102,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("or1",(5,102,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("or2",(5,102,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("or3",(5,102,-3),"minecraft:redstone_wire",["signal_transport"]),
+                n("or4",(6,102,-3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nai",(-1,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("nbi",(-1,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("ia",(-2,101,-2),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"true"}),
+                n("ib",(-2,101,2),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"true"}),
+                n("na",(-3,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("na2",(-4,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("na1",(-4,101,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("nj",(-4,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("nb1",(-4,101,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("nb2",(-4,101,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("nb",(-3,101,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("nt",(-4,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr1",(-3,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr2",(-2,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr3",(-1,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr4",(0,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr5",(1,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr6",(2,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr7",(3,101,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nraise",(4,102,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr8",(5,102,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("nr9",(6,102,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("ix",(7,103,-3),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"true"}),
+                n("iy",(7,103,3),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("ma",(8,103,-3),"minecraft:redstone_wire",["signal_transport"]),
+                n("ma2",(9,103,-3),"minecraft:redstone_wire",["signal_transport"]),
+                n("ma3",(9,103,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("ma4",(9,103,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("mj",(9,103,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("mb4",(9,103,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("mb3",(9,103,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("mb2",(9,103,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("mb",(8,103,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("mf",(10,103,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("final",(11,104,0),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("out",(12,104,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(13,104,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("oa","oaj"),edge("oaj","oat"),edge("oat","oj"),
+                edge("oj","obt"),edge("obt","obj"),edge("obj","ob"),
+                edge("oj","ofeed"),edge("ofeed","orise1"),edge("orise1","orise2"),
+                edge("orise2","or1"),edge("or1","or2"),edge("or2","or3"),edge("or3","or4"),
+                edge("na","na2"),edge("na2","na1"),edge("na1","nj"),
+                edge("nj","nb1"),edge("nb1","nb2"),edge("nb2","nb"),
+                edge("nj","nt"),edge("nt","nr1"),edge("nr1","nr2"),edge("nr2","nr3"),
+                edge("nr3","nr4"),edge("nr4","nr5"),edge("nr5","nr6"),
+                edge("nr6","nr7"),edge("nr7","nraise"),edge("nraise","nr8"),edge("nr8","nr9"),
+                edge("ma","ma2"),edge("ma2","ma3"),edge("ma3","ma4"),edge("ma4","mj"),
+                edge("mj","mb4"),edge("mb4","mb3"),edge("mb3","mb2"),edge("mb2","mb"),
+                edge("mj","mf"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        rows=[x for x in doc["motif_candidates"] if x["template"]=="xor_gate"]
+        self.assertEqual(len(rows),1)
+        row=rows[0]
+        self.assertEqual(row["confidence"],"structural_candidate_only")
+        self.assertEqual(row["input_source_component_ids"],["sa","sb"])
+        self.assertEqual(row["input_inverter_component_ids"],["ia","ib"])
+        self.assertEqual(row["stage_inverter_component_ids"],["ix","iy"])
+        self.assertEqual(row["final_inverter_component_id"],"final")
+        self.assertEqual(row["output_sink_component_ids"],["lamp"])
+        self.assertIn("truth table",row["required_runtime_contract"].lower())
+
+    def test_xor_without_final_inverter_is_hard_negative(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("sa",(0,100,-2),"minecraft:redstone_block",["power_source"]),
+                n("sb",(0,100,2),"minecraft:redstone_block",["power_source"]),
+                n("oa",(1,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("oaj",(2,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("oj",(2,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("obj",(2,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("ob",(1,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("nai",(-1,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("nbi",(-1,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("ia",(-2,101,-2),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"true"}),
+                n("ib",(-2,101,2),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"true"}),
+                n("na",(-3,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("nj",(-3,101,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("nb",(-3,101,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("ix",(4,102,-2),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("iy",(4,102,2),"minecraft:redstone_torch",["signal_transport","logic_gate"],{"lit":"false"}),
+                n("ma",(5,102,-2),"minecraft:redstone_wire",["signal_transport"]),
+                n("mj",(5,102,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("mb",(5,102,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(6,102,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("oa","oaj"),edge("oaj","oj"),edge("oj","obj"),edge("obj","ob"),
+                edge("na","nj"),edge("nj","nb"),
+                edge("ma","mj"),edge("mj","mb"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        self.assertFalse(any(
+            x["template"]=="xor_gate" for x in doc["motif_candidates"]
+        ))
 
     def test_cross_coupled_two_inverter_shape_is_rs_latch_candidate_only(self):
         graph={

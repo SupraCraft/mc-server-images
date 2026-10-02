@@ -138,6 +138,7 @@ jobs:
             out/or-gate-stock out/or-gate-instrumented \
             out/nor-gate-stock out/nor-gate-instrumented \
             out/and-gate-stock out/and-gate-instrumented \
+            out/xor-gate-stock out/xor-gate-instrumented \
             out/rs-latch-stock out/rs-latch-instrumented
 
           python tools/run_modern_redstone_template_canary.py \
@@ -176,6 +177,12 @@ jobs:
             --fixture and_gate \
             --output-dir out/and-gate-stock \
             --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture xor_gate \
+            --output-dir out/xor-gate-stock \
+            --expected-version "${{ matrix.version }}"
           python tools/run_modern_rs_latch_canary.py \
             --evidence "${{ matrix.evidence_path }}" \
             --server-jar "${{ matrix.server_jar }}" \
@@ -192,7 +199,8 @@ jobs:
             "not_gate::not-gate" \
             "or_gate::or-gate" \
             "nor_gate::nor-gate" \
-            "and_gate::and-gate"; do
+            "and_gate::and-gate" \
+            "xor_gate::xor-gate"; do
             IFS=: read -r fixture delay outname <<< "$spec"
             args=(
               --evidence "${{ matrix.evidence_path }}"
@@ -236,7 +244,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for fixture in repeater-d1 repeater-d4 not-gate or-gate nor-gate and-gate rs-latch; do
+          for fixture in repeater-d1 repeater-d4 not-gate or-gate nor-gate and-gate xor-gate rs-latch; do
             python tools/analyze_modern_causal_machinery.py \
               --world-zip "out/$fixture-stock/world.zip" \
               --output "out/$fixture-machinery.json"
@@ -259,6 +267,7 @@ jobs:
             --or-netlist out/or-gate-netlist.json \
             --nor-netlist out/nor-gate-netlist.json \
             --and-netlist out/and-gate-netlist.json \
+            --xor-netlist out/xor-gate-netlist.json \
             --output out/redstone-template-netlist-runtime-correlation.json
           python tools/correlate_rs_latch_netlist.py \
             --runtime-report out/rs-latch-runtime-report.json \
