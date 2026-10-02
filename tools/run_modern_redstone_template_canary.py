@@ -548,6 +548,109 @@ def run_or_gate(args,evidence,server_jar,output_dir):
         print(json.dumps(result,indent=2,sort_keys=True))
 
 
+def diagnose_and_state(process,log_path,output_dir,phase):
+    """Emit bounded marker probes for the AND fixture without changing state."""
+    checks=[]
+
+    def add(label,value,condition):
+        token=str(value).replace("-","NEG").replace(".","_").upper()
+        marker=f"SUPRACRAFT_AND_DIAG_{label.upper()}_{token}"
+        checks.append((label,value,marker,condition))
+
+    for label,x,y,z in (
+        ("source_a",-1,100,-1),
+        ("source_b",-1,100,1),
+    ):
+        add(label,"air",f"execute if block {x} {y} {z} minecraft:air")
+        add(label,"redstone_block",f"execute if block {x} {y} {z} minecraft:redstone_block")
+
+    for label,x,y,z in (
+        ("input_a_wire",0,100,-1),
+        ("input_b_wire",0,100,1),
+        ("intermediate_a",2,101,-1),
+        ("intermediate_junction",2,101,0),
+        ("intermediate_b",2,101,1),
+        ("output_wire",4,102,0),
+    ):
+        for power in range(16):
+            add(
+                label,power,
+                f"execute if block {x} {y} {z} minecraft:redstone_wire[power={power}]",
+            )
+
+    for label,x,y,z in (
+        ("input_a_inverter",1,101,-1),
+        ("input_b_inverter",1,101,1),
+        ("final_inverter",3,102,0),
+    ):
+        for lit in (False,True):
+            value="lit" if lit else "unlit"
+            state="true" if lit else "false"
+            add(
+                label,value,
+                f"execute if block {x} {y} {z} minecraft:redstone_torch[lit={state}]",
+            )
+
+    for lit in (False,True):
+        value="lit" if lit else "unlit"
+        state="true" if lit else "false"
+        add(
+            "output_lamp",value,
+            f"execute if block 5 102 0 minecraft:redstone_lamp[lit={state}]",
+        )
+
+    for label,value,marker,condition in checks:
+        checked_command(
+            process,f"{condition} run say {marker}",
+            f"and_diagnostic_{phase}_{label}",log_path,output_dir,
+        )
+    time.sleep(0.75)
+    text=log_path.read_text("utf-8",errors="replace")
+    observed={}
+    for label,value,marker,_ in checks:
+        if marker in text:
+            observed.setdefault(label,[]).append(value)
+    compact={
+        label:(values[0] if len(values)==1 else values)
+        for label,values in sorted(observed.items())
+    }
+    expected={
+        "source_a":"air",
+        "source_b":"air",
+        "input_a_wire":0,
+        "input_b_wire":0,
+        "input_a_inverter":"lit",
+        "input_b_inverter":"lit",
+        "final_inverter":"unlit",
+        "output_wire":0,
+        "output_lamp":"unlit",
+    }
+    receipt={
+        "schema":"supracraft-modern-and-fixture-diagnostic/1",
+        "phase":phase,
+        "expected":expected,
+        "observed":compact,
+        "mismatched":{
+            key:{"expected":value,"observed":compact.get(key)}
+            for key,value in expected.items()
+            if compact.get(key)!=value
+        },
+        "intermediate_wire_powers":{
+            key:compact.get(key)
+            for key in (
+                "intermediate_a","intermediate_junction","intermediate_b"
+            )
+        },
+        "boundary":"diagnostic receipt records only bounded block-state values; it does not change the AND truth-table contract or promote semantics",
+    }
+    (output_dir/"diagnostic.json").write_text(
+        json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+    )
+    print("AND_FIXTURE_DIAGNOSTIC")
+    print(json.dumps(receipt,indent=2,sort_keys=True))
+    return receipt
+
+
 def and_probe(a_high,b_high,output_power,lamp_lit):
     a_block="minecraft:redstone_block" if a_high else "minecraft:air"
     b_block="minecraft:redstone_block" if b_high else "minecraft:air"
@@ -626,12 +729,18 @@ def run_and_gate(args,evidence,server_jar,output_dir):
             checked_command(p,"setblock 4 102 0 minecraft:redstone_wire","output_wire",log_path,output_dir)
             checked_command(p,"setblock 5 102 0 minecraft:redstone_lamp","output_lamp",log_path,output_dir)
 
-            baseline_attempts,baseline_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_AND_00_PASS",
-                and_probe(False,False,0,False),
-                "and_00",timeout_seconds=8.0,
-            )
+            try:
+                baseline_attempts,baseline_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_AND_00_PASS",
+                    and_probe(False,False,0,False),
+                    "and_00",timeout_seconds=8.0,
+                )
+            except SystemExit:
+                diagnose_and_state(
+                    p,log_path,output_dir,"baseline_00_timeout"
+                )
+                raise
             barrier=setup_barrier(
                 p,log_path,output_dir,"SUPRACRAFT_AND_SETUP_READY"
             )
