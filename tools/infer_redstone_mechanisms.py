@@ -165,11 +165,65 @@ def causal_links(graph: dict, block_ids: set[str]) -> list[dict]:
     return out
 
 
-def components(nodes: dict[str,dict], layout: list[dict]) -> list[list[str]]:
+def topology_candidate_links(nodes: dict[str,dict], layout: list[dict]) -> list[dict]:
+    """Infer deliberately weak directed signal candidates from face topology."""
+    source_primitives={
+        "constant_power_source","manual_state_input","pulse_input",
+        "occupancy_input","weighted_occupancy_input","contact_input",
+        "change_detector","impact_input","input_sensor",
+    }
+    sink_primitives={
+        "wire","programmable_processor","linear_actuator","visual_output",
+        "audio_output","item_actuator","actuator","presentation_output",
+    }
+    rows=[]
+    seen=set()
+
+    def candidate(source,target,reason):
+        key=(source,target,reason)
+        if key in seen:
+            return
+        seen.add(key)
+        rows.append({
+            "source":source,
+            "target":target,
+            "edge_type":"topology_power_candidate",
+            "certainty":"topology_candidate",
+            "basis":reason,
+        })
+
+    for link in layout:
+        a,b=link["a"],link["b"]
+        pa,pb=primitive(nodes[a]),primitive(nodes[b])
+        if pa in source_primitives and pb in sink_primitives:
+            candidate(a,b,"adjacent_source_to_sink")
+        if pb in source_primitives and pa in sink_primitives:
+            candidate(b,a,"adjacent_source_to_sink")
+        if pa=="wire" and pb=="wire":
+            candidate(a,b,"adjacent_wire_continuity")
+            candidate(b,a,"adjacent_wire_continuity")
+        if pa=="wire" and pb in {
+            "programmable_processor","linear_actuator","visual_output",
+            "audio_output","item_actuator","actuator","presentation_output",
+        }:
+            candidate(a,b,"adjacent_wire_to_sink")
+        if pb=="wire" and pa in {
+            "programmable_processor","linear_actuator","visual_output",
+            "audio_output","item_actuator","actuator","presentation_output",
+        }:
+            candidate(b,a,"adjacent_wire_to_sink")
+    return rows
+
+
+def components(nodes: dict[str,dict], layout: list[dict], links: list[dict]) -> list[list[str]]:
     und=defaultdict(set)
     for link in layout:
         a,b=link["a"],link["b"]
         und[a].add(b); und[b].add(a)
+    for link in links:
+        a,b=link.get("source"),link.get("target")
+        if a in nodes and b in nodes:
+            und[a].add(b); und[b].add(a)
     seen=set()
     result=[]
     for start in sorted(nodes):
@@ -221,7 +275,13 @@ def path_exists(starts:set[str], goals:set[str], links:list[dict], allowed:set[s
     return False
 
 
-def infer_component(index:int, members:list[str], nodes:dict[str,dict], links:list[dict]):
+def infer_component(
+    index:int,
+    members:list[str],
+    nodes:dict[str,dict],
+    source_links:list[dict],
+    candidate_links:list[dict],
+):
     member_set=set(members)
     block_counts=Counter(nodes[n].get("block","unknown") for n in members)
     primitive_counts=Counter(primitive(nodes[n]) for n in members)
@@ -241,26 +301,27 @@ def infer_component(index:int, members:list[str], nodes:dict[str,dict], links:li
     repeaters={n for n in members if nodes[n].get("block")=="minecraft:repeater"}
     command_nodes={n for n in members if "command_block" in nodes[n].get("block","")}
 
+    functional_links=source_links+candidate_links
     candidates=[]
-    if path_exists(inputs,outputs,links,member_set):
+    if path_exists(inputs,outputs,functional_links,member_set):
         candidates.append({
             "mechanism":"transmission_path",
             "confidence":"structural_candidate",
             "evidence":["directed_input_to_output_path"],
         })
-    if repeaters and path_exists(inputs,outputs,links,member_set):
+    if repeaters and path_exists(inputs,outputs,functional_links,member_set):
         candidates.append({
             "mechanism":"buffered_delay_line",
             "confidence":"structural_candidate",
             "evidence":["repeater_present","directed_input_to_output_path"],
         })
-    if command_nodes and path_exists(inputs,command_nodes,links,member_set):
+    if command_nodes and path_exists(inputs,command_nodes,functional_links,member_set):
         candidates.append({
             "mechanism":"command_actuation_chain",
             "confidence":"structural_candidate",
             "evidence":["directed_input_to_command_path"],
         })
-    if directed_cycle(member_set,links):
+    if directed_cycle(member_set,functional_links):
         candidates.append({
             "mechanism":"oscillator_or_state_loop",
             "confidence":"structural_candidate_only",
@@ -286,7 +347,7 @@ def infer_component(index:int, members:list[str], nodes:dict[str,dict], links:li
             "primitive":primitive(node),
         })
     for e in sorted(
-        (x for x in links if x["source"] in member_set and x["target"] in member_set),
+        (x for x in functional_links if x["source"] in member_set and x["target"] in member_set),
         key=lambda x:(x["source"],x["target"],str(x["edge_type"])),
     ):
         signature_rows.append({"edge":e})
@@ -315,7 +376,12 @@ def infer_component(index:int, members:list[str], nodes:dict[str,dict], links:li
             for n in members
         ],
         "causal_links":[
-            e for e in links if e["source"] in member_set and e["target"] in member_set
+            e for e in source_links
+            if e["source"] in member_set and e["target"] in member_set
+        ],
+        "topology_candidate_links":[
+            e for e in candidate_links
+            if e["source"] in member_set and e["target"] in member_set
         ],
         "mechanism_candidates":candidates,
         "runtime_validation":{
@@ -351,6 +417,12 @@ def emit_dot(doc:dict)->str:
                 f'    "{dot_escape(e["source"])}" -> "{dot_escape(e["target"])}" '
                 f'[label="{dot_escape(lbl)}"];'
             )
+        for e in comp["topology_candidate_links"]:
+            lbl=f'{e.get("edge_type")} / {e.get("certainty")}'
+            rows.append(
+                f'    "{dot_escape(e["source"])}" -> "{dot_escape(e["target"])}" '
+                f'[style=dashed,label="{dot_escape(lbl)}"];'
+            )
         rows.append("  }")
     rows.append("}")
     return "\n".join(rows)+"\n"
@@ -364,9 +436,10 @@ def infer(graph:dict)->dict:
     }
     layout=adjacency_links(block_nodes)
     links=causal_links(graph,set(block_nodes))
-    comps=components(block_nodes,layout)
+    candidate_links=topology_candidate_links(block_nodes,layout)
+    comps=components(block_nodes,layout,links)
     result=[
-        infer_component(i,members,block_nodes,links)
+        infer_component(i,members,block_nodes,links,candidate_links)
         for i,members in enumerate(sorted(comps,key=lambda x:(-len(x),x)),1)
     ]
     return {
@@ -376,11 +449,12 @@ def infer(graph:dict)->dict:
         "block_node_count":len(block_nodes),
         "layout_link_count":len(layout),
         "causal_link_count":len(links),
+        "topology_candidate_link_count":len(candidate_links),
         "component_count":len(result),
         "standard_mechanism_vocabulary":STANDARD_MECHANISM_VOCABULARY,
         "components":result,
         "limitations":[
-            "physical resemblance does not prove functional identity",
+            "physical resemblance and topology-derived signal direction do not prove functional identity",
             "runtime timing, signal strength, update ordering, quasi-connectivity, and observer effects require runtime evidence",
             "named mechanisms remain candidates until their template preconditions and behavioral truth table or temporal contract are validated",
             "version-specific behavior must be qualified independently",
