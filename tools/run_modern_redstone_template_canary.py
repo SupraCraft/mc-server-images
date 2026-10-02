@@ -553,7 +553,7 @@ def diagnose_and_state(process,log_path,output_dir,phase):
     checks=[]
 
     def add(label,value,condition):
-        token=str(value).replace("-","NEG").replace(".","_").upper()
+        token=(f"P{value:02d}" if isinstance(value,int) else str(value).replace("-","NEG").replace(".","_").upper())
         marker=f"SUPRACRAFT_AND_DIAG_{label.upper()}_{token}"
         checks.append((label,value,marker,condition))
 
@@ -570,7 +570,8 @@ def diagnose_and_state(process,log_path,output_dir,phase):
         ("intermediate_a",2,101,-1),
         ("intermediate_junction",2,101,0),
         ("intermediate_b",2,101,1),
-        ("output_wire",4,102,0),
+        ("intermediate_stub",3,101,0),
+        ("output_wire",5,102,0),
     ):
         for power in range(16):
             add(
@@ -581,7 +582,7 @@ def diagnose_and_state(process,log_path,output_dir,phase):
     for label,x,y,z in (
         ("input_a_inverter",1,101,-1),
         ("input_b_inverter",1,101,1),
-        ("final_inverter",3,102,0),
+        ("final_inverter",4,102,0),
     ):
         for lit in (False,True):
             value="lit" if lit else "unlit"
@@ -596,7 +597,7 @@ def diagnose_and_state(process,log_path,output_dir,phase):
         state="true" if lit else "false"
         add(
             "output_lamp",value,
-            f"execute if block 5 102 0 minecraft:redstone_lamp[lit={state}]",
+            f"execute if block 6 102 0 minecraft:redstone_lamp[lit={state}]",
         )
 
     for label,value,marker,condition in checks:
@@ -638,7 +639,7 @@ def diagnose_and_state(process,log_path,output_dir,phase):
         "intermediate_wire_powers":{
             key:compact.get(key)
             for key in (
-                "intermediate_a","intermediate_junction","intermediate_b"
+                "intermediate_a","intermediate_junction","intermediate_b","intermediate_stub"
             )
         },
         "boundary":"diagnostic receipt records only bounded block-state values; it does not change the AND truth-table contract or promote semantics",
@@ -667,9 +668,9 @@ def and_probe(a_high,b_high,output_power,lamp_lit):
         f"if block 0 100 1 minecraft:redstone_wire[power={b_wire}] "
         f"if block 1 101 -1 minecraft:redstone_torch[lit={a_torch}] "
         f"if block 1 101 1 minecraft:redstone_torch[lit={b_torch}] "
-        f"if block 3 102 0 minecraft:redstone_torch[lit={final_torch}] "
-        f"if block 4 102 0 minecraft:redstone_wire[power={output_power}] "
-        f"if block 5 102 0 minecraft:redstone_lamp[lit={lamp}]"
+        f"if block 4 102 0 minecraft:redstone_torch[lit={final_torch}] "
+        f"if block 5 102 0 minecraft:redstone_wire[power={output_power}] "
+        f"if block 6 102 0 minecraft:redstone_lamp[lit={lamp}]"
     )
 
 
@@ -702,8 +703,8 @@ def run_and_gate(args,evidence,server_jar,output_dir):
                 (2,100,-1,"intermediate_support_a"),
                 (2,100,0,"intermediate_support_junction"),
                 (2,100,1,"intermediate_support_b"),
-                (3,101,0,"final_torch_support"),
-                (4,101,0,"output_wire_support"),
+                (4,101,0,"final_torch_support"),
+                (5,101,0,"output_wire_support"),
             ):
                 checked_command(
                     p,f"setblock {x} {y} {z} minecraft:stone",
@@ -720,14 +721,15 @@ def run_and_gate(args,evidence,server_jar,output_dir):
                 (2,-1,"intermediate_wire_a"),
                 (2,0,"intermediate_wire_junction"),
                 (2,1,"intermediate_wire_b"),
+                (3,0,"intermediate_wire_stub"),
             ):
                 checked_command(
                     p,f"setblock {x} 101 {z} minecraft:redstone_wire",
                     name,log_path,output_dir,
                 )
-            checked_command(p,"setblock 3 102 0 minecraft:redstone_torch","final_inverter",log_path,output_dir)
-            checked_command(p,"setblock 4 102 0 minecraft:redstone_wire","output_wire",log_path,output_dir)
-            checked_command(p,"setblock 5 102 0 minecraft:redstone_lamp","output_lamp",log_path,output_dir)
+            checked_command(p,"setblock 4 102 0 minecraft:redstone_torch","final_inverter",log_path,output_dir)
+            checked_command(p,"setblock 5 102 0 minecraft:redstone_wire","output_wire",log_path,output_dir)
+            checked_command(p,"setblock 6 102 0 minecraft:redstone_lamp","output_lamp",log_path,output_dir)
 
             try:
                 baseline_attempts,baseline_wait=wait_for_marker(
@@ -814,10 +816,10 @@ def run_and_gate(args,evidence,server_jar,output_dir):
             "input_b_wire_position":[0,100,1],
             "input_a_inverter_position":[1,101,-1],
             "input_b_inverter_position":[1,101,1],
-            "intermediate_wire_positions":[[2,101,-1],[2,101,0],[2,101,1]],
-            "final_inverter_position":[3,102,0],
-            "output_wire_position":[4,102,0],
-            "output_lamp_position":[5,102,0],
+            "intermediate_wire_positions":[[2,101,-1],[2,101,0],[2,101,1],[3,101,0]],
+            "final_inverter_position":[4,102,0],
+            "output_wire_position":[5,102,0],
+            "output_lamp_position":[6,102,0],
             "input_a_high_command_sha256":digest_bytes(AND_A_HIGH_COMMAND),
             "input_a_low_command_sha256":digest_bytes(AND_A_LOW_COMMAND),
             "input_b_high_command_sha256":digest_bytes(AND_B_HIGH_COMMAND),
