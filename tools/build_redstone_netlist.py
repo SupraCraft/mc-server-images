@@ -76,7 +76,7 @@ RUNTIME_CONTRACTS={
     "repeater_delay_line":
         "input transition must traverse repeater input/output ports and produce a downstream transition after a positive server-tick delay consistent with the configured delay setting",
     "not_gate":
-        "exercise input low and high; qualified output must be high for low input and low for high input, including reset back to high",
+        "truth table: exercise input low and high; qualified output must be high for low input and low for high input, including reset back to high",
 }
 
 D4=(
