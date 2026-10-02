@@ -167,11 +167,20 @@
     {
       "id": "rs_latch",
       "family": "state",
-      "status": "reference_candidate_only",
+      "status": "qualified_template",
       "runtime_contract": "set/reset/hold sequence establishes retained state after stimulus removal",
       "reference_ids": [
         "minecraft_wiki_basic_rs_nor"
-      ]
+      ],
+      "qualification_evidence": {
+        "authority_issue": "SupraCraft/mc-server-images#11",
+        "authority_comment_id": 5961086452,
+        "exact_versions": [
+          "26.3",
+          "26.4-snapshot-2"
+        ],
+        "contract": "cross_coupled_two_inverter_static_netlist_plus_set_reset_hold_runtime_contract"
+      }
     },
     {
       "id": "comparator_transform",
