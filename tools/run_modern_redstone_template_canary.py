@@ -1721,6 +1721,109 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
 
 
 
+def diagnose_rising_edge_state(process,log_path,output_dir,phase):
+    """Record exact bounded edge-detector block state without changing topology."""
+    checks=[]
+
+    def add(label,value,condition):
+        token=(
+            f"P{value:02d}" if isinstance(value,int)
+            else str(value).replace("-","NEG").replace(".","_").upper()
+        )
+        marker=f"SUPRACRAFT_EDGE_DIAG_{label.upper()}_{token}"
+        checks.append((label,value,marker,condition))
+
+    add("source","air","execute if block 0 100 0 minecraft:air")
+    add(
+        "source","redstone_block",
+        "execute if block 0 100 0 minecraft:redstone_block",
+    )
+
+    for label,x,y,z in (
+        ("input_main",1,100,0),
+        ("input_branch_1",1,100,-1),
+        ("input_branch_2",1,100,-2),
+        ("delay_output",3,100,0),
+        ("direct_output",3,101,-2),
+        ("direct_route",4,101,-2),
+        ("direct_turn",4,101,-1),
+        ("intermediate",4,101,0),
+        ("output_wire",6,102,0),
+    ):
+        for power in range(16):
+            add(
+                label,power,
+                f"execute if block {x} {y} {z} minecraft:redstone_wire[power={power}]",
+            )
+
+    for powered in (False,True):
+        state="true" if powered else "false"
+        add(
+            "delay_repeater","powered" if powered else "unpowered",
+            f"execute if block 2 100 0 minecraft:repeater[powered={state}]",
+        )
+
+    for label,x,y,z in (
+        ("direct_inverter",2,101,-2),
+        ("final_inverter",5,102,0),
+    ):
+        for lit in (False,True):
+            state="true" if lit else "false"
+            add(
+                label,"lit" if lit else "unlit",
+                f"execute if block {x} {y} {z} minecraft:redstone_torch[lit={state}]",
+            )
+
+    for lit in (False,True):
+        state="true" if lit else "false"
+        add(
+            "output_lamp","lit" if lit else "unlit",
+            f"execute if block 7 102 0 minecraft:redstone_lamp[lit={state}]",
+        )
+
+    for label,value,marker,condition in checks:
+        checked_command(
+            process,f"{condition} run say {marker}",
+            f"rising_edge_diagnostic_{phase}_{label}",
+            log_path,output_dir,
+        )
+    time.sleep(0.75)
+    text=log_path.read_text("utf-8",errors="replace")
+    observed={}
+    for label,value,marker,_ in checks:
+        if marker in text:
+            observed.setdefault(label,[]).append(value)
+    compact={
+        label:(values[0] if len(values)==1 else values)
+        for label,values in sorted(observed.items())
+    }
+    receipt={
+        "schema":"supracraft-modern-rising-edge-fixture-diagnostic/1",
+        "phase":phase,
+        "expected_logic":{
+            "source":"air",
+            "input_net":"unpowered",
+            "delay_repeater":"unpowered",
+            "delay_output":"unpowered",
+            "direct_inverter":"lit",
+            "intermediate":"powered",
+            "final_inverter":"unlit",
+            "output_wire":"unpowered",
+        } if phase=="baseline_timeout" else {},
+        "observed":compact,
+        "nonsemantic_observations":{
+            "output_lamp":compact.get("output_lamp"),
+        },
+        "boundary":"diagnostic receipt records bounded exact block states only; it does not alter the rising-edge temporal contract or topology",
+    }
+    (output_dir/"diagnostic.json").write_text(
+        json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+    )
+    print("RISING_EDGE_FIXTURE_DIAGNOSTIC")
+    print(json.dumps(receipt,indent=2,sort_keys=True))
+    return receipt
+
+
 def edge_probe(source_high,final_lit,output_power):
     source="minecraft:redstone_block" if source_high else "minecraft:air"
     lit="true" if final_lit else "false"
@@ -1843,12 +1946,38 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
                 "edge_output_lamp",log_path,output_dir,
             )
 
-            baseline_attempts,baseline_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_RISING_EDGE_BASELINE_PASS",
-                edge_probe(False,False,0),
-                "rising_edge_baseline",timeout_seconds=10.0,
-            )
+            try:
+                baseline_attempts,baseline_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_RISING_EDGE_BASELINE_PASS",
+                    edge_probe(False,False,0),
+                    "rising_edge_baseline",timeout_seconds=10.0,
+                )
+            except SystemExit as exc:
+                receipt=diagnose_rising_edge_state(
+                    p,log_path,output_dir,"baseline_timeout"
+                )
+                checked_command(
+                    p,"save-all flush","rising_edge_baseline_diagnostic_save",
+                    log_path,output_dir,
+                )
+                time.sleep(0.5)
+                checked_command(
+                    p,"stop","rising_edge_baseline_diagnostic_stop",
+                    log_path,output_dir,
+                )
+                rc=p.wait(timeout=60)
+                zip_world(root/"world",output_dir/"world.zip")
+                receipt["original_failure"]=str(exc)
+                receipt["server_exit_code"]=rc
+                receipt["world_sha256"]=hashlib.sha256(
+                    (output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                (output_dir/"diagnostic.json").write_text(
+                    json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+                )
+                print(json.dumps(receipt,indent=2,sort_keys=True))
+                raise
             barrier=setup_barrier(
                 p,log_path,output_dir,"SUPRACRAFT_RISING_EDGE_SETUP_READY"
             )
