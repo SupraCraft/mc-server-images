@@ -1211,6 +1211,115 @@ def run_and_gate(args,evidence,server_jar,output_dir):
 
 
 
+
+def diagnose_xor_state(process,log_path,output_dir,phase):
+    """Record bounded exact XOR block state without changing the fixture."""
+    checks=[]
+
+    def add(label,value,condition):
+        token=(
+            f"P{value:02d}" if isinstance(value,int)
+            else str(value).replace("-","NEG").replace(".","_").upper()
+        )
+        marker=f"SUPRACRAFT_XOR_DIAG_{label.upper()}_{token}"
+        checks.append((label,value,marker,condition))
+
+    for label,x,y,z in (
+        ("source_a",0,100,-2),
+        ("source_b",0,100,2),
+    ):
+        add(label,"air",f"execute if block {x} {y} {z} minecraft:air")
+        add(
+            label,"redstone_block",
+            f"execute if block {x} {y} {z} minecraft:redstone_block",
+        )
+
+    for label,x,y,z in (
+        ("or_a_input",1,100,-2),
+        ("or_junction",2,100,0),
+        ("or_route_end",6,102,-3),
+        ("not_a_input",-1,100,-2),
+        ("not_b_input",-1,100,2),
+        ("nand_junction",-4,101,0),
+        ("nand_route_end",6,102,3),
+        ("intermediate_join",9,103,0),
+        ("intermediate_feed",10,103,0),
+        ("output_wire",12,104,0),
+    ):
+        for power in range(16):
+            add(
+                label,power,
+                f"execute if block {x} {y} {z} minecraft:redstone_wire[power={power}]",
+            )
+
+    for label,x,y,z in (
+        ("not_a_inverter",-2,101,-2),
+        ("not_b_inverter",-2,101,2),
+        ("or_stage_inverter",7,103,-3),
+        ("nand_stage_inverter",7,103,3),
+        ("final_inverter",11,104,0),
+    ):
+        for lit in (False,True):
+            value="lit" if lit else "unlit"
+            state="true" if lit else "false"
+            add(
+                label,value,
+                f"execute if block {x} {y} {z} minecraft:redstone_torch[lit={state}]",
+            )
+
+    for lit in (False,True):
+        value="lit" if lit else "unlit"
+        state="true" if lit else "false"
+        add(
+            "output_lamp",value,
+            f"execute if block 13 104 0 minecraft:redstone_lamp[lit={state}]",
+        )
+
+    for label,value,marker,condition in checks:
+        checked_command(
+            process,f"{condition} run say {marker}",
+            f"xor_diagnostic_{phase}_{label}",log_path,output_dir,
+        )
+    time.sleep(0.75)
+    text=log_path.read_text("utf-8",errors="replace")
+    observed={}
+    for label,value,marker,_ in checks:
+        if marker in text:
+            observed.setdefault(label,[]).append(value)
+    compact={
+        label:(values[0] if len(values)==1 else values)
+        for label,values in sorted(observed.items())
+    }
+    receipt={
+        "schema":"supracraft-modern-xor-fixture-diagnostic/1",
+        "phase":phase,
+        "expected_logic":{
+            "source_a":"redstone_block",
+            "source_b":"air",
+            "or_branch":"powered",
+            "not_a_inverter":"unlit",
+            "not_b_inverter":"lit",
+            "nand_branch":"powered",
+            "or_stage_inverter":"unlit",
+            "nand_stage_inverter":"unlit",
+            "intermediate_branch":"unpowered",
+            "final_inverter":"lit",
+            "output_wire":"powered",
+        },
+        "observed":compact,
+        "nonsemantic_observations":{
+            "output_lamp":compact.get("output_lamp"),
+        },
+        "boundary":"diagnostic receipt records exact bounded block states only; XOR semantics remain the complete 00/10/01/11 truth table and presentation-lamp state is non-authoritative",
+    }
+    (output_dir/"diagnostic.json").write_text(
+        json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+    )
+    print("XOR_FIXTURE_DIAGNOSTIC")
+    print(json.dumps(receipt,indent=2,sort_keys=True))
+    return receipt
+
+
 def xor_probe(a_high,b_high,final_torch_lit,output_power):
     a_block="minecraft:redstone_block" if a_high else "minecraft:air"
     b_block="minecraft:redstone_block" if b_high else "minecraft:air"
@@ -1378,12 +1487,38 @@ def run_xor_gate(args,evidence,server_jar,output_dir):
                 time.sleep(0.15)
 
             checked_command(p,XOR_A_HIGH_COMMAND,"xor_a_high",log_path,output_dir)
-            a_attempts,a_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_XOR_10_PASS",
-                xor_probe(True,False,True,15),
-                "xor_10",timeout_seconds=10.0,
-            )
+            try:
+                a_attempts,a_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_XOR_10_PASS",
+                    xor_probe(True,False,True,15),
+                    "xor_10",timeout_seconds=10.0,
+                )
+            except SystemExit as exc:
+                receipt=diagnose_xor_state(
+                    p,log_path,output_dir,"10_timeout"
+                )
+                checked_command(
+                    p,"save-all flush","xor_10_diagnostic_save",
+                    log_path,output_dir,
+                )
+                time.sleep(0.5)
+                checked_command(
+                    p,"stop","xor_10_diagnostic_stop",
+                    log_path,output_dir,
+                )
+                rc=p.wait(timeout=60)
+                zip_world(root/"world",output_dir/"world.zip")
+                receipt["original_failure"]=str(exc)
+                receipt["server_exit_code"]=rc
+                receipt["world_sha256"]=hashlib.sha256(
+                    (output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                (output_dir/"diagnostic.json").write_text(
+                    json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+                )
+                print(json.dumps(receipt,indent=2,sort_keys=True))
+                raise
 
             checked_command(p,XOR_A_LOW_COMMAND,"xor_a_low_reset",log_path,output_dir)
             reset_attempts,reset_wait=wait_for_marker(
