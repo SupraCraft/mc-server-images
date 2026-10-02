@@ -370,6 +370,33 @@ def main():
                 diagnostic=diagnose_reset_failure(
                     p,log_path,args.output_dir
                 )
+
+                # Diagnostic-only opposite-side stimulus. Preserve the original
+                # failure receipt, then release the nominal R input and assert
+                # the nominal S input to determine whether the fixture's S/R
+                # side labels are reversed. This does not alter the acceptance
+                # contract or promote latch behavior.
+                checked_command(
+                    p,R_LOW,"rs_reset_diag_release_nominal_r",
+                    log_path,args.output_dir,
+                )
+                time.sleep(0.35)
+                checked_command(
+                    p,S_HIGH,"rs_reset_diag_assert_nominal_s",
+                    log_path,args.output_dir,
+                )
+                time.sleep(1.0)
+                opposite=diagnose_reset_failure(
+                    p,log_path,args.output_dir
+                )
+                opposite["stage"]="opposite_nominal_s_asserted"
+                opposite.pop("expected_reset",None)
+                diagnostic["opposite_stimulus"]=opposite
+                checked_command(
+                    p,S_LOW,"rs_reset_diag_release_nominal_s",
+                    log_path,args.output_dir,
+                )
+
                 checked_command(
                     p,"save-all flush","rs_reset_diagnostic_save",
                     log_path,args.output_dir,
