@@ -7,6 +7,12 @@ on:
       - 'bench/worldgen/observability/**'
       - 'tools/causal-microscope/modern-26.4-snapshot-2-agent/**'
       - 'tools/run_modern_microscope_canary.py'
+      - 'tests/test_redstone_mechanism_inference.py'
+      - 'tools/analyze_modern_causal_machinery.py'
+      - 'tools/correlate_redstone_mechanism_runtime.py'
+      - 'tools/infer_redstone_mechanisms.py'
+      - 'tools/validate_modern_redstone_microscope.py'
+      - 'tools/run_modern_redstone_microscope_canary.py'
       - 'tools/discover_minecraft_observability.py'
       - 'tests/test_causal_microscope_contract.py'
       - '.github/workflows/worldgen-causal-microscope-modern-264-snapshot-2.yml'
@@ -48,6 +54,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
       - name: Enforce public/free execution policy
         shell: bash
         run: |
@@ -61,9 +70,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m unittest -v tests.test_causal_microscope_contract
+          python -m unittest -v \
+            tests.test_causal_microscope_contract \
+            tests.test_redstone_mechanism_inference
           python -m py_compile \
             tools/run_modern_microscope_canary.py \
+            tools/run_modern_redstone_microscope_canary.py \
+            tools/validate_modern_redstone_microscope.py \
+            tools/infer_redstone_mechanisms.py \
+            tools/correlate_redstone_mechanism_runtime.py \
+            tools/analyze_modern_causal_machinery.py \
             tools/discover_minecraft_observability.py
 
       - name: Build exact snapshot Java 25 observer
@@ -289,6 +305,91 @@ jobs:
           print(json.dumps(report,indent=2,sort_keys=True))
           PY
 
+      - name: Stock exact snapshot connected-wire redstone fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/redstone-positive-stock out/redstone-positive-instrumented \
+            out/redstone-gap-stock out/redstone-gap-instrumented
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture positive \
+            --output-dir out/redstone-positive-stock \
+            --expected-version "$EXPECTED_VERSION"
+
+      - name: Instrumented exact snapshot connected-wire redstone fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture positive \
+            --output-dir out/redstone-positive-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id modern-26.4-snapshot-2-java25 \
+            --expected-version "$EXPECTED_VERSION"
+
+      - name: Stock exact snapshot one-block-gap hard negative
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture gap \
+            --output-dir out/redstone-gap-stock \
+            --expected-version "$EXPECTED_VERSION"
+
+      - name: Instrumented exact snapshot one-block-gap hard negative
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --fixture gap \
+            --output-dir out/redstone-gap-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id modern-26.4-snapshot-2-java25 \
+            --expected-version "$EXPECTED_VERSION"
+
+      - name: Validate exact snapshot redstone observer effect and bounded ordering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/validate_modern_redstone_microscope.py \
+            --root out \
+            --version "$EXPECTED_VERSION" \
+            --output out/redstone-observer-ab-report.json
+
+      - name: Recover snapshot positive and gap mechanism schematics
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fixture in positive gap; do
+            python tools/analyze_modern_causal_machinery.py \
+              --world-zip "out/redstone-$fixture-stock/world.zip" \
+              --output "out/redstone-$fixture-machinery.json"
+            python tools/infer_redstone_mechanisms.py \
+              --graph "out/redstone-$fixture-machinery.json" \
+              --output "out/redstone-$fixture-mechanism.json" \
+              --dot-output "out/redstone-$fixture-schematic.dot"
+          done
+
+      - name: Correlate snapshot inferred schematic with observed behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/correlate_redstone_mechanism_runtime.py \
+            --positive-mechanism out/redstone-positive-mechanism.json \
+            --gap-mechanism out/redstone-gap-mechanism.json \
+            --runtime-report out/redstone-observer-ab-report.json \
+            --positive-result out/redstone-positive-instrumented/result.json \
+            --gap-result out/redstone-gap-instrumented/result.json \
+            --output out/redstone-mechanism-runtime-correlation.json
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -303,4 +404,20 @@ jobs:
             out/instrumented/trace.jsonl
             out/instrumented/diagnostic.json
             out/observer-ab-report.json
+            out/redstone-positive-stock/result.json
+            out/redstone-positive-stock/world.zip
+            out/redstone-positive-instrumented/result.json
+            out/redstone-positive-instrumented/trace.jsonl
+            out/redstone-gap-stock/result.json
+            out/redstone-gap-stock/world.zip
+            out/redstone-gap-instrumented/result.json
+            out/redstone-gap-instrumented/trace.jsonl
+            out/redstone-observer-ab-report.json
+            out/redstone-positive-machinery.json
+            out/redstone-positive-mechanism.json
+            out/redstone-positive-schematic.dot
+            out/redstone-gap-machinery.json
+            out/redstone-gap-mechanism.json
+            out/redstone-gap-schematic.dot
+            out/redstone-mechanism-runtime-correlation.json
           retention-days: 14
