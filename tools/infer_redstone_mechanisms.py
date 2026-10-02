@@ -321,12 +321,25 @@ def infer_component(
             "confidence":"structural_candidate",
             "evidence":["directed_input_to_command_path"],
         })
-    if directed_cycle(member_set,functional_links):
+    loop_capable_blocks={
+        "minecraft:repeater","minecraft:comparator",
+        "minecraft:redstone_torch","minecraft:redstone_wall_torch",
+        "minecraft:hopper","minecraft:dropper","minecraft:dispenser",
+        "minecraft:repeating_command_block",
+    }
+    loop_source_links=[
+        e for e in source_links
+        if e.get("edge_type")!="dust_connection"
+    ]
+    if (
+        any(nodes[n].get("block") in loop_capable_blocks for n in members)
+        and directed_cycle(member_set,loop_source_links)
+    ):
         candidates.append({
             "mechanism":"oscillator_or_state_loop",
             "confidence":"structural_candidate_only",
-            "evidence":["directed_cycle"],
-            "boundary":"cycle alone does not establish oscillation, memory, period, or stability",
+            "evidence":["directional_source_cycle","loop_capable_primitive_present"],
+            "boundary":"a qualified directional cycle with a loop-capable primitive is still only a candidate; runtime repetition or retained state is required to distinguish oscillator from memory",
         })
 
     if positions:
