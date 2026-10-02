@@ -56,6 +56,16 @@
       ]
     },
     {
+      "id": "minecraft_wiki_basic_rs_nor",
+      "title": "Redstone circuits/Memory/Basic RS-NOR",
+      "url": "https://minecraft.wiki/w/Redstone_circuits/Memory/Basic_RS-NOR",
+      "scope": [
+        "rs_nor_latch",
+        "memory",
+        "set_reset_hold"
+      ]
+    },
+    {
       "id": "official_piston_clock_example",
       "title": "How to Build a Mob Farm Trap",
       "url": "https://www.minecraft.net/de-de/article/how-build-mob-farm-trap",
@@ -120,12 +130,21 @@
     {
       "id": "and_gate",
       "family": "boolean",
-      "status": "reference_candidate_only",
+      "status": "qualified_template",
       "runtime_contract": "truth table 00->0, 10->0, 01->0, 11->1",
       "reference_ids": [
         "minecraft_education_boolean_logic",
         "minecraft_education_logic_gates"
-      ]
+      ],
+      "qualification_evidence": {
+        "authority_issue": "SupraCraft/mc-server-images#11",
+        "authority_comment_id": 5960556969,
+        "exact_versions": [
+          "26.3",
+          "26.4-snapshot-2"
+        ],
+        "contract": "complete_four_row_truth_table_plus_three_inverter_de_morgan_static_netlist_match"
+      }
     },
     {
       "id": "xor_gate",
@@ -149,7 +168,10 @@
       "id": "rs_latch",
       "family": "state",
       "status": "reference_candidate_only",
-      "runtime_contract": "set/reset/hold sequence establishes retained state after stimulus removal"
+      "runtime_contract": "set/reset/hold sequence establishes retained state after stimulus removal",
+      "reference_ids": [
+        "minecraft_wiki_basic_rs_nor"
+      ]
     },
     {
       "id": "comparator_transform",
