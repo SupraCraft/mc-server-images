@@ -281,6 +281,10 @@ def attach_ports(nodes,groups):
                 for row in net["wire_nodes"]
             }
             for j,desc in enumerate(component_port_role(node,net_positions),1):
+                # Torch support/input is a separate conduction boundary, not
+                # a port on whichever output dust net happens to be adjacent.
+                if desc["kind"]=="input_support":
+                    continue
                 port={
                     "port_id":f"{nid}::p{len(ports)+1}",
                     "component_id":nid,
