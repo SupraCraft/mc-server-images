@@ -97,6 +97,47 @@ def validate_or(doc):
     }
 
 
+def validate_and(doc):
+    rows=motifs(doc,"and_gate")
+    assert rows,"missing and_gate"
+    qualified=[
+        r for r in rows
+        if len(set(r.get("input_source_component_ids") or []))==2
+        and len(set(r.get("input_inverter_component_ids") or []))==2
+        and r.get("final_inverter_component_id")
+        and len(set(r.get("output_sink_component_ids") or []))>=1
+    ]
+    assert qualified,rows
+    row=qualified[0]
+    cmap=component_map(doc)
+    source_ids=sorted(set(row["input_source_component_ids"]))
+    inverter_ids=sorted(set(row["input_inverter_component_ids"]))
+    final_id=row["final_inverter_component_id"]
+    sink_ids=sorted(set(row["output_sink_component_ids"]))
+    assert all(
+        source_id in cmap and cmap[source_id]["primitive"] in {
+            "constant_power_source","manual_state_input","pulse_input","input_sensor"
+        }
+        for source_id in source_ids
+    ),(source_ids,cmap)
+    assert all(
+        inverter_id in cmap and cmap[inverter_id]["primitive"]=="inverter"
+        for inverter_id in inverter_ids+[final_id]
+    ),(inverter_ids,final_id,cmap)
+    return {
+        "motif_count":len(rows),
+        "matched_component_ids":row["component_ids"],
+        "input_source_component_ids":source_ids,
+        "input_inverter_component_ids":inverter_ids,
+        "intermediate_net_id":row["intermediate_net_id"],
+        "final_inverter_component_id":final_id,
+        "output_sink_component_ids":sink_ids,
+        "net_ids":row["net_ids"],
+        "functional_netlist_sha256":doc["signatures"]["functional_netlist_sha256"],
+        "horizontal_d4_topology_sha256":doc["signatures"]["horizontal_d4_topology_sha256"],
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--runtime-report",type=Path,required=True)
@@ -104,6 +145,7 @@ def main():
     ap.add_argument("--repeater-d4-netlist",type=Path,required=True)
     ap.add_argument("--not-netlist",type=Path,required=True)
     ap.add_argument("--or-netlist",type=Path,required=True)
+    ap.add_argument("--and-netlist",type=Path,required=True)
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
 
@@ -112,6 +154,7 @@ def main():
     d4=validate_repeater(load(args.repeater_d4_netlist),4)
     inv=validate_not(load(args.not_netlist))
     disj=validate_or(load(args.or_netlist))
+    conj=validate_and(load(args.and_netlist))
 
     rt_repeater=runtime["repeater_delay_line"]
     assert rt_repeater["ordering_pass"] is True
@@ -121,6 +164,7 @@ def main():
     )
     assert runtime["not_gate"]["truth_table_pass"] is True
     assert runtime["or_gate"]["truth_table_pass"] is True
+    assert runtime["and_gate"]["truth_table_pass"] is True
 
     report={
         "schema":"supracraft-redstone-netlist-runtime-correlation/1",
@@ -146,6 +190,12 @@ def main():
             "runtime_truth_table":runtime["or_gate"]["truth_table_sequence"],
             "correlation_class":
                 "or_gate_template_supported_by_runtime_truth_table",
+        },
+        "and_gate":{
+            "static":conj,
+            "runtime_truth_table":runtime["and_gate"]["truth_table_sequence"],
+            "correlation_class":
+                "and_gate_template_supported_by_runtime_truth_table",
         },
         "boundary":"template identification is exact-fixture/version evidence; broader motif recognition still requires independent examples and hard negatives",
     }
