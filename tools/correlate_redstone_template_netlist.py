@@ -52,7 +52,7 @@ def validate_not(doc):
     assert source_ids,row
     assert any(
         cmap[source_id]["primitive"] in {
-            "manual_state_input","pulse_input","input_sensor"
+            "constant_power_source","manual_state_input","pulse_input","input_sensor"
         }
         for source_id in source_ids
         if source_id in cmap
