@@ -57,6 +57,7 @@ def main():
         "set_source_position","set_input_wire_position",
         "inverter_a_position","inverter_b_position",
         "q_wire_position","qbar_wire_position",
+        "q_output_repeater_position","qbar_output_repeater_position",
         "q_lamp_position","qbar_lamp_position",
         "feedback_a_wire_positions","feedback_b_wire_positions",
         "reset_high_command_sha256","reset_low_command_sha256",
