@@ -1,0 +1,130 @@
+{
+  "schema": "supracraft-core-188-four-domain-census-design/1",
+  "status": "planning_evidence_only",
+  "source": {
+    "world": "reference.core.v1.4",
+    "minecraft_version_family": "1.8.x",
+    "exact_runtime_target": "1.8.8",
+    "analyzer": "tools/analyze_legacy_causal_machinery.py",
+    "analyzer_schema": "supracraft-legacy-causal-machinery/1"
+  },
+  "rules": [
+    "Count domain-owned structures independently.",
+    "Preserve exact legacy metadata/orientation already recovered by the source analyzer.",
+    "Do not project modern 26.x block semantics onto the 1.8.8 world.",
+    "Cross-domain edge candidates are counted separately and remain unqualified.",
+    "UNKNOWN or ambiguous families remain unresolved rather than forced into a domain."
+  ],
+  "primary_domain_families": {
+    "electrical": [
+      "redstone_wire",
+      "redstone_torch_off",
+      "redstone_torch_on",
+      "repeater_off",
+      "repeater_on",
+      "comparator_off",
+      "comparator_on",
+      "lever",
+      "stone_button",
+      "wooden_button",
+      "stone_pressure_plate",
+      "wooden_pressure_plate",
+      "light_weighted_pressure_plate",
+      "heavy_weighted_pressure_plate",
+      "tripwire_hook",
+      "tripwire",
+      "daylight_detector",
+      "inverted_daylight_detector"
+    ],
+    "mechanical": [
+      "piston",
+      "sticky_piston",
+      "wooden_door",
+      "iron_door",
+      "trapdoor",
+      "iron_trapdoor",
+      "fence_gate"
+    ],
+    "programmable": [
+      "command_block",
+      "repeating_command_block",
+      "chain_command_block",
+      "scoreboard_objective"
+    ],
+    "inventory": [
+      "chest",
+      "trapped_chest",
+      "hopper",
+      "furnace",
+      "lit_furnace",
+      "dispenser",
+      "dropper"
+    ]
+  },
+  "observation_only_or_cross_cutting": [
+    "note_block",
+    "standing_sign",
+    "wall_sign",
+    "redstone_lamp_off",
+    "redstone_lamp_on"
+  ],
+  "phase_b_interface_candidates": [
+    {
+      "edge_family": "container_inventory_signal_read",
+      "producer_domain": "inventory",
+      "consumer_domain": "electrical",
+      "status": "candidate_only"
+    },
+    {
+      "edge_family": "trapped_chest_open_power",
+      "producer_domain": "inventory",
+      "consumer_domain": "electrical",
+      "status": "candidate_only"
+    },
+    {
+      "edge_family": "redstone_power_to_piston_or_door",
+      "producer_domain": "electrical",
+      "consumer_domain": "mechanical",
+      "status": "not_qualified_by_census"
+    },
+    {
+      "edge_family": "redstone_power_to_command_block",
+      "producer_domain": "electrical",
+      "consumer_domain": "programmable",
+      "status": "not_qualified_by_census"
+    },
+    {
+      "edge_family": "command_world_target",
+      "producer_domain": "programmable",
+      "consumer_domain": "dynamic_world_or_domain",
+      "status": "candidate_only"
+    },
+    {
+      "edge_family": "command_presentation_output",
+      "producer_domain": "programmable",
+      "consumer_domain": "observation_plane",
+      "status": "candidate_only"
+    },
+    {
+      "edge_family": "redstone_trigger_to_dropper_dispenser",
+      "producer_domain": "electrical",
+      "consumer_domain": "inventory",
+      "status": "not_qualified_by_census"
+    }
+  ],
+  "census_outputs": [
+    "node counts by primary domain and legacy family",
+    "component counts containing one domain only",
+    "component counts containing multiple primary domains",
+    "observation-surface counts",
+    "phase-B interface-candidate counts by edge family",
+    "unresolved/unknown node and edge counts",
+    "largest components with domain composition but no inferred interaction semantics"
+  ],
+  "exclusions": [
+    "No semantic equivalence between legacy and modern mechanisms.",
+    "No automatic promotion of mixed-domain components.",
+    "No comparator/container, piston-power, command-power, or dropper-power transducer qualification.",
+    "No client/human perception inference."
+  ]
+}
