@@ -195,9 +195,12 @@ Minimum IR:
 - stable `place_id`;
 - display name;
 - archetype;
+- origin: `generated` | `constructed`;
+- construction/recognition pattern when constructed;
 - exact world/dimension/region geometry;
 - discovery condition and discovery state;
 - lifecycle/state machine;
+- structural integrity/activation state when constructed;
 - local modifier fields / aura;
 - resource/depletion/regeneration state;
 - visual/audio/observation surfaces;
@@ -206,6 +209,41 @@ Minimum IR:
 - versioned vanilla lowering plan.
 
 Initial archetypes:
+
+0. **Constructible monument / totem**
+   - player builds a recognized multiblock or artifact pattern;
+   - structure validation changes state from `candidate` -> `valid` -> `active`;
+   - damage/removal can change it to `degraded` or `inactive`;
+   - repair can reactivate it;
+   - active structures expose a bounded local modifier/aura;
+   - exact block palette, orientation, symmetry, optional substitutions and required centerpiece are archetype data rather than hard-coded compiler logic.
+
+   Example semantic archetypes:
+   - **Health Totem** — local regeneration/recovery modifier;
+   - **Prosperity Totem** — abstract prosperity policy lowered to the qualified effects available for the story, e.g. resource/loot, farming, trade, hunger/sustenance, or other economic benefits;
+   - **Warding Totem** — suppress/repel hostile mobs within a bounded region;
+   - **Temple of Healing** — larger structure with stronger or layered recovery rules;
+   - **Temple of Prosperity** — constructible named site with economic/resource modifiers;
+   - **Arcane Shrine** — local ability/status-effect grants or ritual hooks where the exact vanilla lowering is qualified.
+
+   Recognition/activation contract:
+   ```
+   placed world blocks/items
+     -> structural recognizer
+     -> monument candidate
+     -> exact pattern validation
+     -> stable constructed-place identity
+     -> active/inactive lifecycle
+     -> localized modifier evaluation
+     -> observation feedback
+   ```
+
+   Construction semantics are distinct from transformation recipes:
+   - crafting produces an item;
+   - monument construction recognizes a spatial world configuration;
+   - the completed structure may consume crafted artifacts as required components.
+
+   Initial implementation may use datapack/command block-state predicates or bounded structure checks. Recognition must fail closed when the pattern is incomplete or ambiguous.
 
 1. **Volcanic wonder**
    - dormant -> rumbling -> erupting -> cooling -> resource-rich;
@@ -230,7 +268,7 @@ Initial archetypes:
    - exact effect is capability-scoped and versioned.
 
 Implementation modes:
-- `command_orchestrated` first for discovery, timers, local effect fields and state transitions;
+- `command_orchestrated` first for discovery, construction recognition, timers, local effect fields and state transitions;
 - `native_mechanic` where independently qualified;
 - `hybrid` for physical landmark geometry plus programmable state/effects.
 
@@ -248,6 +286,40 @@ Why early:
 - supports procedural discovery without requiring rich NPC AI;
 - exercises incremental compilation and verification;
 - becomes a reusable anchor for later crafting, ecology, NPC, artifact and quest content.
+
+### Local modifier semantics
+
+Modifiers are high-level story semantics, not hard-coded Minecraft effects.
+
+Examples:
+
+- `health_recovery`
+- `hunger_sustenance`
+- `hostile_suppression`
+- `resource_yield`
+- `crop_fertility`
+- `trade_prosperity`
+- `experience_gain`
+- `movement_boost`
+- `resistance`
+- `ritual_or_magic_ability`
+
+The capability resolver lowers each requested modifier into exact-version vanilla mechanics.
+
+For example, an early `health_recovery` implementation may use bounded status effects/commands, while a later implementation might use a more native mechanic where one is independently qualified.
+
+A semantic modifier may require several domain capabilities. `prosperity` is therefore a policy bundle, not one universal Minecraft stat.
+
+Every modifier lowering records:
+- affected actor/entity classes;
+- region/radius;
+- activation condition;
+- exact vanilla primitive(s);
+- stacking/conflict policy;
+- refresh/tick behavior;
+- exit/removal behavior;
+- observation feedback;
+- version/evidence refs.
 
 ### Slice 2 — Physical puzzle / machine story
 
