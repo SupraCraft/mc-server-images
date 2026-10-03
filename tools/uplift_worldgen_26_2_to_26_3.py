@@ -189,7 +189,7 @@ def transform_spawn_overrides(v: Any, receipt: list[dict[str, Any]], path: str) 
                 }
             receipt.append({
                 "rule": "structure_spawn_minmax_to_count",
-                "class": "STRUCTURAL_REIMPLEMENTATION",
+                "class": "SAFE_SYNTACTIC",
                 "path": path,
                 "pointer": f"/spawn_overrides/{category}/spawns/{i}",
                 "old_min": lo, "old_max": hi,
