@@ -354,7 +354,7 @@
         "rule": "Do not rerun known-obsolete shallow uplift automatically when shared tooling changes."
       },
       "parallel_execution": {
-        "state": "WAVE_1_COMPLETE_FOLLOWUP_STATIC_ORACLE_RUNNING",
+        "state": "WAVE_1_COMPLETE_FOLLOWUP_RESOLVED_NO_RUNTIME_REQUIRED",
         "authority_doc": "docs/legacy-uplift-parallel-execution-plan.md",
         "implementation_branch": "feat/legacy-uplift-263-v1",
         "wave_1_workflow": ".github/workflows/worldgen-legacy-uplift-static-wave.yml",
@@ -473,7 +473,30 @@
           "workflow": ".github/workflows/worldgen-legacy-uplift-vanilla-spawn-oracle.yml",
           "run_id": 37159319805,
           "runtime_boot": false,
-          "max_runners": 1
+          "max_runners": 1,
+          "result": {
+            "state": "PASS_RESOLVED_STATICALLY",
+            "workflow_run_id": 37159319805,
+            "job_id": 111309239018,
+            "artifact_id": 11286672673,
+            "artifact_digest": "sha256:77dc2254dadddd95b505dbd514c36aa25e96e557029ea4a19733951e514d2f9a",
+            "mapping_rows": 8,
+            "exact_mapping_matches": 8,
+            "mapping_mismatches": 0,
+            "ranged_legacy_examples": 1,
+            "classification": "VANILLA_COUNT_MAPPING_CONFIRMED",
+            "concrete_ranged_example": "minecraft:fortress blaze minCount=2,maxCount=3 -> count=minecraft:uniform[2,3]",
+            "conclusion": "Generic legacy minCount/maxCount to 26.3 count IntProvider mapping is correct; Voidblock count=1 deltas are maintainer content changes, not required compatibility migration.",
+            "runtime_needed": false
+          },
+          "promotion": {
+            "rule_id": "structure_spawn_minmax_to_count",
+            "from": "STRUCTURAL_REIMPLEMENTATION",
+            "to": "SAFE_SYNTACTIC",
+            "implementation_commit": "f47355c3659abe1ee01e173aea3ccc8fe2084ca1",
+            "catalog_commit": "0982e90a9483d4d21d733d70c8225d5d2267e580",
+            "boundary": "Only count serialization is promoted; bounding_box, weight, and third-party rebalancing remain separate semantics."
+          }
         }
       }
     }
