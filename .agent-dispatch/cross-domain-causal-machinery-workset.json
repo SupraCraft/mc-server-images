@@ -145,8 +145,11 @@
     "observation-boundary": {
       "state": "READY_NON_PEER",
       "scope": [
-        "lamp terminal vs observed state",
-        "note/output feedback as domain-owned observation surfaces"
+        "classify world-state observable feedback",
+        "classify engine-event/vibration feedback",
+        "classify programmable introspection paths",
+        "classify client-facing presentation paths",
+        "preserve external instrumentation as evidence-only unless embodied"
       ],
       "prohibited": [
         "treat observation/presentation as a fifth peer semantic domain",
@@ -252,10 +255,6 @@
     "programmable",
     "inventory"
   ],
-  "observation_surface": {
-    "peer_domain": false,
-    "rule": "Presentation/feedback is a cross-cutting observation/sink surface owned by the driving domain unless later evidence justifies a distinct reusable semantic model."
-  },
   "phase_gates": {
     "phase_a": {
       "name": "independent-domain-baselines",
@@ -272,5 +271,22 @@
       "depends_on": "phase_a",
       "rule": "Cross-domain transducer work remains WAIT until all four Phase-A domain baselines are bounded and accepted for the current exact-version campaign."
     }
+  },
+  "observation_plane": {
+    "peer_domain": false,
+    "first_class": true,
+    "modalities": [
+      "world_state_observable",
+      "engine_event_observable",
+      "programmable_introspection",
+      "client_presentation_observable",
+      "external_instrumentation"
+    ],
+    "rules": [
+      "The same information may be observable through multiple modalities; record them independently.",
+      "Client-visible presentation is not assumed to be world/server observable.",
+      "World-state or engine-event observability must have its own evidence path.",
+      "Observation remains cross-cutting and does not become a fifth peer semantic domain."
+    ]
   }
 }
