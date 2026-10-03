@@ -264,12 +264,14 @@
         "command-primitives",
         "inventory-primitives"
       ],
-      "rule": "Recover and qualify each of the four core domains independently. Do not introduce cross-domain semantic dependencies in Phase A."
+      "rule": "All four domains now have exact-version bounded evidence; Phase A is not closed until these candidate baselines are reconciled against current authority and Human-in-Command promotion policy.",
+      "state": "READY_FOR_RECONCILIATION"
     },
     "phase_b": {
       "name": "cross-domain-interactions",
       "depends_on": "phase_a",
-      "rule": "Cross-domain transducer work remains WAIT until all four Phase-A domain baselines are bounded and accepted for the current exact-version campaign."
+      "rule": "Do not begin cross-domain transducer qualification until Phase A is durably reconciled/accepted.",
+      "state": "WAIT"
     }
   },
   "observation_plane": {
@@ -288,5 +290,44 @@
       "World-state or engine-event observability must have its own evidence path.",
       "Observation remains cross-cutting and does not become a fifth peer semantic domain."
     ]
+  },
+  "phase_a_status": {
+    "electrical": {
+      "state": "ACCEPTED_EXISTING_AUTHORITY",
+      "evidence_refs": [
+        "SupraCraft/mc-server-images#11",
+        "766f5ec4f1b1f2e8c2350a653fbfd68f598ef884"
+      ]
+    },
+    "mechanical": {
+      "state": "BASELINE_READY_FOR_RECONCILIATION",
+      "evidence_refs": [
+        "78254225091ddae58db7a146f32d8a14aad8fcad",
+        "3a0c5f8b7a245bc7a8fbb6ca7e49b8a078341563",
+        "workflow:37119899073",
+        "workflow:37120099756"
+      ],
+      "boundary": "Piston structure + bounded extension/retraction geometry + obsidian immovable hard negative. Electrical stimulus is fixture-only; no transducer claim."
+    },
+    "programmable": {
+      "state": "BASELINE_READY_FOR_RECONCILIATION",
+      "evidence_refs": [
+        "b85703bd1717d6a474b42dde2934819d1aac65c0",
+        "workflow:37119810663",
+        "workflow:37101462459",
+        "job:111141661480"
+      ],
+      "boundary": "Exact command block/control structure plus existing stock/instrumented command canary. No electrical trigger or arbitrary command-language promotion."
+    },
+    "inventory": {
+      "state": "BASELINE_READY_FOR_RECONCILIATION",
+      "evidence_refs": [
+        "df51cc6a956a2202927b7c0a4974b9a3f41327fe",
+        "47f7ebaa12733ecf8486739acc8b2cd3cfe4a689",
+        "workflow:37119941780",
+        "workflow:37120168752"
+      ],
+      "boundary": "Hopper structure + bounded transfer positive + full-destination hard negative. Console is fixture-only; no comparator/electrical/programmatic claim."
+    }
   }
 }
