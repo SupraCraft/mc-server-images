@@ -242,7 +242,8 @@ PISTON_TARGETS = (
         "descriptor": (
             "(Lnet/minecraft/world/level/Level;"
             "Lnet/minecraft/core/BlockPos;"
-            "FLnet/minecraft/world/level/block/piston/PistonMovingBlockEntity;)V"
+            "Lnet/minecraft/world/level/block/state/BlockState;"
+            "Lnet/minecraft/world/level/block/piston/PistonMovingBlockEntity;)V"
         ),
     },
     {
