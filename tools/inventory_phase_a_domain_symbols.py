@@ -126,6 +126,7 @@ def inventory(args):
                 "class_sha256":c["class_sha256"],
                 "method_count":c["method_count"],
                 "candidate_count":len(c["name_token_candidates"]),
+                "candidate_names":[m["name"] for m in c["name_token_candidates"]],
             }
             for c in classes
         ],
