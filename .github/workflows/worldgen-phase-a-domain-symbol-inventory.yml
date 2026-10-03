@@ -1,0 +1,94 @@
+name: worldgen Phase-A domain symbol inventory
+
+on:
+  push:
+    branches:
+      - feat/phase-a-domain-symbol-inventory
+    paths:
+      - 'tools/inventory_phase_a_domain_symbols.py'
+      - 'tests/test_phase_a_domain_symbol_inventory.py'
+      - '.github/workflows/worldgen-phase-a-domain-symbol-inventory.yml'
+  pull_request:
+    paths:
+      - 'tools/inventory_phase_a_domain_symbols.py'
+      - 'tests/test_phase_a_domain_symbol_inventory.py'
+      - '.github/workflows/worldgen-phase-a-domain-symbol-inventory.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Run Phase-A scope controls
+        run: |
+          python -m unittest -v tests.test_phase_a_domain_symbol_inventory
+          python -m py_compile tools/inventory_phase_a_domain_symbols.py
+
+  inventory:
+    needs: controls
+    strategy:
+      fail-fast: false
+      matrix:
+        domain: [mechanical, programmable, inventory]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Inventory exact Java 26.3 domain symbols
+        run: |
+          mkdir -p "out/${{ matrix.domain }}"
+          python tools/inventory_phase_a_domain_symbols.py \
+            --domain "${{ matrix.domain }}" \
+            --expected-version 26.3 \
+            --expected-java 25 \
+            --work-dir "out/${{ matrix.domain }}/runtime" \
+            --output "out/${{ matrix.domain }}/symbol-inventory.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase-a-symbols-${{ matrix.domain }}
+          path: out/${{ matrix.domain }}/symbol-inventory.json
+          retention-days: 14
