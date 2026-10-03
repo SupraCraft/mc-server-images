@@ -131,6 +131,12 @@ jobs:
           assert new["raw_nbt_payload_retained"] is False
           assert old["level"]["data_version"] is not None
           assert new["level"]["data_version"] is not None
+          assert old["provenance_checks"]["exact_version_world_authority"] is False
+          assert new["provenance_checks"]["exact_version_world_authority"] is False
+          assert old["provenance_checks"]["classification"] == "STALE_OR_TEMPLATE_LEVEL_METADATA"
+          assert new["provenance_checks"]["classification"] == "STALE_OR_TEMPLATE_LEVEL_METADATA"
+          assert old["level"]["version"]["name"] == "26.1"
+          assert new["level"]["version"]["name"] == "26.1"
 
           old_files=set(old["world_state_data"]["files"])
           new_files=set(new["world_state_data"]["files"])
@@ -157,6 +163,10 @@ jobs:
               "new_world_state_groups":new["world_state_data"]["groups"],
               "old_datapack_entry_count":old["datapack_entry_count"],
               "new_datapack_entry_count":new["datapack_entry_count"],
+              "old_world_authority_classification":old["provenance_checks"]["classification"],
+              "new_world_authority_classification":new["provenance_checks"]["classification"],
+              "exact_26_2_world_authority_established":old["provenance_checks"]["exact_version_world_authority"],
+              "exact_26_3_world_authority_established":new["provenance_checks"]["exact_version_world_authority"],
               "raw_payload_retained":False,
           }
           Path("out/voidblock-world-26.2-vs-26.3.json").write_text(
