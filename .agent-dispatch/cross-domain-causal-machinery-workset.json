@@ -425,7 +425,7 @@
   },
   "roadmap": {
     "authority_doc": "docs/story-to-vanilla-incremental-roadmap.md",
-    "commit": "054bdaebc60c78038ffdeceb27fa464f09430aac",
+    "commit": "9bd27cbeb6f393413f890c11cb8c52d42726f4b0",
     "principle": "Ship bounded end-to-end vertical slices; do not wait for encyclopedic domain completeness.",
     "priority": [
       "P0_story_ir_and_capability_registry",
@@ -513,6 +513,51 @@
       "native mechanic where independently qualified",
       "hybrid for physical geometry plus programmable state/effects"
     ],
-    "gating_rule": "Only the domain interactions consumed by the selected named-place archetype are qualified; named places do not create a new global semantic domain."
+    "gating_rule": "Only the domain interactions consumed by the selected named-place archetype are qualified; named places do not create a new global semantic domain.",
+    "constructible_sites": {
+      "state": "PLANNED_HIGH_PRIORITY",
+      "lifecycle": [
+        "candidate",
+        "valid",
+        "active",
+        "degraded",
+        "inactive",
+        "repaired"
+      ],
+      "recognition_contract": [
+        "bounded spatial pattern",
+        "required block/item palette",
+        "orientation/symmetry rules",
+        "optional substitutions only when explicitly declared",
+        "fail closed on incomplete or ambiguous structures"
+      ],
+      "examples": [
+        "health_totem",
+        "prosperity_totem",
+        "warding_totem",
+        "healing_temple",
+        "prosperity_temple",
+        "arcane_shrine"
+      ],
+      "distinction": "Crafting transforms items; constructible sites recognize a spatial world configuration and may consume crafted artifacts as components."
+    },
+    "localized_modifiers": {
+      "semantics": [
+        "health_recovery",
+        "hunger_sustenance",
+        "hostile_suppression",
+        "resource_yield",
+        "crop_fertility",
+        "trade_prosperity",
+        "experience_gain",
+        "movement_boost",
+        "resistance",
+        "ritual_or_magic_ability"
+      ],
+      "rule": "Modifiers are high-level story semantics. The resolver lowers them to exact-version vanilla mechanics and records scope, activation, stacking, refresh, exit behavior, observation feedback, and evidence.",
+      "policy_bundles": {
+        "prosperity": "Not one Minecraft stat; resolve to the subset of qualified economic/resource/farming/trade benefits requested by the story."
+      }
+    }
   }
 }
