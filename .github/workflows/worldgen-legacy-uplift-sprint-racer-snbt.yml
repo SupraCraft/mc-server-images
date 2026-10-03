@@ -83,10 +83,93 @@ jobs:
           print("SUPRACRAFT_SPRINT_RACER_SNBT_UPLIFT_PASS")
           PY
 
+      - name: Measure rule coverage across the complete mcfunction release delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$RUNNER_TEMP/sr" "$RUNNER_TEMP/sprint-racer-snbt-release-coverage.json" <<'PY'
+          import json, pathlib, subprocess, sys
+          from tools.uplift_mcfunction_block_state_snbt import rewrite_text
+
+          repo = pathlib.Path(sys.argv[1])
+          out = pathlib.Path(sys.argv[2])
+          old = "b674e09699818878749570760444ed7147fea3dc"
+          new = "93cdfcff9f2462313de4d568f169c0e442d94e42"
+
+          def git(*args, text=True):
+              return subprocess.run(
+                  ["git", "-C", str(repo), *args],
+                  check=True, capture_output=True, text=text,
+              ).stdout
+
+          paths = [
+              p for p in git("diff", "--name-only", old, new, "--", "*.mcfunction").splitlines()
+              if p
+          ]
+
+          candidates = []
+          exact = []
+          partial = []
+          occurrences = 0
+          keys = 0
+
+          for path in paths:
+              # Only compare paths present in both exact releases.
+              old_check = subprocess.run(
+                  ["git", "-C", str(repo), "cat-file", "-e", f"{old}:{path}"],
+                  capture_output=True,
+              )
+              new_check = subprocess.run(
+                  ["git", "-C", str(repo), "cat-file", "-e", f"{new}:{path}"],
+                  capture_output=True,
+              )
+              if old_check.returncode or new_check.returncode:
+                  continue
+
+              old_text = git("show", f"{old}:{path}")
+              new_text = git("show", f"{new}:{path}")
+              transformed, receipt = rewrite_text(old_text)
+              if not receipt:
+                  continue
+
+              candidates.append(path)
+              occurrences += len(receipt)
+              keys += sum(x["change_count"] for x in receipt)
+
+              if transformed == new_text:
+                  exact.append(path)
+              else:
+                  partial.append(path)
+
+          result = {
+              "schema": "supracraft-sprint-racer-snbt-release-coverage/1",
+              "source_repository": "jarrodmmoore/Sprint-Racer-Dev",
+              "source_license_boundary": "All Rights Reserved; source used ephemerally, derived metadata only",
+              "exact_26_2_commit": old,
+              "exact_26_3_commit": new,
+              "changed_mcfunction_file_count": len(paths),
+              "legacy_block_state_candidate_file_count": len(candidates),
+              "legacy_block_state_occurrence_count": occurrences,
+              "legacy_block_state_key_change_count": keys,
+              "exactly_explained_file_count": len(exact),
+              "partially_explained_file_count": len(partial),
+              "exactly_explained_file_sample": exact[:50],
+              "partially_explained_file_sample": partial[:50],
+              "rule": "block_state top-level Name/Properties -> id/properties",
+          }
+          assert len(candidates) >= 2, result
+          assert len(exact) >= 2, result
+          out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          print("SUPRACRAFT_SPRINT_RACER_SNBT_RELEASE_COVERAGE_PASS")
+          PY
+
       - name: Upload derived receipt only
         uses: actions/upload-artifact@v4
         with:
           name: sprint-racer-26.2-to-26.3-block-state-snbt-receipt
-          path: ${{ runner.temp }}/sprint-racer-snbt-summary.json
+          path: |
+            ${{ runner.temp }}/sprint-racer-snbt-summary.json
+            ${{ runner.temp }}/sprint-racer-snbt-release-coverage.json
           retention-days: 14
           if-no-files-found: error
