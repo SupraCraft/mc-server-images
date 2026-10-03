@@ -199,6 +199,12 @@
       "runtime_contract": "multiple repeated transitions establish bounded period/jitter plus stop/start control"
     },
     {
+      "id": "repeater_ring_oscillator",
+      "family": "clock",
+      "status": "reference_candidate_only",
+      "runtime_contract": "a finite seed pulse must circulate autonomously through a closed four-stage delay-4 repeater ring after seed removal; repeated rise/fall transitions must have bounded period/jitter; opening the loop must quench after settling; reclosing plus one new seed must restart"
+    },
+    {
       "id": "rs_latch",
       "family": "state",
       "status": "qualified_template",
