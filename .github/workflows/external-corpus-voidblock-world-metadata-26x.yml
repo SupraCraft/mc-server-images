@@ -1,0 +1,174 @@
+name: external corpus Voidblock world metadata 26.2 26.3
+
+on:
+  push:
+    branches:
+      - feat/external-corpus-intake-v1
+    paths:
+      - 'tools/analyze_external_world_metadata.py'
+      - 'tests/test_external_world_metadata.py'
+      - '.github/workflows/external-corpus-voidblock-world-metadata-26x.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      VOIDBLOCK_26_2_COMMIT: 15f4305dd214251969fed93c4d7888c6e47c94e5
+      VOIDBLOCK_26_3_COMMIT: ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Run world metadata controls
+        run: python -m unittest -v tests.test_external_world_metadata
+
+      - name: Checkout pinned Voidblock 26.2 save metadata
+        uses: actions/checkout@v5
+        with:
+          repository: Loweredgames/Voidblock
+          ref: ${{ env.VOIDBLOCK_26_2_COMMIT }}
+          path: external/voidblock-26.2
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            LICENSE
+            level.dat
+            data
+            datapacks/Voidblock datapacks/pack.mcmeta
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout pinned Voidblock 26.3 save metadata
+        uses: actions/checkout@v5
+        with:
+          repository: Loweredgames/Voidblock
+          ref: ${{ env.VOIDBLOCK_26_3_COMMIT }}
+          path: external/voidblock-26.3
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            LICENSE
+            level.dat
+            data
+            datapacks/Voidblock datapacks/pack.mcmeta
+          sparse-checkout-cone-mode: false
+
+      - name: Verify pinned upstream commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external/voidblock-26.2 rev-parse HEAD)" = "$VOIDBLOCK_26_2_COMMIT"
+          test "$(git -C external/voidblock-26.3 rev-parse HEAD)" = "$VOIDBLOCK_26_3_COMMIT"
+          test -f external/voidblock-26.2/LICENSE
+          test -f external/voidblock-26.3/LICENSE
+          mkdir -p out
+          sha256sum external/voidblock-26.2/LICENSE > out/license-26.2-sha256.txt
+          sha256sum external/voidblock-26.3/LICENSE > out/license-26.3-sha256.txt
+
+      - name: Analyze 26.2 world metadata
+        run: |
+          python tools/analyze_external_world_metadata.py \
+            --world-root external/voidblock-26.2 \
+            --source-id voidblock-world-26.2 \
+            --minecraft-version 26.2 \
+            --upstream-repository Loweredgames/Voidblock \
+            --upstream-commit "$VOIDBLOCK_26_2_COMMIT" \
+            --license-label "Loweredgames Custom Maps License; no redistribution" \
+            --output out/voidblock-world-26.2.json
+
+      - name: Analyze 26.3 world metadata
+        run: |
+          python tools/analyze_external_world_metadata.py \
+            --world-root external/voidblock-26.3 \
+            --source-id voidblock-world-26.3 \
+            --minecraft-version 26.3 \
+            --upstream-repository Loweredgames/Voidblock \
+            --upstream-commit "$VOIDBLOCK_26_3_COMMIT" \
+            --license-label "Loweredgames Custom Maps License; no redistribution" \
+            --output out/voidblock-world-26.3.json
+
+      - name: Compare derived save metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          old=json.loads(Path("out/voidblock-world-26.2.json").read_text())
+          new=json.loads(Path("out/voidblock-world-26.3.json").read_text())
+
+          assert old["raw_player_identity_retained"] is False
+          assert new["raw_player_identity_retained"] is False
+          assert old["raw_nbt_payload_retained"] is False
+          assert new["raw_nbt_payload_retained"] is False
+          assert old["level"]["data_version"] is not None
+          assert new["level"]["data_version"] is not None
+
+          old_files=set(old["world_state_data"]["files"])
+          new_files=set(new["world_state_data"]["files"])
+
+          comparison={
+              "schema":"supracraft-external-world-metadata-comparison/1",
+              "source_id":"voidblock-world",
+              "old_commit":old["source"]["upstream_commit"],
+              "new_commit":new["source"]["upstream_commit"],
+              "old_claimed_version":"26.2",
+              "new_claimed_version":"26.3",
+              "old_level_version":old["level"]["version"],
+              "new_level_version":new["level"]["version"],
+              "old_data_version":old["level"]["data_version"],
+              "new_data_version":new["level"]["data_version"],
+              "data_version_delta":new["level"]["data_version"]-old["level"]["data_version"],
+              "scoreboard_objective_count_delta":
+                  new["scoreboard"].get("objective_count",0)-old["scoreboard"].get("objective_count",0),
+              "score_record_count_delta":
+                  new["scoreboard"].get("score_record_count",0)-old["scoreboard"].get("score_record_count",0),
+              "world_state_files_added":sorted(new_files-old_files),
+              "world_state_files_removed":sorted(old_files-new_files),
+              "old_world_state_groups":old["world_state_data"]["groups"],
+              "new_world_state_groups":new["world_state_data"]["groups"],
+              "old_datapack_entry_count":old["datapack_entry_count"],
+              "new_datapack_entry_count":new["datapack_entry_count"],
+              "raw_payload_retained":False,
+          }
+          Path("out/voidblock-world-26.2-vs-26.3.json").write_text(
+              json.dumps(comparison,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(comparison,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload derived world metadata receipts only
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-corpus-voidblock-world-metadata-26.2-26.3
+          path: out/
+          retention-days: 14
+          if-no-files-found: error
