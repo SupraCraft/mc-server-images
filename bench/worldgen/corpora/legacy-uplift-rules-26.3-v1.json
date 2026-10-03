@@ -372,6 +372,49 @@
         "SupraCraft/mc-server-images#34",
         "SupraCraft/mc-server-images#35"
       ]
+    },
+    {
+      "id": "structure_spawn_minmax_to_count",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "26.2 structure/biome spawn rows with minCount/maxCount integers",
+      "target_scope": "26.3+ spawn rows with count IntProvider",
+      "detect": {
+        "kind": "json_spawn_row",
+        "required_keys": [
+          "type",
+          "minCount",
+          "maxCount"
+        ],
+        "absent_key": "count"
+      },
+      "transform": "minCount==maxCount -> scalar count; otherwise -> minecraft:uniform IntProvider with min_inclusive/max_inclusive",
+      "preconditions": [
+        "row is a Minecraft spawn-data entry",
+        "minCount and maxCount are integers",
+        "0 < minCount <= maxCount",
+        "count is absent"
+      ],
+      "hard_negatives": [
+        "third-party intentional spawn-count rebalance",
+        "bounding_box changes",
+        "weight changes",
+        "rows already using count",
+        "non-spawn objects with similarly named fields"
+      ],
+      "validation": [
+        "exact Mojang 26.2->26.3 selected vanilla structure comparison",
+        "constant legacy counts map to identical scalar count",
+        "ranged legacy counts map to minecraft:uniform IntProvider"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "workflow:37159319805",
+        "job:111309239018",
+        "artifact:11286672673",
+        "official Mojang 26.2 and 26.3 server artifacts",
+        "Minecraft 26.3 natural mob spawn data uses count IntProvider"
+      ]
     }
   ]
 }
