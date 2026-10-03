@@ -233,6 +233,87 @@ class RedstoneNetlistTests(unittest.TestCase):
         )
 
 
+    def test_extra_output_fanout_preserves_local_or_candidate_but_expands_boundary(self):
+        base={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a",(-1,0,-1),"minecraft:redstone_block",["power_source"]),
+                n("aw",(0,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("aj",(1,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("b",(-1,0,1),"minecraft:redstone_block",["power_source"]),
+                n("bw",(0,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("bj",(1,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("j",(1,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("out",(2,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(3,0,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("aw","aj"),edge("aj","j"),edge("j","bj"),
+                edge("bj","bw"),edge("j","out"),
+            ],
+        }
+        fanout=json.loads(json.dumps(base))
+        fanout["nodes"] += [
+            n("branch",(2,0,1),"minecraft:redstone_wire",["signal_transport"]),
+            n("lamp2",(3,0,1),"minecraft:redstone_lamp",["presentation_feedback"]),
+        ]
+        fanout["edges"] += [
+            edge("j","branch"),edge("branch","j"),
+        ]
+
+        base_doc,_=mod.build(base)
+        fanout_doc,_=mod.build(fanout)
+        base_or=next(x for x in base_doc["motif_candidates"] if x["template"]=="or_gate")
+        fanout_or=next(x for x in fanout_doc["motif_candidates"] if x["template"]=="or_gate")
+
+        self.assertEqual(base_or["input_source_component_ids"],["a","b"])
+        self.assertEqual(fanout_or["input_source_component_ids"],["a","b"])
+        self.assertEqual(base_or["output_sink_component_ids"],["lamp"])
+        self.assertEqual(fanout_or["output_sink_component_ids"],["lamp","lamp2"])
+        self.assertNotEqual(
+            base_doc["signatures"]["functional_netlist_sha256"],
+            fanout_doc["signatures"]["functional_netlist_sha256"],
+        )
+        self.assertNotEqual(
+            base_doc["signatures"]["horizontal_d4_topology_sha256"],
+            fanout_doc["signatures"]["horizontal_d4_topology_sha256"],
+        )
+
+    def test_repeater_inserted_after_or_net_is_not_same_or_template(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a",(-1,0,-1),"minecraft:redstone_block",["power_source"]),
+                n("aw",(0,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("aj",(1,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("b",(-1,0,1),"minecraft:redstone_block",["power_source"]),
+                n("bw",(0,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("bj",(1,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("j",(1,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("pre",(2,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("r",(3,0,0),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"west","delay":"1","locked":"false","powered":"false"}),
+                n("post",(4,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(5,0,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("aw","aj"),edge("aj","j"),edge("j","bj"),
+                edge("bj","bw"),edge("j","pre"),
+            ],
+        }
+
+        doc,_=mod.build(graph)
+        self.assertFalse(any(
+            x["template"]=="or_gate" for x in doc["motif_candidates"]
+        ))
+        delays=[
+            x for x in doc["motif_candidates"]
+            if x["template"]=="repeater_delay_line"
+        ]
+        self.assertEqual(len(delays),1)
+        self.assertEqual(delays[0]["configured_delay"],"1")
+
+
     def test_single_source_shared_net_is_not_or_candidate(self):
         graph={
             "schema":"supracraft-modern-causal-machinery/1",
