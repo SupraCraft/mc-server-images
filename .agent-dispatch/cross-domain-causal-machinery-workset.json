@@ -425,11 +425,12 @@
   },
   "roadmap": {
     "authority_doc": "docs/story-to-vanilla-incremental-roadmap.md",
-    "commit": "18ba3598e5539251aa625df91db0ffa09b2bd4fd",
+    "commit": "054bdaebc60c78038ffdeceb27fa464f09430aac",
     "principle": "Ship bounded end-to-end vertical slices; do not wait for encyclopedic domain completeness.",
     "priority": [
       "P0_story_ir_and_capability_registry",
       "P1_playable_quest_mvp",
+      "P1_5_named_place_landmark_mvp",
       "P2_physical_puzzle",
       "P3_transformation_production",
       "P4_social_npc_economy",
@@ -482,5 +483,36 @@
       "concrete vanilla deployment artifact format",
       "end-to-end verifier"
     ]
+  },
+  "named_place_slice": {
+    "state": "PLANNED_HIGH_PRIORITY",
+    "role": "story_world_object_not_peer_domain",
+    "minimum_ir": [
+      "place_id",
+      "display_name",
+      "archetype",
+      "dimension_and_region_geometry",
+      "discovery_condition",
+      "discovery_state",
+      "lifecycle_state_machine",
+      "localized_modifiers",
+      "resource_state",
+      "observation_surfaces",
+      "lore_artifact_hooks",
+      "persistence_provenance",
+      "versioned_lowering_plan"
+    ],
+    "first_archetypes": [
+      "volcanic_wonder",
+      "healing_sanctuary",
+      "warding_monument",
+      "sustenance_or_fertility_site"
+    ],
+    "implementation_policy": [
+      "command_orchestrated first where this yields faithful vanilla behavior",
+      "native mechanic where independently qualified",
+      "hybrid for physical geometry plus programmable state/effects"
+    ],
+    "gating_rule": "Only the domain interactions consumed by the selected named-place archetype are qualified; named places do not create a new global semantic domain."
   }
 }
