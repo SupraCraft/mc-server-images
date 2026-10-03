@@ -62,6 +62,11 @@ class ExternalWorldDatapackTests(unittest.TestCase):
         self.assertEqual(1,r["story_feature_signals"]["items_and_rewards"]["effect_commands"])
         self.assertEqual(1,r["story_feature_signals"]["observation_and_ui"]["title_commands"])
         self.assertIn("demo",r["pack_inventory"])
+        unresolved=r["unresolved_function_ref_classification"]
+        self.assertEqual(2,unresolved["total"])
+        self.assertEqual(1,unresolved["class_counts"]["dynamic_macro"])
+        self.assertEqual(1,unresolved["class_counts"]["external_or_optional_namespace"])
+        self.assertEqual(1,unresolved["missing_namespace_counts"]["optional_pack"])
 
     def test_pack_inventory_is_aggregate_only(self):
         with tempfile.TemporaryDirectory() as td:
