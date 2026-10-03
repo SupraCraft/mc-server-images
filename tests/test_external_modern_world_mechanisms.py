@@ -30,6 +30,12 @@ class ModernWorldMechanismTests(unittest.TestCase):
         counts=m.decode_palette_counts(container,entries=4096,min_bits=4)
         self.assertEqual(4096,counts["minecraft:stone"])
 
+    def test_empty_key_palette_entry_decodes_modern_id(self):
+        container={"palette":[{"":"minecraft:air"}]}
+        counts=m.decode_palette_counts(container,entries=4096,min_bits=4)
+        self.assertEqual(4096,counts["minecraft:air"])
+        self.assertNotIn("Compound",next(iter(counts)))
+
     def test_unknown_block_does_not_leak_into_domain(self):
         self.assertEqual(set(),m.families_for("minecraft:stone"))
 
