@@ -1,0 +1,170 @@
+name: external corpus Voidblock 26.2 26.3
+
+on:
+  push:
+    branches:
+      - feat/external-corpus-intake-v1
+    paths:
+      - 'tools/analyze_external_datapack_corpus.py'
+      - 'tests/test_external_datapack_corpus.py'
+      - '.github/workflows/external-corpus-voidblock-26x.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      VOIDBLOCK_COMMIT: ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Run external corpus controls
+        run: python -m unittest -v tests.test_external_datapack_corpus
+
+      - name: Checkout pinned Voidblock reference
+        uses: actions/checkout@v5
+        with:
+          repository: Loweredgames/Voidblock
+          ref: ${{ env.VOIDBLOCK_COMMIT }}
+          path: external/voidblock
+          persist-credentials: false
+
+      - name: Verify upstream authority and license
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external/voidblock rev-parse HEAD)" = "$VOIDBLOCK_COMMIT"
+          test -f external/voidblock/LICENSE
+          sha256sum external/voidblock/LICENSE | tee out-license-sha256.txt
+
+      - name: Analyze effective 26.2 datapack
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python tools/analyze_external_datapack_corpus.py \
+            --datapack-root "external/voidblock/datapacks/Voidblock datapacks" \
+            --target-pack-format 107.1 \
+            --source-id voidblock-26.2 \
+            --minecraft-version 26.2 \
+            --upstream-repository Loweredgames/Voidblock \
+            --upstream-commit "$VOIDBLOCK_COMMIT" \
+            --license-label "Loweredgames Custom Maps License; no redistribution" \
+            --output out/voidblock-26.2-receipt.json
+
+      - name: Analyze effective 26.3 datapack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/analyze_external_datapack_corpus.py \
+            --datapack-root "external/voidblock/datapacks/Voidblock datapacks" \
+            --target-pack-format 121.0 \
+            --source-id voidblock-26.3 \
+            --minecraft-version 26.3 \
+            --upstream-repository Loweredgames/Voidblock \
+            --upstream-commit "$VOIDBLOCK_COMMIT" \
+            --license-label "Loweredgames Custom Maps License; no redistribution" \
+            --output out/voidblock-26.3-receipt.json
+
+      - name: Build cross-version derived comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          old=json.loads(Path("out/voidblock-26.2-receipt.json").read_text())
+          new=json.loads(Path("out/voidblock-26.3-receipt.json").read_text())
+
+          assert old["raw_content_retained"] is False
+          assert new["raw_content_retained"] is False
+          old_overlays=[x["directory"] for x in old["overlay_materialization"]["selected_overlays"]]
+          new_overlays=[x["directory"] for x in new["overlay_materialization"]["selected_overlays"]]
+          assert "voidblock_mc26.2" in old_overlays, old_overlays
+          assert "voidblock_mc26.3" in new_overlays, new_overlays
+          assert old["causal_summary"]["function_count"] > 0
+          assert new["causal_summary"]["function_count"] > 0
+
+          def delta(a,b):
+              keys=sorted(set(a)|set(b))
+              return {k:b.get(k,0)-a.get(k,0) for k in keys if b.get(k,0)!=a.get(k,0)}
+
+          comparison={
+              "schema":"supracraft-external-datapack-cross-version-comparison/1",
+              "source_id":"voidblock",
+              "upstream_repository":"Loweredgames/Voidblock",
+              "upstream_commit":old["source"]["upstream_commit"],
+              "old_version":"26.2",
+              "new_version":"26.3",
+              "old_pack_format":old["target_pack_format"],
+              "new_pack_format":new["target_pack_format"],
+              "old_overlays":old_overlays,
+              "new_overlays":new_overlays,
+              "content_digest_changed":old["effective_content_sha256"] != new["effective_content_sha256"],
+              "function_count_delta":new["causal_summary"]["function_count"]-old["causal_summary"]["function_count"],
+              "resource_kind_count_delta":delta(
+                  old["resource_summary"]["resource_kind_counts"],
+                  new["resource_summary"]["resource_kind_counts"],
+              ),
+              "role_count_delta":delta(
+                  old["causal_summary"]["role_counts"],
+                  new["causal_summary"]["role_counts"],
+              ),
+              "verb_count_delta":delta(
+                  old["causal_summary"]["verb_counts"],
+                  new["causal_summary"]["verb_counts"],
+              ),
+              "predicate_schema_26_2":old["resource_summary"]["predicate_top_level_schema_counts"],
+              "predicate_schema_26_3":new["resource_summary"]["predicate_top_level_schema_counts"],
+              "unresolved_refs_26_2":old["causal_summary"]["unresolved_reference_counts"],
+              "unresolved_refs_26_3":new["causal_summary"]["unresolved_reference_counts"],
+              "raw_content_retained":False,
+              "interpretation_boundary":[
+                  "Derived structural differences are prior-art evidence only.",
+                  "No upstream world, datapack, function text, JSON payload or NBT payload is included.",
+                  "Runtime behavior is not inferred from static differences.",
+              ],
+          }
+          Path("out/voidblock-26.2-vs-26.3.json").write_text(
+              json.dumps(comparison,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(comparison,indent=2,sort_keys=True))
+          PY
+
+      - name: Preserve license hash with receipts
+        shell: bash
+        run: cp out-license-sha256.txt out/upstream-license-sha256.txt
+
+      - name: Upload derived receipts only
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-corpus-voidblock-26.2-26.3-derived
+          path: out/
+          retention-days: 14
+          if-no-files-found: error
