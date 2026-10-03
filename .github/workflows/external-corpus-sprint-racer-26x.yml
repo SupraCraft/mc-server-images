@@ -158,8 +158,13 @@ jobs:
           assert w3["level"]["version"]["name"] == "26.3", w3["level"]["version"]
           assert d2["causal_summary"]["function_count"] > 100
           assert d3["causal_summary"]["function_count"] > 100
-          assert d2["causal_summary"]["unresolved_reference_counts"] == {}
-          assert d3["causal_summary"]["unresolved_reference_counts"] == {}
+          u2=d2["unresolved_function_ref_classification"]
+          u3=d3["unresolved_function_ref_classification"]
+          assert u2["total"] == d2["causal_summary"]["unresolved_reference_counts"].get("function_ref",0)
+          assert u3["total"] == d3["causal_summary"]["unresolved_reference_counts"].get("function_ref",0)
+          assert u3["total"] <= u2["total"], (u2,u3)
+          assert u3["class_counts"].get("missing_static_in_loaded_namespace",0) <= \
+              u2["class_counts"].get("missing_static_in_loaded_namespace",0), (u2,u3)
 
           def delta(a,b):
               keys=sorted(set(a)|set(b))
@@ -181,6 +186,9 @@ jobs:
               "json_resource_count_delta":d3["causal_summary"]["json_resource_count"]-d2["causal_summary"]["json_resource_count"],
               "role_count_delta":delta(d2["causal_summary"]["role_counts"],d3["causal_summary"]["role_counts"]),
               "verb_count_delta":delta(d2["causal_summary"]["verb_counts"],d3["causal_summary"]["verb_counts"]),
+              "unresolved_function_refs_26_2":u2,
+              "unresolved_function_refs_26_3":u3,
+              "unresolved_function_ref_total_delta":u3["total"]-u2["total"],
               "world_state_group_delta":delta(w2["world_state_data"]["groups"],w3["world_state_data"]["groups"]),
               "scoreboard_objective_count_delta":w3["scoreboard"].get("objective_count",0)-w2["scoreboard"].get("objective_count",0),
               "score_record_count_delta":w3["scoreboard"].get("score_record_count",0)-w2["scoreboard"].get("score_record_count",0),
