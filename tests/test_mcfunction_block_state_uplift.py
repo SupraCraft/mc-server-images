@@ -41,7 +41,7 @@ class McfunctionBlockStateUpliftTests(unittest.TestCase):
 
     def test_unterminated_compound_fails_closed(self):
         with self.assertRaises(ValueError):
-            rewrite_text('particle block_marker{block_state:{Name:"minecraft:light"}')
+            rewrite_text('particle block_marker{block_state:{Name:"minecraft:light"')
 
     def test_process_file_never_mutates_source(self):
         with tempfile.TemporaryDirectory() as td:
