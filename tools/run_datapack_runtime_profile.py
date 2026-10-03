@@ -280,6 +280,20 @@ def main() -> int:
             line for line in lines
             if any(rx.search(line) for rx in HARD_PATTERNS)
         ]
+
+        # Preserve generic ERROR equivalence without redistributing raw
+        # third-party log text. Normalize volatile timestamp/thread prefixes
+        # and retain only SHA-256 fingerprints + multiplicities.
+        error_fingerprint_counts: dict[str, int] = {}
+        for line in error_lines:
+            message = line
+            if "]: " in message:
+                message = message.split("]: ", 1)[1]
+            elif "] " in message:
+                message = message.split("] ", 1)[1]
+            digest = hashlib.sha256(message.encode("utf-8", errors="replace")).hexdigest()
+            error_fingerprint_counts[digest] = error_fingerprint_counts.get(digest, 0) + 1
+
         datapack_lines = [line for line in lines if "data pack" in line.lower() or "datapack" in line.lower()]
         objective_snapshots = extract_objective_snapshots(lines)
         bedrock_pre = "SUPRACRAFT_VOIDBLOCK_SETUP_BEDROCK_PASS" in server_log
@@ -295,6 +309,7 @@ def main() -> int:
             "server_ready": ready,
             "graceful_stop_exit_code": exit_code,
             "error_log_count": len(error_lines),
+            "error_fingerprint_counts": dict(sorted(error_fingerprint_counts.items())),
             "hard_datapack_error_count": len(hard_lines),
             "bedrock_setup_probe_pre_reload": bedrock_pre,
             "bedrock_setup_probe_post_reload": bedrock_post,
