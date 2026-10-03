@@ -754,7 +754,7 @@ def validate_rising_edge(root:Path):
         "template","minecraft_version","java_major","input_control",
         "configured_delays","delay_stage_count",
         "input_source_position","input_net_wire_positions",
-        "delay_repeater_positions","delay_interstage_wire_position",
+        "delay_repeater_positions","delay_interstage_wire_positions",
         "delay_output_wire_position",
         "direct_inverter_position","intermediate_wire_positions",
         "final_inverter_position","output_wire_position","output_lamp_position",
@@ -766,8 +766,8 @@ def validate_rising_edge(root:Path):
     assert stock["instrumented"] is False
     assert inst["instrumented"] is True
     assert inst["trace_present"] is True
-    assert inst["configured_delays"]==[4,4]
-    assert inst["delay_stage_count"]==2
+    assert inst["configured_delays"]==[4,4,4]
+    assert inst["delay_stage_count"]==3
     assert inst["output_lamp_semantic_authority"] is False
 
     expected=[

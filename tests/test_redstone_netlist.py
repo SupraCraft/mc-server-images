@@ -519,49 +519,77 @@ class RedstoneNetlistTests(unittest.TestCase):
         ))
 
 
-    def test_rising_edge_composition_is_candidate_only(self):
-        graph={
+    def _edge_graph(self,delay_count):
+        nodes=[
+            n("source",(0,100,0),"minecraft:redstone_block",["power_source"]),
+            n("in0",(1,100,0),"minecraft:redstone_wire",["signal_transport"]),
+            n("in1",(1,100,-1),"minecraft:redstone_wire",["signal_transport"]),
+            n("in2",(1,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+            n("direct_feed",(2,100,-2),"minecraft:redstone_wire",["signal_transport"]),
+            n("direct_support",(3,100,-2),"minecraft:stone"),
+            n("direct_inv",(3,101,-2),"minecraft:redstone_torch",
+              ["signal_transport","logic_gate"],{"lit":"false"}),
+        ]
+        edges=[
+            edge("in0","in1"),edge("in1","in0"),
+            edge("in1","in2"),edge("in2","in1"),
+            edge("in2","direct_feed"),edge("direct_feed","in2"),
+        ]
+        delay_out_name=None
+        for i in range(delay_count):
+            x=2+2*i
+            nodes.append(n(
+                f"delay{i+1}",(x,100,0),"minecraft:repeater",
+                ["signal_transport"],
+                {"facing":"west","delay":"4","powered":"true"},
+            ))
+            if i<delay_count-1:
+                wire=f"delay_mid{i+1}"
+                nodes.append(n(
+                    wire,(x+1,100,0),"minecraft:redstone_wire",
+                    ["signal_transport"],
+                ))
+            else:
+                delay_out_name="delay_out"
+                nodes.append(n(
+                    delay_out_name,(x+1,100,0),"minecraft:redstone_wire",
+                    ["signal_transport"],
+                ))
+        merge_x=2+2*max(delay_count,1)
+        nodes.extend([
+            n("direct_out",(4,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+            n("route1",(5,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+            n("route2",(6,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+            n("route3",(7,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+            n("corner",(8,101,-2),"minecraft:redstone_wire",["signal_transport"]),
+            n("turn",(8,101,-1),"minecraft:redstone_wire",["signal_transport"]),
+            n("mid",(8,101,0),"minecraft:redstone_wire",["signal_transport"]),
+            n("final_feed",(9,101,0),"minecraft:redstone_wire",["signal_transport"]),
+            n("final_support",(10,101,0),"minecraft:stone"),
+            n("final",(10,102,0),"minecraft:redstone_torch",
+              ["signal_transport","logic_gate"],{"lit":"false"}),
+            n("out",(11,102,0),"minecraft:redstone_wire",["signal_transport"]),
+            n("lamp",(12,102,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+        ])
+        edges.extend([
+            edge("direct_out","route1"),edge("route1","direct_out"),
+            edge("route1","route2"),edge("route2","route1"),
+            edge("route2","route3"),edge("route3","route2"),
+            edge("route3","corner"),edge("corner","route3"),
+            edge("corner","turn"),edge("turn","corner"),
+            edge("turn","mid"),edge("mid","turn"),
+            edge("mid","final_feed"),edge("final_feed","mid"),
+        ])
+        if delay_count:
+            edges.extend([edge(delay_out_name,"mid"),edge("mid",delay_out_name)])
+        return {
             "schema":"supracraft-modern-causal-machinery/1",
-            "nodes":[
-                n("source",(0,100,0),"minecraft:redstone_block",["power_source"]),
-                n("in0",(1,100,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("in1",(1,100,-1),"minecraft:redstone_wire",["signal_transport"]),
-                n("in2",(1,100,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("direct_feed",(2,100,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("direct_support",(3,100,-2),"minecraft:stone"),
-                n("direct_inv",(3,101,-2),"minecraft:redstone_torch",
-                  ["signal_transport","logic_gate"],{"lit":"false"}),
-                n("delay1",(2,100,0),"minecraft:repeater",["signal_transport"],
-                  {"facing":"west","delay":"4","powered":"true"}),
-                n("delay_mid",(3,100,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("delay2",(4,100,0),"minecraft:repeater",["signal_transport"],
-                  {"facing":"west","delay":"4","powered":"true"}),
-                n("delay_out",(5,100,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("direct_out",(4,101,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("mid1",(5,101,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("mid2",(6,101,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("mid3",(6,101,-1),"minecraft:redstone_wire",["signal_transport"]),
-                n("mid4",(6,101,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("final_feed",(7,101,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("final_support",(8,101,0),"minecraft:stone"),
-                n("final",(8,102,0),"minecraft:redstone_torch",
-                  ["signal_transport","logic_gate"],{"lit":"false"}),
-                n("out",(9,102,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("lamp",(10,102,0),"minecraft:redstone_lamp",["presentation_feedback"]),
-            ],
-            "edges":[
-                edge("in0","in1"),edge("in1","in0"),
-                edge("in1","in2"),edge("in2","in1"),
-                edge("in2","direct_feed"),edge("direct_feed","in2"),
-                edge("direct_out","mid1"),edge("mid1","direct_out"),
-                edge("mid1","mid2"),edge("mid2","mid1"),
-                edge("mid2","mid3"),edge("mid3","mid2"),
-                edge("mid3","mid4"),edge("mid4","mid3"),
-                edge("mid4","final_feed"),edge("final_feed","mid4"),
-                edge("delay_out","mid4"),edge("mid4","delay_out"),
-            ],
+            "nodes":nodes,
+            "edges":edges,
         }
-        doc,_=mod.build(graph)
+
+    def test_rising_edge_composition_is_candidate_only(self):
+        doc,_=mod.build(self._edge_graph(3))
         rows=[
             x for x in doc["motif_candidates"]
             if x["template"]=="rising_edge_detector"
@@ -570,72 +598,31 @@ class RedstoneNetlistTests(unittest.TestCase):
         row=rows[0]
         self.assertEqual(row["confidence"],"structural_candidate_only")
         self.assertEqual(row["input_source_component_id"],"source")
-        self.assertEqual(row["delay_component_ids"],["delay1","delay2"])
-        self.assertEqual(row["configured_delays"],[4,4])
+        self.assertEqual(
+            row["delay_component_ids"],["delay1","delay2","delay3"]
+        )
+        self.assertEqual(row["configured_delays"],[4,4,4])
         self.assertEqual(row["direct_inverter_component_id"],"direct_inv")
         self.assertEqual(row["final_inverter_component_id"],"final")
         self.assertEqual(row["output_sink_component_ids"],["lamp"])
         self.assertIn("low-to-high",row["required_runtime_contract"])
 
+    def test_rising_edge_two_delay4_is_observer_effect_hard_negative(self):
+        doc,_=mod.build(self._edge_graph(2))
+        self.assertFalse(any(
+            x["template"]=="rising_edge_detector"
+            for x in doc["motif_candidates"]
+        ))
+
     def test_rising_edge_single_delay4_is_insufficient_hard_negative(self):
-        graph={
-            "schema":"supracraft-modern-causal-machinery/1",
-            "nodes":[
-                n("source",(0,100,0),"minecraft:redstone_block",["power_source"]),
-                n("in0",(1,100,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("in1",(1,100,-1),"minecraft:redstone_wire",["signal_transport"]),
-                n("in2",(1,100,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("direct_support",(2,100,-2),"minecraft:stone"),
-                n("direct_inv",(2,101,-2),"minecraft:redstone_torch",
-                  ["signal_transport","logic_gate"],{"lit":"false"}),
-                n("delay",(2,100,0),"minecraft:repeater",["signal_transport"],
-                  {"facing":"west","delay":"4","powered":"true"}),
-                n("delay_out",(3,100,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("direct_out",(3,101,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("mid1",(4,101,-2),"minecraft:redstone_wire",["signal_transport"]),
-                n("mid2",(4,101,-1),"minecraft:redstone_wire",["signal_transport"]),
-                n("mid3",(4,101,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("final_support",(5,101,0),"minecraft:stone"),
-                n("final",(5,102,0),"minecraft:redstone_torch",
-                  ["signal_transport","logic_gate"],{"lit":"false"}),
-                n("out",(6,102,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("lamp",(7,102,0),"minecraft:redstone_lamp",["presentation_feedback"]),
-            ],
-            "edges":[
-                edge("in0","in1"),edge("in1","in0"),
-                edge("in1","in2"),edge("in2","in1"),
-                edge("delay_out","mid3"),edge("mid3","delay_out"),
-                edge("direct_out","mid1"),edge("mid1","direct_out"),
-                edge("mid1","mid2"),edge("mid2","mid1"),
-                edge("mid2","mid3"),edge("mid3","mid2"),
-            ],
-        }
-        doc,_=mod.build(graph)
+        doc,_=mod.build(self._edge_graph(1))
         self.assertFalse(any(
             x["template"]=="rising_edge_detector"
             for x in doc["motif_candidates"]
         ))
 
     def test_rising_edge_without_delay_is_hard_negative(self):
-        graph={
-            "schema":"supracraft-modern-causal-machinery/1",
-            "nodes":[
-                n("source",(0,100,0),"minecraft:redstone_block",["power_source"]),
-                n("in0",(1,100,0),"minecraft:redstone_wire",["signal_transport"]),
-                n("in1",(1,100,-1),"minecraft:redstone_wire",["signal_transport"]),
-                n("support",(2,100,-1),"minecraft:stone"),
-                n("direct_inv",(2,101,-1),"minecraft:redstone_torch",
-                  ["signal_transport","logic_gate"],{"lit":"false"}),
-                n("mid",(3,101,-1),"minecraft:redstone_wire",["signal_transport"]),
-                n("final_support",(4,101,-1),"minecraft:stone"),
-                n("final",(4,102,-1),"minecraft:redstone_torch",
-                  ["signal_transport","logic_gate"],{"lit":"false"}),
-                n("out",(5,102,-1),"minecraft:redstone_wire",["signal_transport"]),
-                n("lamp",(6,102,-1),"minecraft:redstone_lamp",["presentation_feedback"]),
-            ],
-            "edges":[edge("in0","in1"),edge("in1","in0")],
-        }
-        doc,_=mod.build(graph)
+        doc,_=mod.build(self._edge_graph(0))
         self.assertFalse(any(
             x["template"]=="rising_edge_detector"
             for x in doc["motif_candidates"]

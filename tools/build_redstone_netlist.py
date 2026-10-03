@@ -540,27 +540,22 @@ def motifs(components,nets):
 
 
     # Rising-edge detector: one source/input net fans out to a direct
-    # inverter and an exact two-stage delay-4 repeater chain.  The second
+    # inverter and an exact three-stage delay-4 repeater chain. The third
     # repeater output and direct-inverter output merge on one intermediate
-    # net that drives a final inverter.  One delay-4 stage is deliberately
-    # insufficient for this qualified cross-frontier reference because trace
-    # evidence showed its arrival coincident with, or earlier than, direct
-    # torch deassertion.
+    # net that drives a final inverter. One- and two-stage delay-4 shapes are
+    # explicit hard negatives for this qualified cross-frontier reference:
+    # one stage had no causal pulse window; two stages produced an
+    # instrumented-only pulse while stock failed.
     for delay_a in components:
         if (
             delay_a["primitive"]!="buffer_delay"
             or str((delay_a.get("properties") or {}).get("delay"))!="4"
         ):
             continue
-        a_inputs=[
+        for ain in [
             p for p in delay_a["ports"]
             if p["kind"]=="input" and p.get("net_id")
-        ]
-        a_outputs=[
-            p for p in delay_a["ports"]
-            if p["kind"]=="output" and p.get("net_id")
-        ]
-        for ain in a_inputs:
+        ]:
             input_net_id=ain["net_id"]
             input_net=net_by_id.get(input_net_id) or {}
             source_ids=sorted({
@@ -572,9 +567,12 @@ def motifs(components,nets):
             })
             if len(source_ids)!=1:
                 continue
-            for amid in a_outputs:
-                interstage_id=amid["net_id"]
-                if not interstage_id or interstage_id==input_net_id:
+            for aout in [
+                p for p in delay_a["ports"]
+                if p["kind"]=="output" and p.get("net_id")
+            ]:
+                interstage_a=aout["net_id"]
+                if not interstage_a or interstage_a==input_net_id:
                     continue
                 for delay_b in components:
                     if (
@@ -587,119 +585,153 @@ def motifs(components,nets):
                         p["net_id"] for p in delay_b["ports"]
                         if p["kind"]=="input" and p.get("net_id")
                     }
-                    if interstage_id not in b_inputs:
+                    if interstage_a not in b_inputs:
                         continue
-                    b_outputs=[
+                    for bout in [
                         p for p in delay_b["ports"]
                         if p["kind"]=="output" and p.get("net_id")
-                    ]
-                    for bout in b_outputs:
-                        intermediate_id=bout["net_id"]
+                    ]:
+                        interstage_b=bout["net_id"]
                         if (
-                            not intermediate_id
-                            or intermediate_id in {input_net_id,interstage_id}
+                            not interstage_b
+                            or interstage_b in {input_net_id,interstage_a}
                         ):
                             continue
-                        direct_inverters=[]
-                        for inv in components:
-                            if inv["primitive"]!="inverter":
-                                continue
-                            support_ids={
-                                nid
-                                for p in inv["ports"]
-                                if p.get("kind")=="input_support"
-                                for nid in p.get("support_net_ids",[])
-                            }
-                            output_ids={
-                                p["net_id"] for p in inv["ports"]
-                                if p.get("kind")=="output" and p.get("net_id")
-                            }
+                        for delay_c in components:
                             if (
-                                input_net_id in support_ids
-                                and intermediate_id in output_ids
-                            ):
-                                direct_inverters.append(inv)
-                        for direct_inv in direct_inverters:
-                            for final in components:
-                                if (
-                                    final["primitive"]!="inverter"
-                                    or final["component_id"]==
-                                        direct_inv["component_id"]
-                                ):
-                                    continue
-                                final_support_ids={
-                                    nid
-                                    for p in final["ports"]
-                                    if p.get("kind")=="input_support"
-                                    for nid in p.get("support_net_ids",[])
-                                }
-                                if intermediate_id not in final_support_ids:
-                                    continue
-                                output_net_ids=sorted({
-                                    p["net_id"] for p in final["ports"]
-                                    if p.get("kind")=="output"
-                                    and p.get("net_id")
-                                    and p["net_id"]!=intermediate_id
-                                })
-                                if not output_net_ids:
-                                    continue
-                                sink_ids=set()
-                                for output_net_id in output_net_ids:
-                                    out_net=net_by_id.get(output_net_id) or {}
-                                    for port in out_net.get("ports",[]):
-                                        cid=port.get("component_id")
-                                        if (
-                                            port.get("kind")=="input"
-                                            and cid in by_id
-                                            and by_id[cid]["primitive"]
-                                                in SINK_PRIMITIVES
-                                        ):
-                                            sink_ids.add(cid)
-                                if not sink_ids:
-                                    continue
-                                delay_ids=[
+                                delay_c["component_id"] in {
                                     delay_a["component_id"],
                                     delay_b["component_id"],
-                                ]
-                                out.append({
-                                    "template":"rising_edge_detector",
-                                    "confidence":"structural_candidate_only",
-                                    "component_ids":sorted(set(
-                                        source_ids+delay_ids+
-                                        [direct_inv["component_id"],
-                                         final["component_id"]]+
-                                        list(sink_ids)
-                                    )),
-                                    "net_ids":sorted(set(
-                                        [input_net_id,interstage_id,
-                                         intermediate_id]+output_net_ids
-                                    )),
-                                    "input_source_component_id":
-                                        source_ids[0],
-                                    "input_net_id":input_net_id,
-                                    "delay_component_ids":delay_ids,
-                                    "configured_delays":[4,4],
-                                    "delay_interstage_net_id":interstage_id,
-                                    "direct_inverter_component_id":
-                                        direct_inv["component_id"],
-                                    "intermediate_net_id":intermediate_id,
-                                    "final_inverter_component_id":
-                                        final["component_id"],
-                                    "output_net_ids":output_net_ids,
-                                    "output_sink_component_ids":
-                                        sorted(sink_ids),
-                                    "evidence":[
-                                        "single_source_fans_out_to_direct_inverter_and_two_stage_delay4_chain",
-                                        "first_delay4_output_feeds_second_delay4_input",
-                                        "direct_inverter_and_second_delay_output_share_intermediate_net",
-                                        "intermediate_net_drives_final_inverter",
-                                        "final_inverter_output_reaches_distinct_sink_net",
-                                    ],
-                                    "required_runtime_contract":
-                                        RUNTIME_CONTRACTS[
-                                            "rising_edge_detector"
-                                        ],
-                                })
+                                }
+                                or delay_c["primitive"]!="buffer_delay"
+                                or str(
+                                    (delay_c.get("properties") or {}).get("delay")
+                                )!="4"
+                            ):
+                                continue
+                            c_inputs={
+                                p["net_id"] for p in delay_c["ports"]
+                                if p["kind"]=="input" and p.get("net_id")
+                            }
+                            if interstage_b not in c_inputs:
+                                continue
+                            for cout in [
+                                p for p in delay_c["ports"]
+                                if p["kind"]=="output" and p.get("net_id")
+                            ]:
+                                intermediate_id=cout["net_id"]
+                                if (
+                                    not intermediate_id
+                                    or intermediate_id in {
+                                        input_net_id,interstage_a,interstage_b
+                                    }
+                                ):
+                                    continue
+                                direct_inverters=[]
+                                for inv in components:
+                                    if inv["primitive"]!="inverter":
+                                        continue
+                                    support_ids={
+                                        nid
+                                        for p in inv["ports"]
+                                        if p.get("kind")=="input_support"
+                                        for nid in p.get("support_net_ids",[])
+                                    }
+                                    output_ids={
+                                        p["net_id"] for p in inv["ports"]
+                                        if p.get("kind")=="output"
+                                        and p.get("net_id")
+                                    }
+                                    if (
+                                        input_net_id in support_ids
+                                        and intermediate_id in output_ids
+                                    ):
+                                        direct_inverters.append(inv)
+                                for direct_inv in direct_inverters:
+                                    for final in components:
+                                        if (
+                                            final["primitive"]!="inverter"
+                                            or final["component_id"]==
+                                                direct_inv["component_id"]
+                                        ):
+                                            continue
+                                        final_support_ids={
+                                            nid
+                                            for p in final["ports"]
+                                            if p.get("kind")=="input_support"
+                                            for nid in p.get("support_net_ids",[])
+                                        }
+                                        if intermediate_id not in final_support_ids:
+                                            continue
+                                        output_net_ids=sorted({
+                                            p["net_id"] for p in final["ports"]
+                                            if p.get("kind")=="output"
+                                            and p.get("net_id")
+                                            and p["net_id"]!=intermediate_id
+                                        })
+                                        if not output_net_ids:
+                                            continue
+                                        sink_ids=set()
+                                        for output_net_id in output_net_ids:
+                                            out_net=net_by_id.get(output_net_id) or {}
+                                            for port in out_net.get("ports",[]):
+                                                cid=port.get("component_id")
+                                                if (
+                                                    port.get("kind")=="input"
+                                                    and cid in by_id
+                                                    and by_id[cid]["primitive"]
+                                                        in SINK_PRIMITIVES
+                                                ):
+                                                    sink_ids.add(cid)
+                                        if not sink_ids:
+                                            continue
+                                        delay_ids=[
+                                            delay_a["component_id"],
+                                            delay_b["component_id"],
+                                            delay_c["component_id"],
+                                        ]
+                                        out.append({
+                                            "template":"rising_edge_detector",
+                                            "confidence":"structural_candidate_only",
+                                            "component_ids":sorted(set(
+                                                source_ids+delay_ids+
+                                                [direct_inv["component_id"],
+                                                 final["component_id"]]+
+                                                list(sink_ids)
+                                            )),
+                                            "net_ids":sorted(set(
+                                                [input_net_id,interstage_a,
+                                                 interstage_b,intermediate_id]+
+                                                output_net_ids
+                                            )),
+                                            "input_source_component_id":
+                                                source_ids[0],
+                                            "input_net_id":input_net_id,
+                                            "delay_component_ids":delay_ids,
+                                            "configured_delays":[4,4,4],
+                                            "delay_interstage_net_ids":[
+                                                interstage_a,interstage_b
+                                            ],
+                                            "direct_inverter_component_id":
+                                                direct_inv["component_id"],
+                                            "intermediate_net_id":intermediate_id,
+                                            "final_inverter_component_id":
+                                                final["component_id"],
+                                            "output_net_ids":output_net_ids,
+                                            "output_sink_component_ids":
+                                                sorted(sink_ids),
+                                            "evidence":[
+                                                "single_source_fans_out_to_direct_inverter_and_three_stage_delay4_chain",
+                                                "serial_three_stage_delay4_path_reaches_intermediate_net",
+                                                "direct_inverter_and_third_delay_output_share_intermediate_net",
+                                                "intermediate_net_drives_final_inverter",
+                                                "final_inverter_output_reaches_distinct_sink_net",
+                                            ],
+                                            "required_runtime_contract":
+                                                RUNTIME_CONTRACTS[
+                                                    "rising_edge_detector"
+                                                ],
+                                        })
 
     # AND via De Morgan: two independently sourced inverter outputs feed a
     # shared intermediate net that drives a third inverter. Structural shape

@@ -225,8 +225,8 @@ def validate_rising_edge(doc):
     qualified=[
         r for r in rows
         if r.get("input_source_component_id")
-        and len(r.get("delay_component_ids") or [])==2
-        and r.get("delay_interstage_net_id")
+        and len(r.get("delay_component_ids") or [])==3
+        and len(r.get("delay_interstage_net_ids") or [])==2
         and r.get("direct_inverter_component_id")
         and r.get("intermediate_net_id")
         and r.get("final_inverter_component_id")
@@ -240,7 +240,7 @@ def validate_rising_edge(doc):
         cid in cmap and cmap[cid]["primitive"]=="buffer_delay"
         for cid in delay_ids
     ),row
-    assert row.get("configured_delays")==[4,4],row
+    assert row.get("configured_delays")==[4,4,4],row
     assert cmap[row["direct_inverter_component_id"]]["primitive"]=="inverter",row
     assert cmap[row["final_inverter_component_id"]]["primitive"]=="inverter",row
     return {
@@ -250,7 +250,7 @@ def validate_rising_edge(doc):
         "input_net_id":row["input_net_id"],
         "delay_component_ids":delay_ids,
         "configured_delays":row["configured_delays"],
-        "delay_interstage_net_id":row["delay_interstage_net_id"],
+        "delay_interstage_net_ids":row["delay_interstage_net_ids"],
         "direct_inverter_component_id":row["direct_inverter_component_id"],
         "intermediate_net_id":row["intermediate_net_id"],
         "final_inverter_component_id":row["final_inverter_component_id"],

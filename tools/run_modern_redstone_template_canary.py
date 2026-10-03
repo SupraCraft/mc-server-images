@@ -1744,15 +1744,18 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
         ("input_branch_1",1,100,-1),
         ("input_branch_2",1,100,-2),
         ("direct_support_feed",2,100,-2),
-        ("delay_interstage",3,100,0),
-        ("delay_output",5,100,0),
+        ("delay_interstage_1",3,100,0),
+        ("delay_interstage_2",5,100,0),
+        ("delay_output",7,100,0),
         ("direct_output",4,101,-2),
-        ("direct_route",5,101,-2),
-        ("direct_corner",6,101,-2),
-        ("direct_turn",6,101,-1),
-        ("intermediate",6,101,0),
-        ("support_feed",7,101,0),
-        ("output_wire",9,102,0),
+        ("direct_route_1",5,101,-2),
+        ("direct_route_2",6,101,-2),
+        ("direct_route_3",7,101,-2),
+        ("direct_corner",8,101,-2),
+        ("direct_turn",8,101,-1),
+        ("intermediate",8,101,0),
+        ("support_feed",9,101,0),
+        ("output_wire",11,102,0),
     ):
         for power in range(16):
             add(
@@ -1760,7 +1763,11 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
                 f"execute if block {x} {y} {z} minecraft:redstone_wire[power={power}]",
             )
 
-    for label,x in (("delay_repeater_1",2),("delay_repeater_2",4)):
+    for label,x in (
+        ("delay_repeater_1",2),
+        ("delay_repeater_2",4),
+        ("delay_repeater_3",6),
+    ):
         for powered in (False,True):
             state="true" if powered else "false"
             add(
@@ -1770,7 +1777,7 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
 
     for label,x,y,z in (
         ("direct_inverter",3,101,-2),
-        ("final_inverter",8,102,0),
+        ("final_inverter",10,102,0),
     ):
         for lit in (False,True):
             state="true" if lit else "false"
@@ -1783,7 +1790,7 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
         state="true" if lit else "false"
         add(
             "output_lamp","lit" if lit else "unlit",
-            f"execute if block 10 102 0 minecraft:redstone_lamp[lit={state}]",
+            f"execute if block 12 102 0 minecraft:redstone_lamp[lit={state}]",
         )
 
     for label,value,marker,condition in checks:
@@ -1811,6 +1818,7 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
                 "input_net":"unpowered",
                 "delay_repeater_1":"unpowered",
                 "delay_repeater_2":"unpowered",
+                "delay_repeater_3":"unpowered",
                 "direct_inverter":"lit",
                 "intermediate":"powered",
                 "final_inverter":"unlit",
@@ -1822,6 +1830,7 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
                 "direct_inverter":"unlit",
                 "delay_repeater_1":"transition_pending_or_powered",
                 "delay_repeater_2":"transition_pending_or_powered",
+                "delay_repeater_3":"transition_pending_or_powered",
                 "final_inverter":"lit_during_positive_pulse",
                 "output_wire":"powered_during_positive_pulse",
             } if phase=="pulse_1_high_timeout" else {}
@@ -1845,8 +1854,8 @@ def edge_probe(source_high,final_lit,output_power):
     lit="true" if final_lit else "false"
     return (
         f"execute if block 0 100 0 {source} "
-        f"if block 8 102 0 minecraft:redstone_torch[lit={lit}] "
-        f"if block 9 102 0 minecraft:redstone_wire[power={output_power}]"
+        f"if block 10 102 0 minecraft:redstone_torch[lit={lit}] "
+        f"if block 11 102 0 minecraft:redstone_wire[power={output_power}]"
     )
 
 
@@ -1857,13 +1866,13 @@ def prove_no_edge_pulse(process,log_path,output_dir,duration_seconds=0.9):
     while time.monotonic()-started<duration_seconds:
         checked_command(
             process,
-            "execute if block 8 102 0 minecraft:redstone_torch[lit=true] "
+            "execute if block 10 102 0 minecraft:redstone_torch[lit=true] "
             f"run say {marker}",
             "rising_edge_falling_torch_guard",log_path,output_dir,
         )
         checked_command(
             process,
-            "execute if block 9 102 0 minecraft:redstone_wire[power=15] "
+            "execute if block 11 102 0 minecraft:redstone_wire[power=15] "
             f"run say {marker}",
             "rising_edge_falling_wire_guard",log_path,output_dir,
         )
@@ -1875,7 +1884,7 @@ def prove_no_edge_pulse(process,log_path,output_dir,duration_seconds=0.9):
 
 
 def run_rising_edge_detector(args,evidence,server_jar,output_dir):
-    """Qualify direct input AND NOT(two-stage delay-4 input) as a rising-edge detector."""
+    """Qualify direct input AND NOT(three-stage delay-4 input) as a rising-edge detector."""
     version=evidence["minecraft_version"]
     delay=4
     with tempfile.TemporaryDirectory(prefix="modern-redstone-rising-edge-") as td:
@@ -1895,25 +1904,28 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
             ready=wait_ready(p,log_path,180)
             checked_command(p,"forceload add -16 -16 16 16","forceload",log_path,output_dir)
             time.sleep(1)
-            checked_command(p,"fill -2 99 -4 10 104 2 minecraft:air","clear",log_path,output_dir)
-            checked_command(p,"fill -2 99 -4 10 99 2 minecraft:stone","floor",log_path,output_dir)
+            checked_command(p,"fill -2 99 -4 12 104 2 minecraft:air","clear",log_path,output_dir)
+            checked_command(p,"fill -2 99 -4 12 99 2 minecraft:stone","floor",log_path,output_dir)
             checked_command(p,EDGE_INPUT_LOW_COMMAND,"edge_input_low_setup",log_path,output_dir)
 
             # One source fans out across one collapsed input net to:
             #   (1) a direct inverter, and
-            #   (2) two qualified delay-4 repeaters in series.
-            # Trace evidence on the one-repeater fixture showed the delayed
-            # branch arrived no later than the direct torch deassertion.
+            #   (2) three qualified delay-4 repeaters in series.
+            # One stage had no causal pulse window. Two stages produced only
+            # a marginal instrumented-only pulse on 26.3 while stock failed,
+            # so that topology is retained as an observer-effect hard negative.
             for x,y,z,name in (
                 (3,100,-2,"edge_direct_inverter_support"),
                 (4,100,-2,"edge_direct_output_support"),
-                (5,100,-2,"edge_direct_route_support"),
-                (6,100,-2,"edge_direct_corner_support"),
-                (6,100,-1,"edge_direct_turn_support"),
-                (6,100,0,"edge_delayed_rise_support"),
-                (7,100,0,"edge_final_support_feed_support"),
-                (8,101,0,"edge_final_inverter_support"),
-                (9,101,0,"edge_output_support"),
+                (5,100,-2,"edge_direct_route_1_support"),
+                (6,100,-2,"edge_direct_route_2_support"),
+                (7,100,-2,"edge_direct_route_3_support"),
+                (8,100,-2,"edge_direct_corner_support"),
+                (8,100,-1,"edge_direct_turn_support"),
+                (8,100,0,"edge_delayed_rise_support"),
+                (9,100,0,"edge_final_support_feed_support"),
+                (10,101,0,"edge_final_inverter_support"),
+                (11,101,0,"edge_output_support"),
             ):
                 checked_command(
                     p,f"setblock {x} {y} {z} minecraft:stone",
@@ -1947,6 +1959,15 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
             )
             checked_command(
                 p,"setblock 5 100 0 minecraft:redstone_wire",
+                "edge_delay_interstage_2",log_path,output_dir,
+            )
+            checked_command(
+                p,
+                f"setblock 6 100 0 minecraft:repeater[facing=west,delay={delay},locked=false,powered=false]",
+                "edge_delay_repeater_3",log_path,output_dir,
+            )
+            checked_command(
+                p,"setblock 7 100 0 minecraft:redstone_wire",
                 "edge_delay_output",log_path,output_dir,
             )
             checked_command(
@@ -1955,26 +1976,28 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
             )
             for x,z,name in (
                 (4,-2,"edge_direct_output"),
-                (5,-2,"edge_direct_route"),
-                (6,-2,"edge_direct_corner"),
-                (6,-1,"edge_direct_turn"),
-                (6,0,"edge_intermediate_merge"),
-                (7,0,"edge_final_support_feed"),
+                (5,-2,"edge_direct_route_1"),
+                (6,-2,"edge_direct_route_2"),
+                (7,-2,"edge_direct_route_3"),
+                (8,-2,"edge_direct_corner"),
+                (8,-1,"edge_direct_turn"),
+                (8,0,"edge_intermediate_merge"),
+                (9,0,"edge_final_support_feed"),
             ):
                 checked_command(
                     p,f"setblock {x} 101 {z} minecraft:redstone_wire",
                     name,log_path,output_dir,
                 )
             checked_command(
-                p,"setblock 8 102 0 minecraft:redstone_torch",
+                p,"setblock 10 102 0 minecraft:redstone_torch",
                 "edge_final_inverter",log_path,output_dir,
             )
             checked_command(
-                p,"setblock 9 102 0 minecraft:redstone_wire",
+                p,"setblock 11 102 0 minecraft:redstone_wire",
                 "edge_output_wire",log_path,output_dir,
             )
             checked_command(
-                p,"setblock 10 102 0 minecraft:redstone_lamp",
+                p,"setblock 12 102 0 minecraft:redstone_lamp",
                 "edge_output_lamp",log_path,output_dir,
             )
 
@@ -2130,23 +2153,23 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
             "java_major":evidence_java_major(evidence),
             "instrumented":bool(args.java_agent),
             "input_control":"fixture_controller_single_source_fanout",
-            "configured_delays":[delay,delay],
-            "delay_stage_count":2,
+            "configured_delays":[delay,delay,delay],
+            "delay_stage_count":3,
             "input_source_position":[0,100,0],
             "input_net_wire_positions":[
                 [1,100,0],[1,100,-1],[1,100,-2],[2,100,-2]
             ],
-            "delay_repeater_positions":[[2,100,0],[4,100,0]],
-            "delay_interstage_wire_position":[3,100,0],
-            "delay_output_wire_position":[5,100,0],
+            "delay_repeater_positions":[[2,100,0],[4,100,0],[6,100,0]],
+            "delay_interstage_wire_positions":[[3,100,0],[5,100,0]],
+            "delay_output_wire_position":[7,100,0],
             "direct_inverter_position":[3,101,-2],
             "intermediate_wire_positions":[
-                [4,101,-2],[5,101,-2],[6,101,-2],
-                [6,101,-1],[6,101,0],[7,101,0]
+                [4,101,-2],[5,101,-2],[6,101,-2],[7,101,-2],
+                [8,101,-2],[8,101,-1],[8,101,0],[9,101,0]
             ],
-            "final_inverter_position":[8,102,0],
-            "output_wire_position":[9,102,0],
-            "output_lamp_position":[10,102,0],
+            "final_inverter_position":[10,102,0],
+            "output_wire_position":[11,102,0],
+            "output_lamp_position":[12,102,0],
             "input_high_command_sha256":digest_bytes(EDGE_INPUT_HIGH_COMMAND),
             "input_low_command_sha256":digest_bytes(EDGE_INPUT_LOW_COMMAND),
             "temporal_sequence":[
@@ -2181,8 +2204,8 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
                 (output_dir/"world.zip").read_bytes()
             ).hexdigest(),
             "output_lamp_semantic_authority":False,
-            "boolean_temporal_composition":"A AND NOT(delay4(delay4(A)))",
-            "boundary":"rising-edge qualification requires a bounded positive pulse only after low-to-high input transitions through this exact two-stage delay-4 fixture, no positive pulse on the falling edge, low output while high is settled, and retrigger after low settling; lamp state is diagnostic only",
+            "boolean_temporal_composition":"A AND NOT(delay4(delay4(delay4(A))))",
+            "boundary":"rising-edge qualification requires a bounded positive pulse only after low-to-high input transitions through this exact three-stage delay-4 fixture, no positive pulse on the falling edge, low output while high is settled, and retrigger after low settling; lamp state is diagnostic only",
         }
         (output_dir/"result.json").write_text(
             json.dumps(result,indent=2,sort_keys=True)+"\n"
