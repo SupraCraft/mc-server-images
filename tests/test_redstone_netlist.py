@@ -388,7 +388,8 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(by_id["xor_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["rising_edge_detector"]["status"],"qualified_template")
         self.assertEqual(by_id["pulse_edge_detector"]["status"],"reference_candidate_only")
-        self.assertEqual(by_id["repeater_ring_oscillator"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["oscillator"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["repeater_ring_oscillator"]["status"],"qualified_template")
         self.assertEqual(by_id["rs_latch"]["status"],"qualified_template")
         self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 

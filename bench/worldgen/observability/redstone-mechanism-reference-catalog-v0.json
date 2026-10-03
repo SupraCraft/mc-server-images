@@ -201,8 +201,17 @@
     {
       "id": "repeater_ring_oscillator",
       "family": "clock",
-      "status": "reference_candidate_only",
-      "runtime_contract": "a finite seed pulse must circulate autonomously through a closed four-stage delay-4 repeater ring after seed removal; repeated rise/fall transitions must have bounded period/jitter; opening the loop must quench after settling; reclosing plus one new seed must restart"
+      "status": "qualified_template",
+      "runtime_contract": "a finite seed pulse must circulate autonomously through a closed four-stage delay-4 repeater ring after seed removal; repeated rise/fall transitions must have bounded period/jitter; opening the loop must quench after settling; reclosing plus one new seed must restart",
+      "qualification_evidence": {
+        "authority_issue": "SupraCraft/mc-server-images#11",
+        "authority_comment_id": 5966133967,
+        "exact_versions": [
+          "26.3",
+          "26.4-snapshot-2"
+        ],
+        "contract": "exact_four_stage_delay4_closed_ring_plus_autonomous_seed_quench_restart_runtime_contract"
+      }
     },
     {
       "id": "rs_latch",
