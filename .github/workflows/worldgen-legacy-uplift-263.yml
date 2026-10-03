@@ -37,6 +37,7 @@ jobs:
           out="$root/uplifted"
           mkdir -p "$src/data/demo/predicate"
           mkdir -p "$src/data/demo/worldgen/configured_feature"
+
           cat > "$src/data/demo/predicate/example.json" <<'JSON'
           {
             "condition": "minecraft:entity_properties",
@@ -48,6 +49,7 @@ jobs:
             }
           }
           JSON
+
           cat > "$src/data/demo/worldgen/configured_feature/example.json" <<'JSON'
           {
             "type": "minecraft:ore",
@@ -62,11 +64,14 @@ jobs:
           }
           JSON
 
-          python tools/analyze_legacy_uplift_candidates.py "$src"             --apply-safe "$out"             --output-json "$root/receipt.json"             --fail-on-safe
+          python tools/analyze_legacy_uplift_candidates.py "$src" \
+            --apply-safe "$out" \
+            --output-json "$root/receipt.json" \
+            --fail-on-safe
 
           cat "$root/receipt.json"
 
-          python - <<'PY' "$root/receipt.json"
+          python - "$root/receipt.json" <<'PY'
           import json, sys
           p = json.load(open(sys.argv[1]))
           a = p["safe_apply"]
@@ -75,3 +80,96 @@ jobs:
           assert any(x["to"].endswith("/worldgen/feature") for x in a["path_moves"])
           print("SUPRACRAFT_UPLIFT_SAFE_APPLY_PASS")
           PY
+
+  voidblock-26-2:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout SupraCraft analyzer
+        uses: actions/checkout@v4
+        with:
+          path: self
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Checkout pinned Voidblock corpus source
+        uses: actions/checkout@v4
+        with:
+          repository: Loweredgames/Voidblock
+          ref: ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19
+          path: external/voidblock
+          fetch-depth: 1
+
+      - name: Uplift Voidblock 26.2 overlay and compare path surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="$GITHUB_WORKSPACE/external/voidblock/datapacks/Voidblock datapacks/voidblock_mc26.2"
+          upstream263="$GITHUB_WORKSPACE/external/voidblock/datapacks/Voidblock datapacks/voidblock_mc26.3"
+          out="$RUNNER_TEMP/voidblock-26.2-uplifted"
+          receipt="$RUNNER_TEMP/voidblock-uplift-receipt.json"
+          compare="$RUNNER_TEMP/voidblock-path-compare.json"
+
+          python "$GITHUB_WORKSPACE/self/tools/analyze_legacy_uplift_candidates.py" "$src" \
+            --catalog "$GITHUB_WORKSPACE/self/bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json" \
+            --apply-safe "$out" \
+            --output-json "$receipt" \
+            --fail-on-safe
+
+          python - "$receipt" "$out" "$upstream263" "$compare" <<'PY'
+          import json, pathlib, sys
+
+          receipt_path, uplifted_root, upstream_root, compare_path = map(pathlib.Path, sys.argv[1:])
+          receipt = json.loads(receipt_path.read_text())
+          safe_apply = receipt["safe_apply"]
+          assert safe_apply["residual_safe_finding_count"] == 0
+          moved = {(x["from"], x["to"]) for x in safe_apply["path_moves"]}
+          assert any("configured_carver" in a and "/carver" in b for a, b in moved)
+          assert any("configured_feature" in a and "/feature" in b for a, b in moved)
+
+          def files(root):
+              return {
+                  p.relative_to(root).as_posix()
+                  for p in root.rglob("*")
+                  if p.is_file()
+              }
+
+          uplifted = files(uplifted_root)
+          upstream = files(upstream_root)
+          common = uplifted & upstream
+          data = {
+              "schema": "supracraft-uplift-upstream-path-compare/1",
+              "source": "Loweredgames/Voidblock@ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19",
+              "source_profile": "voidblock_mc26.2 after SAFE_SYNTACTIC uplift",
+              "reference_profile": "maintainer voidblock_mc26.3",
+              "uplifted_file_count": len(uplifted),
+              "upstream_26_3_file_count": len(upstream),
+              "common_path_count": len(common),
+              "uplifted_only_count": len(uplifted - upstream),
+              "upstream_only_count": len(upstream - uplifted),
+              "uplifted_only_sample": sorted(uplifted - upstream)[:50],
+              "upstream_only_sample": sorted(upstream - uplifted)[:50]
+          }
+          compare_path.write_text(json.dumps(data, indent=2) + "\n")
+          print(json.dumps({
+              "safe_counts": receipt["counts_by_rule"],
+              "safe_apply_path_moves": len(safe_apply["path_moves"]),
+              "safe_apply_json_changes": len(safe_apply["json_changes"]),
+              "residual_safe": safe_apply["residual_safe_finding_count"],
+              "path_compare": data
+          }, indent=2))
+          print("SUPRACRAFT_VOIDBLOCK_26_2_SAFE_UPLIFT_PASS")
+          PY
+
+      - name: Upload derived uplift receipts only
+        uses: actions/upload-artifact@v4
+        with:
+          name: voidblock-26.2-to-26.3-uplift-receipts
+          path: |
+            ${{ runner.temp }}/voidblock-uplift-receipt.json
+            ${{ runner.temp }}/voidblock-path-compare.json
+          retention-days: 14
+          if-no-files-found: error
