@@ -1,0 +1,87 @@
+name: worldgen CORE 1.8.8 four-domain census
+
+on:
+  push:
+    branches:
+      - feat/core-188-four-domain-census-v1
+    paths:
+      - 'tools/analyze_four_domain_census.py'
+      - 'tests/test_four_domain_census.py'
+      - '.github/workflows/worldgen-reference-core-four-domain-census.yml'
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE v1.4 intake run
+        required: true
+        default: "36559943983"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+    steps:
+      - name: Fail closed outside public standard runners
+        run: '[[ "${{ github.event.repository.private }}" == "false" ]] || exit 78'
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free policy
+        run: python tools/check_worldgen_public_policy.py --repository-private "${{ github.event.repository.private }}" --runner-label "$WORLDGEN_RUNNER_LABEL" --scan-workflows .github/workflows
+      - name: Unit controls
+        run: python -m unittest -v tests.test_four_domain_census
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+      - name: Build exact legacy causal graph
+        run: |
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py             --world-zip source/original-world.zip             --output out/core-v1.4-causal-machinery.json
+      - name: Run four-domain census
+        run: |
+          python tools/analyze_four_domain_census.py             --graph out/core-v1.4-causal-machinery.json             --output out/core-v1.4-four-domain-census.json
+      - name: Enforce census boundary
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/core-v1.4-four-domain-census.json").read_text())
+          assert d["analysis_kind"]=="four_domain_static_census_not_interaction_qualification"
+          assert set(d["domain_node_counts"])=={"electrical","mechanical","programmable","inventory"}
+          assert d["mixed_domain_component_candidate_count"] > 0
+          assert "phase-B interface candidates remain unqualified by this census" in d["boundaries"]
+          print(json.dumps({
+              "domain_node_counts":d["domain_node_counts"],
+              "observation_surface_counts":d["observation_surface_counts"],
+              "mixed_domain_component_candidate_count":d["mixed_domain_component_candidate_count"],
+              "phase_b_interface_candidate_counts":d["phase_b_interface_candidate_counts"],
+              "unknown_family_counts":d["unknown_family_counts"],
+          },indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-four-domain-census
+          path: out/core-v1.4-four-domain-census.json
+          retention-days: 14
