@@ -329,6 +329,49 @@
       "evidence": [
         "Minecraft Java 26.3 Snapshot 3"
       ]
+    },
+    {
+      "id": "mcfunction_block_state_snbt_Name_Properties_to_id_properties",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "Block State SNBT compounds embedded in .mcfunction commands",
+      "target_scope": "26.3+ Block State SNBT representation",
+      "detect": {
+        "kind": "structured_text_compound",
+        "prefix": "block_state:{",
+        "legacy_top_level_keys": [
+          "Name",
+          "Properties"
+        ],
+        "modern_top_level_keys": [
+          "id",
+          "properties"
+        ]
+      },
+      "transform": "within each balanced block_state:{...} compound only, rename top-level Name->id and Properties->properties",
+      "preconditions": [
+        "text is parsed by balanced compound boundaries",
+        "rewrite is limited to top-level keys inside block_state compound",
+        "source and output paths differ"
+      ],
+      "hard_negatives": [
+        "CustomName and unrelated Name fields",
+        "Name/Properties outside a block_state compound",
+        "unterminated/malformed compounds",
+        "already-modern id/properties compounds"
+      ],
+      "validation": [
+        "source file remains byte-identical",
+        "rewritten command file preserves all non-target text",
+        "exact transformed legacy file may be compared byte-for-byte with a maintained 26.3 counterpart when available"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "Sprint Racer exact 26.2 b674e09699818878749570760444ed7147fea3dc",
+        "Sprint Racer exact 26.3 93cdfcff9f2462313de4d568f169c0e442d94e42",
+        "SupraCraft/mc-server-images#34",
+        "SupraCraft/mc-server-images#35"
+      ]
     }
   ]
 }
