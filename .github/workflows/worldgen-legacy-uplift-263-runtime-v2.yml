@@ -2,16 +2,10 @@ name: legacy uplift 26.3 runtime qualification v2
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/run_datapack_runtime_profile.py'
-      - 'tools/analyze_legacy_uplift_candidates.py'
-      - 'tools/uplift_worldgen_26_2_to_26_3.py'
-      - 'bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json'
-      - 'probes/26.3-release-identity.json'
-      - '.github/workflows/worldgen-legacy-uplift-263-runtime-v2.yml'
+
+concurrency:
+  group: legacy-uplift-runtime-26-3
+  cancel-in-progress: false
 
 permissions:
   contents: read
