@@ -2,16 +2,6 @@ name: worldgen causal microscope piston runtime candidate
 
 on:
   workflow_dispatch:
-  push:
-    branches: [feat/piston-runtime-canary]
-    paths:
-      - 'bench/worldgen/observability/supracraft-causal-event-v1.schema.json'
-      - 'tools/causal-microscope/modern-26.3-agent/**'
-      - 'tools/causal-microscope/modern-26.4-snapshot-2-agent/**'
-      - 'tools/run_modern_piston_microscope_canary.py'
-      - 'tests/test_piston_microscope_contract.py'
-      - '.github/workflows/worldgen-causal-microscope-piston-runtime.yml'
-
 concurrency:
   group: worldgen-causal-microscope-piston-runtime-${{ github.ref }}
   cancel-in-progress: true
