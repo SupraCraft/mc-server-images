@@ -1,0 +1,131 @@
+name: legacy uplift 26.3 runtime qualification v2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/run_datapack_runtime_profile.py'
+      - 'tools/analyze_legacy_uplift_candidates.py'
+      - 'tools/uplift_worldgen_26_2_to_26_3.py'
+      - 'bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json'
+      - 'probes/26.3-release-identity.json'
+      - '.github/workflows/worldgen-legacy-uplift-263-runtime-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  voidblock-runtime-26-3-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout SupraCraft runtime tooling
+        uses: actions/checkout@v4
+        with:
+          path: self
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact runtime Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Checkout pinned Voidblock source
+        uses: actions/checkout@v4
+        with:
+          repository: Loweredgames/Voidblock
+          ref: ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19
+          path: external/voidblock
+          fetch-depth: 1
+
+      - name: Materialize alternate 26.3 pack from uplifted 26.2 overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_pack="$GITHUB_WORKSPACE/external/voidblock/datapacks/Voidblock datapacks"
+          uplift_pack="$RUNNER_TEMP/voidblock-uplift-pack"
+          cp -a "$source_pack" "$uplift_pack"
+          rm -rf "$uplift_pack/voidblock_mc26.3"
+
+          python "$GITHUB_WORKSPACE/self/tools/analyze_legacy_uplift_candidates.py"             "$source_pack/voidblock_mc26.2"             --catalog "$GITHUB_WORKSPACE/self/bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json"             --apply-safe "$uplift_pack/voidblock_mc26.3"             --output-json "$RUNNER_TEMP/runtime-uplift-materialization.json"             --fail-on-safe
+
+          python "$GITHUB_WORKSPACE/self/tools/uplift_worldgen_26_2_to_26_3.py"             "$uplift_pack/voidblock_mc26.3"             --output-json "$RUNNER_TEMP/worldgen-uplift.json"
+
+      - name: Profile generated uplift on exact Java 26.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          python "$GITHUB_WORKSPACE/self/tools/run_datapack_runtime_profile.py"             --evidence "$GITHUB_WORKSPACE/self/probes/26.3-release-identity.json"             --datapack-dir "$RUNNER_TEMP/voidblock-uplift-pack"             --label uplifted-26.2-overlay-v2             --output "$RUNNER_TEMP/uplift-runtime.json"
+
+      - name: Profile maintainer 26.3 overlay on the same exact runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python "$GITHUB_WORKSPACE/self/tools/run_datapack_runtime_profile.py"             --evidence "$GITHUB_WORKSPACE/self/probes/26.3-release-identity.json"             --datapack-dir "$GITHUB_WORKSPACE/external/voidblock/datapacks/Voidblock datapacks"             --label maintainer-26.3-overlay             --output "$RUNNER_TEMP/maintainer-runtime.json"
+
+      - name: Compare bounded runtime contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$RUNNER_TEMP/uplift-runtime.json" "$RUNNER_TEMP/maintainer-runtime.json" "$RUNNER_TEMP/runtime-compare.json" <<'PY'
+          import json, pathlib, sys
+          ufile, mfile, ofile = map(pathlib.Path, sys.argv[1:])
+          u = json.loads(ufile.read_text())
+          m = json.loads(mfile.read_text())
+
+          assert u["canary_pass"], u
+          assert m["canary_pass"], m
+          assert u["minecraft_version"] == m["minecraft_version"] == "26.3"
+          assert u["protocol"] == m["protocol"] == 777
+          assert u["hard_datapack_error_count"] == 0
+          assert m["hard_datapack_error_count"] == 0
+          assert u["bedrock_setup_probe_pre_reload"] and m["bedrock_setup_probe_pre_reload"]
+          assert u["bedrock_setup_probe_post_reload"] and m["bedrock_setup_probe_post_reload"]
+
+          uc = [x["count"] for x in u.get("objective_snapshots", [])]
+          mc = [x["count"] for x in m.get("objective_snapshots", [])]
+          objective_cardinality_equivalent = None
+          if uc and mc:
+              objective_cardinality_equivalent = (uc[-1] == mc[-1])
+              assert objective_cardinality_equivalent, (uc, mc)
+
+          result = {
+              "schema": "supracraft-datapack-uplift-runtime-compare/1",
+              "minecraft_version": "26.3",
+              "protocol": 777,
+              "uplift_canary_pass": u["canary_pass"],
+              "maintainer_canary_pass": m["canary_pass"],
+              "uplift_hard_error_count": u["hard_datapack_error_count"],
+              "maintainer_hard_error_count": m["hard_datapack_error_count"],
+              "uplift_error_log_count": u["error_log_count"],
+              "maintainer_error_log_count": m["error_log_count"],
+              "uplift_objective_snapshot_counts": uc,
+              "maintainer_objective_snapshot_counts": mc,
+              "objective_cardinality_equivalent": objective_cardinality_equivalent,
+              "bedrock_setup_equivalent": True,
+              "classification": "BOUNDED_INITIALIZATION_EQUIVALENCE_PASS"
+          }
+          ofile.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          print("SUPRACRAFT_VOIDBLOCK_26_3_RUNTIME_UPLIFT_V2_PASS")
+          PY
+
+      - name: Upload derived runtime receipts only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voidblock-uplift-runtime-26.3-v2-receipts
+          path: |
+            ${{ runner.temp }}/runtime-uplift-materialization.json
+            ${{ runner.temp }}/worldgen-uplift.json
+            ${{ runner.temp }}/uplift-runtime.json
+            ${{ runner.temp }}/maintainer-runtime.json
+            ${{ runner.temp }}/runtime-compare.json
+          retention-days: 14
+          if-no-files-found: warn
