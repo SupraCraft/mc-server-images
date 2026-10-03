@@ -1,0 +1,206 @@
+name: worldgen causal microscope frontier symbol inventory
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bench/worldgen/observability/**'
+      - 'tools/discover_minecraft_observability.py'
+      - 'tools/inventory_modern_microscope_symbols.py'
+      - 'tests/test_modern_microscope_symbol_inventory.py'
+      - '.github/workflows/worldgen-causal-microscope-frontier-symbol-inventory.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: worldgen-causal-microscope-frontier-symbol-inventory-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.frontier.outputs.matrix }}
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Symbol inventory contract controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v tests.test_modern_microscope_symbol_inventory
+          python -m py_compile \
+            tools/discover_minecraft_observability.py \
+            tools/inventory_modern_microscope_symbols.py
+
+      - name: Resolve exact Mojang frontier
+        id: frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python tools/discover_minecraft_observability.py resolve \
+            --output out/frontier-resolution.json \
+            --github-output "$GITHUB_OUTPUT"
+
+  inventory:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '${{ matrix.java_major }}'
+
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Inventory exact embedded runtime symbols
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/runtime
+          python tools/inventory_modern_microscope_symbols.py inventory \
+            --channel "${{ matrix.channel }}" \
+            --expected-version "${{ matrix.minecraft_version }}" \
+            --expected-java "${{ matrix.java_major }}" \
+            --work-dir out/runtime \
+            --output out/symbol-inventory.json
+
+      - name: Validate inventory is discovery-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          doc=json.loads(pathlib.Path("out/symbol-inventory.json").read_text())
+          assert doc["schema"]=="supracraft-causal-symbol-inventory/1"
+          assert doc["qualification_status"]=="inventory_only_not_hook_qualified"
+          assert doc["symbol_mode_required"]=="unobfuscated"
+          roles={row["role"]:row for row in doc["classes"]}
+          expected={
+              "server_tick_host","world_state_host","server_world_host",
+              "command_block","command_block_entity","command_dispatch",
+              "packet_listener","redstone_wire",
+          }
+          assert set(roles)==expected
+          for row in roles.values():
+              assert len(row["class_sha256"])==64
+              assert row["method_count"]==len(row["methods"])
+              assert row["methods"]
+          print(json.dumps({
+              "channel":doc["channel"],
+              "minecraft_version":doc["minecraft_version"],
+              "roles":{
+                  name:{
+                      "runtime_class":row["runtime_class"],
+                      "class_sha256":row["class_sha256"],
+                      "method_count":row["method_count"],
+                      "candidate_count":len(row["name_token_candidates"]),
+                  }
+                  for name,row in roles.items()
+              },
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-symbols-${{ matrix.channel }}
+          path: out/symbol-inventory.json
+          retention-days: 14
+
+  compare:
+    needs: inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: causal-microscope-symbols-*
+          path: out/symbols
+          merge-multiple: false
+
+      - name: Compare exact release and snapshot signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/inventory_modern_microscope_symbols.py compare \
+            --root out/symbols \
+            --output out/symbol-frontier-comparison.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-symbol-frontier-comparison
+          path: out/symbol-frontier-comparison.json
+          retention-days: 14

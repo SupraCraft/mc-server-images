@@ -1,0 +1,162 @@
+name: worldgen vanilla bootstrap
+# bootstrap diagnostic replay
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/generate_vanilla_worldgen_bootstrap.py'
+      - 'tools/worldgen_tour_pack.py'
+      - 'tools/validate_worldgen_bootstrap.py'
+      - 'tools/check_worldgen_public_policy.py'
+      - 'probes/26.3-release-identity.json'
+      - '.github/workflows/worldgen-vanilla-bootstrap.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - normal
+          - flat-null-control
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      WORLDGEN_SEED: "260928"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - name: Generate bounded world and bootstrap analysis
+        run: |
+          python tools/generate_vanilla_worldgen_bootstrap.py             --profile "${{ matrix.profile }}"             --seed "$WORLDGEN_SEED"             --evidence probes/26.3-release-identity.json             --output-dir "out/${{ matrix.profile }}"
+
+      - name: Upload canonical run
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-bootstrap-${{ matrix.profile }}
+          path: out/${{ matrix.profile }}/
+          retention-days: 14
+
+  compare-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: generate
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: worldgen-bootstrap-*
+          path: runs
+          merge-multiple: false
+
+      - name: Independently validate both canonical world artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p validations
+          python tools/validate_worldgen_bootstrap.py \
+            --run-dir runs/worldgen-bootstrap-normal \
+            --release-evidence probes/26.3-release-identity.json \
+            --output validations/normal.json
+          python tools/validate_worldgen_bootstrap.py \
+            --run-dir runs/worldgen-bootstrap-flat-null-control \
+            --release-evidence probes/26.3-release-identity.json \
+            --output validations/flat-null-control.json
+
+      - name: Falsify the bootstrap terrain metric against the low-complexity control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          normal = json.loads(Path("runs/worldgen-bootstrap-normal/analysis/terrain.json").read_text())
+          flat = json.loads(Path("runs/worldgen-bootstrap-flat-null-control/analysis/terrain.json").read_text())
+
+          n_mean = normal["surface_mean_y"]
+          f_mean = flat["surface_mean_y"]
+          n_relief = normal["coarse_relief"]
+          f_relief = flat["coarse_relief"]
+
+          result = {
+              "schema": "supracraft-worldgen-bootstrap-control-comparison/1",
+              "normal_surface_mean_y": n_mean,
+              "flat_surface_mean_y": f_mean,
+              "normal_coarse_relief": n_relief,
+              "flat_coarse_relief": f_relief,
+              "mean_height_separation": None if n_mean is None or f_mean is None else n_mean - f_mean,
+              "control_distinguished": bool(
+                  n_mean is not None and
+                  f_mean is not None and
+                  (n_mean - f_mean) >= 32
+              ),
+              "note": "This is a bootstrap falsification check, not a final terrain-quality metric."
+          }
+          Path("comparison.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          if not result["control_distinguished"]:
+              raise SystemExit("bootstrap terrain probe failed to distinguish vanilla normal from flat control")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-bootstrap-validation-and-comparison
+          path: |
+            comparison.json
+            validations/
+          retention-days: 14

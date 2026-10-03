@@ -1,0 +1,98 @@
+name: worldgen reference profile controls
+
+on:
+  pull_request:
+    paths:
+      - 'bench/worldgen/reference-worlds/reference-evaluation-profiles-v0.json'
+      - 'tools/apply_reference_evaluation_profile.py'
+      - 'tests/test_worldgen_evaluation_profiles.py'
+      - '.github/workflows/worldgen-reference-profile-controls.yml'
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'bench/worldgen/reference-worlds/reference-evaluation-profiles-v0.json'
+      - 'tools/apply_reference_evaluation_profile.py'
+      - 'tests/test_worldgen_evaluation_profiles.py'
+      - '.github/workflows/worldgen-reference-profile-controls.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Run applicability controls
+        run: python -m unittest -v tests.test_worldgen_evaluation_profiles
+
+      - name: Emit CORE and Savanna applicability receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python tools/apply_reference_evaluation_profile.py \
+            --profiles bench/worldgen/reference-worlds/reference-evaluation-profiles-v0.json \
+            --world-ref reference.core.v1.4 \
+            --metric-family progression_legibility \
+            --metric-family affordance_legibility \
+            --metric-family vanilla_survival_start_bundle \
+            --output out/core.json
+
+          python tools/apply_reference_evaluation_profile.py \
+            --profiles bench/worldgen/reference-worlds/reference-evaluation-profiles-v0.json \
+            --world-ref reference.savanna-scramble.v2 \
+            --metric-family collectible_discoverability \
+            --metric-family navigation \
+            --metric-family vanilla_survival_start_bundle \
+            --metric-family ore_progression \
+            --output out/savanna.json
+
+      - name: Prove not-applicable is distinct from failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          core=json.loads(pathlib.Path("out/core.json").read_text())
+          sav=json.loads(pathlib.Path("out/savanna.json").read_text())
+          c={x["metric_family"]:x["applicability"] for x in core["observations"]}
+          s={x["metric_family"]:x["applicability"] for x in sav["observations"]}
+          assert c["progression_legibility"]=="applicable_required"
+          assert c["vanilla_survival_start_bundle"]=="not_applicable"
+          assert s["collectible_discoverability"]=="applicable_required"
+          assert s["vanilla_survival_start_bundle"]=="not_applicable"
+          assert s["ore_progression"]=="not_applicable"
+          print("REFERENCE-PROFILE-APPLICABILITY-PASS")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-reference-profile-controls
+          path: out/
+          retention-days: 14

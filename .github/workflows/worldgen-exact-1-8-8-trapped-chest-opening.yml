@@ -1,0 +1,194 @@
+name: worldgen exact 1.8.8 trapped-chest opening fixture
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/legacy_trapped_chest_player.js'
+      - 'tools/probe_legacy_trapped_chest_fixture.py'
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'bench/worldgen/interaction/exact-1.8.8-trapped-chest-source-evidence-v0.json'
+      - '.github/workflows/worldgen-exact-1-8-8-trapped-chest-opening.yml'
+
+concurrency:
+  group: worldgen-trapped-chest-runtime-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check nbtlib==2.0.4
+          mkdir -p trapped-chest-player-runtime
+          cd trapped-chest-player-runtime
+          npm init -y >/dev/null 2>&1
+          npm install --ignore-scripts --no-audit --no-fund mineflayer@4.39.0
+          echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
+
+      - name: Validate exact source oracle and harness syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/legacy_trapped_chest_player.js
+          python -m py_compile tools/probe_legacy_trapped_chest_fixture.py
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("bench/worldgen/interaction/exact-1.8.8-trapped-chest-source-evidence-v0.json").read_text())
+          assert d["schema"]=="supracraft-exact-version-source-evidence/1"
+          assert d["minecraft_version"]=="1.8.8"
+          s=d["observed_source_semantics"]
+          assert "numPlayersUsing" in s["weak_power"]
+          assert "inventory/fullness" in s["comparator_channel"]
+          assert d["runtime_hypothesis"]["comparator_isolation"].startswith("fixture contains no comparator")
+          print("TRAPPED-CHEST-SOURCE-ORACLE-PASS")
+          PY
+
+      - name: Run paired exact 1.8.8 trapped-chest opening fixture
+        run: |
+          mkdir -p out
+          python tools/probe_legacy_trapped_chest_fixture.py \
+            --version 1.8.8 \
+            --player-client-script tools/legacy_trapped_chest_player.js \
+            --output out/trapped-chest-opening.json
+
+      - name: Validate opening channel and preserve comparator boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/trapped-chest-opening.json").read_text())
+          assert d["schema"]=="supracraft-paired-legacy-trapped-chest-opening/1"
+          assert d["minecraft_version"]=="1.8.8"
+          assert d["paired_control_design"] is True
+          assert d["activation_method"]=="paired_exact_1.8.8_player_open"
+
+          for arm in ("control","activated"):
+              actor=d["player_actor"][arm]
+              assert actor["status"]=="ready"
+              assert actor["minecraft_version"]=="1.8.8"
+              assert actor["protocol_version"]==47
+              assert actor["mineflayer_version"]=="4.39.0"
+
+          setup=d["fixture_setup_verification"]
+          for arm in ("control","activated"):
+              assert setup[arm]["all_matched"] is True
+              assert set(setup[arm]["checks"])=={
+                  "trapped_chest","wire_unpowered","command_block","target_air"
+              }
+              assert all(
+                  row["matched"] is True
+                  for row in setup[arm]["checks"].values()
+              )
+
+          control=d["sensor_observation"]["control"]
+          active=d["sensor_observation"]["activated"]
+          assert control["schema"]=="supracraft-legacy-trapped-chest-observation/1"
+          assert active["schema"]=="supracraft-legacy-trapped-chest-observation/1"
+          assert control["open_observed"] is False
+          assert control["max_open_count"]==0
+          assert active["open_call_status"]=="opened"
+          assert active["open_observed"] is True
+          assert active["max_open_count"] >= 1
+
+          witness=d["opening_power_witness"]
+          assert witness["control"]["expected_legacy_metadata"]==0
+          assert witness["control"]["matched"] is True
+          assert witness["activated"]["expected_legacy_metadata"]==1
+          assert witness["activated"]["matched"] is True
+
+          inventory=d["inventory_fingerprint"]
+          assert inventory["control"]["present"] is True
+          assert inventory["activated"]["present"] is True
+          assert inventory["control"]["item_entry_count"]==0
+          assert inventory["activated"]["item_entry_count"]==0
+          assert inventory["unchanged"] is True
+
+          boundary=d["channel_boundary"]
+          assert boundary["qualified"]=="player_open_count_to_redstone_power"
+          assert boundary["held_separate"]=="inventory_fullness_to_comparator_signal"
+          assert boundary["comparator_behavior_exercised"] is False
+          assert d["fixture"]["comparator_present"] is False
+
+          scope=d["world_target_source_scope"]
+          assert scope==["2,65,0"]
+          receipt=d["execution_receipt"]
+          assert receipt["schema"]=="supracraft-legacy-execution-receipt/1"
+          assert receipt["command_scope"]==scope
+          assert receipt["outcome_class"]=="observable_world_target_actuation"
+          assert d["evidence"]["player_open_count_observed"] is True
+          assert d["evidence"]["opening_power_witness_observed"] is True
+          assert d["evidence"]["inventory_unchanged"] is True
+          assert d["evidence"]["command_block_change_count"] >= 1
+          assert d["evidence"]["world_target_change_count"] >= 1
+          assert d["evidence"]["world_target_actuation_observed"] is True
+
+          allowed_command_fields={
+              "verb","sha256","success_count","condition_met",
+              "powered","last_execution","last_output_sha256",
+          }
+          for command in receipt["commands"]:
+              assert set(command["control"])==allowed_command_fields
+              assert set(command["activated"])==allowed_command_fields
+
+          print(json.dumps({
+              "player_actor":d["player_actor"],
+              "sensor_observation":d["sensor_observation"],
+              "opening_power_witness":d["opening_power_witness"],
+              "inventory_fingerprint":d["inventory_fingerprint"],
+              "outcome_class":receipt["outcome_class"],
+              "command_block_change_count":d["evidence"]["command_block_change_count"],
+              "world_target_change_count":d["evidence"]["world_target_change_count"],
+          },indent=2,sort_keys=True))
+          print("TRAPPED-CHEST-OPENING-PASS")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exact-1.8.8-trapped-chest-opening
+          path: out/trapped-chest-opening.json
+          retention-days: 14

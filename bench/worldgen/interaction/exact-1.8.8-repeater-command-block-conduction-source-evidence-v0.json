@@ -1,0 +1,52 @@
+{
+  "schema": "supracraft-exact-version-source-evidence/1",
+  "subject": "Minecraft Java 1.8.8 collinear repeater strong-power conduction through a legacy command block into redstone dust",
+  "minecraft_version": "1.8.8",
+  "source": {
+    "repository": "ZeroedInOnTech/1.8.8",
+    "commit": "47c636a70ff7fc60c52ac3ac4bca426e8b55743a",
+    "mcp_build": 918,
+    "files": [
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneDiode.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockCommandBlock.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockContainer.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/Block.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/world/World.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneWire.java"
+    ]
+  },
+  "observed_source_semantics": {
+    "repeater_strong_output": "BlockRedstoneDiode.getStrongPower delegates to getWeakPower; a powered diode emits its active signal only on the exact decoded output side.",
+    "command_block_normal_cube": "BlockCommandBlock extends BlockContainer with Material.iron; BlockContainer does not override the default full-cube behavior, and Block.isNormalCube is true for an opaque full cube that does not itself provide power.",
+    "normal_cube_power_lookup": "World.getRedstonePower delegates a normal cube to World.getStrongPower, which scans neighboring blocks for strong power.",
+    "dust_indirect_input": "BlockRedstoneWire recalculation temporarily disables its own power contribution and calls World.isBlockIndirectlyGettingPowered, allowing neighboring normal-cube strong power to drive the wire."
+  },
+  "supported_relations": [
+    {
+      "edge": "legacy_repeater_through_command_block_to_dust_power",
+      "source": "legacy repeater at the exact decoded output side of an intervening legacy command block",
+      "via": "that immediately adjacent legacy command block acting as the normal-cube conductor",
+      "target": "redstone wire immediately opposite the repeater across the command block",
+      "certainty": "strong"
+    }
+  ],
+  "fixture_calibration": {
+    "observed_weak_hop": [
+      "390,86,-73",
+      "390,86,-74",
+      "390,86,-75"
+    ],
+    "role_mapping": {
+      "source": "repeater_off",
+      "via": "command_block",
+      "target": "redstone_wire"
+    },
+    "purpose": "replace only the single weak physical-adjacency hop on the long candidate transport path to matched tellraw node 392,86,-63"
+  },
+  "inference_boundary": [
+    "The relation is limited to a collinear repeater -> legacy command_block -> redstone_wire shape using exact decoded repeater output direction.",
+    "Comparator output, arbitrary normal cubes, non-collinear conduction, vertical conduction, side-input behavior, locking, quasi-connectivity, and generic opaque-solid conduction are not promoted.",
+    "The static edge represents an exact possible transport relation; it does not prove that the repeater was powered in a particular runtime trial.",
+    "Payload identity, command execution, client delivery, perception, comprehension, legibility, and qualitative value remain separate evidence dimensions."
+  ]
+}

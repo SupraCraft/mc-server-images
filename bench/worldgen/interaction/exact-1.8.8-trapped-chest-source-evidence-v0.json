@@ -1,0 +1,33 @@
+{
+  "schema": "supracraft-exact-version-source-evidence/1",
+  "subject": "minecraft-1.8.8-trapped-chest-opening",
+  "minecraft_version": "1.8.8",
+  "source": {
+    "repository": "ZeroedInOnTech/1.8.8",
+    "commit": "47c636a70ff7fc60c52ac3ac4bca426e8b55743a",
+    "mcp_build": 918,
+    "files": [
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockChest.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/tileentity/TileEntityChest.java"
+    ]
+  },
+  "observed_source_semantics": {
+    "trapped_chest_type": "BlockChest.chestType == 1",
+    "weak_power": "clamp(TileEntityChest.numPlayersUsing, 0, 15)",
+    "strong_power": "getStrongPower is nonzero only for the UP side query and delegates to weak power",
+    "open_transition": "TileEntityChest.openInventory increments numPlayersUsing for non-spectators, emits chest block event id 1 with the new count, and notifies neighbors at the chest position and the block below",
+    "close_transition": "TileEntityChest.closeInventory decrements numPlayersUsing for non-spectators and emits the corresponding block event/neighbor notifications",
+    "comparator_channel": "BlockChest comparator input override uses Container.calcRedstoneFromInventory(getLockableContainer(...)); this is an inventory/fullness channel distinct from numPlayersUsing"
+  },
+  "runtime_hypothesis": {
+    "fixture_channel": "single real player opens a single trapped chest; adjacent redstone wire is the direct weak-power witness; that wire powers one command block with one scoped world-state target",
+    "control": "same exact-version player remains on a neutral platform and never opens the chest",
+    "comparator_isolation": "fixture contains no comparator and the trapped-chest inventory fingerprint must be identical across control and activated arms"
+  },
+  "inference_boundary": [
+    "Opening-power evidence does not establish comparator inventory/fullness behavior.",
+    "Comparator inventory/fullness evidence must not be used as a substitute for player-open-count power.",
+    "A successful exact fixture may promote only the exact source/runtime relations it exercises; it does not license generic opaque-solid conduction.",
+    "Runtime execution is structural causal evidence, not player comprehension, fun, fairness, immersion, or overall quality."
+  ]
+}

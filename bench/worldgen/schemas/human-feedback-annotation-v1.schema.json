@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/SupraCraft/mc-server-images/bench/worldgen/schemas/human-feedback-annotation-v1.schema.json",
+  "title": "Worldgen Human Feedback Annotation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "annotation_id",
+    "world_ref",
+    "artifact_version_ref",
+    "source",
+    "language",
+    "evidence_scope",
+    "concept_annotations",
+    "confounds"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "annotation_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "world_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_version_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_ref",
+        "source_role",
+        "independence_group"
+      ],
+      "properties": {
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_role": {
+          "type": "string",
+          "enum": [
+            "player_review",
+            "forum_comment",
+            "author_reply",
+            "author_changelog",
+            "editorial_review",
+            "marketplace_rating",
+            "video_comment",
+            "community_vote",
+            "other"
+          ]
+        },
+        "independence_group": {
+          "type": "string",
+          "minLength": 1
+        },
+        "published_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retrieved_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "author_relation": {
+          "type": "string",
+          "enum": [
+            "independent_player",
+            "creator",
+            "editorial",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2
+    },
+    "script": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_scope": {
+      "type": "string",
+      "enum": [
+        "world_intrinsic",
+        "player_experience",
+        "preference_context",
+        "packaging_installation",
+        "performance_hardware",
+        "mixed",
+        "unknown"
+      ]
+    },
+    "original_text_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Reference/hash/locator only; do not bulk mirror user comments into the repository."
+    },
+    "translation_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional translation annotation; never replaces the original-language evidence."
+    },
+    "reporter_context": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "skill_level": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "solo_multiplayer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "genre_preference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "session_context": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "concept_annotations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "concept_id",
+          "evidence_relation",
+          "certainty"
+        ],
+        "properties": {
+          "concept_id": {
+            "type": "string",
+            "pattern": "^research\\.game_world\\."
+          },
+          "evidence_relation": {
+            "type": "string",
+            "enum": [
+              "supports",
+              "contradicts",
+              "mentions",
+              "ambiguous",
+              "not_applicable"
+            ]
+          },
+          "certainty": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "adequate",
+              "weak",
+              "unknown"
+            ]
+          },
+          "native_lexicalization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "confounds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "version_mismatch",
+          "installation",
+          "resource_pack",
+          "shader",
+          "hardware_performance",
+          "multiplayer_only",
+          "creator_reputation",
+          "nostalgia",
+          "streamer_effect",
+          "genre_mismatch",
+          "skill_mismatch",
+          "translation_uncertainty",
+          "source_ancestry",
+          "other"
+        ]
+      }
+    }
+  }
+}

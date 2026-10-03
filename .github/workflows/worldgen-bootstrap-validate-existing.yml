@@ -1,0 +1,82 @@
+name: worldgen bootstrap validation replay
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Existing public vanilla bootstrap run id
+        required: true
+        default: "36409836466"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/validate_worldgen_bootstrap.py'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36409836466"
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          if [[ -z "$run_id" ]]; then
+            run_id="$DEFAULT_SOURCE_RUN_ID"
+          fi
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          pattern: worldgen-bootstrap-*
+          path: runs
+          merge-multiple: false
+
+      - name: Validate both existing worlds
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p validations
+          python tools/validate_worldgen_bootstrap.py             --run-dir runs/worldgen-bootstrap-normal             --release-evidence probes/26.3-release-identity.json             --output validations/normal.json
+          python tools/validate_worldgen_bootstrap.py             --run-dir runs/worldgen-bootstrap-flat-null-control             --release-evidence probes/26.3-release-identity.json             --output validations/flat-null-control.json
+
+      - name: Upload validation replay
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-bootstrap-validation-replay
+          path: validations/
+          retention-days: 14
