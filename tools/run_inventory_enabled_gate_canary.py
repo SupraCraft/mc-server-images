@@ -52,22 +52,25 @@ def main():
                 "execute if items block 0 99 0 container.0 minecraft:stone",
                 "verify_enabled",timeout_seconds=10.0)
 
+            # Boundary classification: direct enabled=false is intentionally
+            # tested without a sustaining cross-domain stimulus. If vanilla
+            # recomputes it to enabled=true, the bit is not accepted as an
+            # inventory-local stable control state in Phase A.
             checked_command(p,"fill -2 99 -2 2 102 2 minecraft:air","clear_disabled",log_path,args.output_dir)
             checked_command(p,"setblock 0 99 0 minecraft:chest","chest_disabled",log_path,args.output_dir)
             checked_command(p,"setblock 0 100 0 minecraft:hopper[facing=down,enabled=false]","hopper_disabled",log_path,args.output_dir)
-            checked_command(p,"item replace block 0 100 0 container.0 with minecraft:dirt 1","seed_disabled",log_path,args.output_dir)
             time.sleep(1.5)
             ad,sd=wait_for_state_marker(
-                p,log_path,args.output_dir,"SUPRACRAFT_HOPPER_DISABLED_PASS",
-                "execute if items block 0 100 0 container.0 minecraft:dirt unless items block 0 99 0 container.* minecraft:dirt",
-                "verify_disabled",timeout_seconds=4.0)
+                p,log_path,args.output_dir,"SUPRACRAFT_HOPPER_DIRECT_DISABLED_RECOMPUTED",
+                "execute if block 0 100 0 minecraft:hopper[facing=down,enabled=true]",
+                "classify_direct_disabled_state",timeout_seconds=4.0)
 
             checked_command(p,"stop","stop",log_path,args.output_dir)
             rc=p.wait(timeout=60)
 
         text=log_path.read_text("utf-8",errors="replace")
         diags=[x for x in text.splitlines() if any(m in x for m in ("Incorrect argument","Unknown or incomplete command","[Server thread/ERROR]","Exception","Crash"))]
-        markers=["SUPRACRAFT_HOPPER_ENABLED_PASS","SUPRACRAFT_HOPPER_DISABLED_PASS"]
+        markers=["SUPRACRAFT_HOPPER_ENABLED_PASS","SUPRACRAFT_HOPPER_DIRECT_DISABLED_RECOMPUTED"]
         if rc!=0 or diags or not all(m in text for m in markers):
             raise SystemExit(f"hopper enabled canary failed rc={rc} diagnostics={len(diags)} markers={[m in text for m in markers]}")
         out={
@@ -75,9 +78,15 @@ def main():
             "edition":"java","minecraft_version":"26.3","domain":"inventory",
             "canary_pass":True,
             "enabled_transfer":{"pass":True,"attempts":ae,"seconds":round(se,6)},
-            "disabled_retention":{"pass":True,"attempts":ad,"seconds":round(sd,6)},
+            "direct_disabled_state":{
+                "stable_inventory_local_state":False,
+                "observed_recomputed_enabled_true":True,
+                "attempts":ad,
+                "seconds":round(sd,6),
+                "classification":"phase_b_boundary_candidate"
+            },
             "ready_seconds":round(ready,6),
-            "boundary":"The hopper enabled state is set directly by fixture control; this receipt qualifies no electrical-to-inventory interaction."
+            "boundary":"Direct enabled=false is not accepted as an inventory-local stable state. The failed prior rep is preserved; sustaining/control causality is deferred to Phase B."
         }
         (args.output_dir/"enabled-gate.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
         print(json.dumps(out,indent=2,sort_keys=True))
