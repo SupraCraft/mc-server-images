@@ -314,6 +314,13 @@
         "fe63882c31d61a3e2c2f8b7658d253f002a797a5",
         "workflow:37129223624",
         "job:111220802300"
+      ],
+      "intra_domain_evidence": [
+        "branch:feat/mechanical-push-limit-263",
+        "head:20891f6567ef17ea57c0f42a0c554ff0dbfb4caa",
+        "workflow:37129560376",
+        "job:111221787582",
+        "exact Java 26.3: push 12 PASS; push 13 blocked PASS"
       ]
     },
     "programmable": {
@@ -330,6 +337,13 @@
         "fe63882c31d61a3e2c2f8b7658d253f002a797a5",
         "workflow:37129223624",
         "job:111220802404"
+      ],
+      "intra_domain_evidence": [
+        "branch:feat/programmable-chain-structure-263",
+        "head:3785b8990831b8c374a2c2eb3694f078ac81da9d",
+        "workflow:37130198325",
+        "job:111223619761",
+        "CommandBlock.executeChain exact structure fingerprinted"
       ]
     },
     "inventory": {
@@ -346,7 +360,53 @@
         "fe63882c31d61a3e2c2f8b7658d253f002a797a5",
         "workflow:37129223624",
         "job:111220802375"
+      ],
+      "intra_domain_evidence": [
+        "branch:feat/inventory-enabled-gate-263",
+        "failed-run:37129602883 preserved",
+        "boundary-head:c9dcfb0be5352e8d66f2be40630ce712108c5b7b",
+        "boundary-run:37130121107",
+        "boundary-job:111223398341",
+        "direct enabled=false recomputed to true; checkPoweredState references Level.hasNeighborSignal and HopperBlock.ENABLED"
+      ],
+      "boundary_candidates": [
+        {
+          "id": "hopper_enabled_control",
+          "state": "PHASE_B_CANDIDATE_ONLY",
+          "runtime_observation": "direct enabled=false was not stable without sustaining condition",
+          "structure_observation": "HopperBlock.checkPoweredState references Level.hasNeighborSignal and HopperBlock.ENABLED",
+          "prohibition": "Do not qualify electrical-to-inventory causality until Phase B."
+        }
       ]
     }
+  },
+  "representative_world_evidence": {
+    "core_188_four_domain_census": {
+      "state": "PASS_DISCOVERY_ONLY",
+      "branch": "feat/core-188-four-domain-census-v1",
+      "head": "e78ae83e95c952396e39c37fed9ec56e7a35c78c",
+      "workflow_run_id": 37129965315,
+      "job_id": 111222949071,
+      "domain_node_counts": {
+        "electrical": 2572,
+        "programmable": 1445,
+        "inventory": 1086,
+        "mechanical": 110
+      },
+      "mixed_domain_component_candidate_count": 403,
+      "observation_surface_counts": {
+        "note_block": 32,
+        "redstone_lamp_off": 5,
+        "redstone_lamp_on": 402,
+        "standing_sign": 10,
+        "wall_sign": 94
+      },
+      "rule": "Mixed-domain components and interface counts are discovery only; they do not open Phase B."
+    }
+  },
+  "observation_plane_artifact": {
+    "state": "DOCUMENTED",
+    "path": "bench/worldgen/causal/observation/phase-a-observation-plane-v1.json",
+    "commit": "6b1b621aff8784f1dfa744d45857a1cc4ec423ed"
   }
 }
