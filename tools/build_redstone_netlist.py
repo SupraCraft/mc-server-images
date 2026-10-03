@@ -87,6 +87,8 @@ RUNTIME_CONTRACTS={
         "truth table: exercise 00, 10, 01, and 11; qualified output must be high exactly when one of the two inputs is asserted",
     "rising_edge_detector":
         "temporal contract: a low-to-high source edge must produce one bounded positive output pulse that returns low while the source remains high; high-to-low must not produce a positive pulse; a second low-to-high edge after settling must retrigger",
+    "repeater_ring_oscillator":
+        "temporal contract: after a bounded seed pulse is removed, a closed four-stage delay-4 repeater ring must autonomously produce repeated rise/fall transitions with bounded period and jitter; opening the loop must quench transitions after settling; reclosing plus a new seed must restart repeated transitions",
     "rs_latch":
         "set/reset/hold sequence must demonstrate complementary outputs and retained state after stimulus removal; simultaneous set+reset is measured as an invalid-state boundary and post-invalid resolution is observed, not assumed",
 }
@@ -538,6 +540,85 @@ def motifs(components,nets):
                     "required_runtime_contract":RUNTIME_CONTRACTS["repeater_delay_line"],
                 })
 
+
+    # Repeater-ring oscillator candidate: exactly four delay-4 repeaters
+    # form a closed directed ring through four distinct dust nets. Structure
+    # alone is never oscillator authority: runtime must prove autonomous
+    # repeated transitions after seed removal plus bounded stop/restart.
+    ring_repeaters=[]
+    for comp in components:
+        if (
+            comp["primitive"]!="buffer_delay"
+            or str((comp.get("properties") or {}).get("delay"))!="4"
+        ):
+            continue
+        inputs=sorted({
+            p["net_id"] for p in comp.get("ports",[])
+            if p.get("kind")=="input" and p.get("net_id")
+        })
+        outputs=sorted({
+            p["net_id"] for p in comp.get("ports",[])
+            if p.get("kind")=="output" and p.get("net_id")
+        })
+        if len(inputs)==1 and len(outputs)==1 and inputs[0]!=outputs[0]:
+            ring_repeaters.append({
+                "component_id":comp["component_id"],
+                "input_net_id":inputs[0],
+                "output_net_id":outputs[0],
+            })
+
+    ring_by_id={r["component_id"]:r for r in ring_repeaters}
+    ring_edges=defaultdict(list)
+    for a in ring_repeaters:
+        for b in ring_repeaters:
+            if (
+                a["component_id"]!=b["component_id"]
+                and a["output_net_id"]==b["input_net_id"]
+            ):
+                ring_edges[a["component_id"]].append(b["component_id"])
+
+    seen_rings=set()
+    for start in sorted(ring_by_id):
+        stack=[(start,[start])]
+        while stack:
+            current,path=stack.pop()
+            if len(path)>4:
+                continue
+            for nxt in sorted(ring_edges.get(current,[])):
+                if nxt==start and len(path)==4:
+                    rotations=[
+                        tuple(path[i:]+path[:i]) for i in range(len(path))
+                    ]
+                    canonical=min(rotations)
+                    key=frozenset(canonical)
+                    if key in seen_rings:
+                        continue
+                    seen_rings.add(key)
+                    ordered=list(canonical)
+                    interconnect_nets=[
+                        ring_by_id[cid]["output_net_id"] for cid in ordered
+                    ]
+                    if len(set(interconnect_nets))!=4:
+                        continue
+                    out.append({
+                        "template":"repeater_ring_oscillator",
+                        "confidence":"structural_candidate_only",
+                        "component_ids":sorted(ordered),
+                        "net_ids":sorted(interconnect_nets),
+                        "repeater_component_ids":ordered,
+                        "configured_delays":[4,4,4,4],
+                        "loop_net_ids":interconnect_nets,
+                        "evidence":[
+                            "four_delay4_repeaters_form_closed_directed_ring",
+                            "four_distinct_interconnect_nets_preserve_stage_boundaries",
+                        ],
+                        "required_runtime_contract":
+                            RUNTIME_CONTRACTS["repeater_ring_oscillator"],
+                    })
+                    continue
+                if nxt in path or len(path)>=4:
+                    continue
+                stack.append((nxt,path+[nxt]))
 
     # Rising-edge detector: one source/input net fans out to a direct
     # inverter and an exact three-stage delay-4 repeater chain. The third
