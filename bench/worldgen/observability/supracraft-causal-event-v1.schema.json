@@ -42,7 +42,16 @@
         "command_trigger_start",
         "command_trigger_end",
         "command_dispatch",
-        "packet_send"
+        "packet_send",
+        "piston_check_start",
+        "piston_check_end",
+        "piston_neighbor_signal_query",
+        "piston_neighbor_signal_result",
+        "piston_structure_resolve_result",
+        "piston_move_blocks_query",
+        "piston_move_blocks_result",
+        "piston_trigger_event_query",
+        "piston_trigger_event_result"
       ]
     },
     "monotonic_ns": {

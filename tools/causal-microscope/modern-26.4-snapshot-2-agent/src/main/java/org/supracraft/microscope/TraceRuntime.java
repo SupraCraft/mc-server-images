@@ -102,6 +102,11 @@ public final class TraceRuntime {
             ",\"z\":"+xyz[2]+",\"value\":"+value+"}");
     }
 
+    public static void eventInt(int value,String eventType) {
+        if (!CAPTURE.get()) return;
+        emit(eventType,"{\"value\":"+value+"}");
+    }
+
     public static void commandTriggerStart(Object pos,Object logic) {
         if (!CAPTURE.get()) return;
         try {

@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 
 public final class Modern264Snapshot2Transformer implements ClassFileTransformer {
     private enum Kind {
-        TICK, EVENT_POS, EVENT_POS_WINDOW, INT_RESULT_POS,
+        TICK, EVENT_POS, EVENT_POS_WINDOW, INT_RESULT_POS, INT_RESULT,
         COMMAND_TRIGGER, COMMAND_DISPATCH
     }
 
@@ -90,18 +90,54 @@ public final class Modern264Snapshot2Transformer implements ClassFileTransformer
             "redstone_power",Kind.INT_RESULT_POS,1,-1)
     );
 
+    private static final Map<String,List<Hook>> PISTON_HOOKS=
+        new HashMap<String,List<Hook>>();
+    private static final Map<String,String> PISTON_CLASS_SHA256=
+        new HashMap<String,String>();
+    private static final int PISTON_HOOK_COUNT=5;
+
+    static {
+        bindPistonClass(
+            "net/minecraft/world/level/block/piston/PistonBaseBlock",
+            "47b87b5736027ca99add513835ddb594417ab6b8943c2fa746870af101b105d9",
+            new Hook("piston_check_if_extend","checkIfExtend",
+                "(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)V",
+                "piston_check",Kind.EVENT_POS_WINDOW,1,-1),
+            new Hook("piston_get_neighbor_signal","getNeighborSignal",
+                "(Lnet/minecraft/world/level/SignalGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)Z",
+                "piston_neighbor_signal",Kind.INT_RESULT_POS,1,-1),
+            new Hook("piston_move_blocks","moveBlocks",
+                "(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Z",
+                "piston_move_blocks",Kind.INT_RESULT_POS,1,-1),
+            new Hook("piston_trigger_event","triggerEvent",
+                "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;II)Z",
+                "piston_trigger_event",Kind.INT_RESULT_POS,2,-1));
+        bindPistonClass(
+            "net/minecraft/world/level/block/piston/PistonStructureResolver",
+            "9280026fba3b95dbbf1347d7608b88f3663da017daf8312b4a1a07742dc04121",
+            new Hook("piston_structure_resolve","resolve","()Z",
+                "piston_structure_resolve",Kind.INT_RESULT,-1,-1));
+    }
+
     private final boolean redstone;
+    private final boolean piston;
     private final Set<String> bound=
         Collections.synchronizedSet(new HashSet<String>());
 
     public Modern264Snapshot2Transformer(String sensors) {
         if ("core".equals(sensors)) {
             redstone=false;
+            piston=false;
         } else if ("core+redstone".equals(sensors)) {
             redstone=true;
+            piston=false;
+        } else if ("core+piston".equals(sensors)) {
+            redstone=false;
+            piston=true;
         } else {
             TraceRuntime.fatalBinding("sensor_pack:"+sensors,1,0);
             redstone=false;
+            piston=false;
         }
     }
 
@@ -110,20 +146,33 @@ public final class Modern264Snapshot2Transformer implements ClassFileTransformer
         HOOKS.put(className,new ArrayList<Hook>(Arrays.asList(hooks)));
     }
 
+    private static void bindPistonClass(
+            String className,String sha,Hook... hooks) {
+        PISTON_CLASS_SHA256.put(className,sha);
+        PISTON_HOOKS.put(
+            className,new ArrayList<Hook>(Arrays.asList(hooks)));
+    }
+
     @Override
     public byte[] transform(ClassLoader loader,String className,
             Class<?> classBeingRedefined,ProtectionDomain protectionDomain,
             byte[] classfileBuffer) {
         final List<Hook> coreHooks=HOOKS.get(className);
         final boolean redstoneClass=redstone && REDSTONE_CLASS.equals(className);
-        if (coreHooks==null && !redstoneClass) return null;
+        final List<Hook> pistonHooks=
+            piston ? PISTON_HOOKS.get(className) : null;
+        if (coreHooks==null && !redstoneClass && pistonHooks==null) return null;
         final List<Hook> hooks=new ArrayList<Hook>();
         if (coreHooks!=null) hooks.addAll(coreHooks);
         if (redstoneClass) hooks.addAll(REDSTONE_HOOKS);
+        if (pistonHooks!=null) hooks.addAll(pistonHooks);
 
         String actual=sha256(classfileBuffer);
         String expected=redstoneClass
-            ? REDSTONE_CLASS_SHA256 : CLASS_SHA256.get(className);
+            ? REDSTONE_CLASS_SHA256
+            : (pistonHooks!=null
+                ? PISTON_CLASS_SHA256.get(className)
+                : CLASS_SHA256.get(className));
         if (!expected.equals(actual)) {
             TraceRuntime.fatalBinding(
                 "class_sha256:"+className+":"+actual,1,0);
@@ -156,7 +205,9 @@ public final class Modern264Snapshot2Transformer implements ClassFileTransformer
     }
 
     public void verifyComplete() {
-        int expected=CORE_HOOKS+(redstone ? REDSTONE_HOOKS.size() : 0);
+        int expected=CORE_HOOKS+
+            (redstone ? REDSTONE_HOOKS.size() : 0)+
+            (piston ? PISTON_HOOK_COUNT : 0);
         if (bound.size()!=expected) {
             TraceRuntime.fatalBinding(
                 "modern-26.4-snapshot-2-complete-hook-set",expected,bound.size());
@@ -243,6 +294,12 @@ public final class Modern264Snapshot2Transformer implements ClassFileTransformer
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC,runtime(),
                     "eventIntPos",
                     "(ILjava/lang/String;Ljava/lang/Object;)V",false);
+            } else if (hook.kind==Kind.INT_RESULT &&
+                    opcode==Opcodes.IRETURN) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitLdcInsn(hook.event+"_result");
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC,runtime(),
+                    "eventInt","(ILjava/lang/String;)V",false);
             } else if (hook.kind==Kind.COMMAND_TRIGGER &&
                     opcode==Opcodes.RETURN) {
                 mv.visitVarInsn(Opcodes.ALOAD,argLocal(hook.posArg));

@@ -1,0 +1,243 @@
+name: worldgen causal microscope piston runtime candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/piston-runtime-canary]
+    paths:
+      - 'bench/worldgen/observability/supracraft-causal-event-v1.schema.json'
+      - 'tools/causal-microscope/modern-26.3-agent/**'
+      - 'tools/causal-microscope/modern-26.4-snapshot-2-agent/**'
+      - 'tools/run_modern_piston_microscope_canary.py'
+      - 'tests/test_piston_microscope_contract.py'
+      - '.github/workflows/worldgen-causal-microscope-piston-runtime.yml'
+
+concurrency:
+  group: worldgen-causal-microscope-piston-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.frontier.outputs.matrix }}
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Contract controls
+        run: |
+          python -m unittest -v tests.test_piston_microscope_contract
+          python -m py_compile tools/run_modern_piston_microscope_canary.py
+      - name: Resolve exact Mojang frontier
+        id: frontier
+        run: |
+          mkdir -p out
+          python tools/discover_minecraft_observability.py resolve \
+            --output out/frontier-resolution.json \
+            --github-output "$GITHUB_OUTPUT"
+
+  qualify:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '${{ matrix.java_major }}'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Probe exact runtime
+        run: |
+          mkdir -p out/discovery
+          python tools/discover_minecraft_observability.py probe \
+            --channel "${{ matrix.channel }}" \
+            --expected-version "${{ matrix.minecraft_version }}" \
+            --expected-java "${{ matrix.java_major }}" \
+            --work-dir out/discovery \
+            --output out/discovery/discovery.json
+      - name: Build bounded piston observer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ matrix.channel }}" == "release" ]]; then
+            pom="tools/causal-microscope/modern-26.3-agent/pom.xml"
+            agent="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar"
+          else
+            pom="tools/causal-microscope/modern-26.4-snapshot-2-agent/pom.xml"
+            agent="tools/causal-microscope/modern-26.4-snapshot-2-agent/target/causal-microscope-modern-snapshot-agent-0.1.0-SNAPSHOT.jar"
+          fi
+          mvn -q -f "$pom" -DskipTests package
+          test -s "$agent"
+          echo "MICROSCOPE_AGENT=$PWD/$agent" >> "$GITHUB_ENV"
+      - name: Stock bounded normal-piston fixture
+        run: |
+          mkdir -p out/piston-stock out/piston-instrumented
+          python tools/run_modern_piston_microscope_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --expected-version "${{ matrix.minecraft_version }}" \
+            --output-dir out/piston-stock
+      - name: Instrumented bounded normal-piston fixture
+        run: |
+          python tools/run_modern_piston_microscope_canary.py \
+            --evidence out/discovery/discovery.json \
+            --server-jar out/discovery/server.jar \
+            --expected-version "${{ matrix.minecraft_version }}" \
+            --output-dir out/piston-instrumented \
+            --java-agent "$MICROSCOPE_AGENT"
+      - name: Validate bounded piston observer A/B and causal evidence
+        shell: bash
+        run: |
+          python - <<'PY'
+          import collections,json,pathlib
+          stock=json.loads(pathlib.Path("out/piston-stock/result.json").read_text())
+          inst=json.loads(pathlib.Path("out/piston-instrumented/result.json").read_text())
+          for key in (
+              "minecraft_version","java_major","piston_kind",
+              "piston_position","front_position","destination_position",
+              "power_position","extension_pass","retraction_pass",
+              "terminal_contract",
+          ):
+              assert stock[key]==inst[key],(key,stock[key],inst[key])
+          assert stock["instrumented"] is False
+          assert inst["instrumented"] is True
+          assert stock["extension_pass"] and stock["retraction_pass"]
+          assert inst["trace_present"]
+
+          rows=[
+              json.loads(line)
+              for line in pathlib.Path("out/piston-instrumented/trace.jsonl")
+                  .read_text().splitlines()
+              if line.strip()
+          ]
+          assert rows and rows[0]["event_type"]=="trace_start"
+          assert rows[-1]["event_type"]=="trace_end"
+          assert [x["seq"] for x in rows]==list(range(1,len(rows)+1))
+          assert rows[-1]["data"]["dropped_events"]==0
+          counts=collections.Counter(x["event_type"] for x in rows)
+          required=(
+              "piston_check_start","piston_check_end",
+              "piston_neighbor_signal_query","piston_neighbor_signal_result",
+              "piston_structure_resolve_result",
+              "piston_move_blocks_query","piston_move_blocks_result",
+              "piston_trigger_event_query","piston_trigger_event_result",
+              "block_state_write",
+          )
+          for name in required:
+              assert counts[name]>0,(name,counts)
+
+          piston=inst["piston_position"]
+          dest=inst["destination_position"]
+          positive_power=[
+              x for x in rows
+              if x["event_type"]=="piston_neighbor_signal_result"
+              and x["data"].get("value")==1
+              and [x["data"].get("x"),x["data"].get("y"),x["data"].get("z")]==piston
+          ]
+          assert positive_power
+
+          resolves=[
+              x for x in rows
+              if x["event_type"]=="piston_structure_resolve_result"
+              and x["data"].get("value")==1
+          ]
+          assert resolves
+
+          move_results=[
+              x for x in rows
+              if x["event_type"]=="piston_move_blocks_result"
+              and x["data"].get("value")==1
+              and [x["data"].get("x"),x["data"].get("y"),x["data"].get("z")]==piston
+          ]
+          assert move_results
+          move_result=move_results[0]
+          move_queries=[
+              x for x in rows
+              if x["event_type"]=="piston_move_blocks_query"
+              and x["seq"]<move_result["seq"]
+              and [x["data"].get("x"),x["data"].get("y"),x["data"].get("z")]==piston
+          ]
+          assert move_queries
+          move_query=move_queries[-1]
+          dest_writes=[
+              x for x in rows
+              if x["event_type"]=="block_state_write"
+              and move_query["seq"]<x["seq"]<move_result["seq"]
+              and [x["data"].get("x"),x["data"].get("y"),x["data"].get("z")]==dest
+          ]
+          assert dest_writes,(move_query,move_result)
+
+          report={
+              "schema":"supracraft-piston-observer-ab/1",
+              "minecraft_version":inst["minecraft_version"],
+              "semantic_divergence":False,
+              "stock_terminal_contract":stock["terminal_contract"],
+              "instrumented_terminal_contract":inst["terminal_contract"],
+              "positive_power_seq":positive_power[0]["seq"],
+              "first_resolve_success_seq":resolves[0]["seq"],
+              "extension_move_query_seq":move_query["seq"],
+              "destination_write_seq":dest_writes[0]["seq"],
+              "extension_move_result_seq":move_result["seq"],
+              "event_counts":dict(sorted(counts.items())),
+              "dropped_events":0,
+              "boundary":"one normal piston plus one movable block; structural/runtime evidence does not generalize sticky/slime/honey/push-limit/quasi-connectivity semantics",
+          }
+          pathlib.Path("out/piston-observer-ab-report.json").write_text(
+              json.dumps(report,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: piston-runtime-candidate-${{ matrix.channel }}
+          path: |
+            out/discovery/discovery.json
+            out/piston-stock/result.json
+            out/piston-stock/world.zip
+            out/piston-instrumented/result.json
+            out/piston-instrumented/trace.jsonl
+            out/piston-instrumented/diagnostic.json
+            out/piston-observer-ab-report.json
+          if-no-files-found: ignore
+          retention-days: 14
