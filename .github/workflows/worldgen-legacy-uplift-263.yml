@@ -1,0 +1,77 @@
+name: legacy uplift 26.3 candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json'
+      - 'tools/analyze_legacy_uplift_candidates.py'
+      - 'tests/test_legacy_uplift.py'
+      - '.github/workflows/worldgen-legacy-uplift-263.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests
+        run: python -m unittest tests.test_legacy_uplift -v
+
+      - name: Synthetic apply/rescan receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$(mktemp -d)"
+          src="$root/source"
+          out="$root/uplifted"
+          mkdir -p "$src/data/demo/predicate"
+          mkdir -p "$src/data/demo/worldgen/configured_feature"
+          cat > "$src/data/demo/predicate/example.json" <<'JSON'
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "dimension": "minecraft:overworld"
+              }
+            }
+          }
+          JSON
+          cat > "$src/data/demo/worldgen/configured_feature/example.json" <<'JSON'
+          {
+            "type": "minecraft:ore",
+            "config": {
+              "target_state": {
+                "Name": "minecraft:stone",
+                "Properties": {
+                  "axis": "y"
+                }
+              }
+            }
+          }
+          JSON
+
+          python tools/analyze_legacy_uplift_candidates.py "$src"             --apply-safe "$out"             --output-json "$root/receipt.json"             --fail-on-safe
+
+          cat "$root/receipt.json"
+
+          python - <<'PY' "$root/receipt.json"
+          import json, sys
+          p = json.load(open(sys.argv[1]))
+          a = p["safe_apply"]
+          assert a["residual_safe_finding_count"] == 0
+          assert len(a["json_changes"]) == 2
+          assert any(x["to"].endswith("/worldgen/feature") for x in a["path_moves"])
+          print("SUPRACRAFT_UPLIFT_SAFE_APPLY_PASS")
+          PY
