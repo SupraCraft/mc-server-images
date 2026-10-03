@@ -1,0 +1,54 @@
+name: worldgen causal kernel v1 candidate
+
+on:
+  push:
+    branches:
+      - feat/causal-kernel-v1
+    paths:
+      - 'bench/worldgen/causal/kernel/**'
+      - 'tools/validate_causal_kernel.py'
+      - 'tests/test_causal_kernel.py'
+      - '.github/workflows/worldgen-causal-kernel-v1.yml'
+  pull_request:
+    paths:
+      - 'bench/worldgen/causal/kernel/**'
+      - 'tools/validate_causal_kernel.py'
+      - 'tests/test_causal_kernel.py'
+      - '.github/workflows/worldgen-causal-kernel-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  kernel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Validate causal-kernel synthetic contract
+        run: |
+          python tools/validate_causal_kernel.py \
+            bench/worldgen/causal/kernel/examples/synthetic-multidomain-v1.json
+          python -m unittest -v tests.test_causal_kernel
