@@ -1,0 +1,105 @@
+name: worldgen Phase-A baseline reconciliation
+
+on:
+  push:
+    branches:
+      - reconcile/phase-a-baselines-5786836c
+    paths:
+      - 'bench/worldgen/causal/programmable/**'
+      - 'tools/inspect_mechanical_domain_structure.py'
+      - 'tools/run_mechanical_domain_canary.py'
+      - 'tools/inspect_inventory_domain_structure.py'
+      - 'tools/run_inventory_domain_canary.py'
+      - 'tools/validate_programmable_domain_baseline.py'
+      - 'tests/test_mechanical_domain_structure.py'
+      - 'tests/test_inventory_domain_structure.py'
+      - 'tests/test_programmable_domain_baseline.py'
+      - '.github/workflows/worldgen-phase-a-baseline-reconciliation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mechanical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+      - run: python -m unittest -v tests.test_mechanical_domain_structure
+      - run: |
+          mkdir -p out
+          python tools/inspect_mechanical_domain_structure.py             --work-dir out/runtime             --output out/mechanical-structure.json
+          python tools/run_mechanical_domain_canary.py             --evidence probes/26.3-release-identity.json             --server-jar out/runtime/server.jar             --output-dir out/mechanical-runtime
+
+  programmable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+      - run: |
+          python tools/validate_programmable_domain_baseline.py
+          python -m unittest -v tests.test_programmable_domain_baseline
+
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+      - run: python -m unittest -v tests.test_inventory_domain_structure
+      - run: |
+          mkdir -p out
+          python tools/inspect_inventory_domain_structure.py             --work-dir out/runtime             --output out/inventory-structure.json
+          python tools/run_inventory_domain_canary.py             --evidence probes/26.3-release-identity.json             --server-jar out/runtime/server.jar             --output-dir out/inventory-runtime
