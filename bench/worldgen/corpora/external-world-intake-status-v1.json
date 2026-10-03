@@ -1,0 +1,128 @@
+{
+  "schema": "supracraft-external-world-intake-status/1",
+  "authority": "SupraCraft/mc-server-images#34",
+  "updated": "2026-10-03",
+  "rule": "External corpus evidence is prior art only. Exact-version semantic authority requires independent qualification.",
+  "entries": [
+    {
+      "id": "voidblock",
+      "classes": [
+        "progression",
+        "skyblock",
+        "worldgen",
+        "recipes"
+      ],
+      "versions": [
+        "26.2",
+        "26.3"
+      ],
+      "license_boundary": "custom license; no redistribution",
+      "datapack": {
+        "state": "STATIC_ANALYZED_PASS",
+        "upstream_commit": "ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19",
+        "workflow_run": 37155227394,
+        "artifact_id": 11285169674
+      },
+      "world": {
+        "state": "EXACT_VERSION_AUTHORITY_NOT_ESTABLISHED",
+        "finding": "repository-root level.dat is 26.1/DataVersion 4786 for both inspected revisions",
+        "corrected_workflow_run": 37155530395,
+        "artifact_id": 11285901279
+      },
+      "key_result": "30-function state/orchestration skeleton stable across version overlays; most 26.3 churn is worldgen/resource packaging."
+    },
+    {
+      "id": "sprint_racer",
+      "classes": [
+        "multiplayer",
+        "racing",
+        "ai",
+        "items",
+        "ui",
+        "world-geometry"
+      ],
+      "versions": [
+        "26.2",
+        "26.3"
+      ],
+      "license_boundary": "All Rights Reserved; ephemeral analysis and derived receipts only",
+      "exact_release_commits": {
+        "26.2": "b674e09699818878749570760444ed7147fea3dc",
+        "26.3": "93cdfcff9f2462313de4d568f169c0e442d94e42"
+      },
+      "world_authority": {
+        "26.2": {
+          "version_name": "26.2",
+          "data_version": 4903,
+          "state": "PASS"
+        },
+        "26.3": {
+          "version_name": "26.3",
+          "data_version": 5023,
+          "state": "PASS"
+        }
+      },
+      "datapack": {
+        "state": "STATIC_ANALYZED_PASS",
+        "workflow_run": 37155959406,
+        "artifact_id": 11285931919,
+        "function_count": 6460,
+        "scoreboard_objective_nodes": 813,
+        "unresolved_function_refs_each_release": 350,
+        "unresolved_delta": 0
+      },
+      "physical_sample": {
+        "state": "PASS",
+        "workflow_run": 37156403178,
+        "artifact_id": 11286002538,
+        "chunk_region_files": 6,
+        "entity_region_files": 5,
+        "decoded_chunks": 6068,
+        "decode_errors": 0,
+        "domain_family_block_counts": {
+          "mechanical_geometry": 1539,
+          "biology_ecology": 1151,
+          "electrical_redstone": 696,
+          "artifact_observation": 447,
+          "inventory_transport": 151,
+          "programmable_control": 96,
+          "transformation_production": 14
+        }
+      },
+      "key_result": "High-level game architecture and saved geometry remain stable across exact 26.2->26.3 releases while compatibility edits touch command/data representation."
+    },
+    {
+      "id": "scourge_of_the_floaty_isles",
+      "classes": [
+        "story",
+        "npc",
+        "quest",
+        "dungeon",
+        "boss",
+        "item-progression",
+        "spells",
+        "potions",
+        "coop"
+      ],
+      "claimed_version": "26.2",
+      "discovery_state": "HIGH_VALUE_NEXT_CANDIDATE",
+      "source_page": "Planet Minecraft",
+      "public_description": {
+        "campaign_acts": 3,
+        "npc_count_claim": "500+",
+        "puzzle_dungeons": 10,
+        "boss_and_miniboss_count_claim": "nearly 30",
+        "playtime_claim": "30+ hours",
+        "vanilla_no_mods": true
+      },
+      "intake_state": "WAIT_LICENSE_REUSE_BOUNDARY",
+      "rule": "Do not download/analyze executable contents until the creator's reuse/analysis boundary is explicit enough for the planned corpus operation."
+    }
+  ],
+  "cross_corpus_findings": [
+    "Version labels and repository branches do not establish exact world authority; level.dat/runtime evidence must agree.",
+    "Two mechanically distinct mature projects preserve high-level state/orchestration across 26.2->26.3 while lower-level compatibility surfaces change.",
+    "Mature maps compose datapacks, persisted scoreboard/storage state, entities/markers, saved geometry, UI/presentation and vanilla mechanics rather than relying on one implementation mode.",
+    "Static unresolved function references must be classified; zero-unresolved is not a universal validity criterion for extensible maps."
+  ]
+}
