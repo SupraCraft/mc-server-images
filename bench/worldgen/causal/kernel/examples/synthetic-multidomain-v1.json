@@ -1,0 +1,239 @@
+{
+  "schema": "supracraft-causal-kernel/1",
+  "edition": "java",
+  "minecraft_version": "26.3",
+  "projection_id": "synthetic-redstone-piston-lamp-v1",
+  "source": {
+    "adapter_id": "synthetic-kernel-contract-v1",
+    "source_schema": null,
+    "world_ref": "fixture:synthetic-multidomain-v1",
+    "artifact_ref": null,
+    "evidence_refs": [
+      "test:causal-kernel-v1"
+    ]
+  },
+  "entities": [
+    {
+      "entity_id": "lever",
+      "domains": [
+        "electrical"
+      ],
+      "position": [
+        0,
+        100,
+        0
+      ],
+      "dimension": "minecraft:overworld",
+      "state_ref": "state:lever:off",
+      "knowledge_state": "observed",
+      "ports": [
+        {
+          "port_id": "power_out",
+          "domain": "electrical",
+          "direction": "output",
+          "semantic_type": "redstone.power",
+          "knowledge_state": "observed"
+        }
+      ],
+      "evidence_refs": [
+        "fixture:lever"
+      ]
+    },
+    {
+      "entity_id": "sticky_piston",
+      "domains": [
+        "electrical",
+        "mechanical"
+      ],
+      "position": [
+        1,
+        100,
+        0
+      ],
+      "dimension": "minecraft:overworld",
+      "state_ref": "state:piston:retracted",
+      "knowledge_state": "observed",
+      "ports": [
+        {
+          "port_id": "power_in",
+          "domain": "electrical",
+          "direction": "input",
+          "semantic_type": "redstone.power",
+          "knowledge_state": "observed"
+        },
+        {
+          "port_id": "motion_out",
+          "domain": "mechanical",
+          "direction": "output",
+          "semantic_type": "mechanical.motion",
+          "knowledge_state": "observed"
+        }
+      ],
+      "evidence_refs": [
+        "fixture:sticky-piston"
+      ]
+    },
+    {
+      "entity_id": "lamp",
+      "domains": [
+        "electrical",
+        "presentation"
+      ],
+      "position": [
+        0,
+        100,
+        1
+      ],
+      "dimension": "minecraft:overworld",
+      "state_ref": "state:lamp:off",
+      "knowledge_state": "observed",
+      "ports": [
+        {
+          "port_id": "power_in",
+          "domain": "electrical",
+          "direction": "input",
+          "semantic_type": "redstone.power",
+          "knowledge_state": "observed"
+        },
+        {
+          "port_id": "state_out",
+          "domain": "presentation",
+          "direction": "state",
+          "semantic_type": "presentation.block_state",
+          "knowledge_state": "observed"
+        }
+      ],
+      "evidence_refs": [
+        "fixture:lamp"
+      ]
+    },
+    {
+      "entity_id": "observer_candidate",
+      "domains": [
+        "electrical"
+      ],
+      "position": [
+        0,
+        100,
+        2
+      ],
+      "dimension": "minecraft:overworld",
+      "state_ref": null,
+      "knowledge_state": "unknown",
+      "ports": [
+        {
+          "port_id": "observed_state_in",
+          "domain": "electrical",
+          "direction": "input",
+          "semantic_type": "observer.block_state_input",
+          "knowledge_state": "unknown"
+        }
+      ],
+      "evidence_refs": [
+        "fixture:observer-candidate-unknown"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "event_id": "evt-power-on",
+      "domain": "electrical",
+      "event_type": "redstone.power_transition",
+      "subject_entity_ids": [
+        "lever"
+      ],
+      "event_time": {
+        "game_tick": 10,
+        "microstep_or_order": 0
+      },
+      "knowledge_state": "observed",
+      "state_revision": {
+        "before_ref": "world:rev:10a",
+        "after_ref": "world:rev:10b"
+      },
+      "evidence_refs": [
+        "trace:tick10:power"
+      ]
+    },
+    {
+      "event_id": "evt-piston-move",
+      "domain": "mechanical",
+      "event_type": "mechanical.piston_extension",
+      "subject_entity_ids": [
+        "sticky_piston"
+      ],
+      "event_time": {
+        "game_tick": 10,
+        "microstep_or_order": 1
+      },
+      "knowledge_state": "observed",
+      "state_revision": {
+        "before_ref": "world:rev:10b",
+        "after_ref": "world:rev:10c"
+      },
+      "evidence_refs": [
+        "trace:tick10:piston"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "edge-power-piston",
+      "edge_kind": "transducer",
+      "semantic_type": "electrical.power_to_mechanical.actuation",
+      "source": {
+        "entity_id": "lever",
+        "port_id": "power_out"
+      },
+      "target": {
+        "entity_id": "sticky_piston",
+        "port_id": "power_in"
+      },
+      "event_id": "evt-piston-move",
+      "knowledge_state": "observed",
+      "evidence_refs": [
+        "trace:tick10:piston"
+      ]
+    },
+    {
+      "edge_id": "edge-power-lamp",
+      "edge_kind": "transducer",
+      "semantic_type": "electrical.power_to_presentation.state",
+      "source": {
+        "entity_id": "lever",
+        "port_id": "power_out"
+      },
+      "target": {
+        "entity_id": "lamp",
+        "port_id": "power_in"
+      },
+      "event_id": "evt-power-on",
+      "knowledge_state": "observed",
+      "evidence_refs": [
+        "trace:tick10:lamp"
+      ]
+    },
+    {
+      "edge_id": "edge-lamp-observer-unknown",
+      "edge_kind": "observation",
+      "semantic_type": "presentation.state_to_observer.event",
+      "source": {
+        "entity_id": "lamp",
+        "port_id": "state_out"
+      },
+      "target": {
+        "entity_id": "observer_candidate",
+        "port_id": "observed_state_in"
+      },
+      "event_id": null,
+      "knowledge_state": "unknown",
+      "evidence_refs": [
+        "fixture:observer-candidate-unknown"
+      ]
+    }
+  ],
+  "limitations": [
+    "Synthetic contract fixture only; it does not qualify piston, lamp, or observer runtime semantics.",
+    "UNKNOWN observation edge is intentionally preserved rather than inferred."
+  ]
+}
