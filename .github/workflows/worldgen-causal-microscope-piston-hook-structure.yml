@@ -11,14 +11,6 @@ on:
       - 'tests/test_modern_microscope_hook_structure.py'
       - '.github/workflows/worldgen-causal-microscope-piston-hook-structure.yml'
   workflow_dispatch:
-  push:
-    branches: [feat/piston-hook-structure]
-    paths:
-      - 'tools/inventory_modern_microscope_symbols.py'
-      - 'tools/inspect_modern_microscope_hook_structure.py'
-      - 'tests/test_modern_microscope_hook_structure.py'
-      - '.github/workflows/worldgen-causal-microscope-piston-hook-structure.yml'
-
 concurrency:
   group: worldgen-causal-microscope-piston-hook-structure-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
