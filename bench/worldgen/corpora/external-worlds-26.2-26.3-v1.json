@@ -301,6 +301,115 @@
         "unusual camera/control model and actor-team abstraction"
       ],
       "reuse_boundary": "downloadable; review page/license before archival"
+    },
+    {
+      "id": "voidblock_skyblock_26_2_26_3",
+      "version": [
+        "26.2",
+        "26.3"
+      ],
+      "class": "recognized_anchor",
+      "title": "Voidblock - Skyblock",
+      "creator": "Loweredgames",
+      "repository": "https://github.com/Loweredgames/Voidblock",
+      "intake_status": {
+        "provenance": "LICENSE_REVIEWED",
+        "source": "PINNED",
+        "datapack_static_analysis": "PASS",
+        "exact_world_authority": "NOT_ESTABLISHED_STALE_TEMPLATE",
+        "runtime_qualification": "NOT_RUN"
+      },
+      "evidence": {
+        "upstream_commit": "ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19",
+        "datapack_workflow_run": 37155227394,
+        "datapack_artifact_id": 11285169674,
+        "world_metadata_workflow_run": 37155530395,
+        "world_metadata_artifact_id": 11285901279
+      },
+      "key_findings": [
+        "26.2 and 26.3 version overlays coexist in one maintained datapack",
+        "30-function orchestration skeleton remains stable across 26.2 to 26.3",
+        "26.3 changes concentrate in worldgen/resource packaging plus minor control/UI deltas",
+        "repository-root level.dat remains 26.1 and is therefore not exact 26.2/26.3 world authority"
+      ],
+      "reuse_boundary": "Custom license permits download/copy/modify for allowed uses and prohibits redistribution/commercial reuse; derived analysis only."
+    },
+    {
+      "id": "sprint_racer_26_2_26_3",
+      "version": [
+        "26.2",
+        "26.3"
+      ],
+      "class": "recognized_anchor",
+      "title": "Sprint Racer",
+      "creator": "jarrodmmoore",
+      "repository": "https://github.com/jarrodmmoore/Sprint-Racer-Dev",
+      "popularity": {
+        "downloads_approx": 115000
+      },
+      "mechanics": [
+        "combat racing",
+        "AI racers",
+        "multiplayer teams",
+        "items/rewards",
+        "track selection",
+        "custom tracks",
+        "bossbars/UI",
+        "scoreboard state",
+        "command storage",
+        "world mutation",
+        "music/language extension packs"
+      ],
+      "intake_status": {
+        "provenance": "ALL_RIGHTS_RESERVED_ANALYSIS_ONLY",
+        "source": "PINNED_RELEASE_COMMITS",
+        "datapack_static_analysis": "PASS",
+        "exact_world_authority": "PASS_26_2_AND_26_3",
+        "runtime_qualification": "NOT_RUN"
+      },
+      "evidence": {
+        "upstream_26_2_commit": "b674e09699818878749570760444ed7147fea3dc",
+        "upstream_26_3_commit": "93cdfcff9f2462313de4d568f169c0e442d94e42",
+        "workflow_run": 37155959406,
+        "artifact_id": 11285931919
+      },
+      "exact_world_versions": {
+        "26.2": {
+          "data_version": 4903
+        },
+        "26.3": {
+          "data_version": 5023
+        }
+      },
+      "structural_summary": {
+        "datapack_file_count": 6480,
+        "function_count": 6460,
+        "json_resource_count": 12,
+        "scoreboard_objective_nodes": 813,
+        "command_storage_nodes": 7,
+        "unresolved_function_refs_each_release": 350
+      },
+      "persisted_state": {
+        "26.2": {
+          "scoreboard_objectives": 704,
+          "score_records": 9959,
+          "teams": 25,
+          "map_state_files": 267
+        },
+        "26.3": {
+          "scoreboard_objectives": 704,
+          "score_records": 9960,
+          "teams": 25,
+          "map_state_files": 267
+        }
+      },
+      "key_findings": [
+        "High-level static role/verb architecture is unchanged between exact 26.2 and 26.3 release branches",
+        "Direct migration is five commits and 300 changed files, dominated by command/data compatibility edits",
+        "Exact save metadata positively establishes both world versions",
+        "Stable unresolved-reference profile exposes deliberate/custom extension surfaces and invalidates zero-unresolved as a universal criterion"
+      ],
+      "reuse_boundary": "All Rights Reserved; ephemeral analysis only; no source/world redistribution."
     }
   ],
   "cross_corpus_findings": [
@@ -314,6 +423,15 @@
       ],
       "finding": "26.3 predicate migration is a recurring ecosystem compatibility issue; top-level predicate condition becomes type in sampled Quillmark files.",
       "action": "Add exact 26.2/26.3 predicate compatibility checks to SupraCraft capability/version resolver."
+    },
+    {
+      "id": "stable_story_architecture_across_26_2_26_3",
+      "evidence": [
+        "Voidblock derived 26.2/26.3 overlay receipts",
+        "Sprint Racer exact 26.2/26.3 release receipts"
+      ],
+      "finding": "Two mechanically distinct mature projects retain stable high-level state/orchestration architecture across 26.2->26.3 while compatibility churn concentrates in exact-version resource/command representations.",
+      "action": "Keep Story/Game IR and capability contracts version-independent where evidence permits; isolate exact-version syntax, pack/resource layout, and data representation in lowerings/adapters."
     }
   ],
   "next_selection": [
@@ -322,5 +440,16 @@
     "one traversal/cutscene world",
     "one command-heavy machinery exemplar",
     "one mechanically unusual small world"
-  ]
+  ],
+  "intake_maturity": {
+    "states": [
+      "METADATA_DISCOVERED",
+      "LICENSE_REVIEWED",
+      "SOURCE_PINNED",
+      "VERSION_VERIFIED",
+      "STATIC_ANALYZED",
+      "RUNTIME_QUALIFIED"
+    ],
+    "rule": "A corpus entry may advance independently by evidence type; exact-version runtime authority is never inferred from popularity, repository branch labels, README claims, or static analysis."
+  }
 }
