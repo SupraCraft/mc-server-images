@@ -1743,9 +1743,9 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
         ("input_main",1,100,0),
         ("input_branch_1",1,100,-1),
         ("input_branch_2",1,100,-2),
+        ("direct_support_feed",2,100,-2),
         ("delay_output",3,100,0),
-        ("direct_output",3,101,-2),
-        ("direct_route",4,101,-2),
+        ("direct_output",4,101,-2),
         ("direct_turn",4,101,-1),
         ("intermediate",4,101,0),
         ("support_feed",5,101,0),
@@ -1765,7 +1765,7 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
         )
 
     for label,x,y,z in (
-        ("direct_inverter",2,101,-2),
+        ("direct_inverter",3,101,-2),
         ("final_inverter",6,102,0),
     ):
         for lit in (False,True):
@@ -1897,9 +1897,8 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
             #   (1) a direct inverter, and
             #   (2) a delay-4 repeater.
             for x,y,z,name in (
-                (2,100,-2,"edge_direct_inverter_support"),
-                (3,100,-2,"edge_direct_output_support"),
-                (4,100,-2,"edge_direct_route_support"),
+                (3,100,-2,"edge_direct_inverter_support"),
+                (4,100,-2,"edge_direct_output_support"),
                 (4,100,-1,"edge_direct_turn_support"),
                 (4,100,0,"edge_delayed_rise_support"),
                 (5,100,0,"edge_final_support_feed_support"),
@@ -1915,6 +1914,7 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
                 (1,0,"edge_input_main"),
                 (1,-1,"edge_input_branch_1"),
                 (1,-2,"edge_input_branch_2"),
+                (2,-2,"edge_direct_support_feed"),
             ):
                 checked_command(
                     p,f"setblock {x} 100 {z} minecraft:redstone_wire",
@@ -1931,12 +1931,11 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
                 "edge_delay_output",log_path,output_dir,
             )
             checked_command(
-                p,"setblock 2 101 -2 minecraft:redstone_torch",
+                p,"setblock 3 101 -2 minecraft:redstone_torch",
                 "edge_direct_inverter",log_path,output_dir,
             )
             for x,z,name in (
-                (3,-2,"edge_direct_output"),
-                (4,-2,"edge_direct_route"),
+                (4,-2,"edge_direct_output"),
                 (4,-1,"edge_direct_turn"),
                 (4,0,"edge_intermediate_merge"),
                 (5,0,"edge_final_support_feed"),
@@ -2112,12 +2111,14 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
             "input_control":"fixture_controller_single_source_fanout",
             "configured_delay":delay,
             "input_source_position":[0,100,0],
-            "input_net_wire_positions":[[1,100,0],[1,100,-1],[1,100,-2]],
+            "input_net_wire_positions":[
+                [1,100,0],[1,100,-1],[1,100,-2],[2,100,-2]
+            ],
             "delay_repeater_position":[2,100,0],
             "delay_output_wire_position":[3,100,0],
-            "direct_inverter_position":[2,101,-2],
+            "direct_inverter_position":[3,101,-2],
             "intermediate_wire_positions":[
-                [3,101,-2],[4,101,-2],[4,101,-1],[4,101,0],[5,101,0]
+                [4,101,-2],[4,101,-1],[4,101,0],[5,101,0]
             ],
             "final_inverter_position":[6,102,0],
             "output_wire_position":[7,102,0],
