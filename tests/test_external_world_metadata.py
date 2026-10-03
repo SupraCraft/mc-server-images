@@ -125,6 +125,12 @@ class ExternalWorldMetadataTests(unittest.TestCase):
         encoded = json.dumps(receipt)
         self.assertEqual(9999, receipt["level"]["data_version"])
         self.assertEqual("26.3", receipt["level"]["version"]["name"])
+        self.assertTrue(receipt["provenance_checks"]["claimed_version_matches_level_name"])
+        self.assertTrue(receipt["provenance_checks"]["exact_version_world_authority"])
+        self.assertEqual(
+            "EXACT_VERSION_LEVEL_METADATA_MATCH",
+            receipt["provenance_checks"]["classification"],
+        )
         self.assertEqual(2, receipt["level"]["enabled_datapack_count"])
         self.assertEqual(1, receipt["scoreboard"]["objective_count"])
         self.assertEqual(1, receipt["scoreboard"]["score_record_count"])
@@ -133,6 +139,22 @@ class ExternalWorldMetadataTests(unittest.TestCase):
         self.assertNotIn("SECRET_PLAYER", encoded)
         self.assertNotIn("SECRET_OBJECTIVE_NAME", encoded)
         self.assertNotIn("SECRET_VALUE", encoded)
+
+    def test_version_mismatch_fails_exact_authority(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            self.write_level(root)
+            self.write_scoreboard(root)
+            args = self.args(root)
+            args.minecraft_version = "26.2"
+            receipt = external_world.analyze(args)
+
+        self.assertFalse(receipt["provenance_checks"]["claimed_version_matches_level_name"])
+        self.assertFalse(receipt["provenance_checks"]["exact_version_world_authority"])
+        self.assertEqual(
+            "STALE_OR_TEMPLATE_LEVEL_METADATA",
+            receipt["provenance_checks"]["classification"],
+        )
 
     def test_data_files_are_shape_only(self):
         with tempfile.TemporaryDirectory() as td:
