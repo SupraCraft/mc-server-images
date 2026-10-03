@@ -51,7 +51,7 @@ class ModernHookStructureTests(unittest.TestCase):
         )
         self.assertTrue(all("packet" not in row["id"] for row in mod.REDSTONE_TARGETS))
         self.assertTrue(all("command" not in row["id"] for row in mod.REDSTONE_TARGETS))
-        self.assertEqual(set(mod.TARGET_SETS),{"core","redstone"})
+        self.assertEqual(set(mod.TARGET_SETS),{"core","redstone","piston"})
         roles={row["id"]:row["role"] for row in mod.REDSTONE_TARGETS}
         self.assertEqual(
             roles["server_level_neighbor_changed"],"server_world_host"
