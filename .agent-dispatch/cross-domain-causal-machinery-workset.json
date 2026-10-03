@@ -354,7 +354,7 @@
         "rule": "Do not rerun known-obsolete shallow uplift automatically when shared tooling changes."
       },
       "parallel_execution": {
-        "state": "WAVE_1_COMPLETE_FOLLOWUP_RESOLVED_NO_RUNTIME_REQUIRED",
+        "state": "PLAN_IMPLEMENTED_EXECUTED_STABLE",
         "authority_doc": "docs/legacy-uplift-parallel-execution-plan.md",
         "implementation_branch": "feat/legacy-uplift-263-v1",
         "wave_1_workflow": ".github/workflows/worldgen-legacy-uplift-static-wave.yml",
@@ -497,7 +497,64 @@
             "catalog_commit": "0982e90a9483d4d21d733d70c8225d5d2267e580",
             "boundary": "Only count serialization is promoted; bounding_box, weight, and third-party rebalancing remain separate semantics."
           }
-        }
+        },
+        "post_promotion_validation": {
+          "run_id": 37159447089,
+          "head": "0982e90a9483d4d21d733d70c8225d5d2267e580",
+          "conclusion": "PASS",
+          "jobs": {
+            "harness": {
+              "job_id": 111309699839,
+              "rule_count": 13,
+              "state": "PASS"
+            },
+            "voidblock": {
+              "job_id": 111309699747,
+              "state": "PASS",
+              "safe_syntactic_transforms": 66,
+              "structural_reimplementation_transforms": 25,
+              "residual_common_files": 15
+            },
+            "sprint": {
+              "job_id": 111309699843,
+              "state": "PASS",
+              "selector_order_additionally_explained_files": 916,
+              "residual_files": 329
+            },
+            "reconcile": {
+              "job_id": 111309963064,
+              "state": "PASS"
+            }
+          },
+          "reconciliation_artifact": {
+            "id": 11287471772,
+            "digest": "sha256:c2a499c978ab79fa3f13c690cecdab4857efebc75e8ec231446ad44c66b8bf67"
+          },
+          "resource_behavior": {
+            "superseded_run_id": 37159434089,
+            "superseded_run_conclusion": "cancelled_as_designed",
+            "heavy_runtime_runs_launched": 0,
+            "exact_server_processes_launched": 0
+          }
+        },
+        "next_ready": [
+          {
+            "priority": 1,
+            "task": "Cluster the remaining 329 Sprint Racer residual mcfunction files into high-yield migration families using static analysis only.",
+            "budget": "one cheap static lane",
+            "gate": "Do not promote selector ordering without independent semantic need/evidence."
+          },
+          {
+            "priority": 2,
+            "task": "Split the 15 Voidblock residual common files into version metadata/content changes vs unresolved worldgen semantics.",
+            "budget": "static first; exact runtime only for one unresolved semantic family if static/source evidence cannot decide."
+          },
+          {
+            "priority": 3,
+            "task": "Seek a third independently maintained exact 26.2/26.3 artifact for rule generalization.",
+            "budget": "research/static intake; no server boot unless it exposes a unique bounded semantic question."
+          }
+        ]
       }
     }
   },
