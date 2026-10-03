@@ -2,12 +2,6 @@ name: legacy uplift vanilla spawn-count oracle
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/probe_vanilla_spawn_uplift.py'
-      - '.github/workflows/worldgen-legacy-uplift-vanilla-spawn-oracle.yml'
 
 concurrency:
   group: legacy-uplift-vanilla-spawn-oracle
