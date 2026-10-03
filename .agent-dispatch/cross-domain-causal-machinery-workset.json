@@ -247,7 +247,8 @@
     "current integration head outranks stale branch assumptions",
     "replay deterministic tests against current head before integration",
     "shadow outputs do not feed accepted metrics or promotion gates until independently accepted",
-    "no destructive migration of accepted Redstone receipts"
+    "no destructive migration of accepted Redstone receipts",
+    "M1/C1/I1 child branches are frozen after successful current-head reconciliation; further work uses new bounded lanes rather than mutating accepted evidence candidates."
   ],
   "core_domains": [
     "electrical",
@@ -264,14 +265,14 @@
         "command-primitives",
         "inventory-primitives"
       ],
-      "rule": "All four domains now have exact-version bounded evidence; Phase A is not closed until these candidate baselines are reconciled against current authority and Human-in-Command promotion policy.",
-      "state": "READY_FOR_RECONCILIATION"
+      "rule": "All four domains have current-head bounded evidence. Mechanical, programmable, and inventory remain acceptance-ready rather than promoted; Phase B remains closed pending Human-in-Command acceptance.",
+      "state": "RECONCILED_ACCEPTANCE_READY"
     },
     "phase_b": {
       "name": "cross-domain-interactions",
       "depends_on": "phase_a",
       "rule": "Do not begin cross-domain transducer qualification until Phase A is durably reconciled/accepted.",
-      "state": "WAIT"
+      "state": "WAIT_HUMAN_ACCEPTANCE_OF_PHASE_A"
     }
   },
   "observation_plane": {
@@ -300,34 +301,52 @@
       ]
     },
     "mechanical": {
-      "state": "BASELINE_READY_FOR_RECONCILIATION",
+      "state": "RECONCILED_ACCEPTANCE_READY",
       "evidence_refs": [
         "78254225091ddae58db7a146f32d8a14aad8fcad",
         "3a0c5f8b7a245bc7a8fbb6ca7e49b8a078341563",
         "workflow:37119899073",
         "workflow:37120099756"
       ],
-      "boundary": "Piston structure + bounded extension/retraction geometry + obsidian immovable hard negative. Electrical stimulus is fixture-only; no transducer claim."
+      "boundary": "Piston structure + bounded extension/retraction geometry + obsidian immovable hard negative. Electrical stimulus is fixture-only; no transducer claim.",
+      "reconciliation_refs": [
+        "reconcile/phase-a-baselines-5786836c",
+        "fe63882c31d61a3e2c2f8b7658d253f002a797a5",
+        "workflow:37129223624",
+        "job:111220802300"
+      ]
     },
     "programmable": {
-      "state": "BASELINE_READY_FOR_RECONCILIATION",
+      "state": "RECONCILED_ACCEPTANCE_READY",
       "evidence_refs": [
         "b85703bd1717d6a474b42dde2934819d1aac65c0",
         "workflow:37119810663",
         "workflow:37101462459",
         "job:111141661480"
       ],
-      "boundary": "Exact command block/control structure plus existing stock/instrumented command canary. No electrical trigger or arbitrary command-language promotion."
+      "boundary": "Exact command block/control structure plus existing stock/instrumented command canary. No electrical trigger or arbitrary command-language promotion.",
+      "reconciliation_refs": [
+        "reconcile/phase-a-baselines-5786836c",
+        "fe63882c31d61a3e2c2f8b7658d253f002a797a5",
+        "workflow:37129223624",
+        "job:111220802404"
+      ]
     },
     "inventory": {
-      "state": "BASELINE_READY_FOR_RECONCILIATION",
+      "state": "RECONCILED_ACCEPTANCE_READY",
       "evidence_refs": [
         "df51cc6a956a2202927b7c0a4974b9a3f41327fe",
         "47f7ebaa12733ecf8486739acc8b2cd3cfe4a689",
         "workflow:37119941780",
         "workflow:37120168752"
       ],
-      "boundary": "Hopper structure + bounded transfer positive + full-destination hard negative. Console is fixture-only; no comparator/electrical/programmatic claim."
+      "boundary": "Hopper structure + bounded transfer positive + full-destination hard negative. Console is fixture-only; no comparator/electrical/programmatic claim.",
+      "reconciliation_refs": [
+        "reconcile/phase-a-baselines-5786836c",
+        "fe63882c31d61a3e2c2f8b7658d253f002a797a5",
+        "workflow:37129223624",
+        "job:111220802375"
+      ]
     }
   }
 }
