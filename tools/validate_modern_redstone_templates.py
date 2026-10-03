@@ -877,6 +877,133 @@ def validate_rising_edge(root:Path):
         "measurement_boundary":"runtime probes define positive-pulse semantics; trace ordering independently proves positive-width final-inverter transitions on rising edges and no final-inverter transition during the falling-edge window",
     }
 
+
+def validate_repeater_ring(root:Path):
+    name="repeater-ring"
+    stock=load_result(root,name,"stock")
+    inst=load_result(root,name,"instrumented")
+    for k in (
+        "template","minecraft_version","java_major","configured_delays",
+        "repeater_positions","repeater_facings","loop_wire_positions",
+        "control_break_position","seed_source_position","output_wire_position",
+        "seed_high_command_sha256","seed_low_command_sha256",
+        "loop_open_command_sha256","loop_close_command_sha256",
+        "seed_removed_before_autonomous_measurement","controller_role",
+    ):
+        assert stock[k]==inst[k],(k,stock[k],inst[k])
+    assert stock["instrumented"] is False
+    assert inst["instrumented"] is True
+    assert inst["trace_present"] is True
+    assert inst["configured_delays"]==[4,4,4,4]
+    assert inst["controller_role"]=="seed_and_loop_break_only"
+    for arm in (stock,inst):
+        assert arm["autonomous_after_seed_pass"] is True,arm
+        assert arm["stop_quench_pass"] is True,arm
+        assert arm["restart_pass"] is True,arm
+        assert arm["bounded_jitter_pass"] is True,arm
+        assert arm["runtime_contract_pass"] is True,arm
+        assert arm["first_autonomous_window"]["transition_count"]>=6,arm
+        assert arm["first_autonomous_window"]["rise_count"]>=3,arm
+        assert arm["first_autonomous_window"]["fall_count"]>=3,arm
+        assert arm["stopped_window"]["transition_count"]==0,arm
+        assert arm["stopped_window"]["final_high"] is False,arm
+        assert arm["restart_autonomous_window"]["transition_count"]>=6,arm
+
+    rows=load_trace(root,name)
+    counts=trace_contract(rows)
+    for required in (
+        "wire_neighbor_changed","wire_recompute_start","wire_recompute_end",
+        "redstone_power_query","redstone_power_result","command_dispatch",
+        "block_state_write",
+    ):
+        assert counts[required]>0,(required,counts)
+
+    seed_high_1=dispatch_after(rows,inst["seed_high_command_sha256"])
+    seed_low_1=dispatch_after(
+        rows,inst["seed_low_command_sha256"],seed_high_1["seq"]
+    )
+    loop_open=dispatch_after(
+        rows,inst["loop_open_command_sha256"],seed_low_1["seq"]
+    )
+    loop_close=dispatch_after(
+        rows,inst["loop_close_command_sha256"],loop_open["seq"]
+    )
+    seed_high_2=dispatch_after(
+        rows,inst["seed_high_command_sha256"],loop_close["seq"]
+    )
+    seed_low_2=dispatch_after(
+        rows,inst["seed_low_command_sha256"],seed_high_2["seq"]
+    )
+    assert (
+        seed_high_1["seq"]<seed_low_1["seq"]<loop_open["seq"]<
+        loop_close["seq"]<seed_high_2["seq"]<seed_low_2["seq"]
+    )
+
+    output_pos=inst["output_wire_position"]
+    first_ticks=sorted(set(
+        r["tick"] for r in rows
+        if seed_low_1["seq"]<r["seq"]<loop_open["seq"]
+        and r["event_type"]=="block_state_write"
+        and position(r)==output_pos
+    ))
+    restart_ticks=sorted(set(
+        r["tick"] for r in rows
+        if r["seq"]>seed_low_2["seq"]
+        and r["event_type"]=="block_state_write"
+        and position(r)==output_pos
+    ))
+    assert len(first_ticks)>=6,("first autonomous output transition ticks",first_ticks)
+    assert len(restart_ticks)>=6,("restart autonomous output transition ticks",restart_ticks)
+
+    def same_edge_periods(ticks):
+        return [
+            ticks[i+2]-ticks[i]
+            for i in range(len(ticks)-2)
+            if ticks[i+2]-ticks[i]>0
+        ]
+
+    first_periods=same_edge_periods(first_ticks)
+    restart_periods=same_edge_periods(restart_ticks)
+    assert len(first_periods)>=2,first_periods
+    assert len(restart_periods)>=2,restart_periods
+    first_jitter=max(first_periods)-min(first_periods)
+    restart_jitter=max(restart_periods)-min(restart_periods)
+    assert first_jitter<=8,first_periods
+    assert restart_jitter<=8,restart_periods
+
+    return {
+        "configured_delays":inst["configured_delays"],
+        "first_autonomous_window":inst["first_autonomous_window"],
+        "stopped_window":inst["stopped_window"],
+        "restart_autonomous_window":inst["restart_autonomous_window"],
+        "input_dispatch_seq":{
+            "seed_high_1":seed_high_1["seq"],
+            "seed_low_1":seed_low_1["seq"],
+            "loop_open":loop_open["seq"],
+            "loop_close":loop_close["seq"],
+            "seed_high_2":seed_high_2["seq"],
+            "seed_low_2":seed_low_2["seq"],
+        },
+        "first_output_transition_ticks":first_ticks,
+        "first_same_edge_period_ticks":first_periods,
+        "first_period_jitter_ticks":first_jitter,
+        "restart_output_transition_ticks":restart_ticks,
+        "restart_same_edge_period_ticks":restart_periods,
+        "restart_period_jitter_ticks":restart_jitter,
+        "autonomous_after_seed_pass":True,
+        "stop_quench_pass":True,
+        "restart_pass":True,
+        "bounded_jitter_pass":True,
+        "runtime_contract_pass":True,
+        "event_counts":dict(sorted(counts.items())),
+        "dropped_events":0,
+        "semantic_divergence":False,
+        "stock_elapsed_seconds":stock["elapsed_seconds"],
+        "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+        "measurement_boundary":"runtime authority requires repeated post-seed output transitions, bounded same-edge period jitter, bounded quench after opening the loop, and autonomous restart after reclose plus one new seed; a structural cycle or continuously powered loop is insufficient",
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--root",type=Path,required=True)
@@ -897,6 +1024,7 @@ def main():
     conj=validate_and(args.root)
     xor=validate_xor(args.root)
     rising=validate_rising_edge(args.root)
+    ring=validate_repeater_ring(args.root)
 
     report={
         "schema":"supracraft-redstone-template-runtime-qualification/1",
@@ -936,6 +1064,11 @@ def main():
         "rising_edge_detector":{
             **rising,
             "temporal_contract":"low->high emits one bounded positive pulse then settles low; high->low emits no positive pulse; second rise retriggers after low settling",
+            "temporal_contract_pass":True,
+        },
+        "repeater_ring_oscillator":{
+            **ring,
+            "temporal_contract":"finite seed removed -> repeated autonomous rise/fall transitions with bounded period/jitter; open loop -> bounded quench; reclose plus one new seed -> repeated autonomous transitions",
             "temporal_contract_pass":True,
         },
         "boundary":"runtime qualification applies to these exact generated fixtures and versions; template generalization remains separately gated by static netlist matching",
