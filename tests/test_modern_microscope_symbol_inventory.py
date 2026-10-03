@@ -31,6 +31,18 @@ class ModernSymbolInventoryTests(unittest.TestCase):
             mod.ROLE_SUFFIXES["redstone_wire"],
             "net/minecraft/world/level/block/RedstoneWireBlock.class",
         )
+        self.assertEqual(
+            mod.ROLE_SUFFIXES["piston_base"],
+            "net/minecraft/world/level/block/piston/PistonBaseBlock.class",
+        )
+        self.assertEqual(
+            mod.ROLE_SUFFIXES["piston_moving_block_entity"],
+            "net/minecraft/world/level/block/piston/PistonMovingBlockEntity.class",
+        )
+        self.assertEqual(
+            mod.ROLE_SUFFIXES["piston_structure_resolver"],
+            "net/minecraft/world/level/block/piston/PistonStructureResolver.class",
+        )
 
     def test_candidate_methods_are_search_aids_only(self):
         methods = [
@@ -115,6 +127,9 @@ class ModernSymbolInventoryTests(unittest.TestCase):
             "command_dispatch",
             "packet_listener",
             "redstone_wire",
+            "piston_base",
+            "piston_moving_block_entity",
+            "piston_structure_resolver",
         }
         self.assertEqual(set(mod.ROLE_SUFFIXES), required)
 

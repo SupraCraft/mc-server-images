@@ -35,6 +35,13 @@ ROLE_SUFFIXES = {
         "net/minecraft/server/network/ServerGamePacketListenerImpl.class"
     ),
     "redstone_wire": "net/minecraft/world/level/block/RedstoneWireBlock.class",
+    "piston_base": "net/minecraft/world/level/block/piston/PistonBaseBlock.class",
+    "piston_moving_block_entity": (
+        "net/minecraft/world/level/block/piston/PistonMovingBlockEntity.class"
+    ),
+    "piston_structure_resolver": (
+        "net/minecraft/world/level/block/piston/PistonStructureResolver.class"
+    ),
 }
 
 TOKEN_HINTS = {
@@ -50,6 +57,9 @@ TOKEN_HINTS = {
     "command_dispatch": ("command", "execute", "perform"),
     "packet_listener": ("send", "packet"),
     "redstone_wire": ("neighbor", "power", "signal", "update", "strength"),
+    "piston_base": ("neighbor", "signal", "move", "extend", "trigger", "check"),
+    "piston_moving_block_entity": ("tick", "progress", "move", "final", "finish"),
+    "piston_structure_resolver": ("resolve", "push", "block", "add", "move"),
 }
 
 

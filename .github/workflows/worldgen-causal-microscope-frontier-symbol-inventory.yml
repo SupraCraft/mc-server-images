@@ -136,6 +136,8 @@ jobs:
               "server_tick_host","world_state_host","server_world_host",
               "command_block","command_block_entity","command_dispatch",
               "packet_listener","redstone_wire",
+              "piston_base","piston_moving_block_entity",
+              "piston_structure_resolver",
           }
           assert set(roles)==expected
           for row in roles.values():
