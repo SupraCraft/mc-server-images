@@ -352,6 +352,78 @@
         "preserved_v1_negative": "workflow 37157083714 remains durable; v1 runtime workflow is manual-only",
         "active_runtime_path": "worldgen-legacy-uplift-263-runtime-v2.yml",
         "rule": "Do not rerun known-obsolete shallow uplift automatically when shared tooling changes."
+      },
+      "parallel_execution": {
+        "state": "WAVE_1_EXECUTING",
+        "authority_doc": "docs/legacy-uplift-parallel-execution-plan.md",
+        "implementation_branch": "feat/legacy-uplift-263-v1",
+        "wave_1_workflow": ".github/workflows/worldgen-legacy-uplift-static-wave.yml",
+        "wave_1_run_id": 37159031086,
+        "static_budget": {
+          "max_simultaneous_runners": 2,
+          "max_lanes": 3,
+          "timeout_minutes_per_lane": 6,
+          "heavy_runtime": false,
+          "cancel_superseded": true,
+          "retries": "none_automatic"
+        },
+        "lanes": [
+          {
+            "id": "A_sprint_residual",
+            "class": "static_discovery",
+            "question": "Which 26.2->26.3 Sprint Racer changes remain after qualified Block State uplift, and which are selector-order-only?",
+            "authority": [
+              "jarrodmmoore/Sprint-Racer-Dev@b674e09699818878749570760444ed7147fea3dc",
+              "jarrodmmoore/Sprint-Racer-Dev@93cdfcff9f2462313de4d568f169c0e442d94e42"
+            ]
+          },
+          {
+            "id": "B_voidblock_structural_residual",
+            "class": "static_discovery",
+            "question": "Which common 26.3 overlay files remain structurally different after current uplift, without booting Minecraft?",
+            "authority": [
+              "Loweredgames/Voidblock@ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19"
+            ]
+          },
+          {
+            "id": "C_harness_selfcheck",
+            "class": "static_validation",
+            "question": "Does current uplift tooling compile, pass unit/hard-negative tests, and parse its catalog before runtime minutes are spent?"
+          }
+        ],
+        "reconciliation": {
+          "serialized": true,
+          "runtime_followups_allowed_per_wave": 1,
+          "runtime_auto_launch": false,
+          "selection_order": [
+            "correctness blocker",
+            "repeated migration class across independent artifacts",
+            "structural reimplementation with cheap bounded oracle",
+            "modernization only when product/harness ROI is material"
+          ]
+        },
+        "runtime_budget": {
+          "max_simultaneous_exact_runtime": 1,
+          "trigger": "manual_gated_only",
+          "timeout_minutes": 18,
+          "compare_pair": "generated_uplift_vs_maintainer",
+          "known_v1_negative_auto_trigger": false
+        },
+        "red_team_controls": [
+          "no cron",
+          "no recursive dispatch",
+          "no automatic retry",
+          "derived artifacts only for restricted sources",
+          "discovery lanes never promote semantic authority",
+          "one catalog writer and one shared-harness writer",
+          "failed runs preserved"
+        ],
+        "blue_team_rationale": [
+          "static-first maximizes information per Actions minute",
+          "two-way concurrency overlaps independent work without five-runner bursts",
+          "runtime is spent only on questions static evidence cannot decide",
+          "deterministic reconciliation prevents racing promotions"
+        ]
       }
     }
   },
