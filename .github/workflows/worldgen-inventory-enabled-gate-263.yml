@@ -4,6 +4,7 @@ on:
     branches: [feat/inventory-enabled-gate-263]
     paths:
       - 'tools/run_inventory_enabled_gate_canary.py'
+      - 'tools/inspect_hopper_enabled_boundary.py'
       - '.github/workflows/worldgen-inventory-enabled-gate-263.yml'
 permissions: {contents: read}
 jobs:
@@ -22,11 +23,19 @@ jobs:
         with: {distribution: temurin, java-version: '25'}
       - name: Enforce public/free policy
         run: python tools/check_worldgen_public_policy.py --repository-private "${{ github.event.repository.private }}" --runner-label "$WORLDGEN_RUNNER_LABEL" --scan-workflows .github/workflows
+      - name: Inspect exact hopper boundary structure
+        run: |
+          mkdir -p out/boundary
+          python tools/inspect_hopper_enabled_boundary.py \
+            --work-dir out/boundary/runtime \
+            --output out/boundary/hopper-enabled-boundary.json
       - run: |
           mkdir -p out
           python tools/run_inventory_enabled_gate_canary.py             --evidence probes/26.3-release-identity.json             --server-jar out/server.jar             --output-dir out/runtime
       - uses: actions/upload-artifact@v4
         with:
           name: inventory-enabled-gate-26.3
-          path: out/runtime/enabled-gate.json
+          path: |
+            out/runtime/enabled-gate.json
+            out/boundary/hopper-enabled-boundary.json
           retention-days: 14
