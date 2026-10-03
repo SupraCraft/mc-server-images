@@ -2,7 +2,7 @@
   "schema": "supracraft-causal-kernel/1",
   "edition": "java",
   "minecraft_version": "26.3",
-  "projection_id": "synthetic-redstone-piston-lamp-v1",
+  "projection_id": "synthetic-four-domain-boundary-v1",
   "source": {
     "adapter_id": "synthetic-kernel-contract-v1",
     "source_schema": null,
@@ -76,8 +76,7 @@
     {
       "entity_id": "lamp",
       "domains": [
-        "electrical",
-        "presentation"
+        "electrical"
       ],
       "position": [
         0,
@@ -97,9 +96,9 @@
         },
         {
           "port_id": "state_out",
-          "domain": "presentation",
+          "domain": "electrical",
           "direction": "state",
-          "semantic_type": "presentation.block_state",
+          "semantic_type": "observation.block_state",
           "knowledge_state": "observed"
         }
       ],
@@ -131,6 +130,58 @@
       ],
       "evidence_refs": [
         "fixture:observer-candidate-unknown"
+      ]
+    },
+    {
+      "entity_id": "command_block_candidate",
+      "domains": [
+        "programmable"
+      ],
+      "position": [
+        2,
+        100,
+        0
+      ],
+      "dimension": "minecraft:overworld",
+      "state_ref": "state:command:block",
+      "knowledge_state": "observed",
+      "ports": [
+        {
+          "port_id": "command_state",
+          "domain": "programmable",
+          "direction": "state",
+          "semantic_type": "programmable.command_state",
+          "knowledge_state": "observed"
+        }
+      ],
+      "evidence_refs": [
+        "fixture:command-block-candidate"
+      ]
+    },
+    {
+      "entity_id": "hopper_candidate",
+      "domains": [
+        "inventory"
+      ],
+      "position": [
+        3,
+        100,
+        0
+      ],
+      "dimension": "minecraft:overworld",
+      "state_ref": "state:hopper:empty",
+      "knowledge_state": "observed",
+      "ports": [
+        {
+          "port_id": "inventory_state",
+          "domain": "inventory",
+          "direction": "state",
+          "semantic_type": "inventory.container_state",
+          "knowledge_state": "observed"
+        }
+      ],
+      "evidence_refs": [
+        "fixture:hopper-candidate"
       ]
     }
   ],
@@ -197,8 +248,8 @@
     },
     {
       "edge_id": "edge-power-lamp",
-      "edge_kind": "transducer",
-      "semantic_type": "electrical.power_to_presentation.state",
+      "edge_kind": "domain",
+      "semantic_type": "electrical.power_to_observable_lamp_state",
       "source": {
         "entity_id": "lever",
         "port_id": "power_out"
@@ -216,7 +267,7 @@
     {
       "edge_id": "edge-lamp-observer-unknown",
       "edge_kind": "observation",
-      "semantic_type": "presentation.state_to_observer.event",
+      "semantic_type": "observation.block_state_to_observer_candidate",
       "source": {
         "entity_id": "lamp",
         "port_id": "state_out"
@@ -233,7 +284,10 @@
     }
   ],
   "limitations": [
-    "Synthetic contract fixture only; it does not qualify piston, lamp, or observer runtime semantics.",
-    "UNKNOWN observation edge is intentionally preserved rather than inferred."
+    "Synthetic kernel-boundary fixture only; it does not qualify piston, lamp, observer, command-block, or hopper runtime semantics.",
+    "The four peer domains are electrical, mechanical, programmable, and inventory.",
+    "Presentation/feedback is represented as observation state on its owning domain, not as a fifth peer domain.",
+    "UNKNOWN observation edge is intentionally preserved rather than inferred.",
+    "No cross-domain interaction semantics are qualified by this fixture."
   ]
 }

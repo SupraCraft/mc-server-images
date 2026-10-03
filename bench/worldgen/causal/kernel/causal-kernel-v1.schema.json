@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:supracraft:schema:causal-kernel:1",
   "title": "SupraCraft cross-domain causal kernel v1",
-  "description": "Additive evidence/provenance envelope for exact-version Minecraft Java causal projections. Domain-specific semantics remain adapter-owned.",
+  "description": "Additive evidence/provenance envelope for exact-version Minecraft Java causal projections across four core domains: electrical, mechanical, programmable, and inventory. Observation/feedback is cross-cutting, not a fifth peer domain.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -103,8 +103,7 @@
                 "electrical",
                 "mechanical",
                 "inventory",
-                "programmable",
-                "presentation"
+                "programmable"
               ]
             }
           },
@@ -166,8 +165,7 @@
                     "electrical",
                     "mechanical",
                     "inventory",
-                    "programmable",
-                    "presentation"
+                    "programmable"
                   ]
                 },
                 "direction": {
@@ -233,8 +231,7 @@
               "electrical",
               "mechanical",
               "inventory",
-              "programmable",
-              "presentation"
+              "programmable"
             ]
           },
           "event_type": {

@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-DOMAINS={"electrical","mechanical","inventory","programmable","presentation"}
+DOMAINS={"electrical","mechanical","inventory","programmable"}
 KNOWLEDGE={"observed","inferred","unknown"}
 EDGE_KINDS={"domain","transducer","mutation","observation"}
 DIRECTIONS={"input","output","bidirectional","state","unknown"}

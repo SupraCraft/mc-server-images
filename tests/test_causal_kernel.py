@@ -27,9 +27,8 @@ class CausalKernelV1Tests(unittest.TestCase):
     def test_multidomain_fixture_validates(self):
         doc=mod.validate(self.fixture())
         domains={d for e in doc["entities"] for d in e["domains"]}
-        self.assertIn("electrical",domains)
-        self.assertIn("mechanical",domains)
-        self.assertIn("presentation",domains)
+        self.assertEqual(domains,{"electrical","mechanical","programmable","inventory"})
+        self.assertNotIn("presentation",domains)
         self.assertTrue(any(e["edge_kind"]=="transducer" for e in doc["edges"]))
 
     def test_unknown_is_preserved_without_invention(self):
@@ -54,6 +53,12 @@ class CausalKernelV1Tests(unittest.TestCase):
         doc=copy.deepcopy(self.fixture())
         doc["events"][0]["event_time"]={"game_tick":None,"microstep_or_order":0}
         with self.assertRaisesRegex(ValueError,"cannot order an unknown tick"):
+            mod.validate(doc)
+
+    def test_presentation_is_not_a_peer_domain(self):
+        doc=copy.deepcopy(self.fixture())
+        doc["entities"][0]["domains"].append("presentation")
+        with self.assertRaisesRegex(ValueError,"unsupported domain"):
             mod.validate(doc)
 
     def test_non_java_authority_fails_closed(self):
