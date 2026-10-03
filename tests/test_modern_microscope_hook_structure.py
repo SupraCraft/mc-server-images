@@ -67,6 +67,24 @@ class ModernHookStructureTests(unittest.TestCase):
             )
         )
 
+    def test_piston_targets_are_bounded_structure_only_candidates(self):
+        ids={row["id"] for row in mod.PISTON_TARGETS}
+        self.assertEqual(
+            ids,
+            {
+                "piston_check_if_extend",
+                "piston_get_neighbor_signal",
+                "piston_move_blocks",
+                "piston_trigger_event",
+                "piston_structure_resolve",
+                "piston_moving_tick",
+                "piston_final_tick",
+            },
+        )
+        self.assertTrue(all(row["role"].startswith("piston_") for row in mod.PISTON_TARGETS))
+        self.assertTrue(all("candidate" in row["event_family"] for row in mod.PISTON_TARGETS))
+        self.assertEqual(set(mod.TARGET_SETS),{"core","redstone","piston"})
+
     def test_parse_sections_selects_exact_descriptor(self):
         text = """
 public class net.minecraft.Example {

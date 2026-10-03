@@ -1,0 +1,185 @@
+name: worldgen causal microscope piston hook structure
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/discover_minecraft_observability.py'
+      - 'tools/inventory_modern_microscope_symbols.py'
+      - 'tools/inspect_modern_microscope_hook_structure.py'
+      - 'tests/test_modern_microscope_symbol_inventory.py'
+      - 'tests/test_modern_microscope_hook_structure.py'
+      - '.github/workflows/worldgen-causal-microscope-piston-hook-structure.yml'
+  workflow_dispatch:
+  push:
+    branches: [feat/piston-hook-structure]
+    paths:
+      - 'tools/inventory_modern_microscope_symbols.py'
+      - 'tools/inspect_modern_microscope_hook_structure.py'
+      - 'tests/test_modern_microscope_hook_structure.py'
+      - '.github/workflows/worldgen-causal-microscope-piston-hook-structure.yml'
+
+concurrency:
+  group: worldgen-causal-microscope-piston-hook-structure-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.frontier.outputs.matrix }}
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Piston structure contract controls
+        run: |
+          python -m unittest -v \
+            tests.test_modern_microscope_symbol_inventory \
+            tests.test_modern_microscope_hook_structure
+          python -m py_compile \
+            tools/discover_minecraft_observability.py \
+            tools/inventory_modern_microscope_symbols.py \
+            tools/inspect_modern_microscope_hook_structure.py
+      - name: Resolve exact Mojang frontier
+        id: frontier
+        run: |
+          mkdir -p out
+          python tools/discover_minecraft_observability.py resolve \
+            --output out/frontier-resolution.json \
+            --github-output "$GITHUB_OUTPUT"
+
+  inspect:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '${{ matrix.java_major }}'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Inspect exact piston method bodies
+        run: |
+          mkdir -p out/runtime
+          python tools/inspect_modern_microscope_hook_structure.py inspect \
+            --channel "${{ matrix.channel }}" \
+            --expected-version "${{ matrix.minecraft_version }}" \
+            --expected-java "${{ matrix.java_major }}" \
+            --target-set piston \
+            --work-dir out/runtime \
+            --output out/hook-structure.json
+      - name: Validate structure-only boundary
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          doc=json.loads(pathlib.Path("out/hook-structure.json").read_text())
+          assert doc["schema"]=="supracraft-causal-hook-structure/1"
+          assert doc["qualification_status"]=="structure_only_not_hook_qualified"
+          assert doc["target_set"]=="piston"
+          rows={row["id"]:row for row in doc["methods"]}
+          expected={
+              "piston_check_if_extend","piston_get_neighbor_signal",
+              "piston_move_blocks","piston_trigger_event",
+              "piston_structure_resolve","piston_moving_tick",
+              "piston_final_tick",
+          }
+          assert set(rows)==expected
+          for row in rows.values():
+              assert row["role"].startswith("piston_")
+              assert row["instruction_count"]>0
+              assert len(row["class_sha256"])==64
+              assert len(row["normalized_code_sha256"])==64
+          print(json.dumps({
+              "channel":doc["channel"],
+              "minecraft_version":doc["minecraft_version"],
+              "methods":{
+                  key:{
+                      "runtime_class":row["runtime_class"],
+                      "method_name":row["method_name"],
+                      "method_descriptor":row["method_descriptor"],
+                      "normalized_code_sha256":row["normalized_code_sha256"],
+                      "instruction_count":row["instruction_count"],
+                      "method_refs":row["method_refs"],
+                      "field_refs":row["field_refs"],
+                  }
+                  for key,row in rows.items()
+              },
+          },indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-piston-hook-structure-${{ matrix.channel }}
+          path: out/hook-structure.json
+          retention-days: 14
+
+  compare:
+    needs: inspect
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fail closed outside public standard runners
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: causal-microscope-piston-hook-structure-*
+          path: out/hooks
+          merge-multiple: false
+      - name: Compare exact piston method structures
+        run: |
+          python tools/inspect_modern_microscope_hook_structure.py compare \
+            --root out/hooks \
+            --output out/hook-frontier-comparison.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-microscope-piston-hook-frontier-comparison
+          path: out/hook-frontier-comparison.json
+          retention-days: 14

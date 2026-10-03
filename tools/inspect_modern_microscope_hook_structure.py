@@ -182,9 +182,82 @@ REDSTONE_TARGETS = (
     },
 )
 
+PISTON_TARGETS = (
+    {
+        "id": "piston_check_if_extend",
+        "event_family": "mechanical_activation_candidate",
+        "role": "piston_base",
+        "name": "checkIfExtend",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/Level;"
+            "Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/world/level/block/state/BlockState;)V"
+        ),
+    },
+    {
+        "id": "piston_get_neighbor_signal",
+        "event_family": "electrical_to_mechanical_input_candidate",
+        "role": "piston_base",
+        "name": "getNeighborSignal",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/SignalGetter;"
+            "Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/core/Direction;)Z"
+        ),
+    },
+    {
+        "id": "piston_move_blocks",
+        "event_family": "mechanical_topology_mutation_candidate",
+        "role": "piston_base",
+        "name": "moveBlocks",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/Level;"
+            "Lnet/minecraft/core/BlockPos;"
+            "Lnet/minecraft/core/Direction;Z)Z"
+        ),
+    },
+    {
+        "id": "piston_trigger_event",
+        "event_family": "mechanical_trigger_candidate",
+        "role": "piston_base",
+        "name": "triggerEvent",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/block/state/BlockState;"
+            "Lnet/minecraft/world/level/Level;"
+            "Lnet/minecraft/core/BlockPos;II)Z"
+        ),
+    },
+    {
+        "id": "piston_structure_resolve",
+        "event_family": "mechanical_moved_set_candidate",
+        "role": "piston_structure_resolver",
+        "name": "resolve",
+        "descriptor": "()Z",
+    },
+    {
+        "id": "piston_moving_tick",
+        "event_family": "mechanical_motion_progress_candidate",
+        "role": "piston_moving_block_entity",
+        "name": "tick",
+        "descriptor": (
+            "(Lnet/minecraft/world/level/Level;"
+            "Lnet/minecraft/core/BlockPos;"
+            "FLnet/minecraft/world/level/block/piston/PistonMovingBlockEntity;)V"
+        ),
+    },
+    {
+        "id": "piston_final_tick",
+        "event_family": "mechanical_motion_completion_candidate",
+        "role": "piston_moving_block_entity",
+        "name": "finalTick",
+        "descriptor": "()V",
+    },
+)
+
 TARGET_SETS = {
     "core": CORE_TARGETS,
     "redstone": REDSTONE_TARGETS,
+    "piston": PISTON_TARGETS,
 }
 
 
