@@ -105,17 +105,41 @@ A world may project into multiple views:
 
 Each of the four adapters owns its native semantics. Shared-kernel edges link projections without forcing them into one algebra.
 
-### Observation / feedback surfaces
+### Observation / feedback plane
 
-Presentation is cross-cutting evidence, not a peer semantic domain in v1.
+Presentation is cross-cutting evidence, not a peer semantic domain in v1, but it is a **first-class observation plane** because humans, players, in-world mechanisms, automation, and agents may consume it.
+
+Separate observation modalities:
+
+1. **world-state observable**
+   - block/entity state that exists authoritatively in the world;
+   - may be consumable by observers, comparators, commands, or other mechanics.
+
+2. **engine-event observable**
+   - game events / vibrations / neighbor or state transitions;
+   - may be consumed by native listeners such as sculk sensors or other event-aware mechanics.
+
+3. **programmable introspection**
+   - command/datapack queries over blocks, entities, scores, items, predicates, storage, or other authoritative state;
+   - allows programmable mechanisms to branch on observed state without a physical Redstone sensor.
+
+4. **client-presentation observable**
+   - rendered block/model state, particles, sound, titles/chat/action-bar/bossbar/GUI and similar client-facing information;
+   - available to humans and client-embodied automation/agents when exposed through client state, packets, vision/audio, or accessibility/debug surfaces;
+   - not assumed to be visible to server/world mechanics unless an independent world-state or engine-event path exists.
+
+5. **external instrumentation**
+   - causal microscope, protocol capture, logs, bot/client state, or other tooling;
+   - evidence surface only unless deliberately embodied into an in-world actor.
 
 Examples:
-- lamp lit/unlit state;
-- note-block output;
-- particles, sounds, titles and text;
-- other human-visible/audible terminal state.
+- a lamp lit/unlit transition is an observable world/block state even though its purpose is presentation;
+- note-block play can also exist as an engine event independently of whether a human hears it;
+- a title/particle may be useful to a player or embodied agent while having no in-world sensor path.
 
-A surface remains attached to the domain that causes/owns the state transition. If another mechanism consumes that state, the relationship is represented later as an observation/interface edge; this does not create a fifth domain.
+The same emitted information may therefore have multiple observation modalities. Record each independently rather than collapsing them into one presentation edge.
+
+A surface remains attached to the domain that causes/owns the state transition. Observation does not create a fifth peer domain.
 
 ## 5. Cross-domain transducers
 
@@ -466,7 +490,7 @@ Run in parallel, with no cross-domain semantic dependency:
 - C1 programmable/command bounded primitives;
 - I1 inventory/transport bounded primitives.
 
-O1 observation/feedback work may record domain-owned output states, but it does not define cross-domain semantics.
+O1 observation/feedback work may record world-state, engine-event, programmable-introspection, client-presentation, and external-instrumentation modalities, but it does not define cross-domain semantics.
 
 Acceptance is domain-specific and exact-version scoped.
 
