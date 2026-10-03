@@ -354,7 +354,7 @@
         "rule": "Do not rerun known-obsolete shallow uplift automatically when shared tooling changes."
       },
       "parallel_execution": {
-        "state": "WAVE_1_EXECUTING",
+        "state": "WAVE_1_COMPLETE_FOLLOWUP_STATIC_ORACLE_RUNNING",
         "authority_doc": "docs/legacy-uplift-parallel-execution-plan.md",
         "implementation_branch": "feat/legacy-uplift-263-v1",
         "wave_1_workflow": ".github/workflows/worldgen-legacy-uplift-static-wave.yml",
@@ -423,7 +423,58 @@
           "two-way concurrency overlaps independent work without five-runner bursts",
           "runtime is spent only on questions static evidence cannot decide",
           "deterministic reconciliation prevents racing promotions"
-        ]
+        ],
+        "wave_1_result": {
+          "run_id": 37159031086,
+          "conclusion": "PASS",
+          "jobs": {
+            "harness_selfcheck": {
+              "job_id": 111308372261,
+              "state": "PASS",
+              "rule_count": 12
+            },
+            "sprint_residual": {
+              "job_id": 111308372295,
+              "state": "PASS",
+              "changed_mcfunction_files": 1343,
+              "block_state_candidate_files": 101,
+              "block_state_exact_files": 98,
+              "selector_order_additionally_explained_files": 916,
+              "residual_files": 329,
+              "boundary": "selector ordering is discovery-only; no compatibility promotion"
+            },
+            "voidblock_structural": {
+              "job_id": 111308372398,
+              "state": "PASS",
+              "common_paths": 155,
+              "exact_byte_equal": 131,
+              "json_normalized_equal": 9,
+              "true_residual_common": 15,
+              "residual_families": {
+                "data/voidblock/function": 9,
+                "worldgen/noise_settings": 3,
+                "worldgen/structure": 3
+              },
+              "maintainer_only_new_content": 11
+            },
+            "reconciliation": {
+              "job_id": 111308607784,
+              "state": "PASS",
+              "received_receipts": 3,
+              "missing_receipts": 0
+            }
+          }
+        },
+        "selected_followup": {
+          "priority_class": "correctness_blocker",
+          "question": "Does legacy structure spawn minCount/maxCount map semantically to a 26.3 count IntProvider, and is the current uniform-provider reconstruction correct?",
+          "reason": "Voidblock maintainer 26.3 changed some spawn rows to count=1 while generic uplift preserves the legacy range; load success alone does not establish semantics.",
+          "method": "exact Mojang 26.2/26.3 vanilla structure data oracle before any runtime boot",
+          "workflow": ".github/workflows/worldgen-legacy-uplift-vanilla-spawn-oracle.yml",
+          "run_id": 37159319805,
+          "runtime_boot": false,
+          "max_runners": 1
+        }
       }
     }
   },
