@@ -1,0 +1,202 @@
+name: external corpus Sprint Racer 26.2 26.3
+
+on:
+  push:
+    branches:
+      - feat/external-corpus-intake-v1
+    paths:
+      - 'tools/analyze_external_world_datapacks.py'
+      - 'tools/analyze_external_world_metadata.py'
+      - 'tests/test_external_world_datapacks.py'
+      - 'tests/test_external_world_metadata.py'
+      - '.github/workflows/external-corpus-sprint-racer-26x.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      SPRINT_26_2_COMMIT: b674e09699818878749570760444ed7147fea3dc
+      SPRINT_26_3_COMMIT: 93cdfcff9f2462313de4d568f169c0e442d94e42
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Run corpus controls
+        run: |
+          python -m unittest -v \
+            tests.test_external_world_datapacks \
+            tests.test_external_world_metadata
+
+      - name: Checkout pinned Sprint Racer 26.2 release source
+        uses: actions/checkout@v5
+        with:
+          repository: jarrodmmoore/Sprint-Racer-Dev
+          ref: ${{ env.SPRINT_26_2_COMMIT }}
+          path: external/sprint-26.2
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            README.md
+            level.dat
+            data
+            datapacks
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout pinned Sprint Racer 26.3 release source
+        uses: actions/checkout@v5
+        with:
+          repository: jarrodmmoore/Sprint-Racer-Dev
+          ref: ${{ env.SPRINT_26_3_COMMIT }}
+          path: external/sprint-26.3
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            README.md
+            level.dat
+            data
+            datapacks
+          sparse-checkout-cone-mode: false
+
+      - name: Verify exact release commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external/sprint-26.2 rev-parse HEAD)" = "$SPRINT_26_2_COMMIT"
+          test "$(git -C external/sprint-26.3 rev-parse HEAD)" = "$SPRINT_26_3_COMMIT"
+          mkdir -p out
+
+      - name: Analyze Sprint Racer 26.2 datapacks
+        run: |
+          python tools/analyze_external_world_datapacks.py \
+            --world-root external/sprint-26.2 \
+            --source-id sprint-racer-26.2 \
+            --minecraft-version 26.2 \
+            --upstream-repository jarrodmmoore/Sprint-Racer-Dev \
+            --upstream-commit "$SPRINT_26_2_COMMIT" \
+            --license-label "All Rights Reserved; analysis only; no redistribution" \
+            --output out/sprint-racer-26.2-datapacks.json
+
+      - name: Analyze Sprint Racer 26.3 datapacks
+        run: |
+          python tools/analyze_external_world_datapacks.py \
+            --world-root external/sprint-26.3 \
+            --source-id sprint-racer-26.3 \
+            --minecraft-version 26.3 \
+            --upstream-repository jarrodmmoore/Sprint-Racer-Dev \
+            --upstream-commit "$SPRINT_26_3_COMMIT" \
+            --license-label "All Rights Reserved; analysis only; no redistribution" \
+            --output out/sprint-racer-26.3-datapacks.json
+
+      - name: Analyze Sprint Racer save metadata
+        run: |
+          python tools/analyze_external_world_metadata.py \
+            --world-root external/sprint-26.2 \
+            --source-id sprint-racer-world-26.2 \
+            --minecraft-version 26.2 \
+            --upstream-repository jarrodmmoore/Sprint-Racer-Dev \
+            --upstream-commit "$SPRINT_26_2_COMMIT" \
+            --license-label "All Rights Reserved; analysis only; no redistribution" \
+            --output out/sprint-racer-26.2-world.json
+
+          python tools/analyze_external_world_metadata.py \
+            --world-root external/sprint-26.3 \
+            --source-id sprint-racer-world-26.3 \
+            --minecraft-version 26.3 \
+            --upstream-repository jarrodmmoore/Sprint-Racer-Dev \
+            --upstream-commit "$SPRINT_26_3_COMMIT" \
+            --license-label "All Rights Reserved; analysis only; no redistribution" \
+            --output out/sprint-racer-26.3-world.json
+
+      - name: Verify exact world authority and build comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          d2=json.loads(Path("out/sprint-racer-26.2-datapacks.json").read_text())
+          d3=json.loads(Path("out/sprint-racer-26.3-datapacks.json").read_text())
+          w2=json.loads(Path("out/sprint-racer-26.2-world.json").read_text())
+          w3=json.loads(Path("out/sprint-racer-26.3-world.json").read_text())
+
+          assert d2["raw_content_retained"] is False
+          assert d3["raw_content_retained"] is False
+          assert w2["raw_nbt_payload_retained"] is False
+          assert w3["raw_nbt_payload_retained"] is False
+          assert w2["provenance_checks"]["exact_version_world_authority"] is True, w2["provenance_checks"]
+          assert w3["provenance_checks"]["exact_version_world_authority"] is True, w3["provenance_checks"]
+          assert w2["level"]["version"]["name"] == "26.2", w2["level"]["version"]
+          assert w3["level"]["version"]["name"] == "26.3", w3["level"]["version"]
+          assert d2["causal_summary"]["function_count"] > 100
+          assert d3["causal_summary"]["function_count"] > 100
+          assert d2["causal_summary"]["unresolved_reference_counts"] == {}
+          assert d3["causal_summary"]["unresolved_reference_counts"] == {}
+
+          def delta(a,b):
+              keys=sorted(set(a)|set(b))
+              return {k:b.get(k,0)-a.get(k,0) for k in keys if b.get(k,0)!=a.get(k,0)}
+
+          comparison={
+              "schema":"supracraft-external-world-cross-version-comparison/1",
+              "source_id":"sprint-racer",
+              "old_version":"26.2",
+              "new_version":"26.3",
+              "old_commit":d2["source"]["upstream_commit"],
+              "new_commit":d3["source"]["upstream_commit"],
+              "old_data_version":w2["level"]["data_version"],
+              "new_data_version":w3["level"]["data_version"],
+              "data_version_delta":w3["level"]["data_version"]-w2["level"]["data_version"],
+              "old_pack_count":len(d2["pack_inventory"]),
+              "new_pack_count":len(d3["pack_inventory"]),
+              "function_count_delta":d3["causal_summary"]["function_count"]-d2["causal_summary"]["function_count"],
+              "json_resource_count_delta":d3["causal_summary"]["json_resource_count"]-d2["causal_summary"]["json_resource_count"],
+              "role_count_delta":delta(d2["causal_summary"]["role_counts"],d3["causal_summary"]["role_counts"]),
+              "verb_count_delta":delta(d2["causal_summary"]["verb_counts"],d3["causal_summary"]["verb_counts"]),
+              "world_state_group_delta":delta(w2["world_state_data"]["groups"],w3["world_state_data"]["groups"]),
+              "scoreboard_objective_count_delta":w3["scoreboard"].get("objective_count",0)-w2["scoreboard"].get("objective_count",0),
+              "score_record_count_delta":w3["scoreboard"].get("score_record_count",0)-w2["scoreboard"].get("score_record_count",0),
+              "raw_content_retained":False,
+              "license_boundary":"All Rights Reserved; derived analysis only; no source/world redistribution",
+          }
+          Path("out/sprint-racer-26.2-vs-26.3.json").write_text(
+              json.dumps(comparison,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(comparison,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload derived receipts only
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-corpus-sprint-racer-26.2-26.3-derived
+          path: out/
+          retention-days: 14
+          if-no-files-found: error
