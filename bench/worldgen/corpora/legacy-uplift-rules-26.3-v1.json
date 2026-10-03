@@ -1,0 +1,334 @@
+{
+  "schema": "supracraft-legacy-uplift-rule-catalog/1",
+  "target": {
+    "edition": "minecraft_java",
+    "minimum_version": "26.3",
+    "policy": "Rules describe re-expression targets, not blanket permission to rewrite. SAFE_SYNTACTIC rules may be auto-applied only when their preconditions match exactly."
+  },
+  "classes": {
+    "SAFE_SYNTACTIC": "Schema/path migrations intended to preserve meaning and structurally validate.",
+    "STRUCTURAL_REIMPLEMENTATION": "Rebuild legacy implementation around a more maintainable modern vanilla primitive; requires behavioral contract preservation.",
+    "CANDIDATE_MODERNIZATION": "Potentially better 26.3+ primitive; requires runtime A/B or explicit semantic-change approval."
+  },
+  "rules": [
+    {
+      "id": "predicate_condition_to_type",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "data/*/predicate/**/*.json using pre-26.3-style top-level predicate discriminator",
+      "target_scope": "26.3+ predicate JSON",
+      "detect": {
+        "kind": "json_top_level_key",
+        "path_contains": "/predicate/",
+        "key": "condition",
+        "absent_key": "type"
+      },
+      "transform": "rename top-level condition to type without changing its value or sibling fields",
+      "preconditions": [
+        "file is under a datapack predicate directory",
+        "top-level object contains condition",
+        "top-level object does not already contain type"
+      ],
+      "hard_negatives": [
+        "nested loot/advancement condition fields",
+        "objects that already contain type",
+        "non-predicate JSON"
+      ],
+      "validation": [
+        "JSON reparses",
+        "top-level type equals prior condition value",
+        "all other top-level fields are byte-semantically equivalent after JSON normalization"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "SupraCraft/mc-server-images#34",
+        "QuillmarkMC/sg2 26.2 vs current predicate examples"
+      ]
+    },
+    {
+      "id": "block_state_Name_Properties_to_id_properties",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "serialized block-state JSON objects using Name/Properties",
+      "target_scope": "26.3+ block-state object format",
+      "detect": {
+        "kind": "nested_json_object_keys",
+        "required_any": [
+          "Name",
+          "Properties"
+        ]
+      },
+      "transform": "rename block-state Name->id and Properties->properties when the object shape is identified as a block state",
+      "preconditions": [
+        "Name is a string namespaced block id when present",
+        "Properties is an object when present",
+        "target keys do not already exist"
+      ],
+      "hard_negatives": [
+        "arbitrary objects whose Name/Properties fields are not block-state serialization",
+        "mixed old/new keys"
+      ],
+      "validation": [
+        "JSON reparses",
+        "id equals prior Name",
+        "properties equals prior Properties"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "Minecraft Java 26.3 Snapshot 7 / Data Pack 115.0"
+      ]
+    },
+    {
+      "id": "worldgen_configured_carver_directory_to_carver",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "data/<namespace>/worldgen/configured_carver/**",
+      "target_scope": "data/<namespace>/worldgen/carver/**",
+      "detect": {
+        "kind": "path_segment",
+        "old": "configured_carver",
+        "new": "carver"
+      },
+      "transform": "move path segment configured_carver to carver",
+      "preconditions": [
+        "destination path does not already exist"
+      ],
+      "hard_negatives": [
+        "destination collision"
+      ],
+      "validation": [
+        "file bytes unchanged",
+        "new relative path exists",
+        "old relative path absent"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "SupraCraft/mc-server-images#34 Voidblock 26.2->26.3 overlay delta"
+      ]
+    },
+    {
+      "id": "worldgen_configured_feature_directory_to_feature",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "data/<namespace>/worldgen/configured_feature/**",
+      "target_scope": "data/<namespace>/worldgen/feature/**",
+      "detect": {
+        "kind": "path_segment",
+        "old": "configured_feature",
+        "new": "feature"
+      },
+      "transform": "move path segment configured_feature to feature",
+      "preconditions": [
+        "destination path does not already exist"
+      ],
+      "hard_negatives": [
+        "destination collision"
+      ],
+      "validation": [
+        "file bytes unchanged",
+        "new relative path exists",
+        "old relative path absent"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "SupraCraft/mc-server-images#34 Voidblock 26.2->26.3 overlay delta"
+      ]
+    },
+    {
+      "id": "legacy_item_nbt_to_data_components",
+      "class": "STRUCTURAL_REIMPLEMENTATION",
+      "automatic": false,
+      "source_scope": "pre-1.20.5 item-stack NBT in commands/data",
+      "target_scope": "26.3+ item data components",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "minecraft:[a-z0-9_./-]+\\{[^\\n}]+:"
+      },
+      "transform": "recover each legacy item-NBT field's intent and map it to explicit item components/custom_data",
+      "preconditions": [
+        "component mapping exists for every behaviorally relevant legacy field"
+      ],
+      "hard_negatives": [
+        "unknown/custom NBT with code-dependent semantics",
+        "component mapping changes item behavior"
+      ],
+      "validation": [
+        "exact generated item components",
+        "inventory serialization check",
+        "runtime use/equip/consume checks where behavior exists"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "Minecraft Java 1.20.5 item stack component migration"
+      ]
+    },
+    {
+      "id": "legacy_text_component_to_inline_component",
+      "class": "STRUCTURAL_REIMPLEMENTATION",
+      "automatic": false,
+      "source_scope": "legacy JSON text serialized inside strings or old hover/click event fields",
+      "target_scope": "26.3+ inline text-component format",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "\\\\\\\"text\\\\\\\"|hoverEvent|clickEvent"
+      },
+      "transform": "parse legacy text component then re-emit the modern inline component/event representation",
+      "preconditions": [
+        "legacy component parses without loss"
+      ],
+      "hard_negatives": [
+        "invalid JSON-in-string",
+        "unknown custom parser assumptions"
+      ],
+      "validation": [
+        "rendered semantic tree equivalence",
+        "click/hover action equivalence"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "Minecraft Java 1.21.5 text component format changes"
+      ]
+    },
+    {
+      "id": "command_block_chain_to_datapack_function",
+      "class": "STRUCTURAL_REIMPLEMENTATION",
+      "automatic": false,
+      "source_scope": "legacy repeating/chain command-block or one-command-machine orchestration",
+      "target_scope": "26.3+ datapack functions, tags, schedule, storage/scoreboard state",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "command_block|chain_command_block|repeating_command_block|command_block_minecart"
+      },
+      "transform": "recover execution order/conditions/state, then lower to named functions and explicit scheduling/state storage",
+      "preconditions": [
+        "causal execution order is recovered",
+        "conditionality and update cadence are known"
+      ],
+      "hard_negatives": [
+        "contraptions that depend on physical block updates, comparator output, minecart motion, or command-block spatial semantics"
+      ],
+      "validation": [
+        "same observable world-state trace",
+        "same bounded timing contract",
+        "same failure/conditional paths"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "SupraCraft CORE 1.8.8 command recovery",
+        "SupraCraft/mc-server-images#34 corpus"
+      ]
+    },
+    {
+      "id": "scoreboard_arithmetic_to_context_compute",
+      "class": "CANDIDATE_MODERNIZATION",
+      "automatic": false,
+      "source_scope": "scoreboard arithmetic used primarily as temporary numeric computation",
+      "target_scope": "26.3+ /compute and context int/float providers",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "scoreboard players (operation|add|remove|set) "
+      },
+      "transform": "replace eligible ephemeral arithmetic pipelines with context number providers and /compute or /data ... compute",
+      "preconditions": [
+        "scoreboard value is not externally observable/persistent game state",
+        "numeric type/overflow/rounding semantics match"
+      ],
+      "hard_negatives": [
+        "scoreboard is part of gameplay state/UI",
+        "operation depends on scoreboard integer overflow or ordering"
+      ],
+      "validation": [
+        "numeric differential test over boundary inputs",
+        "state-observability check"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "Minecraft Java 26.3 Pre-Release 1 and Snapshot 10"
+      ]
+    },
+    {
+      "id": "manual_block_interaction_to_block_transformer",
+      "class": "CANDIDATE_MODERNIZATION",
+      "automatic": false,
+      "source_scope": "commands that detect item/block interaction and replace blocks manually",
+      "target_scope": "26.3+ minecraft:block_transformer component/registry",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "execute .* if block .* run setblock|execute .* if items .* run setblock"
+      },
+      "transform": "encode interaction as block_transformer rule when trigger/effect semantics are equivalent",
+      "preconditions": [
+        "transformation is directly tied to item-on-block interaction",
+        "provider can express resulting block state"
+      ],
+      "hard_negatives": [
+        "multi-block transactions",
+        "delayed transforms",
+        "side effects beyond supported sound/particle/block result"
+      ],
+      "validation": [
+        "interaction A/B world-state result",
+        "sound/particle contract where relevant"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "Minecraft Java 26.3 Snapshot 2"
+      ]
+    },
+    {
+      "id": "custom_brewing_commands_to_data_driven_brewing",
+      "class": "CANDIDATE_MODERNIZATION",
+      "automatic": false,
+      "source_scope": "legacy custom potion/brewing command machinery",
+      "target_scope": "26.3+ data-driven brewing recipes",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "brewing_stand|potion_contents|minecraft:potion"
+      },
+      "transform": "recover reagent/input/output relation and re-express as a 26.3 brewing recipe where equivalent",
+      "preconditions": [
+        "legacy behavior is a bounded brewing transformation",
+        "no extra world/actor side effects are essential"
+      ],
+      "hard_negatives": [
+        "ritual/state-machine behavior merely using a brewing stand as a prop"
+      ],
+      "validation": [
+        "input/reagent/output matrix",
+        "fuel/timing behavior if contract-sensitive"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "Minecraft Java 26.3 Snapshot 3"
+      ]
+    },
+    {
+      "id": "client_visual_hack_to_posteffect",
+      "class": "CANDIDATE_MODERNIZATION",
+      "automatic": false,
+      "source_scope": "legacy client-visual illusion/hack whose intent is screen post-processing",
+      "target_scope": "26.3+ /posteffect plus resource-pack post effects",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "blindness|darkness|title .*times|camera"
+      },
+      "transform": "replace only when recovered intent is post-processing rather than gameplay impairment",
+      "preconditions": [
+        "visual-only intent is proven",
+        "resource-pack dependency is acceptable"
+      ],
+      "hard_negatives": [
+        "blindness/darkness is intentionally gameplay-affecting",
+        "server needs authoritative knowledge of visual result"
+      ],
+      "validation": [
+        "client presentation comparison",
+        "server semantic state unchanged"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "Minecraft Java 26.3 Snapshot 3"
+      ]
+    }
+  ]
+}
