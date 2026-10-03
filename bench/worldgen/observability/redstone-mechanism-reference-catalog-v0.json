@@ -172,6 +172,21 @@
       }
     },
     {
+      "id": "rising_edge_detector",
+      "family": "pulse",
+      "status": "qualified_template",
+      "runtime_contract": "low-to-high emits one bounded positive pulse then settles low; high-to-low emits no positive pulse; second rise retriggers after low settling",
+      "qualification_evidence": {
+        "authority_issue": "SupraCraft/mc-server-images#11",
+        "authority_comment_id": 5963844108,
+        "exact_versions": [
+          "26.3",
+          "26.4-snapshot-2"
+        ],
+        "contract": "exact_three_stage_delay4_static_netlist_plus_rising_edge_pulse_runtime_contract"
+      }
+    },
+    {
       "id": "pulse_edge_detector",
       "family": "pulse",
       "status": "reference_candidate_only",
