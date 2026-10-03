@@ -19,7 +19,11 @@ The system should recover and qualify mechanisms that span:
 
 The system must remain evidence-driven. A mechanism name is a hypothesis until its structural, exact-version runtime, observer-effect, and correlation contracts pass.
 
-## 2. Non-goals
+## 2. Scope boundary
+
+Initial semantic authority is **Minecraft Java Edition only**, scoped per exact version. Bedrock and other editions are comparison/discovery surfaces only until separately qualified; no Java behavior may be projected onto them by analogy.
+
+## 3. Non-goals
 
 Do not build:
 
@@ -32,7 +36,7 @@ Do not build:
 
 Do not weaken existing qualified Redstone contracts to admit broader layouts.
 
-## 3. Architectural decision
+## 4. Architectural decision
 
 Use a **thin shared causal kernel with rich domain adapters**.
 
@@ -104,7 +108,7 @@ A world may project into multiple views:
 
 Each adapter owns its native semantics. Shared-kernel edges link projections without forcing them into one algebra.
 
-## 4. Cross-domain transducers
+## 5. Cross-domain transducers
 
 Treat subsystem boundaries as explicit qualified interfaces.
 
@@ -121,7 +125,7 @@ Initial interface families:
 
 A presentation node may be pruned only when it is terminal in the bounded mechanism. If another subsystem consumes its state, it remains causal.
 
-## 5. Dynamic topology
+## 6. Dynamic topology
 
 Mechanical movement and command execution can alter connectivity.
 
@@ -140,7 +144,7 @@ Required properties:
 
 The first implementation should support bounded local transitions, not whole-world exhaustive rewrite analysis.
 
-## 6. Evidence hierarchy
+## 7. Evidence hierarchy
 
 For every mechanism:
 
@@ -161,7 +165,7 @@ Behavioral equality is contract-specific. Preserve separate relations for:
 
 No single equality relation is authoritative across all domains.
 
-## 7. Workstream decomposition
+## 8. Workstream decomposition
 
 ### S0 — serialized integration / promotion spine
 
@@ -322,7 +326,7 @@ Preserve:
 
 External labels are hypotheses, not authority.
 
-## 8. Dependency DAG
+## 9. Dependency DAG
 
 ```
                          +--> L1 external corpus -----------+
@@ -347,7 +351,7 @@ X1 + domain motifs -> cross-domain mechanisms ------------+
 
 K1 is additive infrastructure, not a prerequisite for ongoing E1 work. Existing lanes may continue using existing artifacts until they voluntarily emit the new common envelope.
 
-## 9. Non-disruption plan
+## 10. Non-disruption plan
 
 This plan must not interrupt ongoing qualified work.
 
@@ -356,7 +360,9 @@ This plan must not interrupt ongoing qualified work.
 - current integration branch remains authoritative;
 - new domain work uses independent branches/issues;
 - no speculative branch may directly edit the shared catalog while another promotion is active;
-- reconciliation is one bounded tranche at a time.
+- reconciliation is one bounded tranche at a time;
+- at reconciliation, the **current integration head wins** over stale branch assumptions;
+- stale child work must replay/rebase its deterministic tests against the current head before integration.
 
 ### N2. Additive schemas
 
@@ -371,13 +377,25 @@ New extractors run in shadow mode against existing fixtures/worlds:
 - no promotion;
 - no existing test replacement;
 - compare outputs with accepted artifacts;
-- preserve mismatch receipts.
+- preserve mismatch receipts;
+- shadow outputs do **not** feed existing metrics, decisions, or promotion gates until independently accepted.
 
 ### N4. Feature-gated workflows
 
 Domain-specific jobs should be separate workflow jobs/files or opt-in matrices.
 
 Do not add piston/command/inventory cost to every Redstone commit.
+
+### N4a. Bounded WIP
+
+To prevent parallelism from becoming coordination overhead:
+
+- at most **five code-bearing discovery/primitive lanes** are active concurrently, excluding S0;
+- research/corpus lanes that do not mutate shared code do not consume this cap;
+- only **one shared-kernel writer** and **one shared catalog/promotion writer** may be active at a time;
+- opening a sixth code-bearing lane requires closing, pausing, or explicitly superseding another lane.
+
+This is a WIP policy, not a scheduler or approval service.
 
 ### N5. Staged validation funnel
 
@@ -393,7 +411,7 @@ Every cross-domain integration tranche must be revertible without invalidating e
 
 No destructive schema migration until a separately reviewed migration plan exists.
 
-## 10. Implementation stages
+## 11. Implementation stages
 
 ### D0 — planning and boundaries
 
@@ -485,7 +503,7 @@ Longer-term:
 
 This is research/qualification, not an initial deployment dependency.
 
-## 11. Deployment topology
+## 12. Deployment topology
 
 ### Public/free execution
 
@@ -525,7 +543,7 @@ docs/
 
 Do not create a new repository unless the current one demonstrably becomes an integration bottleneck.
 
-## 12. Red-team of this plan
+## 13. Red-team of this plan
 
 ### RT1 — architecture expands faster than evidence
 
@@ -621,7 +639,26 @@ Mitigation:
 - copy artifacts only when license permits;
 - no unlicensed schematic/source vendoring.
 
-## 13. Blue-team validation of the plan
+### RT11 — edition creep
+
+Risk:
+- Java-specific semantics are accidentally generalized to Bedrock or other editions.
+
+Mitigation:
+- Java exact-version authority is explicit in every accepted contract;
+- other editions remain separate discovery/comparison treatments until independently qualified.
+
+### RT12 — branch-age illusion
+
+Risk:
+- a successful old child branch is integrated after the authority surface has changed.
+
+Mitigation:
+- current integration head is reconciled first;
+- deterministic tests replay against that head;
+- stale evidence remains provenance, not automatic acceptance.
+
+## 14. Blue-team validation of the plan
 
 The plan is accepted as efficient only if:
 
@@ -636,7 +673,7 @@ The plan is accepted as efficient only if:
 - canonical GitHub/runtime evidence outranks actor claims;
 - #381 WAIT remains respected.
 
-## 14. Opportunistic actor qualification / interviews
+## 15. Opportunistic actor qualification / interviews
 
 Qualification is observational and piggybacks on real bounded work.
 
@@ -730,12 +767,13 @@ Qualification metadata:
 - may never expand authority;
 - may never delay a critical-path fix solely to complete a benchmark.
 
-## 15. Agent Dispatch deployment boundary
+## 16. Agent Dispatch deployment boundary
 
 The repository already contains a public bootstrap workset and a WAIT leaf for live runtime proof.
 
 For this plan:
 
+- the checked-in cross-domain workset is **planning metadata only and non-executable** while #381 is WAIT;
 - define planned delegations now;
 - do not live project/plan/dispatch/observe via trusted host while #381 remains deferred;
 - no Sidecar/grant mutation;
@@ -743,7 +781,7 @@ For this plan:
 
 No recursive delegation.
 
-## 16. Initial READY work
+## 17. Initial READY work
 
 Without disturbing S0:
 
@@ -757,7 +795,7 @@ Without disturbing S0:
 
 These can proceed independently on separate branches.
 
-## 17. Stop / escalation conditions
+## 18. Stop / escalation conditions
 
 Return blocked / needs-envelope-expansion when:
 
@@ -770,7 +808,7 @@ Return blocked / needs-envelope-expansion when:
 - a proposed kernel field is domain-specific;
 - a full matrix is being requested before staged falsification is complete.
 
-## 18. Acceptance criteria for plan deployment
+## 19. Acceptance criteria for plan deployment
 
 The first deployment tranche is successful when:
 

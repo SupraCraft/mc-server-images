@@ -8,6 +8,10 @@
       "state": "WAIT",
       "authority": "SemperSupra/agent-dispatch-private#381",
       "rule": "No live Sidecar projection/plan/dispatch/observe or grant mutation until durable reactivation."
+    },
+    "scope_boundary": {
+      "edition": "minecraft_java",
+      "rule": "Other editions are discovery/comparison only until independently qualified; no Java semantic projection by analogy."
     }
   },
   "invariants": [
@@ -207,5 +211,19 @@
     "D5_dynamic_topology_receipts",
     "D6_representative_world_census",
     "D7_equivalence_round_trip_research"
+  ],
+  "executable": false,
+  "concurrency": {
+    "max_code_bearing_discovery_lanes": 5,
+    "research_only_lanes_exempt": true,
+    "max_shared_kernel_writers": 1,
+    "max_shared_catalog_promotion_writers": 1,
+    "rule": "WIP cap is a coordination policy, not a scheduler or approval service."
+  },
+  "non_disruption": [
+    "current integration head outranks stale branch assumptions",
+    "replay deterministic tests against current head before integration",
+    "shadow outputs do not feed accepted metrics or promotion gates until independently accepted",
+    "no destructive migration of accepted Redstone receipts"
   ]
 }
