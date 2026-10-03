@@ -1,0 +1,183 @@
+name: legacy uplift static wave
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/analyze_legacy_uplift_static_wave.py'
+      - 'tools/analyze_legacy_uplift_candidates.py'
+      - 'tools/uplift_worldgen_26_2_to_26_3.py'
+      - 'tools/uplift_mcfunction_block_state_snbt.py'
+      - 'tests/test_legacy_uplift.py'
+      - 'tests/test_mcfunction_block_state_uplift.py'
+      - 'bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json'
+      - '.github/workflows/worldgen-legacy-uplift-static-wave.yml'
+
+concurrency:
+  group: legacy-uplift-static-wave-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static-lanes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        lane:
+          - harness-selfcheck
+          - sprint-residual
+          - voidblock-structural
+    steps:
+      - name: Checkout SupraCraft
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Harness self-check
+        if: matrix.lane == 'harness-selfcheck'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile             tools/analyze_legacy_uplift_candidates.py             tools/uplift_worldgen_26_2_to_26_3.py             tools/uplift_mcfunction_block_state_snbt.py             tools/analyze_legacy_uplift_static_wave.py
+
+          python -m unittest             tests.test_legacy_uplift             tests.test_mcfunction_block_state_uplift -v
+
+          python - <<'PY' "$RUNNER_TEMP/wave-harness-selfcheck.json"
+          import json, pathlib, sys
+          catalog = json.loads(pathlib.Path("bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json").read_text())
+          assert catalog["schema"] == "supracraft-legacy-uplift-rule-catalog/1"
+          result = {
+              "schema": "supracraft-static-wave-harness/1",
+              "lane": "harness-selfcheck",
+              "compile_pass": True,
+              "unit_tests_pass": True,
+              "rule_count": len(catalog["rules"]),
+              "classification": "PASS"
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          print("SUPRACRAFT_STATIC_WAVE_HARNESS_PASS")
+          PY
+
+      - name: Sprint Racer residual clustering
+        if: matrix.lane == 'sprint-residual'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint-racer"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+
+          python tools/analyze_legacy_uplift_static_wave.py sprint-residual             --repo "$repo"             --old "$old"             --new "$new"             --output "$RUNNER_TEMP/wave-sprint-residual.json"
+
+          cat "$RUNNER_TEMP/wave-sprint-residual.json"
+          echo SUPRACRAFT_STATIC_WAVE_SPRINT_PASS
+
+      - name: Voidblock structural residual
+        if: matrix.lane == 'voidblock-structural'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/voidblock"
+          pin="ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19"
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/Loweredgames/Voidblock.git
+          git -C "$repo" fetch --depth=1 origin "$pin"
+          git -C "$repo" checkout --detach FETCH_HEAD
+
+          source_pack="$repo/datapacks/Voidblock datapacks"
+          generated="$RUNNER_TEMP/voidblock-generated-26.3"
+
+          python tools/analyze_legacy_uplift_candidates.py             "$source_pack/voidblock_mc26.2"             --apply-safe "$generated"             --output-json "$RUNNER_TEMP/voidblock-safe.json"             --fail-on-safe
+
+          python tools/uplift_worldgen_26_2_to_26_3.py             "$generated"             --output-json "$RUNNER_TEMP/voidblock-worldgen.json"
+
+          python tools/analyze_legacy_uplift_static_wave.py compare-trees             --generated "$generated"             --maintained "$source_pack/voidblock_mc26.3"             --output "$RUNNER_TEMP/wave-voidblock-structural.json"
+
+          cat "$RUNNER_TEMP/wave-voidblock-structural.json"
+          echo SUPRACRAFT_STATIC_WAVE_VOIDBLOCK_PASS
+
+      - name: Upload derived lane receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-static-${{ matrix.lane }}
+          path: ${{ runner.temp }}/wave-${{ matrix.lane }}.json
+          retention-days: 14
+          if-no-files-found: error
+
+  reconcile:
+    needs: static-lanes
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Download derived lane receipts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: uplift-static-*
+          path: receipts
+          merge-multiple: true
+
+      - name: Deterministic reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+
+          root = pathlib.Path("receipts")
+          expected = {
+              "wave-harness-selfcheck.json",
+              "wave-sprint-residual.json",
+              "wave-voidblock-structural.json",
+          }
+          actual = {p.name for p in root.glob("*.json")}
+          missing = sorted(expected - actual)
+
+          data = {}
+          for name in sorted(expected & actual):
+              data[name] = json.loads((root / name).read_text())
+
+          result = {
+              "schema": "supracraft-legacy-uplift-static-wave/1",
+              "expected_lane_count": 3,
+              "received_lane_count": len(data),
+              "missing_receipts": missing,
+              "lanes": data,
+              "runtime_launch_decision": "NOT_AUTOMATIC",
+              "rule": "Static evidence may nominate at most one runtime question; this workflow never launches exact-runtime work.",
+          }
+
+          pathlib.Path("wave-reconciliation.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(result, indent=2, sort_keys=True))
+
+          if missing:
+              raise SystemExit("one or more independent static lanes failed; preserve lane failures and do not launch runtime")
+          print("SUPRACRAFT_STATIC_WAVE_RECONCILE_PASS")
+          PY
+
+      - name: Upload reconciliation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-static-wave-reconciliation
+          path: wave-reconciliation.json
+          retention-days: 14
+          if-no-files-found: warn
