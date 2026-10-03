@@ -5,11 +5,13 @@ on:
     paths:
       - 'tools/inspect_mechanical_domain_structure.py'
       - 'tests/test_mechanical_domain_structure.py'
+      - 'tools/run_mechanical_domain_canary.py'
       - '.github/workflows/worldgen-mechanical-domain-structure.yml'
   pull_request:
     paths:
       - 'tools/inspect_mechanical_domain_structure.py'
       - 'tests/test_mechanical_domain_structure.py'
+      - 'tools/run_mechanical_domain_canary.py'
       - '.github/workflows/worldgen-mechanical-domain-structure.yml'
 permissions: {contents: read}
 jobs:
@@ -34,8 +36,16 @@ jobs:
         run: |
           mkdir -p out
           python tools/inspect_mechanical_domain_structure.py --work-dir out/runtime --output out/mechanical-structure.json
+      - name: Run bounded Java 26.3 mechanical runtime canary
+        run: |
+          python tools/run_mechanical_domain_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/runtime/server.jar \
+            --output-dir out/mechanical-runtime
       - uses: actions/upload-artifact@v4
         with:
-          name: mechanical-domain-structure-26.3
-          path: out/mechanical-structure.json
+          name: mechanical-domain-26.3
+          path: |
+            out/mechanical-structure.json
+            out/mechanical-runtime/mechanical-runtime.json
           retention-days: 14
