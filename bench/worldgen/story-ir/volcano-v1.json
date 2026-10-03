@@ -1,0 +1,65 @@
+{
+  "schema": "supracraft-story-ir/0",
+  "story_id": "recurring_resource_volcano_v1",
+  "title": "Recurring Resource Volcano",
+  "intent": "A volcano periodically erupts, cools into persistent terrain containing mineable resources, and accumulates enough material to emerge as an island when instantiated underwater.",
+  "world_features": [
+    {
+      "id": "volcano",
+      "kind": "recurring_geologic_feature",
+      "location_ref": "volcano_center",
+      "phases": [
+        "dormant",
+        "warning",
+        "eruption",
+        "cooling",
+        "resource_ready"
+      ],
+      "recurrence": {
+        "mode": "repeat_after_dormancy"
+      },
+      "persistence": {
+        "cumulative_growth": true,
+        "cooled_terrain_persists": true,
+        "resources_persist_until_mined": true
+      },
+      "environment_variants": {
+        "underwater": {
+          "enabled": true,
+          "emergence_condition": "accumulated_volcano_geometry_crosses_water_surface"
+        }
+      }
+    }
+  ],
+  "locations": [
+    {
+      "id": "volcano_center",
+      "kind": "world_position_parameter"
+    }
+  ],
+  "observations": [
+    "warning_visible_or_audible",
+    "eruption_started",
+    "cooling_complete",
+    "resources_ready",
+    "island_emerged"
+  ],
+  "requested_capabilities": [
+    "timed_state_machine",
+    "persistent_world_geometry_mutation",
+    "hot_to_cooled_material_transition",
+    "mineable_resource_generation",
+    "environment_threshold_detection",
+    "player_observable_feedback"
+  ],
+  "implementation_constraints": [
+    "vanilla_minecraft_server_client",
+    "exact_version_profile_required",
+    "unsupported_semantics_fail_closed"
+  ],
+  "non_goals": [
+    "realistic_tectonics",
+    "realistic_fluid_dynamics",
+    "realistic_ore_geology"
+  ]
+}

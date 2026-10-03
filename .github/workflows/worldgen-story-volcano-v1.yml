@@ -1,0 +1,49 @@
+name: worldgen story volcano v1
+
+on:
+  push:
+    branches: [feat/story-volcano-v1]
+    paths:
+      - 'bench/worldgen/story-ir/volcano-v1.json'
+      - 'docs/story-slices/volcano-v1.md'
+      - 'tools/story_volcano_pack.py'
+      - 'tools/run_story_volcano_canary.py'
+      - 'tests/test_story_volcano_pack.py'
+      - '.github/workflows/worldgen-story-volcano-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  volcano:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        run: '[[ "${{ github.event.repository.private }}" == "false" ]] || exit 78'
+      - uses: actions/checkout@v5
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '25'}
+      - name: Enforce public/free policy
+        run: python tools/check_worldgen_public_policy.py --repository-private "${{ github.event.repository.private }}" --runner-label "$WORLDGEN_RUNNER_LABEL" --scan-workflows .github/workflows
+      - name: Unit controls
+        run: |
+          python -m unittest -v tests.test_story_volcano_pack
+          python -m py_compile tools/story_volcano_pack.py tools/run_story_volcano_canary.py
+      - name: Exact Java 26.3 volcano canary
+        run: |
+          mkdir -p out
+          python tools/run_story_volcano_canary.py             --evidence probes/26.3-release-identity.json             --output-dir out
+      - name: Static datapack causal analysis
+        run: |
+          python tools/analyze_datapack_causal_semantics.py             --world out/world-for-analysis             --output out/datapack-causal.json || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: story-volcano-v1-26.3
+          path: out/
+          retention-days: 14
