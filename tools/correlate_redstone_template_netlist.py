@@ -261,6 +261,36 @@ def validate_rising_edge(doc):
     }
 
 
+
+def validate_repeater_ring(doc):
+    rows=motifs(doc,"repeater_ring_oscillator")
+    assert rows,"missing repeater_ring_oscillator"
+    qualified=[
+        r for r in rows
+        if len(r.get("repeater_component_ids") or [])==4
+        and r.get("configured_delays")==[4,4,4,4]
+        and len(set(r.get("loop_net_ids") or []))==4
+    ]
+    assert qualified,rows
+    row=qualified[0]
+    cmap=component_map(doc)
+    repeater_ids=row["repeater_component_ids"]
+    assert all(
+        cid in cmap and cmap[cid]["primitive"]=="buffer_delay"
+        for cid in repeater_ids
+    ),row
+    return {
+        "motif_count":len(rows),
+        "matched_component_ids":row["component_ids"],
+        "repeater_component_ids":repeater_ids,
+        "configured_delays":row["configured_delays"],
+        "loop_net_ids":row["loop_net_ids"],
+        "net_ids":row["net_ids"],
+        "functional_netlist_sha256":doc["signatures"]["functional_netlist_sha256"],
+        "horizontal_d4_topology_sha256":doc["signatures"]["horizontal_d4_topology_sha256"],
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--runtime-report",type=Path,required=True)
@@ -272,6 +302,7 @@ def main():
     ap.add_argument("--and-netlist",type=Path,required=True)
     ap.add_argument("--xor-netlist",type=Path,required=True)
     ap.add_argument("--rising-edge-netlist",type=Path,required=True)
+    ap.add_argument("--ring-netlist",type=Path,required=True)
     ap.add_argument("--output",type=Path,required=True)
     args=ap.parse_args()
 
@@ -284,6 +315,7 @@ def main():
     conj=validate_and(load(args.and_netlist))
     xor=validate_xor(load(args.xor_netlist))
     rising=validate_rising_edge(load(args.rising_edge_netlist))
+    ring=validate_repeater_ring(load(args.ring_netlist))
 
     rt_repeater=runtime["repeater_delay_line"]
     assert rt_repeater["ordering_pass"] is True
@@ -297,6 +329,7 @@ def main():
     assert runtime["and_gate"]["truth_table_pass"] is True
     assert runtime["xor_gate"]["truth_table_pass"] is True
     assert runtime["rising_edge_detector"]["temporal_contract_pass"] is True
+    assert runtime["repeater_ring_oscillator"]["temporal_contract_pass"] is True
 
     report={
         "schema":"supracraft-redstone-netlist-runtime-correlation/1",
@@ -351,6 +384,21 @@ def main():
                 runtime["rising_edge_detector"]["second_rising_pulse_tick_width"],
             "correlation_class":
                 "rising_edge_detector_template_supported_by_runtime_edge_pulse_contract",
+        },
+        "repeater_ring_oscillator":{
+            "static":ring,
+            "runtime_first_autonomous_window":
+                runtime["repeater_ring_oscillator"]["first_autonomous_window"],
+            "runtime_stopped_window":
+                runtime["repeater_ring_oscillator"]["stopped_window"],
+            "runtime_restart_autonomous_window":
+                runtime["repeater_ring_oscillator"]["restart_autonomous_window"],
+            "first_same_edge_period_ticks":
+                runtime["repeater_ring_oscillator"]["first_same_edge_period_ticks"],
+            "restart_same_edge_period_ticks":
+                runtime["repeater_ring_oscillator"]["restart_same_edge_period_ticks"],
+            "correlation_class":
+                "repeater_ring_oscillator_template_supported_by_runtime_autonomous_clock_contract",
         },
         "boundary":"template identification is exact-fixture/version evidence; broader motif recognition still requires independent examples and hard negatives",
     }
