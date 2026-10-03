@@ -94,8 +94,16 @@ def inspect_level(path: Path) -> dict:
     return result
 
 
-def inspect_scoreboard(path: Path) -> dict:
-    if not path.is_file():
+def find_first(world: Path, candidates: tuple[str, ...]) -> Path | None:
+    for rel in candidates:
+        path = world / rel
+        if path.is_file():
+            return path
+    return None
+
+
+def inspect_scoreboard(path: Path | None) -> dict:
+    if path is None or not path.is_file():
         return {"present": False}
     root = nbtlib.load(path)
     data = first_mapping(root)
@@ -154,13 +162,27 @@ def grouped_data_files(world: Path) -> dict:
 
     groups = Counter()
     files = {}
-    for path in sorted(p for p in data_dir.glob("*.dat") if p.is_file()):
-        name = path.name
-        if name.startswith("map_"):
+    for path in sorted(p for p in data_dir.rglob("*.dat") if p.is_file()):
+        rel = path.relative_to(data_dir).as_posix()
+        parts = path.relative_to(data_dir).parts
+        if "maps" in parts or path.name.startswith("map_"):
             groups["map"] += 1
             continue
-        groups["other"] += 1
-        files[name] = inspect_dat_file(path)
+        if path.name in {"scoreboard.dat"}:
+            groups["scoreboard"] += 1
+        elif path.name in {"game_rules.dat"}:
+            groups["game_rules"] += 1
+        elif path.name in {"custom_boss_events.dat"}:
+            groups["custom_boss_events"] += 1
+        elif "raids" in path.name:
+            groups["raids"] += 1
+        elif "random_sequences" in path.name:
+            groups["random_sequences"] += 1
+        elif "command_storage" in path.name or "storage" in path.name:
+            groups["storage"] += 1
+        else:
+            groups["other"] += 1
+        files[rel] = inspect_dat_file(path)
     return {
         "data_file_count": sum(groups.values()),
         "groups": dict(sorted(groups.items())),
@@ -216,7 +238,15 @@ def analyze(args) -> dict:
                 "serving as exact-version world authority."
             ),
         },
-        "scoreboard": inspect_scoreboard(world / "data" / "scoreboard.dat"),
+        "scoreboard": inspect_scoreboard(
+            find_first(
+                world,
+                (
+                    "data/scoreboard.dat",
+                    "data/minecraft/scoreboard.dat",
+                ),
+            )
+        ),
         "world_state_data": grouped_data_files(world),
         "region_file_counts": count_region_files(world),
         "datapack_entry_count": datapack_entries,
