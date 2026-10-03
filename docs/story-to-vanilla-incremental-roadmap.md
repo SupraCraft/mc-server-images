@@ -321,6 +321,43 @@ Every modifier lowering records:
 - observation feedback;
 - version/evidence refs.
 
+### Slice 1.75 — Fungal launchpad traversal
+
+Purpose:
+- turn giant red/brown mushrooms into reusable traversal surfaces;
+- support naturally generated and player-grown mushroom launch networks;
+- exercise biology/ecology + actor mobility + observation without creating another peer domain.
+
+Core contract:
+
+```
+giant mushroom cap
+  -> valid launch surface
+  -> intentional player jump/launch
+  -> bounded aerial trajectory
+  -> safe/characterized landing
+```
+
+First lowering:
+- detect valid mushroom-cap contact;
+- apply a short bounded movement effect such as `jump_boost`;
+- characterize landing/fall damage;
+- require no client mod or custom resource pack.
+
+Alternative experiment:
+- wind-charge-style impulse/knockback lowering for more ballistic bounce behavior.
+
+MVP acceptance:
+- red + brown giant mushroom surfaces;
+- naturally generated + player-grown reps;
+- non-mushroom hard negative;
+- deterministic jump-height envelope;
+- at least one traversable multi-pad route;
+- mushroom removal naturally disables the pad.
+
+Issue:
+- `SupraCraft/mc-server-images#32`.
+
 ### Slice 2 — Physical puzzle / machine story
 
 Story example:
