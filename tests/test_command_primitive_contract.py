@@ -33,8 +33,9 @@ class CommandPrimitiveContractTests(unittest.TestCase):
 
     def test_runtime_does_not_retain_plaintext_payload_as_evidence(self):
         src=TRACE.read_text()
-        self.assertIn('"command_sha256"',src)
-        self.assertIn('"command_verb"',src)
+        self.assertIn('\\\"command_sha256\\\":\\\"',src)
+        self.assertIn('\\\"command_verb\\\":\\\"',src)
+        self.assertNotIn('\\\"command\\\":\\\"',src)
         self.assertIn("sha256(command)",src)
 
     def test_workflow_still_guards_bounded_causal_order(self):
