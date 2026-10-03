@@ -425,11 +425,13 @@
   },
   "roadmap": {
     "authority_doc": "docs/story-to-vanilla-incremental-roadmap.md",
-    "commit": "9bd27cbeb6f393413f890c11cb8c52d42726f4b0",
+    "commit": "601d1f0575b13277e81cad46316dac8185e411b5",
     "principle": "Ship bounded end-to-end vertical slices; do not wait for encyclopedic domain completeness.",
     "priority": [
       "P0_story_ir_and_capability_registry",
       "P1_playable_quest_mvp",
+      "P1_5_named_place_landmark_mvp",
+      "P1_75_fungal_launchpad_traversal",
       "P2_physical_puzzle",
       "P2A_constructible_semantic_artifacts",
       "P3_transformation_production",
@@ -590,6 +592,30 @@
         "temple-tier effects"
       ],
       "boundary": "Story magic is an artifact/actor-state abstraction; command orchestration is a valid vanilla lowering but not evidence of a native Minecraft magic subsystem."
+    },
+    "fungal_launchpads": {
+      "issue": "SupraCraft/mc-server-images#32",
+      "state": "PLANNED_HIGH_PRIORITY",
+      "semantic_pattern": "giant mushroom cap -> launch surface -> bounded player launch -> traversable route -> safe/characterized landing",
+      "domains": [
+        "biology_ecology_lifecycle",
+        "actor_social_economic"
+      ],
+      "planes": [
+        "observation",
+        "artifact_representation"
+      ],
+      "first_lowering": "short bounded jump_boost on valid mushroom-cap contact",
+      "alternate_lowering": "wind-charge-style impulse experiment",
+      "acceptance": [
+        "red and brown giant mushroom caps",
+        "natural and player-grown reps",
+        "non-mushroom hard negative",
+        "bounded jump-height envelope",
+        "multi-pad traversable route",
+        "landing behavior characterized"
+      ],
+      "boundary": "No native mushroom-bounce semantics are claimed by a command-orchestrated implementation."
     }
   }
 }
