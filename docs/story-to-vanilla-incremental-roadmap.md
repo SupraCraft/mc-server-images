@@ -339,6 +339,41 @@ Leverages existing strong Redstone and piston evidence.
 
 This is the first slice where native-mechanic lowering should be preferred over command orchestration when qualified.
 
+
+### Slice 2A — Constructible semantic artifacts / shrines
+
+Purpose:
+- let a player build a specific vanilla structure whose recognized form activates a bounded story effect.
+
+Generic contract:
+
+```
+player-built block pattern
+  -> exact structure recognition
+  -> semantic artifact identity
+  -> activation state
+  -> bounded boon/effect
+  -> deactivation when required geometry is broken
+```
+
+Initial profiles:
+- healing shrine/totem;
+- prosperity shrine/totem;
+- protection/ward shrine;
+- later temples with richer or tiered effects.
+
+The structure belongs to world geometry plus the Artifact/Representation plane. The boon belongs to actor/world state.
+
+First backend may be command-orchestrated:
+- structure checks via exact block predicates/execute conditions;
+- effects/rewards via vanilla commands;
+- visible activation/deactivation feedback.
+
+Do not claim a native "magic system" merely because a story boon is implemented with commands.
+
+Issue:
+- `SupraCraft/mc-server-images#31`.
+
 ### Slice 3 — Workshop / production story
 
 Add Transformation/Production domain.
@@ -571,6 +606,11 @@ Deliver one named-place MVP with:
 
 ### P2
 Deliver one physical puzzle using existing electrical/mechanical evidence.
+
+### P2A
+Deliver one constructible semantic artifact with two boon profiles:
+- healing;
+- prosperity.
 
 ### P3
 Introduce Transformation with one crafting and one timed-production primitive.
