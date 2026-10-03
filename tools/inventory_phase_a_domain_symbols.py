@@ -127,6 +127,10 @@ def inventory(args):
                 "method_count":c["method_count"],
                 "candidate_count":len(c["name_token_candidates"]),
                 "candidate_names":[m["name"] for m in c["name_token_candidates"]],
+                "candidate_signatures":[
+                    {"name":m["name"],"descriptor":m["descriptor"]}
+                    for m in c["name_token_candidates"]
+                ],
             }
             for c in classes
         ],
