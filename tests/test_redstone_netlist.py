@@ -251,6 +251,80 @@ class RedstoneNetlistTests(unittest.TestCase):
             x["template"]=="nor_gate" for x in doc["motif_candidates"]
         ))
 
+    def test_four_delay4_repeaters_closed_ring_is_oscillator_candidate_only(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a0",(0,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("a1",(0,100,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("r1",(1,100,0),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"west","delay":"4","locked":"false","powered":"false"}),
+                n("b0",(2,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("b1",(3,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("r2",(3,100,1),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"north","delay":"4","locked":"false","powered":"false"}),
+                n("c0",(3,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("c1",(3,100,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("r3",(2,100,3),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"east","delay":"4","locked":"false","powered":"false"}),
+                n("d0",(1,100,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("d1",(0,100,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("r4",(0,100,2),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"south","delay":"4","locked":"false","powered":"false"}),
+            ],
+            "edges":[
+                edge("a0","a1"),edge("a1","a0"),
+                edge("b0","b1"),edge("b1","b0"),
+                edge("c0","c1"),edge("c1","c0"),
+                edge("d0","d1"),edge("d1","d0"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        rows=[
+            x for x in doc["motif_candidates"]
+            if x["template"]=="repeater_ring_oscillator"
+        ]
+        self.assertEqual(len(rows),1)
+        row=rows[0]
+        self.assertEqual(row["confidence"],"structural_candidate_only")
+        self.assertEqual(len(row["repeater_component_ids"]),4)
+        self.assertEqual(row["configured_delays"],[4,4,4,4])
+        self.assertEqual(len(set(row["loop_net_ids"])),4)
+        self.assertIn("autonomously",row["required_runtime_contract"].lower())
+
+    def test_open_delay4_repeater_chain_is_not_ring_oscillator(self):
+        graph={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a0",(0,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("r1",(1,100,0),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"west","delay":"4","locked":"false","powered":"false"}),
+                n("b0",(2,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("b1",(3,100,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("r2",(3,100,1),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"north","delay":"4","locked":"false","powered":"false"}),
+                n("c0",(3,100,2),"minecraft:redstone_wire",["signal_transport"]),
+                n("c1",(3,100,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("r3",(2,100,3),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"east","delay":"4","locked":"false","powered":"false"}),
+                n("d0",(1,100,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("d1",(0,100,3),"minecraft:redstone_wire",["signal_transport"]),
+                n("r4",(0,100,2),"minecraft:repeater",["signal_transport","timer_clock"],
+                  {"facing":"south","delay":"4","locked":"false","powered":"false"}),
+            ],
+            "edges":[
+                edge("b0","b1"),edge("b1","b0"),
+                edge("c0","c1"),edge("c1","c0"),
+                edge("d0","d1"),edge("d1","d0"),
+            ],
+        }
+        doc,_=mod.build(graph)
+        self.assertFalse(any(
+            x["template"]=="repeater_ring_oscillator"
+            for x in doc["motif_candidates"]
+        ))
+
+
     def test_reference_catalog_keeps_unqualified_families_candidate_only(self):
         catalog=json.loads(
             (ROOT/"bench"/"worldgen"/"observability"/
@@ -266,6 +340,7 @@ class RedstoneNetlistTests(unittest.TestCase):
         self.assertEqual(by_id["xor_gate"]["status"],"qualified_template")
         self.assertEqual(by_id["rising_edge_detector"]["status"],"qualified_template")
         self.assertEqual(by_id["pulse_edge_detector"]["status"],"reference_candidate_only")
+        self.assertEqual(by_id["repeater_ring_oscillator"]["status"],"reference_candidate_only")
         self.assertEqual(by_id["rs_latch"]["status"],"qualified_template")
         self.assertEqual(by_id["piston_clock"]["status"],"reference_candidate_only")
 
