@@ -156,6 +156,34 @@ class ExternalWorldMetadataTests(unittest.TestCase):
             receipt["provenance_checks"]["classification"],
         )
 
+    def test_namespaced_modern_data_layout_is_detected(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            self.write_level(root)
+            ns = root / "data" / "minecraft"
+            ns.mkdir(parents=True)
+            scoreboard = nbtlib.File(
+                {
+                    "data": nbtlib.Compound(
+                        {
+                            "Objectives": nbtlib.List[nbtlib.Compound]([]),
+                            "PlayerScores": nbtlib.List[nbtlib.Compound]([]),
+                            "Teams": nbtlib.List[nbtlib.Compound]([]),
+                        }
+                    )
+                }
+            )
+            scoreboard.save(ns / "scoreboard.dat")
+            game_rules = nbtlib.File({"data": nbtlib.Compound({"foo": nbtlib.String("bar")})})
+            game_rules.save(ns / "game_rules.dat")
+            receipt = external_world.analyze(self.args(root))
+
+        self.assertTrue(receipt["scoreboard"]["present"])
+        self.assertEqual(1, receipt["world_state_data"]["groups"]["scoreboard"])
+        self.assertEqual(1, receipt["world_state_data"]["groups"]["game_rules"])
+        self.assertIn("minecraft/scoreboard.dat", receipt["world_state_data"]["files"])
+        self.assertIn("minecraft/game_rules.dat", receipt["world_state_data"]["files"])
+
     def test_data_files_are_shape_only(self):
         with tempfile.TemporaryDirectory() as td:
             root = pathlib.Path(td)
