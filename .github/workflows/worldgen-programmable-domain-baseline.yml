@@ -1,0 +1,49 @@
+name: worldgen programmable domain baseline candidate
+
+on:
+  push:
+    branches:
+      - feat/programmable-domain-baseline-v1
+    paths:
+      - 'bench/worldgen/causal/programmable/**'
+      - 'tools/validate_programmable_domain_baseline.py'
+      - 'tests/test_programmable_domain_baseline.py'
+      - '.github/workflows/worldgen-programmable-domain-baseline.yml'
+  pull_request:
+    paths:
+      - 'bench/worldgen/causal/programmable/**'
+      - 'tools/validate_programmable_domain_baseline.py'
+      - 'tests/test_programmable_domain_baseline.py'
+      - '.github/workflows/worldgen-programmable-domain-baseline.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Validate programmable baseline candidate
+        run: |
+          python tools/validate_programmable_domain_baseline.py
+          python -m unittest -v tests.test_programmable_domain_baseline

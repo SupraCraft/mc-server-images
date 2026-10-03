@@ -1,0 +1,90 @@
+{
+  "schema": "supracraft-programmable-domain-baseline/1",
+  "edition": "java",
+  "minecraft_version": "26.3",
+  "domain": "programmable",
+  "qualification_status": "candidate_existing_runtime_supported",
+  "exact_classes": [
+    {
+      "role": "command_block",
+      "runtime_class": "net.minecraft.world.level.block.CommandBlock",
+      "class_sha256": "2cbe573c4833b44e74a1f41fc83473c1f2a6bc2e7d527b73df5af6b48708ad85"
+    },
+    {
+      "role": "command_block_entity",
+      "runtime_class": "net.minecraft.world.level.block.entity.CommandBlockEntity",
+      "class_sha256": "aaa2e988413439c5f5e912561323fd18d6e173c844f000b4eb3dfb2f0f8d0e3a"
+    },
+    {
+      "role": "command_dispatch",
+      "runtime_class": "net.minecraft.commands.Commands",
+      "class_sha256": "9307c70b1dce250f869dbf0c633856145718c44b078d656c2dc9c3244176a54e"
+    }
+  ],
+  "structural_hooks": [
+    {
+      "id": "command_block_neighbor",
+      "runtime_class": "net.minecraft.world.level.block.CommandBlock",
+      "method": "neighborChanged",
+      "descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Block;Lnet/minecraft/world/level/redstone/Orientation;Z)V"
+    },
+    {
+      "id": "command_block_tick",
+      "runtime_class": "net.minecraft.world.level.block.CommandBlock",
+      "method": "tick",
+      "descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V"
+    },
+    {
+      "id": "command_block_execute",
+      "runtime_class": "net.minecraft.world.level.block.CommandBlock",
+      "method": "execute",
+      "descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/BaseCommandBlock;Z)V"
+    },
+    {
+      "id": "command_dispatch",
+      "runtime_class": "net.minecraft.commands.Commands",
+      "method": "performCommand",
+      "descriptor": "(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V"
+    },
+    {
+      "id": "command_dispatch_prefixed",
+      "runtime_class": "net.minecraft.commands.Commands",
+      "method": "performPrefixedCommand",
+      "descriptor": "(Lnet/minecraft/commands/CommandSourceStack;Ljava/lang/String;)V"
+    }
+  ],
+  "runtime_evidence": {
+    "repository": "SupraCraft/mc-server-images",
+    "workflow_run_id": 37101462459,
+    "job_id": 111141661480,
+    "stock_canary_pass": true,
+    "instrumented_canary_pass": true,
+    "dropped_events": 0,
+    "semantic_divergence": false,
+    "observed_event_families": [
+      "command_block_neighbor",
+      "command_block_scheduled_tick",
+      "command_trigger_start",
+      "command_trigger_end",
+      "command_dispatch"
+    ],
+    "bounded_sequence": {
+      "command_tick": 21,
+      "trigger_start_seq": 642,
+      "trigger_end_seq": 646
+    }
+  },
+  "baseline_contract": [
+    "command blocks have an exact-version observable neighbor/tick/execute control surface",
+    "bounded command execution produces command trigger start/end and command dispatch evidence",
+    "stock and instrumented canary behavior agree for the qualified canary",
+    "event capture reports zero dropped events for the qualified canary"
+  ],
+  "exclusions": [
+    "no electrical-to-programmable trigger semantics are promoted by this baseline",
+    "no arbitrary command language semantics are claimed",
+    "no client presentation semantics are claimed",
+    "no command-caused topology mutation family is promoted",
+    "command-block-entity inventory is structural discovery only in this baseline"
+  ]
+}
