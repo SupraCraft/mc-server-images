@@ -284,8 +284,61 @@
               "classification": "DIRECTORY_AND_BLOCK_STATE_ONLY_UPLIFT_INSUFFICIENT",
               "cause": "deeper 26.3 worldgen density/noise/carver/structure-spawn schema changes"
             },
-            "boundary": "U4 applies only to the bounded load/initialization contract; full gameplay/worldgen distribution equivalence and U5 generalization are not claimed."
+            "boundary": "U4 applies only to the bounded load/initialization contract; full gameplay/worldgen distribution equivalence and U5 generalization are not claimed.",
+            "strengthened_differential": {
+              "workflow_run_id": 37157837286,
+              "job_id": 111304863147,
+              "artifact_id": 11285753859,
+              "artifact_digest": "sha256:6259a6a75e689c7409cca01d48a0cba49cc27274bb16834ec1a5b772593a46f2",
+              "generic_error_count": {
+                "uplifted": 31,
+                "maintainer": 31
+              },
+              "generic_error_unique_fingerprints": 16,
+              "generic_error_fingerprints_equivalent": true,
+              "classification": "BOUNDED_INITIALIZATION_EQUIVALENCE_PASS"
+            }
           }
+        },
+        "sprint_racer_26_2_to_26_3": {
+          "state": "INDEPENDENT_RULE_GENERALIZATION_PASS",
+          "source": "jarrodmmoore/Sprint-Racer-Dev",
+          "source_license_boundary": "All Rights Reserved; source used ephemerally, derived receipts only",
+          "exact_26_2_commit": "b674e09699818878749570760444ed7147fea3dc",
+          "exact_26_3_commit": "93cdfcff9f2462313de4d568f169c0e442d94e42",
+          "rule": "Block State serialization Name/Properties -> id/properties in embedded mcfunction SNBT",
+          "implementation": {
+            "tool": "tools/uplift_mcfunction_block_state_snbt.py",
+            "unit_test": "tests/test_mcfunction_block_state_uplift.py",
+            "workflow": ".github/workflows/worldgen-legacy-uplift-sprint-racer-snbt.yml"
+          },
+          "first_exact_confirmation": {
+            "workflow_run_id": 37157738872,
+            "job_id": 111304576283,
+            "files_qualified": 2,
+            "occurrences": 4,
+            "changed_keys": 7,
+            "exact_byte_equivalence": true
+          },
+          "whole_release_coverage": {
+            "workflow_run_id": 37157890180,
+            "job_id": 111305023500,
+            "artifact_id": 11285514282,
+            "artifact_digest": "sha256:a39801fdcd2e039d8a7f4710bce2525d17a850e7bc46a958c748473fd8bc93dc",
+            "changed_mcfunction_files": 1343,
+            "legacy_block_state_candidate_files": 101,
+            "legacy_block_state_occurrences": 977,
+            "legacy_block_state_key_changes": 1053,
+            "exactly_explained_files": 98,
+            "partially_explained_files": 3,
+            "partial_files": [
+              "levels/mushroom_cavern/main.mcfunction",
+              "levels/outer_spaceway/main.mcfunction",
+              "levels/redstone_factory/main.mcfunction"
+            ],
+            "partial_residual_interpretation": "selector option canonicalization/order changes are separate from Block State compatibility uplift"
+          },
+          "generalization": "Block State representation uplift is U5-evidence-ready across independent artifacts and serialization surfaces; universal promotion is not silently inferred."
         }
       },
       "qualification_task_classes": [
@@ -294,7 +347,12 @@
         "runtime-differential",
         "falsification",
         "independent-review"
-      ]
+      ],
+      "efficiency_controls": {
+        "preserved_v1_negative": "workflow 37157083714 remains durable; v1 runtime workflow is manual-only",
+        "active_runtime_path": "worldgen-legacy-uplift-263-runtime-v2.yml",
+        "rule": "Do not rerun known-obsolete shallow uplift automatically when shared tooling changes."
+      }
     }
   },
   "opportunistic_qualification": {
