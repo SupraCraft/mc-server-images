@@ -1,0 +1,194 @@
+{
+  "schema": "supracraft-phase-a-observation-plane/1",
+  "status": "planning_evidence_only",
+  "peer_domain": false,
+  "core_domains": [
+    "electrical",
+    "mechanical",
+    "programmable",
+    "inventory"
+  ],
+  "authority": {
+    "tracker": "SupraCraft/mc-server-images#27",
+    "integration_head": "5786836c8ee5ca16978a5f78b5211d546cd53f6b",
+    "phase_b": "WAIT_HUMAN_ACCEPTANCE_OF_PHASE_A"
+  },
+  "modalities": [
+    {
+      "id": "world_state_observable",
+      "meaning": "Authoritative block/entity/container/state that exists in the world or server state.",
+      "rule": "Observation does not imply another domain can consume the state."
+    },
+    {
+      "id": "engine_event_observable",
+      "meaning": "Native game/update/event activity that may be visible to engine listeners.",
+      "rule": "A listener/consumer relationship requires separate evidence."
+    },
+    {
+      "id": "programmable_introspection",
+      "meaning": "Authoritative state queryable through commands/datapacks or equivalent control surfaces.",
+      "rule": "This is an observation modality; it does not make the observed domain programmable."
+    },
+    {
+      "id": "client_presentation_observable",
+      "meaning": "Rendered/model/audio/UI state available to a human or client-embodied agent.",
+      "rule": "Client visibility is not server/world causality."
+    },
+    {
+      "id": "external_instrumentation",
+      "meaning": "Microscope, logs, protocol/bot diagnostics, or other external evidence surfaces.",
+      "rule": "Instrumentation is not part of the in-world mechanism unless deliberately embodied."
+    }
+  ],
+  "domains": {
+    "electrical": {
+      "candidate_surfaces": [
+        {
+          "surface": "wire/repeater/torch/comparator block state",
+          "modalities": [
+            "world_state_observable",
+            "client_presentation_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "neighbor/update/power-query events",
+          "modalities": [
+            "engine_event_observable",
+            "external_instrumentation"
+          ]
+        }
+      ],
+      "qualified_evidence": [
+        "accepted Redstone runtime/template authority under #11",
+        "exact 26.3 wire/neighbor microscope evidence"
+      ],
+      "exclusions": [
+        "no consumer in another domain is implied by observing an electrical state"
+      ]
+    },
+    "mechanical": {
+      "candidate_surfaces": [
+        {
+          "surface": "piston extended/retracted state and terminal block geometry",
+          "modalities": [
+            "world_state_observable",
+            "client_presentation_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "moving piston block-entity progress/movement state",
+          "modalities": [
+            "world_state_observable",
+            "client_presentation_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "block/neighborhood updates caused by movement",
+          "modalities": [
+            "engine_event_observable",
+            "external_instrumentation"
+          ]
+        }
+      ],
+      "current_evidence": [
+        "PistonBaseBlock exact structure",
+        "bounded extension/retraction geometry PASS",
+        "obsidian immovable hard negative PASS"
+      ],
+      "exclusions": [
+        "electrical stimulus used by the fixture is not an accepted electrical-to-mechanical transducer",
+        "observer or other consumer response to movement remains Phase B"
+      ]
+    },
+    "programmable": {
+      "candidate_surfaces": [
+        {
+          "surface": "command-block mode/facing/conditional and control state",
+          "modalities": [
+            "world_state_observable",
+            "programmable_introspection",
+            "client_presentation_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "command trigger/dispatch/order evidence",
+          "modalities": [
+            "engine_event_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "scoreboard/storage/query results where exact-version evidence exists",
+          "modalities": [
+            "programmable_introspection",
+            "client_presentation_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "text/sound/title/particle outputs",
+          "modalities": [
+            "client_presentation_observable",
+            "external_instrumentation"
+          ]
+        }
+      ],
+      "current_evidence": [
+        "exact CommandBlock/CommandBlockEntity/Commands class identities",
+        "stock+instrumented command canary PASS",
+        "trigger start/end and dispatch observed",
+        "zero dropped events and no semantic divergence"
+      ],
+      "exclusions": [
+        "command output does not imply another domain consumes it",
+        "command-caused world mutation families remain unpromoted"
+      ]
+    },
+    "inventory": {
+      "candidate_surfaces": [
+        {
+          "surface": "container slot/item state",
+          "modalities": [
+            "world_state_observable",
+            "programmable_introspection",
+            "client_presentation_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "hopper enabled/cooldown/transfer state where recoverable",
+          "modalities": [
+            "world_state_observable",
+            "external_instrumentation"
+          ]
+        },
+        {
+          "surface": "item transfer/eject/suck activity",
+          "modalities": [
+            "engine_event_observable",
+            "external_instrumentation"
+          ]
+        }
+      ],
+      "current_evidence": [
+        "HopperBlockEntity exact structure",
+        "hopper->empty chest transfer PASS",
+        "full-destination hard negative PASS"
+      ],
+      "exclusions": [
+        "comparator reads are Phase B interaction candidates",
+        "console item commands used by fixtures are not programmable-domain semantics"
+      ]
+    }
+  },
+  "global_rules": [
+    "The same occurrence may expose multiple observation modalities; record them separately.",
+    "Observation does not imply a transducer or consumer edge.",
+    "Presentation/feedback remains cross-cutting and is not a fifth peer domain.",
+    "Phase B interaction work remains closed until Human-in-Command acceptance of Phase A."
+  ]
+}
