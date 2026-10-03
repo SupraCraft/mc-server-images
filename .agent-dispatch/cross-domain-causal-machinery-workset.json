@@ -101,11 +101,15 @@
       "scope": [
         "multilingual metadata",
         "license/provenance",
-        "candidate designs"
+        "candidate designs",
+        "26.2/26.3 world and datapack intake",
+        "stable-intent vs version-churn classification",
+        "uplift-candidate handoff to legacy-uplift lane"
       ],
       "prohibited": [
         "unlicensed vendoring",
-        "source label as semantic authority"
+        "source label as semantic authority",
+        "archive without recording modernization/uplift disposition"
       ],
       "qualification_task_classes": [
         "research-synthesis",
@@ -176,6 +180,78 @@
         "source-recovery",
         "runtime-diagnosis",
         "test-generation"
+      ]
+    },
+    "legacy-uplift": {
+      "state": "READY_EXECUTABLE_CANDIDATE",
+      "authority": "SupraCraft/mc-server-images#35",
+      "implementation_branch": "feat/legacy-uplift-263-v1",
+      "scope": [
+        "behavior-first recovery of useful legacy mechanisms",
+        "safe syntactic migration to Java 26.3+",
+        "structural reimplementation behind stable semantic contracts",
+        "candidate modernization using newer vanilla capabilities",
+        "version adapters and overlays",
+        "runtime A/B equivalence before semantic promotion"
+      ],
+      "prohibited": [
+        "destructive mutation of source evidence",
+        "modernization solely because a primitive is newer",
+        "automatic rewrite of advisory rules",
+        "semantic promotion from static similarity alone",
+        "erase unexplained deltas instead of preserving UNKNOWN"
+      ],
+      "rule_classes": [
+        "SAFE_SYNTACTIC",
+        "STRUCTURAL_REIMPLEMENTATION",
+        "CANDIDATE_MODERNIZATION"
+      ],
+      "maturity_ladder": [
+        "U0_detected",
+        "U1_mechanically_transformable",
+        "U2_structurally_valid",
+        "U3_behaviorally_equivalent",
+        "U4_exact_version_qualified",
+        "U5_generalized_recipe"
+      ],
+      "current_evidence": {
+        "voidblock_26_2_to_26_3": {
+          "state": "U2_STRUCTURAL_PASS",
+          "source": "Loweredgames/Voidblock@ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19",
+          "workflow_run_id": 37155702580,
+          "validator_job_id": 111298525742,
+          "corpus_job_id": 111298544418,
+          "artifact_id": 11285357036,
+          "findings": {
+            "safe_block_state_candidates": 33,
+            "configured_carver_files": 4,
+            "configured_feature_files": 3,
+            "advisory_scoreboard_arithmetic_candidates": 14,
+            "advisory_client_visual_candidates": 10,
+            "advisory_command_block_reimplementation_candidates": 6
+          },
+          "safe_apply": {
+            "directory_moves": 2,
+            "json_files_changed": 10,
+            "residual_safe_findings": 0
+          },
+          "maintained_26_3_path_comparison": {
+            "uplifted_file_count": 155,
+            "maintained_26_3_file_count": 166,
+            "common_path_count": 155,
+            "uplifted_only_count": 0,
+            "maintained_only_count": 11,
+            "maintained_only_interpretation": "new Dappled Forest content rather than unexplained migration residue"
+          },
+          "boundary": "U3 runtime behavioral equivalence and U4 exact-version qualification are not yet claimed."
+        }
+      },
+      "qualification_task_classes": [
+        "migration-analysis",
+        "static-transform",
+        "runtime-differential",
+        "falsification",
+        "independent-review"
       ]
     }
   },
@@ -617,5 +693,19 @@
       ],
       "boundary": "No native mushroom-bounce semantics are claimed by a command-orchestrated implementation."
     }
+  },
+  "corpus_to_uplift_policy": {
+    "rule": "Every useful legacy corpus intake must produce one of: uplift_candidate, version_adapter_finding, retained_legacy_reason, or negative_result.",
+    "pipeline": [
+      "recover_and_pin",
+      "derive_behavioral_contract",
+      "separate_stable_intent_from_version_specific_implementation",
+      "match_26_3_plus_capabilities",
+      "materialize_safe_or_candidate_uplift",
+      "validate_static",
+      "runtime_A_B_when_required",
+      "promote_recipe_only_after_independent_generalization"
+    ],
+    "source_immutability": true
   }
 }
