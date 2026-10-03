@@ -2212,12 +2212,276 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
         )
         print(json.dumps(result,indent=2,sort_keys=True))
 
+
+def sample_ring_output(process,log_path,output_dir,sample_id):
+    """Return exact 0/15 state at the ring observation dust."""
+    high=f"SUPRACRAFT_RING_SAMPLE_{sample_id}_HIGH"
+    low=f"SUPRACRAFT_RING_SAMPLE_{sample_id}_LOW"
+    checked_command(
+        process,
+        f"execute if block 2 100 0 minecraft:redstone_wire[power=15] run say {high}",
+        f"ring_sample_{sample_id}_high",log_path,output_dir,
+    )
+    checked_command(
+        process,
+        f"execute if block 2 100 0 minecraft:redstone_wire[power=0] run say {low}",
+        f"ring_sample_{sample_id}_low",log_path,output_dir,
+    )
+    deadline=time.monotonic()+0.75
+    while time.monotonic()<deadline:
+        if process.poll() is not None:
+            fail_early(f"ring_sample_{sample_id}",process,log_path,output_dir)
+        text=log_path.read_text("utf-8",errors="replace")
+        if high in text:
+            return True
+        if low in text:
+            return False
+        time.sleep(0.025)
+    raise SystemExit(f"ring output state unresolved during sample {sample_id}")
+
+
+def collect_ring_transitions(process,log_path,output_dir,label,duration_seconds):
+    """Poll one post-repeater dust node and preserve bounded rise/fall evidence."""
+    started=time.monotonic()
+    sample_id=0
+    first=sample_ring_output(
+        process,log_path,output_dir,f"{label}_{sample_id:03d}"
+    )
+    last=first
+    transitions=[]
+    samples=[{"t":0.0,"high":first}]
+    while time.monotonic()-started<duration_seconds:
+        time.sleep(0.05)
+        sample_id+=1
+        now=time.monotonic()-started
+        state=sample_ring_output(
+            process,log_path,output_dir,f"{label}_{sample_id:03d}"
+        )
+        samples.append({"t":round(now,6),"high":state})
+        if state!=last:
+            transitions.append({"t":round(now,6),"high":state})
+            last=state
+    rising=[row["t"] for row in transitions if row["high"]]
+    periods=[
+        round(rising[i]-rising[i-1],6)
+        for i in range(1,len(rising))
+    ]
+    return {
+        "initial_high":first,
+        "final_high":last,
+        "sample_count":len(samples),
+        "transition_count":len(transitions),
+        "rise_count":len(rising),
+        "fall_count":sum(1 for row in transitions if not row["high"]),
+        "transitions":transitions,
+        "rising_times_seconds":rising,
+        "periods_seconds":periods,
+        "period_min_seconds":min(periods) if periods else None,
+        "period_max_seconds":max(periods) if periods else None,
+        "period_jitter_seconds":(
+            round(max(periods)-min(periods),6) if len(periods)>=2 else None
+        ),
+    }
+
+
+def run_repeater_ring_oscillator(args,evidence,server_jar,output_dir):
+    """Qualify one seeded four-stage delay-4 autonomous repeater pulse ring."""
+    version=evidence["minecraft_version"]
+    seed_high="setblock -1 100 0 minecraft:redstone_block"
+    seed_low="setblock -1 100 0 minecraft:air"
+    loop_open="setblock 0 100 0 minecraft:air"
+    loop_close="setblock 0 100 0 minecraft:redstone_wire"
+    repeater_specs=(
+        (1,100,0,"west"),
+        (3,100,1,"north"),
+        (2,100,3,"east"),
+        (0,100,2,"south"),
+    )
+    wire_positions=(
+        (0,100,0),(0,100,1),
+        (2,100,0),(3,100,0),
+        (3,100,2),(3,100,3),
+        (1,100,3),(0,100,3),
+    )
+    with tempfile.TemporaryDirectory(prefix="modern-redstone-ring-oscillator-") as td:
+        root=Path(td); server=root/"server.jar"
+        shutil.copy2(server_jar,server)
+        common_setup(root,version)
+        log_path=root/"server.log"
+        trace_path=output_dir/"trace.jsonl"
+        gate_path=root/"capture.gate"
+        started=time.monotonic()
+        with log_path.open("w",encoding="utf-8") as log:
+            p=subprocess.Popen(
+                launch_command(args,server,trace_path,gate_path),
+                cwd=root,stdin=subprocess.PIPE,stdout=log,
+                stderr=subprocess.STDOUT,text=True,
+            )
+            ready=wait_ready(p,log_path,180)
+            checked_command(
+                p,"forceload add -16 -16 16 16","forceload",log_path,output_dir
+            )
+            time.sleep(1)
+            checked_command(
+                p,"fill -3 99 -2 5 102 5 minecraft:air",
+                "ring_clear",log_path,output_dir,
+            )
+            checked_command(
+                p,"fill -3 99 -2 5 99 5 minecraft:stone",
+                "ring_floor",log_path,output_dir,
+            )
+            for x,y,z in wire_positions:
+                checked_command(
+                    p,f"setblock {x} {y} {z} minecraft:redstone_wire",
+                    f"ring_wire_{x}_{z}",log_path,output_dir,
+                )
+            for i,(x,y,z,facing) in enumerate(repeater_specs,1):
+                checked_command(
+                    p,
+                    f"setblock {x} {y} {z} "
+                    f"minecraft:repeater[facing={facing},delay=4,locked=false,powered=false]",
+                    f"ring_repeater_{i}",log_path,output_dir,
+                )
+
+            baseline_attempts,baseline_wait=wait_for_marker(
+                p,log_path,output_dir,
+                "SUPRACRAFT_RING_BASELINE_LOW",
+                "execute if block 2 100 0 minecraft:redstone_wire[power=0]",
+                "ring_baseline",timeout_seconds=5.0,poll_seconds=0.05,
+            )
+            barrier=setup_barrier(
+                p,log_path,output_dir,"SUPRACRAFT_RING_SETUP_READY"
+            )
+            if args.java_agent:
+                gate_path.write_text("capture\n")
+                time.sleep(0.15)
+
+            # Inject one finite seed pulse, then remove all external power.
+            checked_command(p,seed_high,"ring_seed_high_1",log_path,output_dir)
+            time.sleep(0.25)
+            checked_command(p,seed_low,"ring_seed_low_1",log_path,output_dir)
+            first=collect_ring_transitions(
+                p,log_path,output_dir,"first",7.0
+            )
+
+            # Break one dust segment and allow any in-flight pulse to drain.
+            checked_command(p,loop_open,"ring_loop_open",log_path,output_dir)
+            time.sleep(2.5)
+            stopped=collect_ring_transitions(
+                p,log_path,output_dir,"stopped",2.0
+            )
+
+            # Restore the same loop, seed once, and require autonomous restart.
+            checked_command(p,loop_close,"ring_loop_close",log_path,output_dir)
+            time.sleep(0.5)
+            checked_command(p,seed_high,"ring_seed_high_2",log_path,output_dir)
+            time.sleep(0.25)
+            checked_command(p,seed_low,"ring_seed_low_2",log_path,output_dir)
+            restarted=collect_ring_transitions(
+                p,log_path,output_dir,"restart",7.0
+            )
+
+            checked_command(p,"save-all flush","ring_save",log_path,output_dir)
+            time.sleep(1)
+            checked_command(p,"stop","ring_stop",log_path,output_dir)
+            rc=p.wait(timeout=60)
+
+        elapsed=time.monotonic()-started
+        zip_world(root/"world",output_dir/"world.zip")
+        text=log_path.read_text("utf-8",errors="replace")
+        diagnostics=[
+            line for line in text.splitlines()
+            if any(x in line for x in (
+                "Incorrect argument","Unknown or incomplete command",
+                "[Server thread/ERROR]",
+                "SupraCraft causal microscope fail-closed binding",
+            ))
+        ]
+        first_pass=(
+            first["transition_count"]>=6
+            and first["rise_count"]>=3
+            and first["fall_count"]>=3
+            and len(first["periods_seconds"])>=2
+        )
+        stop_pass=(
+            stopped["transition_count"]==0
+            and stopped["final_high"] is False
+        )
+        restart_pass=(
+            restarted["transition_count"]>=6
+            and restarted["rise_count"]>=3
+            and restarted["fall_count"]>=3
+            and len(restarted["periods_seconds"])>=2
+        )
+        jitter_pass=all(
+            summary["period_jitter_seconds"] is not None
+            and summary["period_jitter_seconds"]<=0.75
+            for summary in (first,restarted)
+        )
+        result={
+            "schema":"supracraft-modern-redstone-template-canary/1",
+            "template":"repeater_ring_oscillator",
+            "minecraft_version":version,
+            "java_major":evidence_java_major(evidence),
+            "instrumented":bool(args.java_agent),
+            "configured_delays":[4,4,4,4],
+            "repeater_positions":[list(x[:3]) for x in repeater_specs],
+            "repeater_facings":[x[3] for x in repeater_specs],
+            "loop_wire_positions":[list(x) for x in wire_positions],
+            "control_break_position":[0,100,0],
+            "seed_source_position":[-1,100,0],
+            "output_wire_position":[2,100,0],
+            "seed_high_command_sha256":digest_bytes(seed_high),
+            "seed_low_command_sha256":digest_bytes(seed_low),
+            "loop_open_command_sha256":digest_bytes(loop_open),
+            "loop_close_command_sha256":digest_bytes(loop_close),
+            "baseline_attempts":baseline_attempts,
+            "baseline_wait_seconds":round(baseline_wait,6),
+            "first_autonomous_window":first,
+            "stopped_window":stopped,
+            "restart_autonomous_window":restarted,
+            "autonomous_after_seed_pass":first_pass,
+            "stop_quench_pass":stop_pass,
+            "restart_pass":restart_pass,
+            "bounded_jitter_pass":jitter_pass,
+            "runtime_contract_pass":(
+                first_pass and stop_pass and restart_pass and jitter_pass
+            ),
+            "seed_removed_before_autonomous_measurement":True,
+            "controller_role":"seed_and_loop_break_only",
+            "ready_seconds":round(ready,6),
+            "setup_barrier_seconds":round(barrier,6),
+            "elapsed_seconds":round(elapsed,6),
+            "trace_present":trace_path.is_file(),
+            "world_sha256":hashlib.sha256(
+                (output_dir/"world.zip").read_bytes()
+            ).hexdigest(),
+            "boundary":"qualification applies only to this four-stage delay-4 finite-pulse ring; a closed powered loop or structural cycle alone is not oscillator evidence",
+        }
+        (output_dir/"result.json").write_text(
+            json.dumps(result,indent=2,sort_keys=True)+"\n"
+        )
+        print(json.dumps(result,indent=2,sort_keys=True))
+        if rc!=0 or diagnostics:
+            for line in diagnostics[-80:]:
+                print(line)
+            raise SystemExit(
+                f"repeater-ring oscillator fixture failed rc={rc} diagnostics={len(diagnostics)}"
+            )
+        if not result["runtime_contract_pass"]:
+            raise SystemExit(
+                "repeater-ring oscillator runtime contract failed; "
+                f"first={first_pass} stop={stop_pass} restart={restart_pass} "
+                f"jitter={jitter_pass}"
+            )
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--evidence",type=Path,required=True)
     ap.add_argument("--server-jar",type=Path,required=True)
     ap.add_argument("--output-dir",type=Path,required=True)
-    ap.add_argument("--fixture",choices=("repeater_delay","not_gate","or_gate","nor_gate","and_gate","xor_gate","rising_edge_detector"),required=True)
+    ap.add_argument("--fixture",choices=("repeater_delay","not_gate","or_gate","nor_gate","and_gate","xor_gate","rising_edge_detector","repeater_ring_oscillator"),required=True)
     ap.add_argument("--delay",type=int)
     ap.add_argument("--java-agent",type=Path)
     ap.add_argument("--adapter-id")
@@ -2255,8 +2519,10 @@ def main():
         run_and_gate(args,evidence,args.server_jar,args.output_dir)
     elif args.fixture=="xor_gate":
         run_xor_gate(args,evidence,args.server_jar,args.output_dir)
-    else:
+    elif args.fixture=="rising_edge_detector":
         run_rising_edge_detector(args,evidence,args.server_jar,args.output_dir)
+    else:
+        run_repeater_ring_oscillator(args,evidence,args.server_jar,args.output_dir)
 
 
 if __name__=="__main__":
