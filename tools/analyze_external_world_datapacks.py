@@ -66,6 +66,50 @@ def pack_root_stats(world: Path) -> dict:
     return packs
 
 
+def classify_unresolved_function_refs(causal: dict) -> dict:
+    function_nodes={
+        n.get("node_id")
+        for n in causal.get("nodes",[])
+        if n.get("kind")=="function"
+    }
+    namespaces={
+        str(n.get("resource_id")).split(":",1)[0]
+        for n in causal.get("nodes",[])
+        if n.get("kind")=="function" and ":" in str(n.get("resource_id"))
+    }
+    classes=Counter()
+    namespaces_missing=Counter()
+    total=0
+    for edge in causal.get("edges",[]):
+        if edge.get("edge_type") not in {"function_call","function_schedule"}:
+            continue
+        target=str(edge.get("target",""))
+        if not target.startswith("function::") or target in function_nodes:
+            continue
+        total+=1
+        ref=target[len("function::"):]
+        if "$(" in ref or ref.startswith("$"):
+            classes["dynamic_macro"]+=1
+        elif ref.startswith("#"):
+            classes["function_tag"]+=1
+        elif ":" not in ref:
+            classes["malformed_or_implicit_namespace"]+=1
+        else:
+            ns=ref.split(":",1)[0]
+            if ns not in namespaces:
+                classes["external_or_optional_namespace"]+=1
+                namespaces_missing[ns]+=1
+            else:
+                classes["missing_static_in_loaded_namespace"]+=1
+                namespaces_missing[ns]+=1
+    return {
+        "total":total,
+        "class_counts":dict(sorted(classes.items())),
+        "missing_namespace_counts":dict(sorted(namespaces_missing.items())),
+        "interpretation":"Derived classification only; optional packs, tags and macros may be valid runtime dispatch.",
+    }
+
+
 def story_signals(causal: dict) -> dict:
     roles=causal.get("role_counts",{})
     verbs=causal.get("verb_counts",{})
@@ -148,6 +192,7 @@ def analyze(args) -> dict:
             ),
         },
         "story_feature_signals":story_signals(causal),
+        "unresolved_function_ref_classification":classify_unresolved_function_refs(causal),
         "raw_content_retained":False,
         "limitations":[
             "Static references do not prove runtime reachability or behavior.",
@@ -177,6 +222,7 @@ def main()->int:
         "pack_inventory":result["pack_inventory"],
         "causal_summary":result["causal_summary"],
         "story_feature_signals":result["story_feature_signals"],
+        "unresolved_function_ref_classification":result["unresolved_function_ref_classification"],
         "raw_content_retained":result["raw_content_retained"],
     },indent=2,sort_keys=True))
     return 0
