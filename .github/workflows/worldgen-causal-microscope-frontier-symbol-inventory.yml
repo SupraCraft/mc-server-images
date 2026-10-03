@@ -159,6 +159,16 @@ jobs:
                       "class_sha256":row["class_sha256"],
                       "method_count":row["method_count"],
                       "candidate_count":len(row["name_token_candidates"]),
+                    "candidate_methods":(
+                        [
+                            {
+                                "name":method["name"],
+                                "descriptor":method["descriptor"],
+                            }
+                            for method in row["name_token_candidates"]
+                        ]
+                        if name.startswith("piston_") else None
+                    ),
                   }
                   for name,row in roles.items()
               },
