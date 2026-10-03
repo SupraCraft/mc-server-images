@@ -1,0 +1,211 @@
+{
+  "schema": "supracraft-cross-domain-causal-machinery-workset/1",
+  "status": "planned_non_disruptive",
+  "authority": {
+    "public_issue": "SupraCraft/mc-server-images#11",
+    "baseline_commit": "766f5ec4f1b1f2e8c2350a653fbfd68f598ef884",
+    "trusted_host_boundary": {
+      "state": "WAIT",
+      "authority": "SemperSupra/agent-dispatch-private#381",
+      "rule": "No live Sidecar projection/plan/dispatch/observe or grant mutation until durable reactivation."
+    }
+  },
+  "invariants": [
+    "Human-in-Command semantic promotion",
+    "depth-1 delegation only",
+    "USD 0",
+    "public standard GitHub-hosted runners only",
+    "no validator weakening",
+    "no automatic retries",
+    "canonical project/runtime evidence outranks actor claims",
+    "parallel discovery lanes; serialized shared promotion"
+  ],
+  "lanes": {
+    "kernel-schema": {
+      "state": "READY",
+      "scope": [
+        "additive shared causal envelope",
+        "schema tests",
+        "UNKNOWN representation"
+      ],
+      "prohibited": [
+        "rewrite accepted Redstone schema",
+        "domain-specific semantics",
+        "catalog promotion"
+      ],
+      "qualification_task_classes": [
+        "schema-design",
+        "code-review"
+      ]
+    },
+    "mechanical-primitives": {
+      "state": "READY",
+      "scope": [
+        "piston",
+        "sticky_piston",
+        "bounded push/pull semantics",
+        "source/runtime evidence"
+      ],
+      "prohibited": [
+        "whole-world simulator",
+        "flying-machine promotion before primitives"
+      ],
+      "qualification_task_classes": [
+        "source-recovery",
+        "runtime-diagnosis",
+        "test-generation"
+      ]
+    },
+    "command-primitives": {
+      "state": "READY",
+      "scope": [
+        "impulse/repeating/chain",
+        "facing",
+        "conditional",
+        "trigger",
+        "dispatch",
+        "bounded mutation"
+      ],
+      "prohibited": [
+        "treat command block as ordinary sink",
+        "unbounded command semantics"
+      ],
+      "qualification_task_classes": [
+        "source-recovery",
+        "static-analysis",
+        "runtime-diagnosis"
+      ]
+    },
+    "presentation-boundary": {
+      "state": "READY",
+      "scope": [
+        "lamp terminal state",
+        "observed presentation feedback"
+      ],
+      "prohibited": [
+        "lamp as electrical semantic authority"
+      ],
+      "qualification_task_classes": [
+        "runtime-diagnosis",
+        "independent-review"
+      ]
+    },
+    "representative-worlds": {
+      "state": "READY_CORE",
+      "scope": [
+        "CORE native 1.8.8 projection",
+        "motif census",
+        "unknowns"
+      ],
+      "prohibited": [
+        "silent modernization",
+        "modern semantics projected onto legacy"
+      ],
+      "qualification_task_classes": [
+        "graph-analysis",
+        "evidence-reconciliation"
+      ]
+    },
+    "external-corpus": {
+      "state": "READY",
+      "scope": [
+        "multilingual metadata",
+        "license/provenance",
+        "candidate designs"
+      ],
+      "prohibited": [
+        "unlicensed vendoring",
+        "source label as semantic authority"
+      ],
+      "qualification_task_classes": [
+        "research-synthesis",
+        "provenance-review"
+      ]
+    },
+    "metamorphic-equivalence": {
+      "state": "READY",
+      "scope": [
+        "bounded mutations",
+        "contract-specific equivalence"
+      ],
+      "prohibited": [
+        "universal semantic hash",
+        "criterion relaxation"
+      ],
+      "qualification_task_classes": [
+        "test-generation",
+        "falsification",
+        "independent-review"
+      ]
+    },
+    "integration-promotion": {
+      "state": "SERIAL_ONLY",
+      "scope": [
+        "reconcile accepted evidence",
+        "catalog/regression promotion",
+        "full clean matrix"
+      ],
+      "prohibited": [
+        "parallel catalog promotion",
+        "promotion from actor claim alone"
+      ],
+      "qualification_task_classes": []
+    }
+  },
+  "opportunistic_qualification": {
+    "enabled": true,
+    "live_dispatch_state": "WAIT_FOR_TRUSTED_HOST_REACTIVATION",
+    "unit_of_analysis": [
+      "harness_framework",
+      "model",
+      "harness_model_combination",
+      "execution_resource",
+      "task_class",
+      "authority_envelope",
+      "toolset"
+    ],
+    "single_actor_receipt": [
+      "task_ref",
+      "actor_identity",
+      "task_class",
+      "inputs",
+      "authority",
+      "result_state",
+      "oracle_result",
+      "evidence_quality",
+      "scope_discipline",
+      "corrective_iterations",
+      "validator_findings",
+      "resource_realization"
+    ],
+    "multi_actor_patterns": [
+      "author_plus_independent_reviewer",
+      "generator_plus_validator",
+      "researcher_plus_implementer_plus_reconciler",
+      "independent_candidates_plus_deterministic_reconciler"
+    ],
+    "trigger": [
+      "task already mission-useful",
+      "bounded canonical oracle exists",
+      "actor/harness/resource identity can be recorded",
+      "qualification adds low marginal cost"
+    ],
+    "non_interference": [
+      "no acceptance-criteria changes",
+      "no authority expansion",
+      "no automatic retry for score improvement",
+      "no critical-path delay solely for qualification",
+      "no recursive delegation"
+    ]
+  },
+  "rollout": [
+    "D0_plan_only",
+    "D1_additive_kernel_shadow",
+    "D2_sibling_primitive_lanes",
+    "D3_first_transducers",
+    "D4_first_cross_domain_motifs",
+    "D5_dynamic_topology_receipts",
+    "D6_representative_world_census",
+    "D7_equivalence_round_trip_research"
+  ]
+}
