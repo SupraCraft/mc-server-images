@@ -225,7 +225,8 @@ def validate_rising_edge(doc):
     qualified=[
         r for r in rows
         if r.get("input_source_component_id")
-        and r.get("delay_component_id")
+        and len(r.get("delay_component_ids") or [])==2
+        and r.get("delay_interstage_net_id")
         and r.get("direct_inverter_component_id")
         and r.get("intermediate_net_id")
         and r.get("final_inverter_component_id")
@@ -234,7 +235,12 @@ def validate_rising_edge(doc):
     assert qualified,rows
     row=qualified[0]
     cmap=component_map(doc)
-    assert cmap[row["delay_component_id"]]["primitive"]=="buffer_delay",row
+    delay_ids=row["delay_component_ids"]
+    assert all(
+        cid in cmap and cmap[cid]["primitive"]=="buffer_delay"
+        for cid in delay_ids
+    ),row
+    assert row.get("configured_delays")==[4,4],row
     assert cmap[row["direct_inverter_component_id"]]["primitive"]=="inverter",row
     assert cmap[row["final_inverter_component_id"]]["primitive"]=="inverter",row
     return {
@@ -242,8 +248,9 @@ def validate_rising_edge(doc):
         "matched_component_ids":row["component_ids"],
         "input_source_component_id":row["input_source_component_id"],
         "input_net_id":row["input_net_id"],
-        "delay_component_id":row["delay_component_id"],
-        "configured_delay":row.get("configured_delay"),
+        "delay_component_ids":delay_ids,
+        "configured_delays":row["configured_delays"],
+        "delay_interstage_net_id":row["delay_interstage_net_id"],
         "direct_inverter_component_id":row["direct_inverter_component_id"],
         "intermediate_net_id":row["intermediate_net_id"],
         "final_inverter_component_id":row["final_inverter_component_id"],
@@ -252,6 +259,7 @@ def validate_rising_edge(doc):
         "functional_netlist_sha256":doc["signatures"]["functional_netlist_sha256"],
         "horizontal_d4_topology_sha256":doc["signatures"]["horizontal_d4_topology_sha256"],
     }
+
 
 def main():
     ap=argparse.ArgumentParser()
