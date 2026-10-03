@@ -1,0 +1,92 @@
+name: legacy uplift Sprint Racer embedded Block State SNBT
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/uplift_mcfunction_block_state_snbt.py'
+      - 'tests/test_mcfunction_block_state_uplift.py'
+      - '.github/workflows/worldgen-legacy-uplift-sprint-racer-snbt.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests
+        run: python -m unittest tests.test_mcfunction_block_state_uplift -v
+
+      - name: Fetch exact Sprint Racer 26.2 and 26.3 file evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="https://github.com/jarrodmmoore/Sprint-Racer-Dev.git"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+          git init "$RUNNER_TEMP/sr"
+          git -C "$RUNNER_TEMP/sr" remote add origin "$repo"
+          git -C "$RUNNER_TEMP/sr" fetch --depth=1 origin "$old"
+          git -C "$RUNNER_TEMP/sr" fetch --depth=1 origin "$new"
+
+          mkdir -p "$RUNNER_TEMP/exact-old" "$RUNNER_TEMP/exact-new"
+          p1='datapacks/sr_code/data/sprint_racer/function/game_logic/1/checkpoint_visual/draw_good/4.mcfunction'
+          p2='datapacks/sr_code/data/sprint_racer/function/refresh_area_effect_clouds.mcfunction'
+
+          git -C "$RUNNER_TEMP/sr" show "$old:$p1" > "$RUNNER_TEMP/exact-old/draw_good_4.mcfunction"
+          git -C "$RUNNER_TEMP/sr" show "$new:$p1" > "$RUNNER_TEMP/exact-new/draw_good_4.mcfunction"
+          git -C "$RUNNER_TEMP/sr" show "$old:$p2" > "$RUNNER_TEMP/exact-old/refresh_area_effect_clouds.mcfunction"
+          git -C "$RUNNER_TEMP/sr" show "$new:$p2" > "$RUNNER_TEMP/exact-new/refresh_area_effect_clouds.mcfunction"
+
+      - name: Transform exact 26.2 payloads and compare with exact 26.3 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/uplifted" "$RUNNER_TEMP/receipts"
+
+          python tools/uplift_mcfunction_block_state_snbt.py             "$RUNNER_TEMP/exact-old/draw_good_4.mcfunction"             "$RUNNER_TEMP/uplifted/draw_good_4.mcfunction"             --receipt "$RUNNER_TEMP/receipts/draw_good_4.json"             --require-change
+
+          python tools/uplift_mcfunction_block_state_snbt.py             "$RUNNER_TEMP/exact-old/refresh_area_effect_clouds.mcfunction"             "$RUNNER_TEMP/uplifted/refresh_area_effect_clouds.mcfunction"             --receipt "$RUNNER_TEMP/receipts/refresh_area_effect_clouds.json"             --require-change
+
+          cmp "$RUNNER_TEMP/uplifted/draw_good_4.mcfunction" "$RUNNER_TEMP/exact-new/draw_good_4.mcfunction"
+          cmp "$RUNNER_TEMP/uplifted/refresh_area_effect_clouds.mcfunction" "$RUNNER_TEMP/exact-new/refresh_area_effect_clouds.mcfunction"
+
+          python - "$RUNNER_TEMP/receipts" "$RUNNER_TEMP/sprint-racer-snbt-summary.json" <<'PY'
+          import hashlib, json, pathlib, sys
+
+          receipts_dir, out = map(pathlib.Path, sys.argv[1:])
+          receipts = [json.loads(p.read_text()) for p in sorted(receipts_dir.glob("*.json"))]
+          result = {
+              "schema": "supracraft-sprint-racer-block-state-snbt-uplift/1",
+              "source_repository": "jarrodmmoore/Sprint-Racer-Dev",
+              "source_license_boundary": "All Rights Reserved; source used ephemerally, derived receipt only",
+              "exact_26_2_commit": "b674e09699818878749570760444ed7147fea3dc",
+              "exact_26_3_commit": "93cdfcff9f2462313de4d568f169c0e442d94e42",
+              "files_qualified": len(receipts),
+              "changed_occurrence_count": sum(r["changed_occurrence_count"] for r in receipts),
+              "changed_key_count": sum(r["changed_key_count"] for r in receipts),
+              "exact_byte_equivalence_after_transform": True,
+              "classification": "INDEPENDENT_SAFE_SYNTACTIC_CONFIRMATION"
+          }
+          out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          print("SUPRACRAFT_SPRINT_RACER_SNBT_UPLIFT_PASS")
+          PY
+
+      - name: Upload derived receipt only
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-racer-26.2-to-26.3-block-state-snbt-receipt
+          path: ${{ runner.temp }}/sprint-racer-snbt-summary.json
+          retention-days: 14
+          if-no-files-found: error
