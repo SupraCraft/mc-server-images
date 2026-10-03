@@ -1,0 +1,91 @@
+name: external corpus Sprint Racer physical sample
+
+on:
+  push:
+    branches: [feat/external-corpus-intake-v1]
+    paths:
+      - tools/analyze_external_modern_world_mechanisms.py
+      - tests/test_external_modern_world_mechanisms.py
+      - .github/workflows/external-corpus-sprint-racer-physical-26x.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      SPRINT_COMMIT: 93cdfcff9f2462313de4d568f169c0e442d94e42
+    steps:
+      - name: Fail closed outside public standard runners
+        run: '[[ "${{ github.event.repository.private }}" == "false" ]] || exit 78'
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free execution policy
+        run: python tools/check_worldgen_public_policy.py --repository-private "${{ github.event.repository.private }}" --runner-label "$WORLDGEN_RUNNER_LABEL" --scan-workflows .github/workflows
+      - name: Install NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+      - name: Run controls
+        run: python -m unittest -v tests.test_external_modern_world_mechanisms
+      - name: Checkout bounded exact-26.3 physical sample
+        uses: actions/checkout@v5
+        with:
+          repository: jarrodmmoore/Sprint-Racer-Dev
+          ref: ${{ env.SPRINT_COMMIT }}
+          path: external/sprint
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            dimensions/minecraft/overworld/region/r.2.0.mca
+            dimensions/minecraft/overworld/region/r.2.1.mca
+            dimensions/minecraft/overworld/region/r.3.0.mca
+            dimensions/minecraft/overworld/region/r.3.1.mca
+            dimensions/minecraft/overworld/region/r.4.0.mca
+            dimensions/minecraft/overworld/region/r.4.1.mca
+            dimensions/minecraft/overworld/entities/r.2.0.mca
+            dimensions/minecraft/overworld/entities/r.2.1.mca
+            dimensions/minecraft/overworld/entities/r.3.0.mca
+            dimensions/minecraft/overworld/entities/r.3.1.mca
+            dimensions/minecraft/overworld/entities/r.4.0.mca
+      - name: Verify exact source
+        run: test "$(git -C external/sprint rev-parse HEAD)" = "$SPRINT_COMMIT"
+      - name: Census physical mechanisms
+        run: |
+          mkdir -p out
+          python tools/analyze_external_modern_world_mechanisms.py --world-root external/sprint --output out/sprint-racer-26.3-physical-sample.json
+      - name: Add provenance receipt
+        run: |
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path("external/sprint")
+          manifest={}
+          for p in sorted(root.rglob("*.mca")):
+              manifest[p.relative_to(root).as_posix()]=hashlib.sha256(p.read_bytes()).hexdigest()
+          result={
+            "schema":"supracraft-external-physical-sample-provenance/1",
+            "source":"Sprint Racer",
+            "minecraft_version":"26.3",
+            "upstream_commit":"93cdfcff9f2462313de4d568f169c0e442d94e42",
+            "sample_file_count":len(manifest),
+            "sample_sha256":manifest,
+            "license_boundary":"All Rights Reserved; derived analysis only; no world/source redistribution",
+            "raw_world_content_retained":False,
+            "cross_version_note":"Git compare from exact 26.2 v1.6.13 to 26.3 v1.6.14 shows zero .mca files changed; runtime semantics remain version-scoped."
+          }
+          Path("out/provenance.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: external-corpus-sprint-racer-physical-sample-derived
+          path: out/
+          retention-days: 14
+          if-no-files-found: error
