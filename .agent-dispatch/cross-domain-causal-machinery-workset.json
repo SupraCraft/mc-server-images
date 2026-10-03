@@ -265,14 +265,14 @@
         "command-primitives",
         "inventory-primitives"
       ],
-      "rule": "All four domains have current-head bounded evidence. Mechanical, programmable, and inventory remain acceptance-ready rather than promoted; Phase B remains closed pending Human-in-Command acceptance.",
-      "state": "RECONCILED_ACCEPTANCE_READY"
+      "rule": "Phase A now means enough independently grounded capability packs exist to support the next bounded vertical slice; it does not require complete modeling of every Minecraft subsystem.",
+      "state": "RECONCILED_ACCEPTANCE_READY_FOUNDATION"
     },
     "phase_b": {
-      "name": "cross-domain-interactions",
+      "name": "legacy_global_cross_domain_gate",
+      "state": "SUPERSEDED_BY_LOCAL_SLICE_GATES",
       "depends_on": "phase_a",
-      "rule": "Do not begin cross-domain transducer qualification until Phase A is durably reconciled/accepted.",
-      "state": "WAIT_HUMAN_ACCEPTANCE_OF_PHASE_A"
+      "rule": "Do not use a global all-domains fan-in. Cross-domain semantics are qualified only for the interactions actually consumed by a bounded vertical slice. Existing Phase-A baselines remain Human-in-Command acceptance-ready and are not silently promoted."
     }
   },
   "observation_plane": {
@@ -408,5 +408,79 @@
     "state": "DOCUMENTED",
     "path": "bench/worldgen/causal/observation/phase-a-observation-plane-v1.json",
     "commit": "6b1b621aff8784f1dfa744d45857a1cc4ec423ed"
+  },
+  "product_goal": {
+    "kind": "story_to_vanilla_compiler",
+    "statement": "Compile higher-level story/game intent into exact-version vanilla Minecraft server/client capabilities with observable verification.",
+    "pipeline": [
+      "story_intent",
+      "story_game_ir",
+      "capability_requirements",
+      "versioned_capability_resolver",
+      "vanilla_lowering_plan",
+      "world_datapack_command_block_entity_item_artifacts",
+      "vanilla_execution",
+      "observation_verification"
+    ]
+  },
+  "roadmap": {
+    "authority_doc": "docs/story-to-vanilla-incremental-roadmap.md",
+    "commit": "18ba3598e5539251aa625df91db0ffa09b2bd4fd",
+    "principle": "Ship bounded end-to-end vertical slices; do not wait for encyclopedic domain completeness.",
+    "priority": [
+      "P0_story_ir_and_capability_registry",
+      "P1_playable_quest_mvp",
+      "P2_physical_puzzle",
+      "P3_transformation_production",
+      "P4_social_npc_economy",
+      "P5_farming_biology_lifecycle",
+      "P6_artifact_media",
+      "P7_rich_systemic_world"
+    ]
+  },
+  "capability_domains": [
+    "electrical",
+    "mechanical",
+    "programmable",
+    "inventory",
+    "transformation",
+    "biology_ecology_lifecycle",
+    "actor_social_economic"
+  ],
+  "orthogonal_planes": [
+    "observation",
+    "artifact_representation"
+  ],
+  "slice_gating": {
+    "rule": "Only capabilities and interactions consumed by a concrete vertical slice gate that slice.",
+    "implementation_modes": [
+      "native_mechanic",
+      "command_orchestrated",
+      "hybrid"
+    ],
+    "fallback": [
+      "prefer a qualified native mechanic",
+      "otherwise use a semantically faithful qualified command-orchestrated vanilla implementation",
+      "otherwise fail closed as unsupported"
+    ],
+    "non_equivalence_rule": "Command orchestration may implement story intent but is not evidence that the corresponding native mechanic has been semantically recovered."
+  },
+  "immediate_productization": {
+    "slice": "P1_playable_quest_mvp",
+    "ready_foundations": [
+      "programmable/control baseline",
+      "basic inventory/item state",
+      "observation plane",
+      "strong electrical capability available for later slice",
+      "bounded piston mechanics available for later slice"
+    ],
+    "missing": [
+      "minimal Story/Game IR",
+      "capability registry/resolver",
+      "basic actor/player/entity identity model",
+      "objective/story lifecycle state",
+      "concrete vanilla deployment artifact format",
+      "end-to-end verifier"
+    ]
   }
 }
