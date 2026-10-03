@@ -216,7 +216,7 @@
       ],
       "current_evidence": {
         "voidblock_26_2_to_26_3": {
-          "state": "U2_STRUCTURAL_PASS",
+          "state": "U4_BOUNDED_INITIALIZATION_RUNTIME_PASS",
           "source": "Loweredgames/Voidblock@ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19",
           "workflow_run_id": 37155702580,
           "validator_job_id": 111298525742,
@@ -243,7 +243,49 @@
             "maintained_only_count": 11,
             "maintained_only_interpretation": "new Dappled Forest content rather than unexplained migration residue"
           },
-          "boundary": "U3 runtime behavioral equivalence and U4 exact-version qualification are not yet claimed."
+          "boundary": "Bounded U3/U4 initialization/load qualification achieved; full gameplay equivalence and U5 remain open.",
+          "runtime_v2": {
+            "branch": "feat/legacy-uplift-263-v1",
+            "head": "b51778cc5c2e9a9bab8d6119f33a030101b1ac78",
+            "workflow_run_id": 37157369228,
+            "job_id": 111303437543,
+            "artifact_id": 11285608638,
+            "artifact_digest": "sha256:df943597a6bfa30f2c3bc40f626a06a72fbbf9d6731dcb3f914d5cf048a34e24",
+            "exact_runtime": {
+              "minecraft_version": "26.3",
+              "protocol": 777,
+              "java": 25
+            },
+            "worldgen_uplift": {
+              "touched_files": 16,
+              "transformations": 91,
+              "safe_syntactic": 62,
+              "structural_reimplementation": 29
+            },
+            "comparison": {
+              "generated_canary_pass": true,
+              "maintainer_canary_pass": true,
+              "generated_hard_datapack_errors": 0,
+              "maintainer_hard_datapack_errors": 0,
+              "generated_objective_counts": [
+                12,
+                12
+              ],
+              "maintainer_objective_counts": [
+                12,
+                12
+              ],
+              "bedrock_setup_pre_reload": true,
+              "bedrock_setup_post_reload": true,
+              "classification": "BOUNDED_INITIALIZATION_EQUIVALENCE_PASS"
+            },
+            "preserved_negative": {
+              "workflow_run_id": 37157083714,
+              "classification": "DIRECTORY_AND_BLOCK_STATE_ONLY_UPLIFT_INSUFFICIENT",
+              "cause": "deeper 26.3 worldgen density/noise/carver/structure-spawn schema changes"
+            },
+            "boundary": "U4 applies only to the bounded load/initialization contract; full gameplay/worldgen distribution equivalence and U5 generalization are not claimed."
+          }
         }
       },
       "qualification_task_classes": [
