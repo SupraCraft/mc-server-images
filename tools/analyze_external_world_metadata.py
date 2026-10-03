@@ -182,6 +182,15 @@ def analyze(args) -> dict:
     datapack_entries = len(list((world / "datapacks").iterdir())) if (world / "datapacks").is_dir() else 0
     resourcepack_entries = len(list((world / "resourcepacks").iterdir())) if (world / "resourcepacks").is_dir() else 0
 
+    level_info = inspect_level(level)
+    level_name = (
+        level_info.get("version", {}).get("name")
+        if isinstance(level_info.get("version"), dict)
+        else None
+    )
+    claimed = str(args.minecraft_version)
+    claimed_match = level_name == claimed
+
     return {
         "schema": "supracraft-external-world-metadata-receipt/1",
         "analysis_kind": "save_metadata_and_shape_only_no_player_payloads",
@@ -192,7 +201,21 @@ def analyze(args) -> dict:
             "upstream_commit": args.upstream_commit,
             "license_label": args.license_label,
         },
-        "level": inspect_level(level),
+        "level": level_info,
+        "provenance_checks": {
+            "claimed_version_matches_level_name": claimed_match,
+            "exact_version_world_authority": claimed_match,
+            "classification": (
+                "EXACT_VERSION_LEVEL_METADATA_MATCH"
+                if claimed_match
+                else "STALE_OR_TEMPLATE_LEVEL_METADATA"
+            ),
+            "rule": (
+                "Repository labels, branches, datapack overlays and README claims do not "
+                "override level.dat version metadata. A mismatch prevents this source from "
+                "serving as exact-version world authority."
+            ),
+        },
         "scoreboard": inspect_scoreboard(world / "data" / "scoreboard.dat"),
         "world_state_data": grouped_data_files(world),
         "region_file_counts": count_region_files(world),
@@ -236,6 +259,7 @@ def main() -> int:
                     "disabled_datapack_count": result["level"]["disabled_datapack_count"],
                     "was_modded": result["level"]["was_modded"],
                 },
+                "provenance_checks": result["provenance_checks"],
                 "scoreboard": result["scoreboard"],
                 "world_state_groups": result["world_state_data"]["groups"],
                 "world_state_file_names": sorted(result["world_state_data"]["files"]),
