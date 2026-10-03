@@ -27,6 +27,8 @@ class ExternalWorldDatapackTests(unittest.TestCase):
             "scoreboard players add #clock race 1\n"
             "execute if score #clock race matches 20.. run function demo:lap\n"
             "title @a actionbar {\"text\":\"SECRET_UI\"}\n"
+            "function $(dynamic_ns):$(dynamic_path)\n"
+            "function optional_pack:missing\n"
         )
         (fn/"lap.mcfunction").write_text(
             "tag @a add racer\n"
@@ -57,7 +59,7 @@ class ExternalWorldDatapackTests(unittest.TestCase):
         self.assertFalse(r["raw_content_retained"])
         self.assertNotIn("SECRET_UI",encoded)
         self.assertEqual(2,r["causal_summary"]["function_count"])
-        self.assertEqual({},r["causal_summary"]["unresolved_reference_counts"])
+        self.assertEqual({"function_ref":2},r["causal_summary"]["unresolved_reference_counts"])
         self.assertEqual(1,r["story_feature_signals"]["actors_and_multiplayer"]["tag_commands"])
         self.assertEqual(1,r["story_feature_signals"]["items_and_rewards"]["effect_commands"])
         self.assertEqual(1,r["story_feature_signals"]["observation_and_ui"]["title_commands"])
