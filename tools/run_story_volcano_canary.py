@@ -106,6 +106,10 @@ def main():
         }
         (args.output_dir/"volcano-runtime.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
         (args.output_dir/"server.log").write_text(text,"utf-8")
+        analysis_world=args.output_dir/"world-for-analysis"
+        if analysis_world.exists():
+            shutil.rmtree(analysis_world)
+        shutil.copytree(world,analysis_world)
         print(json.dumps(receipt,indent=2,sort_keys=True))
 
 if __name__=="__main__":
