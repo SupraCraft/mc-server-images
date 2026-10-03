@@ -5,11 +5,13 @@ on:
     paths:
       - 'tools/inspect_inventory_domain_structure.py'
       - 'tests/test_inventory_domain_structure.py'
+      - 'tools/run_inventory_domain_canary.py'
       - '.github/workflows/worldgen-inventory-domain-structure.yml'
   pull_request:
     paths:
       - 'tools/inspect_inventory_domain_structure.py'
       - 'tests/test_inventory_domain_structure.py'
+      - 'tools/run_inventory_domain_canary.py'
       - '.github/workflows/worldgen-inventory-domain-structure.yml'
 permissions: {contents: read}
 jobs:
@@ -34,8 +36,16 @@ jobs:
         run: |
           mkdir -p out
           python tools/inspect_inventory_domain_structure.py --work-dir out/runtime --output out/inventory-structure.json
+      - name: Run bounded Java 26.3 inventory runtime canary
+        run: |
+          python tools/run_inventory_domain_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/runtime/server.jar \
+            --output-dir out/inventory-runtime
       - uses: actions/upload-artifact@v4
         with:
-          name: inventory-domain-structure-26.3
-          path: out/inventory-structure.json
+          name: inventory-domain-26.3
+          path: |
+            out/inventory-structure.json
+            out/inventory-runtime/inventory-runtime.json
           retention-days: 14
