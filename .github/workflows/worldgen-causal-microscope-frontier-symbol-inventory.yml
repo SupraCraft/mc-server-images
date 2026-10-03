@@ -10,6 +10,12 @@ on:
       - 'tests/test_modern_microscope_symbol_inventory.py'
       - '.github/workflows/worldgen-causal-microscope-frontier-symbol-inventory.yml'
   workflow_dispatch:
+  push:
+    branches: [feat/piston-symbol-inventory]
+    paths:
+      - 'tools/inventory_modern_microscope_symbols.py'
+      - 'tests/test_modern_microscope_symbol_inventory.py'
+      - '.github/workflows/worldgen-causal-microscope-frontier-symbol-inventory.yml'
 
 concurrency:
   group: worldgen-causal-microscope-frontier-symbol-inventory-${{ github.event.pull_request.number || github.ref }}
