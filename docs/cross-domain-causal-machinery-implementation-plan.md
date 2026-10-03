@@ -9,13 +9,16 @@ Live Agent Dispatch trusted-host boundary: WAIT while `SemperSupra/agent-dispatc
 
 Extend the existing Redstone causal-microscope / EDA effort into a typed, cross-domain Minecraft causal-machinery system without disrupting the already-qualified electrical vocabulary or its promotion spine.
 
-The system should recover and qualify mechanisms that span:
+The first semantic pass is deliberately partitioned into **four core domains**:
 
-- electrical / Redstone;
-- mechanical / geometry-changing;
-- inventory / transport;
-- programmable / command;
-- presentation / feedback.
+1. electrical / Redstone;
+2. mechanical / geometry-changing;
+3. programmable / command/control;
+4. inventory / transport / material-flow.
+
+These are the first-look boundaries. Each domain is recovered and qualified independently before cross-domain interaction semantics are introduced.
+
+Presentation/feedback is **not** a fifth peer domain in v1. Lamps, note blocks, text/sound/particle output, and similar surfaces are treated as observable sinks/state surfaces owned by the domain that drives them unless and until evidence shows a distinct reusable semantic model is required.
 
 The system must remain evidence-driven. A mechanism name is a hypothesis until its structural, exact-version runtime, observer-effect, and correlation contracts pass.
 
@@ -100,30 +103,36 @@ A world may project into multiple views:
    - success/result state where recoverable;
    - resulting world mutation.
 
-5. **Presentation / feedback**
-   - lamps;
-   - note blocks;
-   - particle/sound/text feedback;
-   - other observable terminal states.
+Each of the four adapters owns its native semantics. Shared-kernel edges link projections without forcing them into one algebra.
 
-Each adapter owns its native semantics. Shared-kernel edges link projections without forcing them into one algebra.
+### Observation / feedback surfaces
+
+Presentation is cross-cutting evidence, not a peer semantic domain in v1.
+
+Examples:
+- lamp lit/unlit state;
+- note-block output;
+- particles, sounds, titles and text;
+- other human-visible/audible terminal state.
+
+A surface remains attached to the domain that causes/owns the state transition. If another mechanism consumes that state, the relationship is represented later as an observation/interface edge; this does not create a fifth domain.
 
 ## 5. Cross-domain transducers
 
 Treat subsystem boundaries as explicit qualified interfaces.
 
+Interaction work is **Phase B**. It begins only after the four Phase-A domain baselines are independently qualified.
+
 Initial interface families:
 
 - electrical power -> piston actuation;
-- electrical power -> lamp state;
 - electrical power -> command trigger;
-- block/mechanical state change -> observer event;
 - command execution -> world mutation;
-- inventory state -> comparator output;
+- inventory state -> comparator/electrical output;
 - piston movement -> neighborhood/block-state change;
-- presentation state -> downstream observer/event, when non-terminal.
+- domain-owned observable state -> downstream observer/event, when non-terminal.
 
-A presentation node may be pruned only when it is terminal in the bounded mechanism. If another subsystem consumes its state, it remains causal.
+A lamp or other feedback surface may be pruned only when terminal in the bounded mechanism. If another subsystem consumes its state, it remains causal, but it remains an observation/interface concern rather than a fifth semantic domain.
 
 ## 6. Dynamic topology
 
@@ -161,7 +170,7 @@ Behavioral equality is contract-specific. Preserve separate relations for:
 - mechanical terminal-geometry equivalence;
 - inventory-transfer equivalence;
 - command-effect equivalence;
-- presentation equivalence.
+- observable-output equivalence.
 
 No single equality relation is authoritative across all domains.
 
@@ -262,17 +271,23 @@ Initial primitives:
 - dropper/dispenser actuation;
 - comparator inventory signal.
 
-### P1 — presentation / feedback
+### O1 — observation / feedback surfaces
 
-Bounded contracts for:
+Cross-cutting, non-peer surface work:
 
-- lamp state transition;
+- lamp state transition as electrical-owned observable state;
 - note-block/output feedback;
-- distinction between terminal display and causally observed display.
+- distinction between terminal display and causally observed state.
+
+O1 does not define a fifth semantic domain.
 
 ### X1 — cross-domain transducers
 
-Qualify one interface at a time after both endpoint primitive semantics exist.
+Phase-B interaction work.
+
+Do not begin X1 implementation until the four Phase-A baselines — E1, M1, C1 and I1 — have each established their bounded primitive/state model for the current exact-version campaign.
+
+After that gate, qualify one interface at a time.
 
 No compound mechanism may promote by assuming an unqualified transducer.
 
@@ -337,11 +352,10 @@ qualified baseline ------+--> R1 representative worlds ----+--> candidate abstra
                          |
                          +--> K1 thin kernel ----------------------------+
                                                                         |
-official runtime/source --> E1 electrical primitives -------------------+--> X1 transducers
-                        --> M1 mechanical primitives --------------------+
-                        --> C1 command primitives -----------------------+
-                        --> I1 inventory primitives ---------------------+
-                        --> P1 presentation primitives ------------------+
+official runtime/source --> E1 electrical primitives ----+
+                        --> M1 mechanical primitives -----+--> Phase-A four-domain gate --> X1 transducers
+                        --> C1 programmable primitives ---+
+                        --> I1 inventory primitives ------+
 
 M1 -> M2 mechanical motifs -------------------------------+
 C1 -> C2 command motifs ----------------------------------+--> S0 promotion spine
@@ -443,23 +457,29 @@ Acceptance:
 - a small synthetic multi-domain fixture can be represented;
 - UNKNOWN can be represented without invented semantics.
 
-### D2 — first sibling primitives
+### D2 — four independent domain baselines
 
-Run in parallel:
+Run in parallel, with no cross-domain semantic dependency:
 
-- M1 piston/sticky-piston bounded primitive;
-- C1 command-chain bounded primitive;
-- P1 lamp state boundary.
+- E1 electrical/Redstone baseline continuation;
+- M1 mechanical piston/sticky-piston bounded primitives;
+- C1 programmable/command bounded primitives;
+- I1 inventory/transport bounded primitives.
+
+O1 observation/feedback work may record domain-owned output states, but it does not define cross-domain semantics.
 
 Acceptance is domain-specific and exact-version scoped.
 
-### D3 — first transducers
+### D3 — first transducers, only after Phase-A gate
 
-Qualify:
+The gate opens only when E1, M1, C1 and I1 each have a bounded accepted baseline for the exact-version campaign.
+
+Then qualify:
 
 - Redstone -> piston;
 - Redstone -> command;
-- Redstone -> lamp.
+- inventory -> comparator/electrical;
+- mechanical/world-state -> observer/event where applicable.
 
 Acceptance:
 - exact endpoint state transitions;
@@ -531,7 +551,7 @@ bench/worldgen/causal/
   mechanical/
   command/
   inventory/
-  presentation/
+  observation/
   transducers/
   corpora/
   equivalence/
@@ -788,10 +808,13 @@ Without disturbing S0:
 1. K1: draft additive causal-kernel-v1 schema only;
 2. M1: source/runtime inventory for piston + sticky piston;
 3. C1: consolidate existing command hooks into one bounded command primitive contract;
-4. P1: lamp terminal-vs-observed-state boundary;
-5. R1: CORE 1.8.8 native-to-common projection design;
-6. L1: multilingual corpus manifest with license/provenance fields;
-7. Q1: extend metamorphic tests beyond same-net dust.
+4. I1: bounded hopper/inventory-transfer primitive inventory;
+5. O1: lamp terminal-vs-observed-state boundary as an electrical-owned observation surface;
+6. R1: CORE 1.8.8 native-to-common projection design;
+7. L1: multilingual corpus manifest with license/provenance fields;
+8. Q1: extend metamorphic tests beyond same-net dust.
+
+The four domain baselines E1/M1/C1/I1 remain independent. X1 cross-domain interaction work is WAIT until all four have bounded accepted baselines.
 
 These can proceed independently on separate branches.
 
