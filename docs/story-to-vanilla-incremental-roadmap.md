@@ -49,6 +49,8 @@ Initial semantic objects:
 
 - `world`
 - `location`
+- `named_place`
+- `region`
 - `scene`
 - `actor`
 - `role`
@@ -72,6 +74,8 @@ Initial relations:
 - condition enables action;
 - action changes world/actor/item state;
 - observation exposes state/event to a player/agent;
+- named place occupies a bounded region and can be discovered;
+- named place may expose lifecycle, local modifiers, resources, lore, and observation surfaces;
 - objective is satisfied by state transition;
 - scene transition occurs after objective/condition.
 
@@ -167,6 +171,83 @@ Why first:
 - exercises the complete product loop;
 - supports many narrative genres;
 - does not wait for deep mechanical/AI/ecology semantics.
+
+### Slice 1.5 — Named place / landmark MVP
+
+High-leverage early slice.
+
+Purpose:
+- make the world contain discoverable, persistent, named places with local meaning;
+- exercise Story IR, world generation, discovery, persistence, observation and local actor modifiers;
+- provide a reusable substrate for natural wonders, ruins, temples, monuments, sacred sites, resource sites and hazards.
+
+Story examples:
+- discover a named volcano;
+- discover a healing spring or sacred grove;
+- enter a warding monument that repels hostile mobs;
+- find a ruin that exposes lore or a resource;
+- discover a place whose state changes over time.
+
+A named place is not a new physics domain. It is a story/world object that composes capability packs.
+
+Minimum IR:
+
+- stable `place_id`;
+- display name;
+- archetype;
+- exact world/dimension/region geometry;
+- discovery condition and discovery state;
+- lifecycle/state machine;
+- local modifier fields / aura;
+- resource/depletion/regeneration state;
+- visual/audio/observation surfaces;
+- lore/artifact hooks;
+- persistence/provenance;
+- versioned vanilla lowering plan.
+
+Initial archetypes:
+
+1. **Volcanic wonder**
+   - dormant -> rumbling -> erupting -> cooling -> resource-rich;
+   - periodic or condition-driven eruption;
+   - terrain/world-state mutation;
+   - after cooling, exposes mineable resource zones;
+   - if generated underwater, repeated material accumulation may create emergent land/island geometry once configured thresholds are met.
+
+2. **Healing sanctuary**
+   - discoverable named site;
+   - bounded radius;
+   - players inside receive a configured healing/recovery modifier;
+   - observation/lore communicates the effect.
+
+3. **Warding monument**
+   - bounded influence region;
+   - hostile-mob presence is reduced/repelled through the selected vanilla lowering;
+   - exact implementation may initially be command-orchestrated and later replaced by more native mechanics.
+
+4. **Sustenance shrine / fertile site**
+   - bounded hunger/saturation, crop, or resource modifier;
+   - exact effect is capability-scoped and versioned.
+
+Implementation modes:
+- `command_orchestrated` first for discovery, timers, local effect fields and state transitions;
+- `native_mechanic` where independently qualified;
+- `hybrid` for physical landmark geometry plus programmable state/effects.
+
+26.3 provides a strong vanilla implementation substrate for this slice:
+- datapack predicates and command conditions;
+- commands that inspect entities/items/state;
+- `/place` feature support;
+- status effects and client presentation surfaces;
+- persistent datapack/storage/scoreboard-style state where used by the selected lowering.
+
+Do not treat a place's aura as a new global domain. Model it as a localized rule/effect attached to the place and qualify only the actor/world interactions consumed by that archetype.
+
+Why early:
+- gives exploration immediate narrative value;
+- supports procedural discovery without requiring rich NPC AI;
+- exercises incremental compilation and verification;
+- becomes a reusable anchor for later crafting, ecology, NPC, artifact and quest content.
 
 ### Slice 2 — Physical puzzle / machine story
 
@@ -406,6 +487,15 @@ Deliver one end-to-end quest MVP using:
 - observation;
 - simple actor/player references;
 - vanilla textual/visual feedback.
+
+### P1.5
+Deliver one named-place MVP with:
+- discovery;
+- stable identity/name;
+- persistent state;
+- bounded local modifier;
+- observation/feedback;
+- one dynamic archetype (volcano) and one static-benefit archetype (sanctuary or monument).
 
 ### P2
 Deliver one physical puzzle using existing electrical/mechanical evidence.
