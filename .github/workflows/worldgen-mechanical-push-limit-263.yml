@@ -1,0 +1,32 @@
+name: worldgen mechanical push-limit 26.3
+on:
+  push:
+    branches: [feat/mechanical-push-limit-263]
+    paths:
+      - 'tools/run_mechanical_push_limit_canary.py'
+      - '.github/workflows/worldgen-mechanical-push-limit-263.yml'
+permissions: {contents: read}
+jobs:
+  falsify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env: {WORLDGEN_RUNNER_LABEL: ubuntu-latest}
+    steps:
+      - name: Fail closed outside public standard runners
+        run: '[[ "${{ github.event.repository.private }}" == "false" ]] || exit 78'
+      - uses: actions/checkout@v5
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '25'}
+      - name: Enforce public/free policy
+        run: python tools/check_worldgen_public_policy.py --repository-private "${{ github.event.repository.private }}" --runner-label "$WORLDGEN_RUNNER_LABEL" --scan-workflows .github/workflows
+      - run: |
+          mkdir -p out
+          python tools/run_mechanical_push_limit_canary.py             --evidence probes/26.3-release-identity.json             --server-jar out/server.jar             --output-dir out/runtime
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mechanical-push-limit-26.3
+          path: out/runtime/push-limit.json
+          retention-days: 14
