@@ -430,8 +430,8 @@
     "priority": [
       "P0_story_ir_and_capability_registry",
       "P1_playable_quest_mvp",
-      "P1_5_named_place_landmark_mvp",
       "P2_physical_puzzle",
+      "P2A_constructible_semantic_artifacts",
       "P3_transformation_production",
       "P4_social_npc_economy",
       "P5_farming_biology_lifecycle",
@@ -558,6 +558,38 @@
       "policy_bundles": {
         "prosperity": "Not one Minecraft stat; resolve to the subset of qualified economic/resource/farming/trade benefits requested by the story."
       }
+    }
+  },
+  "vertical_slices": {
+    "volcano_v1": {
+      "issue": "SupraCraft/mc-server-images#30",
+      "state": "RUNTIME_PASS",
+      "branch": "feat/story-volcano-v1",
+      "validation_head": "a3af402672588e1db0e12dae7363362a13309f1a",
+      "workflow_run_id": 37135845816,
+      "artifact_id": 11278852226,
+      "contract": [
+        "recurring eruption state machine",
+        "persistent cumulative growth",
+        "cooling to resource-ready state",
+        "underwater island emergence threshold",
+        "vanilla 26.3 command-orchestrated lowering"
+      ]
+    },
+    "constructible_boons": {
+      "issue": "SupraCraft/mc-server-images#31",
+      "state": "PLANNED",
+      "semantic_pattern": "player-built block pattern -> recognition -> semantic artifact identity -> activation -> bounded boon -> deactivation on damage",
+      "initial_profiles": [
+        "healing",
+        "prosperity"
+      ],
+      "possible_extensions": [
+        "protection",
+        "mobility",
+        "temple-tier effects"
+      ],
+      "boundary": "Story magic is an artifact/actor-state abstraction; command orchestration is a valid vanilla lowering but not evidence of a native Minecraft magic subsystem."
     }
   }
 }
