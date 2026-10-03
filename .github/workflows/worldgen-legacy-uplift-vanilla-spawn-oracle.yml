@@ -1,0 +1,44 @@
+name: legacy uplift vanilla spawn-count oracle
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/probe_vanilla_spawn_uplift.py'
+      - '.github/workflows/worldgen-legacy-uplift-vanilla-spawn-oracle.yml'
+
+concurrency:
+  group: legacy-uplift-vanilla-spawn-oracle
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  exact-vanilla-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compare exact Mojang 26.2 and 26.3 structure spawn data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_vanilla_spawn_uplift.py             --old 26.2             --new 26.3             --output "$RUNNER_TEMP/vanilla-spawn-uplift.json"
+          cat "$RUNNER_TEMP/vanilla-spawn-uplift.json"
+          echo SUPRACRAFT_VANILLA_SPAWN_UPLIFT_ORACLE_PASS
+
+      - name: Upload derived receipt only
+        uses: actions/upload-artifact@v4
+        with:
+          name: vanilla-26.2-to-26.3-spawn-uplift-oracle
+          path: ${{ runner.temp }}/vanilla-spawn-uplift.json
+          retention-days: 14
+          if-no-files-found: error
