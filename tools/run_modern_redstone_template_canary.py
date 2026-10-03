@@ -1801,15 +1801,25 @@ def diagnose_rising_edge_state(process,log_path,output_dir,phase):
     receipt={
         "schema":"supracraft-modern-rising-edge-fixture-diagnostic/1",
         "phase":phase,
-        "expected_logic":{
-            "source":"air",
-            "input_net":"unpowered",
-            "delay_repeater":"unpowered",
-            "direct_inverter":"lit",
-            "intermediate":"powered",
-            "final_inverter":"unlit",
-            "output_wire":"unpowered",
-        } if phase=="baseline_timeout" else {},
+        "expected_logic":(
+            {
+                "source":"air",
+                "input_net":"unpowered",
+                "delay_repeater":"unpowered",
+                "direct_inverter":"lit",
+                "intermediate":"powered",
+                "final_inverter":"unlit",
+                "output_wire":"unpowered",
+            } if phase=="baseline_timeout" else
+            {
+                "source":"redstone_block",
+                "input_net":"powered",
+                "direct_inverter":"unlit",
+                "delay_repeater":"transition_pending_or_powered",
+                "final_inverter":"lit_during_positive_pulse",
+                "output_wire":"powered_during_positive_pulse",
+            } if phase=="pulse_1_high_timeout" else {}
+        ),
         "observed":compact,
         "nonsemantic_observations":{
             "output_lamp":compact.get("output_lamp"),
@@ -1993,13 +2003,39 @@ def run_rising_edge_detector(args,evidence,server_jar,output_dir):
                 p,EDGE_INPUT_HIGH_COMMAND,"rising_edge_input_high_1",
                 log_path,output_dir,
             )
-            rise1_attempts,rise1_wait=wait_for_marker(
-                p,log_path,output_dir,
-                "SUPRACRAFT_RISING_EDGE_PULSE_1_HIGH",
-                edge_probe(True,True,15),
-                "rising_edge_pulse_1_high",timeout_seconds=5.0,
-                poll_seconds=0.05,
-            )
+            try:
+                rise1_attempts,rise1_wait=wait_for_marker(
+                    p,log_path,output_dir,
+                    "SUPRACRAFT_RISING_EDGE_PULSE_1_HIGH",
+                    edge_probe(True,True,15),
+                    "rising_edge_pulse_1_high",timeout_seconds=5.0,
+                    poll_seconds=0.05,
+                )
+            except SystemExit as exc:
+                receipt=diagnose_rising_edge_state(
+                    p,log_path,output_dir,"pulse_1_high_timeout"
+                )
+                checked_command(
+                    p,"save-all flush","rising_edge_pulse_1_diagnostic_save",
+                    log_path,output_dir,
+                )
+                time.sleep(0.5)
+                checked_command(
+                    p,"stop","rising_edge_pulse_1_diagnostic_stop",
+                    log_path,output_dir,
+                )
+                rc=p.wait(timeout=60)
+                zip_world(root/"world",output_dir/"world.zip")
+                receipt["original_failure"]=str(exc)
+                receipt["server_exit_code"]=rc
+                receipt["world_sha256"]=hashlib.sha256(
+                    (output_dir/"world.zip").read_bytes()
+                ).hexdigest()
+                (output_dir/"diagnostic.json").write_text(
+                    json.dumps(receipt,indent=2,sort_keys=True)+"\n"
+                )
+                print(json.dumps(receipt,indent=2,sort_keys=True))
+                raise
             settle1_attempts,settle1_wait=wait_for_marker(
                 p,log_path,output_dir,
                 "SUPRACRAFT_RISING_EDGE_PULSE_1_LOW",
