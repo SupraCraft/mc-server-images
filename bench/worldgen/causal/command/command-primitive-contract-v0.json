@@ -1,0 +1,108 @@
+{
+  "schema": "supracraft-command-primitive-contract/0",
+  "status": "candidate_supported_by_existing_26_3_oracle",
+  "authority": {
+    "issue": "SupraCraft/mc-server-images#28",
+    "parent_issue": "SupraCraft/mc-server-images#27",
+    "runtime_issue": "SupraCraft/mc-server-images#11",
+    "minecraft_edition": "java",
+    "minecraft_version": "26.3"
+  },
+  "exact_bindings": [
+    {
+      "class_name": "net.minecraft.world.level.block.CommandBlock",
+      "class_sha256": "2cbe573c4833b44e74a1f41fc83473c1f2a6bc2e7d527b73df5af6b48708ad85",
+      "hooks": [
+        {
+          "id": "command_block_neighbor",
+          "method": "neighborChanged",
+          "descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Block;Lnet/minecraft/world/level/redstone/Orientation;Z)V"
+        },
+        {
+          "id": "command_block_tick",
+          "method": "tick",
+          "descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V"
+        },
+        {
+          "id": "command_block_execute",
+          "method": "execute",
+          "descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/BaseCommandBlock;Z)V"
+        }
+      ]
+    },
+    {
+      "class_name": "net.minecraft.commands.Commands",
+      "class_sha256": "9307c70b1dce250f869dbf0c633856145718c44b078d656c2dc9c3244176a54e",
+      "hooks": [
+        {
+          "id": "command_dispatch",
+          "method": "performCommand",
+          "descriptor": "(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V"
+        },
+        {
+          "id": "command_dispatch_prefixed",
+          "method": "performPrefixedCommand",
+          "descriptor": "(Lnet/minecraft/commands/CommandSourceStack;Ljava/lang/String;)V"
+        }
+      ]
+    }
+  ],
+  "runtime_evidence": {
+    "workflow_run_id": 37101462459,
+    "job_id": 111141661480,
+    "conclusion": "success",
+    "current_promoted_head": "766f5ec4f1b1f2e8c2350a653fbfd68f598ef884",
+    "required_observer_properties": [
+      "stock and instrumented canary target/result identities are equal",
+      "trace sequence numbers are contiguous",
+      "trace has zero dropped events",
+      "matching command hash has command_trigger_start at the command-block position",
+      "matching command trigger has a later command_trigger_end at the same command-block position",
+      "target block_state_write occurs strictly between trigger start and end",
+      "scheduled command-block tick precedes trigger start in the same server tick",
+      "neighbor event precedes trigger start",
+      "matching command hash is observed at command dispatch",
+      "trigger start, target write, and trigger end share one server tick",
+      "tick_start precedes trigger start and tick_end follows trigger end"
+    ],
+    "observed_event_counts_on_promoted_head": {
+      "command_block_neighbor": 1,
+      "command_block_scheduled_tick": 1,
+      "command_trigger_start": 1,
+      "command_trigger_end": 1,
+      "dropped_events": 0
+    },
+    "observer_effect": {
+      "semantic_divergence": false
+    }
+  },
+  "bounded_contract": {
+    "name": "command_block_single_canary_execution",
+    "causal_sequence": [
+      "command_block_neighbor",
+      "command_block_scheduled_tick",
+      "command_trigger_start",
+      "target_block_state_write",
+      "command_trigger_end"
+    ],
+    "required_correlations": [
+      "trigger command SHA-256 equals canary command SHA-256",
+      "dispatch includes the same command SHA-256",
+      "trigger start/end occur at the command-block position",
+      "target mutation occurs at the declared target position"
+    ]
+  },
+  "unknowns": [
+    "general impulse-vs-repeat-vs-chain equivalence is not established by this canary",
+    "conditional chain semantics are not established",
+    "command success-count/result semantics are not established",
+    "arbitrary command side-effect semantics are not established",
+    "this primitive contract alone does not establish the electrical-to-command transducer",
+    "this primitive contract alone does not establish a command state machine"
+  ],
+  "privacy_boundary": "command payload text is not retained as evidence; the runtime emits a bounded command verb plus SHA-256 identity",
+  "limitations": [
+    "Candidate contract consolidates already-qualified observation surfaces; it adds no new runtime hooks.",
+    "Acceptance is restricted to the bounded canary mechanism and exact Minecraft Java 26.3 runtime."
+  ]
+}
