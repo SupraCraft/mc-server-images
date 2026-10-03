@@ -1,0 +1,326 @@
+{
+  "schema": "supracraft-external-world-corpus/1",
+  "status": "discovery_prior_art_not_semantic_authority",
+  "target": {
+    "edition": "minecraft_java",
+    "versions": [
+      "26.2",
+      "26.3"
+    ]
+  },
+  "authority": {
+    "tracker": "SupraCraft/mc-server-images#34",
+    "rule": "Popularity and third-party implementation are selection evidence only; adoption requires independent exact-version qualification."
+  },
+  "intake_rules": [
+    "Preserve creator, source, exact claimed version, access date, and reuse/license boundary.",
+    "Do not vendor third-party world/resource-pack contents when reuse or redistribution is restricted.",
+    "Keep AI/data-mining restricted artifacts reference-only.",
+    "Prefer public source repositories for structural analysis when licensing permits.",
+    "World/runtime behavior must be independently reproduced before becoming capability authority."
+  ],
+  "entries": [
+    {
+      "id": "voidblock_skyblock_26_2",
+      "version": "26.2",
+      "class": "recognized_anchor",
+      "title": "Voidblock - Skyblock",
+      "creator": "Loweredgames",
+      "source": "https://www.planetminecraft.com/project/skyblock-classic-edition/",
+      "repository": "https://github.com/Loweredgames/Voidblock",
+      "popularity": {
+        "views_approx": 88200,
+        "downloads_approx": 24100
+      },
+      "mechanics": [
+        "skyblock progression",
+        "renewable resource recipes",
+        "storyline",
+        "multiplayer",
+        "hardcore variant",
+        "portable datapack",
+        "cross-version maintenance"
+      ],
+      "corpus_value": [
+        "mature long-lived progression architecture",
+        "transformation/recipe overrides",
+        "portable world-plus-datapack packaging"
+      ],
+      "reuse_boundary": "license_must_be_reviewed_before_content_archival"
+    },
+    {
+      "id": "random_item_giver_skyblock_26_2",
+      "version": "26.2",
+      "class": "recognized_anchor",
+      "title": "Random Item Giver Skyblock",
+      "creator": "Louis9",
+      "source": "https://www.planetminecraft.com/project/random-item-giver-skyblock/",
+      "popularity": {
+        "views_approx": 66800,
+        "downloads_approx": 19200
+      },
+      "mechanics": [
+        "scheduled random item generation",
+        "advancements",
+        "settings menu",
+        "help menu",
+        "limited-use recovery kits",
+        "multiplayer"
+      ],
+      "corpus_value": [
+        "timer-driven progression",
+        "recovery semantics",
+        "player-facing settings/help"
+      ],
+      "reuse_boundary": "creator explicitly says do not reupload/reuse without permission; metadata/analysis only"
+    },
+    {
+      "id": "parkour_limbo_reloaded_26_2",
+      "version": "26.2",
+      "class": "recognized_anchor",
+      "title": "Parkour Limbo Reloaded",
+      "creator": "LimboMaps",
+      "source": "https://www.planetminecraft.com/project/parkour-limbo-reloaded-1-20-4/",
+      "popularity": {
+        "views_approx": 13500,
+        "downloads_approx": 4100
+      },
+      "mechanics": [
+        "100 levels",
+        "20 themes",
+        "working metro",
+        "physics-based levels",
+        "automatic checkpoints",
+        "timer",
+        "ranking",
+        "hidden power-ups",
+        "cutscenes",
+        "museum"
+      ],
+      "corpus_value": [
+        "traversal abstraction",
+        "checkpoint/state machine",
+        "cutscene/presentation",
+        "transport system",
+        "speedrun timing"
+      ],
+      "reuse_boundary": "downloadable; review page/license before archival"
+    },
+    {
+      "id": "aqua_parkour_26_2",
+      "version": "26.2",
+      "class": "recognized_anchor",
+      "title": "Aqua Parkour",
+      "creator": "Teddyishappyl",
+      "source": "https://www.planetminecraft.com/project/aqua-parkour-6341411",
+      "popularity": {
+        "views_approx": 12700,
+        "downloads_approx": 5100
+      },
+      "mechanics": [
+        "custom aquatic traversal",
+        "multiplayer",
+        "predicate-driven mechanics"
+      ],
+      "compatibility_signal": "author reports predicate system changes due to 26.3",
+      "corpus_value": [
+        "mobility mechanics",
+        "26.2-to-26.3 predicate migration corroboration"
+      ],
+      "reuse_boundary": "downloadable; review page/license before archival"
+    },
+    {
+      "id": "mining_drills_26_2",
+      "version": "26.2",
+      "class": "mechanically_novel",
+      "title": "Mining Drills",
+      "creator": "IJAMinecraft",
+      "source": "https://www.planetminecraft.com/project/mining-drills-in-only-one-command-block-minecraft-111-working-quarry/",
+      "popularity": {
+        "views_approx": 11600,
+        "downloads_approx": 60
+      },
+      "mechanics": [
+        "command-driven machine",
+        "moving drill",
+        "resource extraction",
+        "terraforming"
+      ],
+      "corpus_value": [
+        "programmable machinery",
+        "persistent machine state",
+        "world mutation"
+      ],
+      "reuse_boundary": "command/reference precedent; review license before code archival"
+    },
+    {
+      "id": "ruins_of_altrac_26_3",
+      "version": "26.3",
+      "class": "recognized_anchor",
+      "title": "Ruins of Altrac",
+      "creator": "Quillmark",
+      "source": "https://www.planetminecraft.com/project/ruins-of-altrac/",
+      "repository": "https://github.com/QuillmarkMC/sg2",
+      "popularity": {
+        "views_approx": 70600,
+        "downloads_approx": 18500
+      },
+      "mechanics": [
+        "32-player survival games",
+        "randomized loot",
+        "points-of-interest loot bias",
+        "shrinking arena",
+        "lobby minigames",
+        "team configuration",
+        "UHC mode",
+        "chest restock",
+        "bossbars",
+        "custom music",
+        "safety/admin controls"
+      ],
+      "repository_inventory": {
+        "total_files": 579,
+        "mcfunction_files": 317,
+        "json_files": 250,
+        "nbt_structures": 9
+      },
+      "compatibility_signal": {
+        "from_26_2_to_26_3": "predicate objects migrated top-level key from condition to type",
+        "observed_paths": [
+          "game/death_barrier.json",
+          "lobby/team_select.json",
+          "lobby/arena/enter.json"
+        ]
+      },
+      "corpus_value": [
+        "current mature vanilla minigame architecture",
+        "multiplayer orchestration",
+        "loot/resource systems",
+        "lobby/configuration UX",
+        "scheduler/recursive function patterns",
+        "version migration"
+      ],
+      "reuse_boundary": "MIT NON-AI license includes restrictions on AI training/data mining; retain provenance and reference-only handling unless legal scope is resolved"
+    },
+    {
+      "id": "desolate_desert_26_3",
+      "version": "26.3",
+      "class": "recognized_anchor",
+      "title": "Desolate Desert",
+      "creator": "Quillmark",
+      "source": "https://www.planetminecraft.com/project/desolate-desert/",
+      "repository": "https://github.com/QuillmarkMC/sg2",
+      "popularity": {
+        "views_approx": 24800,
+        "downloads_approx": 6100
+      },
+      "mechanics": [
+        "Survival Games framework",
+        "loot",
+        "predicates",
+        "resource pack",
+        "vanilla/Paper support"
+      ],
+      "compatibility_signal": "26.3 changelog explicitly updates predicates",
+      "corpus_value": [
+        "second map on same framework for separating engine/framework from map-specific content"
+      ],
+      "reuse_boundary": "same repository license boundary as Ruins of Altrac"
+    },
+    {
+      "id": "parkour_alpine_26_3",
+      "version": "26.3",
+      "class": "recognized_anchor",
+      "title": "Parkour Alpine",
+      "creator": "Limbo_Maps",
+      "source": "https://www.planetminecraft.com/project/parkour-alpine-1-21-6/",
+      "popularity": {
+        "views_approx": 8000,
+        "downloads_approx": 2100
+      },
+      "mechanics": [
+        "automatic checkpoints",
+        "cutscenes",
+        "boat racing",
+        "physics-based mechanics",
+        "timer",
+        "multiplayer"
+      ],
+      "corpus_value": [
+        "26.3 traversal/cutscene counterpart to Parkour Limbo Reloaded"
+      ],
+      "reuse_boundary": "downloadable; review page/license before archival"
+    },
+    {
+      "id": "new_super_minecraft_bros_26_2_plus",
+      "version": "26.2+",
+      "class": "mechanically_novel",
+      "title": "New Super Minecraft Bros. Java Edition",
+      "creator": "ReadyDude",
+      "source": "https://www.planetminecraft.com/project/new-super-minecraft-bros-java-edition/",
+      "popularity": {
+        "views_approx": 515,
+        "downloads_approx": 69
+      },
+      "mechanics": [
+        "campaign",
+        "parkour",
+        "secret paths",
+        "secret worlds",
+        "races",
+        "combat",
+        "bonus challenges",
+        "museum",
+        "magic-wand objective"
+      ],
+      "corpus_value": [
+        "direct precedent for Mario-like traversal ideas",
+        "secret/discovery structure",
+        "campaign/world progression"
+      ],
+      "reuse_boundary": "downloadable Google Drive world; creator requests credit; review contents before archival"
+    },
+    {
+      "id": "surviving_in_the_null_26_2",
+      "version": "26.2",
+      "class": "mechanically_novel",
+      "title": "Surviving in the Null",
+      "creator": "Calloneswitch",
+      "source": "https://www.planetminecraft.com/project/surviving-in-the-null-26-2/",
+      "popularity": {
+        "views_approx": 381,
+        "downloads_approx": 35
+      },
+      "mechanics": [
+        "top-down RTS",
+        "resource management",
+        "commanding a group",
+        "short-form scenario"
+      ],
+      "corpus_value": [
+        "unusual camera/control model and actor-team abstraction"
+      ],
+      "reuse_boundary": "downloadable; review page/license before archival"
+    }
+  ],
+  "cross_corpus_findings": [
+    {
+      "id": "predicate_schema_26_3",
+      "evidence": [
+        "Ruins of Altrac 26.3 changelog",
+        "Desolate Desert 26.3 changelog",
+        "Aqua Parkour 26.3 hotfix note",
+        "Quillmark sg2 public 26.2/current predicate files"
+      ],
+      "finding": "26.3 predicate migration is a recurring ecosystem compatibility issue; top-level predicate condition becomes type in sampled Quillmark files.",
+      "action": "Add exact 26.2/26.3 predicate compatibility checks to SupraCraft capability/version resolver."
+    }
+  ],
+  "next_selection": [
+    "one mature progression world",
+    "one mature multiplayer/minigame world",
+    "one traversal/cutscene world",
+    "one command-heavy machinery exemplar",
+    "one mechanically unusual small world"
+  ]
+}
