@@ -185,6 +185,54 @@ class RedstoneNetlistTests(unittest.TestCase):
             x["template"]=="nor_gate" for x in doc["motif_candidates"]
         ))
 
+    def test_extra_dust_on_same_net_preserves_or_motif_but_changes_signatures(self):
+        base={
+            "schema":"supracraft-modern-causal-machinery/1",
+            "nodes":[
+                n("a",(-1,0,-1),"minecraft:redstone_block",["power_source"]),
+                n("aw",(0,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("aj",(1,0,-1),"minecraft:redstone_wire",["signal_transport"]),
+                n("b",(-1,0,1),"minecraft:redstone_block",["power_source"]),
+                n("bw",(0,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("bj",(1,0,1),"minecraft:redstone_wire",["signal_transport"]),
+                n("j",(1,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("out",(2,0,0),"minecraft:redstone_wire",["signal_transport"]),
+                n("lamp",(3,0,0),"minecraft:redstone_lamp",["presentation_feedback"]),
+            ],
+            "edges":[
+                edge("aw","aj"),edge("aj","j"),edge("j","bj"),
+                edge("bj","bw"),edge("j","out"),
+            ],
+        }
+        expanded=json.loads(json.dumps(base))
+        expanded["nodes"] += [
+            n("stub1",(1,0,2),"minecraft:redstone_wire",["signal_transport"]),
+            n("stub2",(1,0,3),"minecraft:redstone_wire",["signal_transport"]),
+        ]
+        expanded["edges"] += [
+            edge("bj","stub1"),edge("stub1","bj"),
+            edge("stub1","stub2"),edge("stub2","stub1"),
+        ]
+
+        base_doc,_=mod.build(base)
+        expanded_doc,_=mod.build(expanded)
+
+        for doc in (base_doc,expanded_doc):
+            rows=[x for x in doc["motif_candidates"] if x["template"]=="or_gate"]
+            self.assertEqual(len(rows),1)
+            self.assertEqual(rows[0]["input_source_component_ids"],["a","b"])
+            self.assertEqual(rows[0]["output_sink_component_ids"],["lamp"])
+
+        self.assertNotEqual(
+            base_doc["signatures"]["functional_netlist_sha256"],
+            expanded_doc["signatures"]["functional_netlist_sha256"],
+        )
+        self.assertNotEqual(
+            base_doc["signatures"]["horizontal_d4_topology_sha256"],
+            expanded_doc["signatures"]["horizontal_d4_topology_sha256"],
+        )
+
+
     def test_single_source_shared_net_is_not_or_candidate(self):
         graph={
             "schema":"supracraft-modern-causal-machinery/1",
