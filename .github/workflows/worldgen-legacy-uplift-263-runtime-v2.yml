@@ -85,6 +85,9 @@ jobs:
           assert u["protocol"] == m["protocol"] == 777
           assert u["hard_datapack_error_count"] == 0
           assert m["hard_datapack_error_count"] == 0
+          assert u["error_fingerprint_counts"] == m["error_fingerprint_counts"], (
+              u["error_fingerprint_counts"], m["error_fingerprint_counts"]
+          )
           assert u["bedrock_setup_probe_pre_reload"] and m["bedrock_setup_probe_pre_reload"]
           assert u["bedrock_setup_probe_post_reload"] and m["bedrock_setup_probe_post_reload"]
 
@@ -105,6 +108,10 @@ jobs:
               "maintainer_hard_error_count": m["hard_datapack_error_count"],
               "uplift_error_log_count": u["error_log_count"],
               "maintainer_error_log_count": m["error_log_count"],
+              "generic_error_fingerprints_equivalent": (
+                  u["error_fingerprint_counts"] == m["error_fingerprint_counts"]
+              ),
+              "generic_error_fingerprint_counts": u["error_fingerprint_counts"],
               "uplift_objective_snapshot_counts": uc,
               "maintainer_objective_snapshot_counts": mc,
               "objective_cardinality_equivalent": objective_cardinality_equivalent,
