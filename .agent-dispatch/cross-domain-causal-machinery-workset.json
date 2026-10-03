@@ -80,20 +80,6 @@
         "runtime-diagnosis"
       ]
     },
-    "presentation-boundary": {
-      "state": "READY",
-      "scope": [
-        "lamp terminal state",
-        "observed presentation feedback"
-      ],
-      "prohibited": [
-        "lamp as electrical semantic authority"
-      ],
-      "qualification_task_classes": [
-        "runtime-diagnosis",
-        "independent-review"
-      ]
-    },
     "representative-worlds": {
       "state": "READY_CORE",
       "scope": [
@@ -151,9 +137,43 @@
       ],
       "prohibited": [
         "parallel catalog promotion",
-        "promotion from actor claim alone"
+        "promotion from actor claim alone",
+        "cross-domain interaction promotion before Phase-A four-domain gate"
       ],
       "qualification_task_classes": []
+    },
+    "observation-boundary": {
+      "state": "READY_NON_PEER",
+      "scope": [
+        "lamp terminal vs observed state",
+        "note/output feedback as domain-owned observation surfaces"
+      ],
+      "prohibited": [
+        "treat observation/presentation as a fifth peer semantic domain",
+        "use lamp state as electrical semantic authority"
+      ],
+      "qualification_task_classes": [
+        "runtime-diagnosis",
+        "independent-review"
+      ]
+    },
+    "inventory-primitives": {
+      "state": "READY",
+      "scope": [
+        "hopper transfer",
+        "inventory occupancy/state",
+        "dropper/dispenser actuation",
+        "bounded material flow"
+      ],
+      "prohibited": [
+        "cross-domain comparator semantics before Phase-A gate",
+        "whole-world inventory simulation"
+      ],
+      "qualification_task_classes": [
+        "source-recovery",
+        "runtime-diagnosis",
+        "test-generation"
+      ]
     }
   },
   "opportunistic_qualification": {
@@ -205,8 +225,8 @@
   "rollout": [
     "D0_plan_only",
     "D1_additive_kernel_shadow",
-    "D2_sibling_primitive_lanes",
-    "D3_first_transducers",
+    "D2_four_independent_domain_baselines",
+    "D3_cross_domain_transducers_after_phase_a_gate",
     "D4_first_cross_domain_motifs",
     "D5_dynamic_topology_receipts",
     "D6_representative_world_census",
@@ -225,5 +245,32 @@
     "replay deterministic tests against current head before integration",
     "shadow outputs do not feed accepted metrics or promotion gates until independently accepted",
     "no destructive migration of accepted Redstone receipts"
-  ]
+  ],
+  "core_domains": [
+    "electrical",
+    "mechanical",
+    "programmable",
+    "inventory"
+  ],
+  "observation_surface": {
+    "peer_domain": false,
+    "rule": "Presentation/feedback is a cross-cutting observation/sink surface owned by the driving domain unless later evidence justifies a distinct reusable semantic model."
+  },
+  "phase_gates": {
+    "phase_a": {
+      "name": "independent-domain-baselines",
+      "required_lanes": [
+        "electrical-existing-authority",
+        "mechanical-primitives",
+        "command-primitives",
+        "inventory-primitives"
+      ],
+      "rule": "Recover and qualify each of the four core domains independently. Do not introduce cross-domain semantic dependencies in Phase A."
+    },
+    "phase_b": {
+      "name": "cross-domain-interactions",
+      "depends_on": "phase_a",
+      "rule": "Cross-domain transducer work remains WAIT until all four Phase-A domain baselines are bounded and accepted for the current exact-version campaign."
+    }
+  }
 }
