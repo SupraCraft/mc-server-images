@@ -136,11 +136,12 @@ def wait_for_state(
 ) -> tuple[int, float]:
     started = time.monotonic()
     attempts = 0
+    baseline = marker_count(log_path, marker)
     while time.monotonic() - started < timeout:
         attempts += 1
         send(process, f"{predicate_prefix} run say {marker}")
         time.sleep(0.2)
-        if marker_count(log_path, marker) == 1:
+        if marker_count(log_path, marker) > baseline:
             return attempts, time.monotonic() - started
     detail = (
         collect_state_diagnostics(process, log_path, diagnostics)
