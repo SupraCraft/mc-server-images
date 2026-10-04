@@ -11,6 +11,9 @@ on:
       - 'tests/test_legacy_uplift.py'
       - 'tools/uplift_sign_allow_op_features.py'
       - 'tests/test_sign_allow_op_features.py'
+      - 'tools/uplift_map_color_with_mapping.py'
+      - 'tests/test_map_color_with_mapping.py'
+      - 'bench/worldgen/corpora/sprint-racer-map-color-recipe-26.3.json'
       - '.github/workflows/worldgen-legacy-uplift-263.yml'
 
 concurrency:
@@ -32,7 +35,7 @@ jobs:
           python-version: '3.12'
 
       - name: Unit tests
-        run: python -m unittest tests.test_legacy_uplift tests.test_sign_allow_op_features -v
+        run: python -m unittest tests.test_legacy_uplift tests.test_sign_allow_op_features tests.test_map_color_with_mapping -v
 
       - name: Synthetic apply/rescan receipt
         shell: bash
