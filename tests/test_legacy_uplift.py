@@ -193,6 +193,42 @@ class LegacyUpliftTests(unittest.TestCase):
                 ["carriedBlockState"],
             )
 
+    def test_apply_safe_handles_scoped_inline_loot(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            root = base / "source"
+            root.mkdir()
+
+            fn = root / "data/demo/function/loot.mcfunction"
+            fn.parent.mkdir(parents=True)
+            fn.write_text(
+                'loot replace entity @s contents fish {type:"item",'
+                'functions:[{function:"set_components",components:{}},'
+                '{function:"copy_components",source:"tool"}]}\\n'
+                'data modify storage demo:state functions set value '
+                '[{function:"domain_value"}]\\n',
+                encoding="utf-8",
+            )
+
+            out = base / "uplifted"
+            p = run_tool(root, "--catalog", CATALOG, "--apply-safe", out, "--fail-on-safe")
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            data = json.loads(p.stdout)
+            self.assertEqual(data["safe_apply"]["residual_safe_finding_count"], 0)
+
+            text = (out / "data/demo/function/loot.mcfunction").read_text()
+            self.assertIn('modifier:[{type:"set_components"', text)
+            self.assertIn('{type:"copy_components",source:"tool"}]', text)
+            self.assertIn(
+                'data modify storage demo:state functions set value '
+                '[{function:"domain_value"}]',
+                text,
+            )
+
+            change = data["safe_apply"]["mcfunction_changes"][0]
+            self.assertEqual(change["changed_loot_entry_count"], 1)
+            self.assertEqual(change["loot_function_discriminator_change_count"], 2)
+
     def test_fail_on_safe_detects_unmigrated_tree(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
