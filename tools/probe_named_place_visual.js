@@ -107,7 +107,7 @@ async function main () {
   browser = await puppeteer.launch({
     executablePath: chromePath,
     headless: true,
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=swiftshader']
+    args: ['--no-sandbox', '--disable-dev-shm-usage', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--use-angle=swiftshader']
   })
   page = await browser.newPage()
   page.on('console', msg => browserConsole.push(msg.type() + ': ' + msg.text()))
