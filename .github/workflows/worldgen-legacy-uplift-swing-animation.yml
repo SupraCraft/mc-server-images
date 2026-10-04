@@ -52,7 +52,149 @@ jobs:
 
           python tools/uplift_swing_animation_candidate.py             "$RUNNER_TEMP/simple-old.mcfunction"             "$RUNNER_TEMP/simple-uplift.mcfunction"             --mode attack             --receipt "$RUNNER_TEMP/simple-receipt.json"             --require-change
 
-          cmp "$RUNNER_TEMP/simple-uplift.mcfunction" "$RUNNER_TEMP/simple-new.mcfunction"
+          python - "$RUNNER_TEMP/simple-old.mcfunction" "$RUNNER_TEMP/simple-uplift.mcfunction" "$RUNNER_TEMP/simple-new.mcfunction" <<'PY'
+          import pathlib, sys
+
+          old_p, uplift_p, new_p = map(pathlib.Path, sys.argv[1:])
+          old = old_p.read_text()
+          uplift = uplift_p.read_text()
+          target = new_p.read_text()
+
+          def component_projection(line):
+              marker = "components:{"
+              start = line.find(marker)
+              if start < 0:
+                  return None
+              body_start = start + len(marker)
+              i = body_start
+              depth = 1
+              in_string = False
+              quote = ""
+              escape = False
+              while i < len(line):
+                  ch = line[i]
+                  if in_string:
+                      if escape:
+                          escape = False
+                      elif ch == "\\\\":
+                          escape = True
+                      elif ch == quote:
+                          in_string = False
+                  else:
+                      if ch in {'"', "'"}:
+                          in_string = True
+                          quote = ch
+                      elif ch == "{":
+                          depth += 1
+                      elif ch == "}":
+                          depth -= 1
+                          if depth == 0:
+                              body_end = i
+                              break
+                  i += 1
+              else:
+                  raise AssertionError("unterminated components compound")
+
+              body = line[body_start:body_end]
+              entries = []
+              token_start = 0
+              depth_curly = depth_square = 0
+              in_string = False
+              quote = ""
+              escape = False
+              for j, ch in enumerate(body):
+                  if in_string:
+                      if escape:
+                          escape = False
+                      elif ch == "\\\\":
+                          escape = True
+                      elif ch == quote:
+                          in_string = False
+                      continue
+                  if ch in {'"', "'"}:
+                      in_string = True
+                      quote = ch
+                  elif ch == "{":
+                      depth_curly += 1
+                  elif ch == "}":
+                      depth_curly -= 1
+                  elif ch == "[":
+                      depth_square += 1
+                  elif ch == "]":
+                      depth_square -= 1
+                  elif ch == "," and depth_curly == 0 and depth_square == 0:
+                      entries.append(body[token_start:j])
+                      token_start = j + 1
+              entries.append(body[token_start:])
+
+              mapped = {}
+              for entry in entries:
+                  if not entry:
+                      continue
+                  colon = None
+                  in_string = False
+                  quote = ""
+                  escape = False
+                  d1 = d2 = 0
+                  for j, ch in enumerate(entry):
+                      if in_string:
+                          if escape:
+                              escape = False
+                          elif ch == "\\\\":
+                              escape = True
+                          elif ch == quote:
+                              in_string = False
+                          continue
+                      if ch in {'"', "'"}:
+                          in_string = True
+                          quote = ch
+                      elif ch == "{": d1 += 1
+                      elif ch == "}": d1 -= 1
+                      elif ch == "[": d2 += 1
+                      elif ch == "]": d2 -= 1
+                      elif ch == ":" and d1 == 0 and d2 == 0:
+                          colon = j
+                          break
+                  assert colon is not None, entry
+                  key = entry[:colon].strip()
+                  value = entry[colon + 1:].strip()
+                  assert key not in mapped, key
+                  mapped[key] = value
+              outside = line[:body_start] + "<COMPONENTS>" + line[body_end:]
+              return outside, mapped
+
+          old_lines = old.splitlines()
+          uplift_lines = uplift.splitlines()
+          target_lines = target.splitlines()
+          assert len(old_lines) == len(uplift_lines) == len(target_lines)
+
+          targeted = 0
+          for lineno, (old_line, uplift_line, target_line) in enumerate(zip(old_lines, uplift_lines, target_lines), 1):
+              if '"minecraft:swing_animation"' not in old_line:
+                  assert uplift_line == old_line, f"helper changed unrelated source line {lineno}"
+                  assert target_line == uplift_line, f"target has unrelated residual delta at line {lineno}"
+                  continue
+
+              targeted += 1
+              old_proj = component_projection(old_line)
+              uplift_proj = component_projection(uplift_line)
+              target_proj = component_projection(target_line)
+              assert old_proj and uplift_proj and target_proj
+              assert uplift_proj[0] == old_proj[0] == target_proj[0], f"non-component content changed at line {lineno}"
+
+              old_map = old_proj[1]
+              uplift_map = uplift_proj[1]
+              target_map = target_proj[1]
+              assert '"minecraft:swing_animation"' in old_map
+              expected = dict(old_map)
+              value = expected.pop('"minecraft:swing_animation"')
+              expected['"minecraft:attack_animation"'] = value
+              assert uplift_map == expected, f"helper projection mismatch at line {lineno}"
+              assert target_map == expected, f"maintainer semantic projection mismatch at line {lineno}"
+
+          assert targeted == 2, targeted
+          print("SUPRACRAFT_SWING_SEMANTIC_PROJECTION_PASS")
+          PY
 
           python tools/uplift_swing_animation_candidate.py             "$RUNNER_TEMP/control-old.mcfunction"             "$RUNNER_TEMP/control-uplift.mcfunction"             --mode both             --receipt "$RUNNER_TEMP/control-receipt.json"
 
@@ -74,7 +216,8 @@ jobs:
 
           result = {
               "schema": "supracraft-swing-animation-exact-qualification/1",
-              "simple_attack_mode_exact_whole_file": True,
+              "simple_attack_mode_semantic_projection": True,
+              "unrelated_content_preserved": True,
               "simple_direct_component_rewrites": simple["direct_component_rewrite_count"],
               "control_flow_requires_structural_followup": True,
               "control_unhandled_counts": counts,
