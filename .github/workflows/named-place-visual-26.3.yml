@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   visual-smoke:
@@ -86,6 +86,22 @@ jobs:
               echo '~~~'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Retain visual evidence on probe branch
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p probes/named-place-visual/26.3-smoke
+          if compgen -G "$RUNNER_TEMP/named-place-visual/*" > /dev/null; then
+            cp "$RUNNER_TEMP"/named-place-visual/* probes/named-place-visual/26.3-smoke/
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/named-place-visual/26.3-smoke
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain named-place visual smoke evidence"
+          git push origin "HEAD:$GITHUB_REF_NAME"
 
       - name: Upload derived visual evidence
         if: always()
