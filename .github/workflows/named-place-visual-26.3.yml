@@ -11,7 +11,8 @@ on:
       - 'tools/probe_named_place_visual_26_3.py'
       - 'tools/install_experimental_prismarine_26_3.sh'
       - 'tools/apply_mineflayer_tick_end_26_3.py'
-      - 'tools/apply_prismarine_viewer_26_3_assets_fallback.py'
+      - 'tools/install_prismarine_viewer_local_26_3.sh'
+      - 'patches/prismarine-viewer/**'
       - 'probes/mineflayer-runtime/**'
       - 'probes/26.3-release-identity.json'
 
@@ -31,7 +32,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - uses: actions/setup-python@v5
         with:
@@ -42,26 +43,32 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Assemble exact 26.3 client stack
-        shell: bash
-        run: |
-          set -euo pipefail
-          runtime_root="/tmp/supracraft-prismarine-26.3"
-          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
-          npm --prefix "$runtime_root/runtime" install --no-save \
-            prismarine-viewer@1.33.0 \
-            github:PrismarineJS/node-canvas-webgl#c183e0a8e5ad8bdc2f1e4f3c1ba0b2592ad952f0
-          python tools/apply_prismarine_viewer_26_3_assets_fallback.py \
-            "$runtime_root/runtime/node_modules/prismarine-viewer"
-          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
-
       - name: Install headless OpenGL runtime
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            xvfb libgl1-mesa-dev libglu1-mesa-dev libglew-dev libxi-dev mesa-utils
+            xvfb libgl1-mesa-dev libglu1-mesa-dev libglew-dev libxi-dev mesa-utils \
+            libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - name: Assemble exact 26.3 client stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_root="/tmp/supracraft-prismarine-26.3"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          echo "PRISMARINE_RUNTIME=$runtime_root/runtime" >> "$GITHUB_ENV"
+
+      - name: Build pinned Prismarine Viewer locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          viewer_root="/tmp/supracraft-prismarine-viewer-26.3"
+          bash tools/install_prismarine_viewer_local_26_3.sh "$viewer_root"
+          cat "$viewer_root/build-receipt.json"
+          echo "PRISMARINE_VIEWER_ROOT=$viewer_root" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$viewer_root/local-node_modules:$PRISMARINE_RUNTIME/node_modules" >> "$GITHUB_ENV"
 
       - name: Confirm headless renderer
         shell: bash
@@ -70,8 +77,15 @@ jobs:
           command -v xvfb-run
           node - <<'NODE'
           const viewer=require('prismarine-viewer/package.json')
-          const canvasWebgl=require('node-canvas-webgl/package.json')
-          console.log(JSON.stringify({viewer:viewer.version,nodeCanvasWebgl:canvasWebgl.version},null,2))
+          const canvasWebgl=require('prismarine-viewer/node_modules/node-canvas-webgl/package.json')
+          const { getVersion }=require('prismarine-viewer/viewer/lib/version')
+          console.log(JSON.stringify({
+            viewer:viewer.version,
+            nodeCanvasWebgl:canvasWebgl.version,
+            exactClient:'26.3',
+            renderAssets:getVersion('26.3')
+          },null,2))
+          if (getVersion('26.3') !== '26.1') process.exit(2)
           NODE
 
       - name: Exact server-client walk and render smoke
