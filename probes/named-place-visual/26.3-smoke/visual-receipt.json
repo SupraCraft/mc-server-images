@@ -1,9 +1,7 @@
 {
   "schema": "supracraft.named-place-visual-smoke/v0.1",
   "result": "error",
-  "error": "TimeoutError: Navigation timeout of 30000 ms exceeded\n    at new Deferred (/tmp/supracraft-prismarine-26.3/runtime/node_modules/puppeteer-core/lib/cjs/puppeteer/util/Deferred.js:60:34)\n    at Deferred.create (/tmp/supracraft-prismarine-26.3/runtime/node_modules/puppeteer-core/lib/cjs/puppeteer/util/Deferred.js:21:16)\n    at new LifecycleWatcher (/tmp/supracraft-prismarine-26.3/runtime/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/LifecycleWatcher.js:73:60)\n    at CdpFrame.goto (/tmp/supracraft-prismarine-26.3/runtime/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/Frame.js:149:29)\n    at CdpFrame.<anonymous> (/tmp/supracraft-prismarine-26.3/runtime/node_modules/puppeteer-core/lib/cjs/puppeteer/util/decorators.js:109:27)\n    at CdpPage.goto (/tmp/supracraft-prismarine-26.3/runtime/node_modules/puppeteer-core/lib/cjs/puppeteer/api/Page.js:572:43)\n    at main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:116:14)",
-  "browser_console": [
-    "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
-  ],
+  "error": "Error: screenshot timeout: 01_approach\n    at /home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:86:37\n    at async shot (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:84:3)\n    at async main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:140:14)",
+  "browser_console": [],
   "browser_errors": []
 }
