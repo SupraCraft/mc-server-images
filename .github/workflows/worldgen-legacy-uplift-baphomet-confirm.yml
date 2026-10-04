@@ -2,12 +2,6 @@ name: legacy uplift Baphomet predicate confirmation
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/analyze_baphomet_third_corpus.py'
-      - '.github/workflows/worldgen-legacy-uplift-baphomet-confirm.yml'
 
 concurrency:
   group: legacy-uplift-baphomet-confirm
