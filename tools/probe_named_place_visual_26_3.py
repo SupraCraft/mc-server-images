@@ -40,6 +40,7 @@ def write_server_config(root: Path) -> None:
                 "enable-query=false",
                 "generate-structures=false",
                 "level-seed=4242424242",
+                "level-type=minecraft:flat",
                 "sync-chunk-writes=true",
                 "motd=SupraCraft named-place visual qualification",
                 "",
@@ -98,7 +99,7 @@ def build_barn_fixture(server: subprocess.Popen[str]) -> None:
         "forceload add -3 -3 3 3",
         "setworldspawn 0 70 20",
         "fill -32 68 -32 32 90 48 minecraft:air",
-        "fill -32 69 -32 32 69 48 minecraft:grass_block",
+        "fill -90 69 -90 90 69 90 minecraft:grass_block",
         # brick barn shell
         "fill -8 70 -6 8 76 6 minecraft:bricks hollow",
         "fill -2 70 6 2 74 6 minecraft:air",
