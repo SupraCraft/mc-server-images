@@ -2,15 +2,6 @@ name: legacy uplift static wave 4
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/uplift_predicate_26_2_to_26_3.py'
-      - 'tools/uplift_mcfunction_block_state_snbt.py'
-      - 'tests/test_predicate_uplift.py'
-      - 'tests/test_mcfunction_block_state_uplift.py'
-      - '.github/workflows/worldgen-legacy-uplift-static-wave4.yml'
 
 concurrency:
   group: legacy-uplift-static-wave4-${{ github.ref }}
