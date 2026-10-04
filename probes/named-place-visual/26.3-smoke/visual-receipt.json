@@ -1,5 +1,82 @@
 {
   "schema": "supracraft.named-place-visual-smoke/v0.3",
-  "result": "error",
-  "error": "TypeError: Cannot read properties of null (reading 'cancelAnimationFrame')\n    at Object.stop (/tmp/supracraft-prismarine-viewer-26.3/src/prismarine-viewer/node_modules/three/build/three.js:9454:13)\n    at WebGLRenderer.dispose (/tmp/supracraft-prismarine-viewer-26.3/src/prismarine-viewer/node_modules/three/build/three.js:17591:14)\n    at closeVisualSession (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:125:22)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:197:5)"
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "renderer": {
+    "name": "prismarine-viewer-core",
+    "semantic_authority": false,
+    "client_world_source": "mineflayer exact-26.3 connection",
+    "asset_policy": "viewer 26.1 presentation assets via local compatibility bridge",
+    "capture": "node-canvas-webgl after explicit chunk-render completion",
+    "render_view_distance_chunks": 4
+  },
+  "traversal": {
+    "start": [
+      0.5,
+      72,
+      24.5
+    ],
+    "end": [
+      0.42,
+      72,
+      24.3
+    ],
+    "distance": 0.215,
+    "passed": false
+  },
+  "views": [
+    {
+      "name": "01_approach",
+      "path": "/home/runner/work/_temp/named-place-visual/01_approach.jpg",
+      "bytes": 136268,
+      "bot_position": [
+        0.5,
+        72,
+        24.5
+      ]
+    },
+    {
+      "name": "02_after_walk",
+      "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg",
+      "bytes": 135911,
+      "bot_position": [
+        0.42,
+        72,
+        24.3
+      ]
+    },
+    {
+      "name": "03_three_quarter",
+      "path": "/home/runner/work/_temp/named-place-visual/03_three_quarter.jpg",
+      "bytes": 122880,
+      "bot_position": [
+        16.5,
+        75,
+        16.5
+      ]
+    },
+    {
+      "name": "04_interior",
+      "path": "/home/runner/work/_temp/named-place-visual/04_interior.jpg",
+      "bytes": 105454,
+      "bot_position": [
+        0.5,
+        71,
+        1.5
+      ]
+    },
+    {
+      "name": "05_landmark_distance",
+      "path": "/home/runner/work/_temp/named-place-visual/05_landmark_distance.jpg",
+      "bytes": 123997,
+      "bot_position": [
+        0.5,
+        84,
+        42.5
+      ]
+    }
+  ],
+  "result": "failed_traversal"
 }
