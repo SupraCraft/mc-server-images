@@ -2,13 +2,6 @@ name: legacy uplift sign op-features candidate
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/uplift_sign_allow_op_features.py'
-      - 'tests/test_sign_allow_op_features.py'
-      - '.github/workflows/worldgen-legacy-uplift-sign-op-features.yml'
 
 concurrency:
   group: legacy-uplift-sign-op-features
