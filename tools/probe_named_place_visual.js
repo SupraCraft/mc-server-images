@@ -22,6 +22,10 @@ fs.mkdirSync(outputDir, { recursive: true })
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
+function stage (name) {
+  console.log('VISUAL_STAGE ' + name)
+}
+
 async function waitFile (file, timeoutMs) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
@@ -76,7 +80,12 @@ async function renderState () {
 
 async function shot (name) {
   const out = path.join(outputDir, name + '.png')
-  await page.screenshot({ path: out })
+  stage('screenshot:' + name + ':start')
+  await Promise.race([
+    page.screenshot({ path: out }),
+    sleep(15000).then(() => { throw new Error('screenshot timeout: ' + name) })
+  ])
+  stage('screenshot:' + name + ':done')
   const stat = fs.statSync(out)
   const state = await renderState()
   if (stat.size < 5000) {
@@ -91,41 +100,53 @@ async function shot (name) {
 }
 
 async function main () {
+  stage('spawn:wait')
   await new Promise((resolve, reject) => {
     bot.once('spawn', resolve)
     bot.once('error', reject)
     setTimeout(() => reject(new Error('spawn timeout')), 30000)
   })
 
+  stage('spawn:ready')
   fs.writeFileSync(readyFile, JSON.stringify({ spawned: true, position: pos() }) + '\n')
   await waitFile(opReadyFile, 30000)
+  stage('op:ready')
 
-  mineflayerViewer(bot, { port: 3007, firstPerson: true, viewDistance: 5 })
+  mineflayerViewer(bot, { port: 3007, firstPerson: true, viewDistance: 2 })
   viewerStarted = true
-  await sleep(2500)
+  stage('viewer:started')
+  await sleep(1500)
 
+  stage('browser:launch')
   browser = await puppeteer.launch({
     executablePath: chromePath,
     headless: true,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--use-angle=swiftshader']
   })
+  stage('browser:launched')
   page = await browser.newPage()
   page.on('console', msg => browserConsole.push(msg.type() + ': ' + msg.text()))
   page.on('pageerror', err => browserErrors.push(String(err && err.stack ? err.stack : err)))
-  await page.setViewport({ width: 960, height: 540, deviceScaleFactor: 1 })
-  await page.goto('http://127.0.0.1:3007', { waitUntil: 'domcontentloaded', timeout: 30000 })
-  await sleep(3500)
+  page.setDefaultTimeout(15000)
+  await page.setViewport({ width: 640, height: 360, deviceScaleFactor: 1 })
+  stage('page:goto')
+  await page.goto('http://127.0.0.1:3007', { waitUntil: 'domcontentloaded', timeout: 20000 })
+  stage('page:loaded')
+  await sleep(2000)
 
   const views = []
+  stage('view:approach')
   await teleportAndLook([0, 72, 24], [0, 75, 0])
   views.push(await shot('01_approach'))
 
+  stage('walk:start')
   const walkStart = pos()
   bot.setControlState('forward', true)
   await sleep(1800)
   bot.setControlState('forward', false)
   await sleep(500)
   const walkEnd = pos()
+  stage('walk:end')
   views.push(await shot('02_after_walk'))
 
   await teleportAndLook([16, 75, 16], [0, 75, 0])
