@@ -2,13 +2,6 @@ name: legacy uplift sign dataflow evidence
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/analyze_sign_op_features_dataflow.py'
-      - 'tests/test_sign_op_features_dataflow.py'
-      - '.github/workflows/worldgen-legacy-uplift-sign-dataflow.yml'
 
 concurrency:
   group: legacy-uplift-sign-dataflow-evidence
