@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Safely rewrite legacy Block State SNBT embedded inside .mcfunction text.
 
-Only keys at the top level of a `block_state:{...}` compound are rewritten:
+Only keys at the top level of known Block State-bearing SNBT compounds are rewritten:
+  block_state:{...}
+  carriedBlockState:{...}
+  DisplayState:{...}
+
+Within those compounds:
   Name       -> id
   Properties -> properties
 
 This deliberately does not perform global Name/Properties replacement and
-therefore leaves fields such as CustomName untouched.
+therefore leaves fields such as CustomName untouched. Compact scalar Block
+State representation is not performed automatically.
 """
 
 from __future__ import annotations
@@ -16,7 +22,7 @@ import json
 from pathlib import Path
 
 
-PREFIX = "block_state:{"
+PREFIXES = ("block_state:{", "carriedBlockState:{", "DisplayState:{")
 
 
 def find_matching_brace(text: str, open_index: int) -> int:
@@ -115,30 +121,36 @@ def rewrite_top_level_keys(compound: str) -> tuple[str, int]:
     return "".join(out), changes
 
 
-def rewrite_text(text: str) -> tuple[str, list[dict[str, int]]]:
+def rewrite_text(text: str) -> tuple[str, list[dict[str, int | str]]]:
     out: list[str] = []
     cursor = 0
-    receipts: list[dict[str, int]] = []
+    receipts: list[dict[str, int | str]] = []
 
     while True:
-        start = text.find(PREFIX, cursor)
-        if start < 0:
+        matches = [
+            (text.find(prefix, cursor), prefix)
+            for prefix in PREFIXES
+        ]
+        matches = [(pos, prefix) for pos, prefix in matches if pos >= 0]
+        if not matches:
             out.append(text[cursor:])
             break
 
+        start, prefix = min(matches, key=lambda x: x[0])
         out.append(text[cursor:start])
-        open_brace = start + len(PREFIX) - 1
+        open_brace = start + len(prefix) - 1
         close_brace = find_matching_brace(text, open_brace)
 
         full = text[start:close_brace + 1]
-        body = full[len(PREFIX):-1]
+        body = full[len(prefix):-1]
         rewritten_body, changes = rewrite_top_level_keys(body)
-        rewritten = PREFIX + rewritten_body + "}"
+        rewritten = prefix + rewritten_body + "}"
 
         out.append(rewritten)
         if changes:
             receipts.append({
                 "offset": start,
+                "field": prefix[:-2],
                 "change_count": changes,
             })
         cursor = close_brace + 1
