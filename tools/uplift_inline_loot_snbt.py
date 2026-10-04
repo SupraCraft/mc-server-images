@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 
-LOOT_LINE = re.compile(r"(^|\\srun\\s)loot\\s")
+LOOT_LINE = re.compile(r"(^|\srun\s)loot\s")
 
 
 def find_matching(text: str, open_index: int, open_char: str, close_char: str) -> int:
