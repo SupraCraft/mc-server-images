@@ -1,5 +1,12 @@
 {
   "schema": "supracraft.named-place-visual-smoke/v0.1",
   "result": "error",
-  "error": "Error: screenshot unexpectedly small: /home/runner/work/_temp/named-place-visual/01_approach.png\n    at shot (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:62:31)\n    at async main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:92:14)"
+  "error": "Error: screenshot unexpectedly small: /home/runner/work/_temp/named-place-visual/01_approach.png; diagnostics={\"bytes\":2668,\"state\":{\"readyState\":\"complete\",\"title\":\"Prismarine Viewer\",\"bodyText\":\"\",\"canvases\":[]},\"browserConsole\":[\"error: THREE.WebGLRenderer: Error creating WebGL context.\",\"error: Failed to load resource: the server responded with a status of 404 (Not Found)\"],\"browserErrors\":[\"Error: Error creating WebGL context.\\n    at el (http://127.0.0.1:3007/index.js:2:415107)\\n    at <anonymous> (http://127.0.0.1:3007/index.js:2:1203946)\\n    at <anonymous> (http://127.0.0.1:3007/index.js:2:1205010)\"]}\n    at shot (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:83:11)\n    at async main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:121:14)",
+  "browser_console": [
+    "error: THREE.WebGLRenderer: Error creating WebGL context.",
+    "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "browser_errors": [
+    "Error: Error creating WebGL context.\n    at el (http://127.0.0.1:3007/index.js:2:415107)\n    at <anonymous> (http://127.0.0.1:3007/index.js:2:1203946)\n    at <anonymous> (http://127.0.0.1:3007/index.js:2:1205010)"
+  ]
 }
