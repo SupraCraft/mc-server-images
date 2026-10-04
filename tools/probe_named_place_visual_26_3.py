@@ -41,6 +41,7 @@ def write_server_config(root: Path) -> None:
                 "generate-structures=false",
                 "level-seed=4242424242",
                 "level-type=minecraft:flat",
+                'generator-settings={"biome":"minecraft:plains","features":false,"lakes":false,"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"structure_overrides":[]}' ,
                 "sync-chunk-writes=true",
                 "motd=SupraCraft named-place visual qualification",
                 "",
