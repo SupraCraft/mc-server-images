@@ -33,6 +33,32 @@ class McfunctionBlockStateUpliftTests(unittest.TestCase):
         self.assertIn('block_state:{id:"air"}', out)
         self.assertEqual(receipt[0]["change_count"], 1)
 
+
+    def test_rewrites_carried_block_state(self):
+        src = 'data merge entity @s {carriedBlockState:{Name:"minecraft:gold_block"}}\n'
+        out, receipt = rewrite_text(src)
+        self.assertIn('carriedBlockState:{id:"minecraft:gold_block"}', out)
+        self.assertEqual(receipt[0]["field"], "carriedBlockState")
+        self.assertEqual(receipt[0]["change_count"], 1)
+
+    def test_rewrites_display_state_without_scalarizing(self):
+        src = 'data merge entity @s {DisplayState:{Name:"minecraft:sponge"}}\n'
+        out, receipt = rewrite_text(src)
+        self.assertIn('DisplayState:{id:"minecraft:sponge"}', out)
+        self.assertNotIn('DisplayState:"minecraft:sponge"', out)
+        self.assertEqual(receipt[0]["field"], "DisplayState")
+
+    def test_unrelated_name_is_not_touched_near_known_fields(self):
+        src = (
+            'data merge entity @s {CustomName:"Name",'
+            'carriedBlockState:{Name:"minecraft:gold_block"},'
+            'Other:{Name:"minecraft:stone"}}\n'
+        )
+        out, _ = rewrite_text(src)
+        self.assertIn('CustomName:"Name"', out)
+        self.assertIn('Other:{Name:"minecraft:stone"}', out)
+        self.assertIn('carriedBlockState:{id:"minecraft:gold_block"}', out)
+
     def test_modern_input_is_unchanged(self):
         src = 'particle block_marker{block_state:{id:"minecraft:light",properties:{level:"0"}}}\n'
         out, receipt = rewrite_text(src)
