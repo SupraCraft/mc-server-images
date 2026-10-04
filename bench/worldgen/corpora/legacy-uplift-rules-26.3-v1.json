@@ -15,34 +15,34 @@
       "id": "predicate_condition_to_type",
       "class": "SAFE_SYNTACTIC",
       "automatic": true,
-      "source_scope": "data/*/predicate/**/*.json using pre-26.3-style top-level predicate discriminator",
-      "target_scope": "26.3+ predicate JSON",
+      "source_scope": "data/<namespace>/predicate/**/*.json predicate-valued objects in 26.2 schema",
+      "target_scope": "26.3+ predicate values",
       "detect": {
-        "kind": "json_top_level_key",
-        "path_contains": "/predicate/",
-        "key": "condition",
-        "absent_key": "type"
+        "kind": "predicate_schema_position",
+        "legacy_key": "condition",
+        "modern_key": "type"
       },
-      "transform": "rename top-level condition to type without changing its value or sibling fields",
+      "transform": "rename condition->type at predicate schema positions including root, inverted.term, and all_of/any_of terms",
       "preconditions": [
         "file is under a datapack predicate directory",
-        "top-level object contains condition",
-        "top-level object does not already contain type"
+        "object occurs at a predicate-valued schema position",
+        "condition is a string discriminator",
+        "type is absent"
       ],
       "hard_negatives": [
-        "nested loot/advancement condition fields",
-        "objects that already contain type",
-        "non-predicate JSON"
+        "arbitrary nested domain data containing a condition field",
+        "loot-condition arrays outside predicate resources",
+        "objects already using type"
       ],
       "validation": [
-        "JSON reparses",
-        "top-level type equals prior condition value",
-        "all other top-level fields are byte-semantically equivalent after JSON normalization"
+        "Baphomet exact 26.2->26.3: 34/34 predicate files converge after scope-aware uplift",
+        "41 condition discriminators rewritten in exact corpus qualification"
       ],
       "runtime_equivalence_required": false,
       "evidence": [
-        "SupraCraft/mc-server-images#34",
-        "QuillmarkMC/sg2 26.2 vs current predicate examples"
+        "workflow:37165935003",
+        "Baphomet42/Data-Packs v0.11.0+mc26.2 -> v0.12.0+mc26.3",
+        "Minecraft Java 26.3 predicate schema"
       ]
     },
     {
@@ -334,11 +334,15 @@
       "id": "mcfunction_block_state_snbt_Name_Properties_to_id_properties",
       "class": "SAFE_SYNTACTIC",
       "automatic": true,
-      "source_scope": "Block State SNBT compounds embedded in .mcfunction commands",
+      "source_scope": "known Block State-bearing SNBT compounds embedded in .mcfunction: block_state, carriedBlockState, DisplayState",
       "target_scope": "26.3+ Block State SNBT representation",
       "detect": {
         "kind": "structured_text_compound",
-        "prefix": "block_state:{",
+        "prefixes": [
+          "block_state:{",
+          "carriedBlockState:{",
+          "DisplayState:{"
+        ],
         "legacy_top_level_keys": [
           "Name",
           "Properties"
@@ -348,7 +352,7 @@
           "properties"
         ]
       },
-      "transform": "within each balanced block_state:{...} compound only, rename top-level Name->id and Properties->properties",
+      "transform": "within balanced known Block State compounds only, rename top-level Name->id and Properties->properties; do not scalarize",
       "preconditions": [
         "text is parsed by balanced compound boundaries",
         "rewrite is limited to top-level keys inside block_state compound",
@@ -356,21 +360,20 @@
       ],
       "hard_negatives": [
         "CustomName and unrelated Name fields",
-        "Name/Properties outside a block_state compound",
-        "unterminated/malformed compounds",
+        "Name/Properties outside known Block State-bearing compounds",
+        "unterminated/malformed target compounds",
         "already-modern id/properties compounds"
       ],
       "validation": [
-        "source file remains byte-identical",
-        "rewritten command file preserves all non-target text",
-        "exact transformed legacy file may be compared byte-for-byte with a maintained 26.3 counterpart when available"
+        "Sprint exact block_state qualification",
+        "Sprint exact carriedBlockState qualification: 46/46 files byte-identical after transform",
+        "Baphomet DisplayState scalarization retained as optional modernization; safe uplift stops at {id:...}"
       ],
       "runtime_equivalence_required": false,
       "evidence": [
-        "Sprint Racer exact 26.2 b674e09699818878749570760444ed7147fea3dc",
-        "Sprint Racer exact 26.3 93cdfcff9f2462313de4d568f169c0e442d94e42",
-        "SupraCraft/mc-server-images#34",
-        "SupraCraft/mc-server-images#35"
+        "workflow:37157738872",
+        "workflow:37165935003",
+        "Sprint Racer exact 26.2/26.3 commits"
       ]
     },
     {
@@ -414,6 +417,38 @@
         "artifact:11286672673",
         "official Mojang 26.2 and 26.3 server artifacts",
         "Minecraft 26.3 natural mob spawn data uses count IntProvider"
+      ]
+    },
+    {
+      "id": "predicate_reference_to_id",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "legacy minecraft:reference predicate objects in predicate-valued positions",
+      "target_scope": "26.3+ direct predicate-id references",
+      "detect": {
+        "kind": "predicate_schema_position",
+        "legacy_type": "minecraft:reference",
+        "required_key": "name"
+      },
+      "transform": "replace {condition/type:minecraft:reference,name:<id>} predicate value with the referenced id string",
+      "preconditions": [
+        "object is in a predicate-valued schema position",
+        "predicate type is minecraft:reference",
+        "name is a string predicate id",
+        "object has no behavior-bearing fields beyond discriminator and name"
+      ],
+      "hard_negatives": [
+        "objects with extra fields",
+        "reference-like objects outside predicate-valued positions"
+      ],
+      "validation": [
+        "Baphomet exact all_of predicate converges to maintained 26.3 direct-id terms",
+        "3 legacy reference predicates collapsed in exact corpus qualification"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "workflow:37165935003",
+        "Baphomet42/Data-Packs exact 26.2/26.3 tags"
       ]
     }
   ]
