@@ -2,12 +2,6 @@ name: legacy uplift static wave 2
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/analyze_legacy_uplift_wave2.py'
-      - '.github/workflows/worldgen-legacy-uplift-static-wave2.yml'
 
 concurrency:
   group: legacy-uplift-static-wave2-${{ github.ref }}
