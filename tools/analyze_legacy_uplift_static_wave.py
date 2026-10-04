@@ -10,7 +10,9 @@ import re
 import subprocess
 from pathlib import Path
 
-from uplift_mcfunction_block_state_snbt import rewrite_text
+from uplift_mcfunction_block_state_snbt import rewrite_text as rewrite_block_state_snbt
+from uplift_inline_loot_snbt import rewrite_text as rewrite_inline_loot_snbt
+from uplift_sign_allow_op_features import rewrite_text as rewrite_sign_op_features
 
 
 SELECTOR_START = re.compile(r"@[pares]\[")
@@ -122,13 +124,20 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
     ]
     both: list[str] = []
     block_candidates: list[str] = []
-    block_exact: list[str] = []
+    loot_candidates: list[str] = []
+    sign_candidates: list[str] = []
+    safe_exact: list[str] = []
     selector_order_explains: list[str] = []
     residual: list[str] = []
+    map_color_candidate_files: list[str] = []
     changed_occurrences = 0
     changed_keys = 0
+    loot_occurrences = 0
+    sign_occurrences = 0
+    map_color_occurrences = 0
 
     residual_command_heads = collections.Counter()
+    map_color_re = re.compile(r"minecraft:filled_map\[[^\n\]]*\bmap_color\s*=")
 
     for path in paths:
         if not git_exists(repo, f"{old}:{path}") or not git_exists(repo, f"{new}:{path}"):
@@ -136,16 +145,30 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
         both.append(path)
         old_text = git(repo, "show", f"{old}:{path}")
         new_text = git(repo, "show", f"{new}:{path}")
-        transformed, receipts = rewrite_text(old_text)
 
-        if receipts:
+        block_updated, block_receipts = rewrite_block_state_snbt(old_text)
+        loot_updated, loot_receipts = rewrite_inline_loot_snbt(block_updated)
+        transformed, sign_receipts = rewrite_sign_op_features(loot_updated)
+
+        if block_receipts:
             block_candidates.append(path)
-            changed_occurrences += len(receipts)
-            changed_keys += sum(r["change_count"] for r in receipts)
+            changed_occurrences += len(block_receipts)
+            changed_keys += sum(r["change_count"] for r in block_receipts)
+        if loot_receipts:
+            loot_candidates.append(path)
+            loot_occurrences += len(loot_receipts)
+        if sign_receipts:
+            sign_candidates.append(path)
+            sign_occurrences += len(sign_receipts)
+
+        map_hits = map_color_re.findall(old_text)
+        if map_hits:
+            map_color_candidate_files.append(path)
+            map_color_occurrences += len(map_hits)
 
         if transformed == new_text:
-            if receipts:
-                block_exact.append(path)
+            if block_receipts or loot_receipts or sign_receipts:
+                safe_exact.append(path)
             continue
 
         if canonicalize_selector_order(transformed) == canonicalize_selector_order(new_text):
@@ -153,7 +176,6 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
             continue
 
         residual.append(path)
-        # Cheap clustering only: compare changed line command heads.
         old_lines = transformed.splitlines()
         new_lines = new_text.splitlines()
         for line in old_lines + new_lines:
@@ -164,23 +186,39 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
             residual_command_heads[head] += 1
 
     result = {
-        "schema": "supracraft-sprint-racer-static-residual/1",
+        "schema": "supracraft-sprint-racer-static-residual/2",
         "source_repository": "jarrodmmoore/Sprint-Racer-Dev",
         "source_license_boundary": "All Rights Reserved; ephemeral checkout, derived receipt only",
         "old": old,
         "new": new,
         "changed_mcfunction_file_count": len(paths),
         "changed_files_present_in_both_releases": len(both),
+        "accepted_safe_pipeline": [
+            "block_state_snbt_Name_Properties_to_id_properties",
+            "inline_loot_functions_to_modifier",
+            "inline_loot_function_discriminator_to_type",
+            "direct_sign_allow_op_features_true",
+        ],
         "block_state_candidate_file_count": len(block_candidates),
         "block_state_occurrence_count": changed_occurrences,
         "block_state_changed_key_count": changed_keys,
-        "block_state_exactly_explains_file_count": len(block_exact),
+        "inline_loot_candidate_file_count": len(loot_candidates),
+        "inline_loot_occurrence_count": loot_occurrences,
+        "direct_sign_candidate_file_count": len(sign_candidates),
+        "direct_sign_occurrence_count": sign_occurrences,
+        "accepted_safe_pipeline_exact_file_count": len(safe_exact),
+        "map_color_structural_candidate_file_count": len(map_color_candidate_files),
+        "map_color_structural_occurrence_count": map_color_occurrences,
+        "map_color_candidate_sample": map_color_candidate_files[:50],
         "selector_order_additionally_explains_file_count": len(selector_order_explains),
         "selector_order_explained_sample": selector_order_explains[:50],
         "residual_file_count": len(residual),
         "residual_file_sample": residual[:100],
         "residual_command_head_counts": dict(residual_command_heads.most_common(30)),
-        "boundary": "selector ordering is discovery-only normalization, not a promoted compatibility rewrite",
+        "boundary": (
+            "selector ordering remains discovery-only; map_color removal is detected "
+            "as structural follow-up and is not auto-rewritten"
+        ),
     }
     output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", "utf-8")
 
