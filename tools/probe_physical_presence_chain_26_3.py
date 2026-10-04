@@ -102,12 +102,36 @@ def marker_count(path: Path, marker: str) -> int:
     return sum(marker in line for line in text.splitlines())
 
 
+def collect_state_diagnostics(
+    process: subprocess.Popen[str],
+    log_path: Path,
+    checks: dict[str, str],
+) -> dict[str, Any]:
+    """Collect component-level evidence without changing fixture state."""
+    token = f"SUPRACRAFT_PHYSICAL_DIAG_{time.monotonic_ns()}"
+    before = {
+        name: marker_count(log_path, f"{token}_{name}")
+        for name in checks
+    }
+    for name, condition in checks.items():
+        send(process, f"execute {condition} run say {token}_{name}")
+    send(process, f"data get entity {BOT_NAME} Pos")
+    time.sleep(0.35)
+    matched = {
+        name: marker_count(log_path, f"{token}_{name}") > before[name]
+        for name in checks
+    }
+    tail = log_path.read_text("utf-8", errors="replace")[-3000:]
+    return {"matched": matched, "server_tail": tail}
+
+
 def wait_for_state(
     process: subprocess.Popen[str],
     log_path: Path,
     *,
     marker: str,
     predicate_prefix: str,
+    diagnostics: dict[str, str] | None = None,
     timeout: float = 8.0,
 ) -> tuple[int, float]:
     started = time.monotonic()
@@ -118,9 +142,49 @@ def wait_for_state(
         time.sleep(0.2)
         if marker_count(log_path, marker) == 1:
             return attempts, time.monotonic() - started
-    raise RuntimeError(
-        f"physical mechanism state timed out for {marker}; attempts={attempts}"
+    detail = (
+        collect_state_diagnostics(process, log_path, diagnostics)
+        if diagnostics
+        else {}
     )
+    raise RuntimeError(
+        f"physical mechanism state timed out for {marker}; "
+        f"attempts={attempts}; diagnostics={detail!r}"
+    )
+
+
+def reset_diagnostics() -> dict[str, str]:
+    return {
+        "plate_unpowered": (
+            "if block 0 70 0 minecraft:stone_pressure_plate[powered=false]"
+        ),
+        "wire_zero": (
+            "if block 1 70 0 minecraft:redstone_wire[power=0]"
+        ),
+        "trapdoor_closed": (
+            "if block 2 70 0 minecraft:iron_trapdoor[open=false,powered=false]"
+        ),
+        "lamp_unlit": (
+            "if block 1 70 1 minecraft:redstone_lamp[lit=false]"
+        ),
+    }
+
+
+def active_diagnostics() -> dict[str, str]:
+    return {
+        "plate_powered": (
+            "if block 0 70 0 minecraft:stone_pressure_plate[powered=true]"
+        ),
+        "wire_15": (
+            "if block 1 70 0 minecraft:redstone_wire[power=15]"
+        ),
+        "trapdoor_open": (
+            "if block 2 70 0 minecraft:iron_trapdoor[open=true,powered=true]"
+        ),
+        "lamp_lit": (
+            "if block 1 70 1 minecraft:redstone_lamp[lit=true]"
+        ),
+    }
 
 
 def reset_predicate() -> str:
@@ -222,6 +286,7 @@ def main() -> int:
                     log_path,
                     marker=RESET_MARKER,
                     predicate_prefix=reset_predicate(),
+                    diagnostics=reset_diagnostics(),
                 )
 
                 ready = root / "bot.ready"
@@ -265,6 +330,7 @@ def main() -> int:
                     log_path,
                     marker=ACTIVE_MARKER,
                     predicate_prefix=active_predicate(),
+                    diagnostics=active_diagnostics(),
                 )
 
                 send(
@@ -277,6 +343,7 @@ def main() -> int:
                     log_path,
                     marker=reset_marker_2,
                     predicate_prefix=reset_predicate(),
+                    diagnostics=reset_diagnostics(),
                 )
 
                 send(server, "save-all flush")
