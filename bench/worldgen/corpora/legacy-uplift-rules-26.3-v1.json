@@ -450,6 +450,71 @@
         "workflow:37165935003",
         "Baphomet42/Data-Packs exact 26.2/26.3 tags"
       ]
+    },
+    {
+      "id": "inline_loot_functions_to_modifier",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "inline loot-entry SNBT in mcfunction loot commands using functions:[...]",
+      "target_scope": "26.3+ inline loot entry modifier:[...]",
+      "detect": {
+        "kind": "scoped_mcfunction_loot_payload",
+        "legacy_field": "functions",
+        "modern_field": "modifier"
+      },
+      "transform": "within loot command payloads only, rename the loot-entry top-level functions list to modifier",
+      "preconditions": [
+        "mcfunction command is loot ... or execute ... run loot ...",
+        "field is the scoped inline loot-entry functions list"
+      ],
+      "hard_negatives": [
+        "ordinary /function commands",
+        "arbitrary storage/data fields named functions",
+        "functions fields outside a loot command payload"
+      ],
+      "validation": [
+        "synthetic hard-negative unit tests",
+        "Baphomet exact 26.2->26.3 schema projection matches maintained modifier list"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "workflow:37166325066",
+        "artifact:11289657588",
+        "Baphomet42/Data-Packs v0.11.0+mc26.2 -> v0.12.0+mc26.3",
+        "Minecraft Java 26.3 loot schema"
+      ]
+    },
+    {
+      "id": "inline_loot_function_discriminator_to_type",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "loot-function objects inside scoped inline loot modifier/function lists",
+      "target_scope": "26.3+ loot-function objects",
+      "detect": {
+        "kind": "scoped_mcfunction_loot_function",
+        "legacy_key": "function",
+        "modern_key": "type"
+      },
+      "transform": "rename the top-level loot-function discriminator function->type inside the scoped inline loot list",
+      "preconditions": [
+        "object is a top-level loot-function object within the scoped list",
+        "function is the object discriminator"
+      ],
+      "hard_negatives": [
+        "nested domain data fields named function",
+        "ordinary function commands",
+        "function fields outside loot-function object scope"
+      ],
+      "validation": [
+        "Baphomet exact schema projection preserves set_components/copy_components type sequence",
+        "nested function hard negative preserved"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "workflow:37166325066",
+        "artifact:11289657588",
+        "Minecraft Java 26.3 loot schema"
+      ]
     }
   ]
 }
