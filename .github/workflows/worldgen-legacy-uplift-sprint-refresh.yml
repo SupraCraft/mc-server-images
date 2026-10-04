@@ -2,12 +2,6 @@ name: legacy uplift sprint residual refresh
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/analyze_legacy_uplift_static_wave.py'
-      - '.github/workflows/worldgen-legacy-uplift-sprint-refresh.yml'
 
 concurrency:
   group: legacy-uplift-sprint-refresh
