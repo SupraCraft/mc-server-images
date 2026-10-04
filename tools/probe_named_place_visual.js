@@ -121,9 +121,9 @@ async function closeVisualSession (session) {
       await worker.terminate()
     }
   }
-  if (session.renderer && typeof session.renderer.dispose === 'function') {
-    session.renderer.dispose()
-  }
+  // node-canvas-webgl does not provide the browser animation-frame hooks that
+  // Three.js dispose() expects. The disposable qualification process owns this
+  // renderer, so terminating the worker threads is the required bounded cleanup.
 }
 
 async function main () {
