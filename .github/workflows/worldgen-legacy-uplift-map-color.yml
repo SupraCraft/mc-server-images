@@ -1,0 +1,52 @@
+name: legacy uplift map-color evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/analyze_map_color_replacement.py'
+      - 'tests/test_map_color_replacement.py'
+      - '.github/workflows/worldgen-legacy-uplift-map-color.yml'
+
+concurrency:
+  group: legacy-uplift-map-color-evidence
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests
+        run: python -m unittest tests.test_map_color_replacement -v
+      - name: Mine exact Sprint mappings
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+          python tools/analyze_map_color_replacement.py \
+            --repo "$repo" --old "$old" --new "$new" \
+            --output "$RUNNER_TEMP/map-color-evidence.json"
+          echo SUPRACRAFT_MAP_COLOR_EVIDENCE_PASS
+      - name: Upload derived receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-color-replacement-evidence
+          path: ${{ runner.temp }}/map-color-evidence.json
+          retention-days: 14
+          if-no-files-found: error
