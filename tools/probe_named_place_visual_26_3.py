@@ -90,6 +90,11 @@ def build_barn_fixture(server: subprocess.Popen[str]) -> None:
     # A deliberately simple recognizable silhouette using common vanilla blocks
     # that the current 26.x viewer asset fallback can render.
     commands = [
+        # Keep the visual fixture deterministic. Entity rendering is a separate
+        # compatibility surface from structure/world rendering and must not
+        # contaminate this first named-place visual slice.
+        "gamerule doMobSpawning false",
+        "kill @e[type=!minecraft:player]",
         "forceload add -3 -3 3 3",
         "setworldspawn 0 70 20",
         "fill -32 68 -32 32 90 48 minecraft:air",
