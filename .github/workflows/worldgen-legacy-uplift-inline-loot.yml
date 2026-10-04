@@ -1,0 +1,114 @@
+name: legacy uplift inline loot qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/uplift_inline_loot_snbt.py'
+      - 'tests/test_inline_loot_uplift.py'
+      - '.github/workflows/worldgen-legacy-uplift-inline-loot.yml'
+
+concurrency:
+  group: legacy-uplift-inline-loot
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests
+        run: python -m unittest tests.test_inline_loot_uplift -v
+
+      - name: Exact Baphomet 26.2 to 26.3 schema projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/baphomet"
+          old='v0.11.0+mc26.2'
+          new='v0.12.0+mc26.3'
+          path='datapacks/BaphomethSlab/data/42/function/labs/util/store_all_components.mcfunction'
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/Baphomet42/Data-Packs.git
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$old:refs/tags/$old"
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$new:refs/tags/$new"
+
+          git -C "$repo" show "$old:$path" > "$RUNNER_TEMP/old.mcfunction"
+          git -C "$repo" show "$new:$path" > "$RUNNER_TEMP/new.mcfunction"
+
+          python tools/uplift_inline_loot_snbt.py             "$RUNNER_TEMP/old.mcfunction"             "$RUNNER_TEMP/uplifted.mcfunction"             --receipt "$RUNNER_TEMP/uplift-receipt.json"             --require-change
+
+          python - "$RUNNER_TEMP/old.mcfunction" "$RUNNER_TEMP/uplifted.mcfunction" "$RUNNER_TEMP/new.mcfunction" "$RUNNER_TEMP/inline-loot-qualification.json" <<'PY'
+          import json, pathlib, re, sys
+          from tools.uplift_inline_loot_snbt import find_matching
+
+          oldp, upp, newp, outp = map(pathlib.Path, sys.argv[1:])
+          old = oldp.read_text()
+          uplifted = upp.read_text()
+          new = newp.read_text()
+
+          def projection(text):
+              rows = []
+              cursor = 0
+              while True:
+                  pos = text.find("modifier:[", cursor)
+                  if pos < 0:
+                      break
+                  op = pos + len("modifier:")
+                  cl = find_matching(text, op, "[", "]")
+                  body = text[op + 1:cl]
+                  types = re.findall(r'(?<![A-Za-z0-9_])type\s*:\s*"([^"]+)"', body)
+                  rows.append(types)
+                  cursor = cl + 1
+              return rows
+
+          old_functions = old.count("functions:[")
+          uplift_modifier = uplifted.count("modifier:[")
+          new_modifier = new.count("modifier:[")
+          uplift_projection = projection(uplifted)
+          new_projection = projection(new)
+
+          result = {
+              "schema": "supracraft-inline-loot-exact-qualification/1",
+              "source_repository": "Baphomet42/Data-Packs",
+              "old_ref": "v0.11.0+mc26.2",
+              "new_ref": "v0.12.0+mc26.3",
+              "legacy_functions_field_count": old_functions,
+              "uplift_modifier_field_count": uplift_modifier,
+              "maintainer_modifier_field_count": new_modifier,
+              "uplift_loot_function_types": uplift_projection,
+              "maintainer_loot_function_types": new_projection,
+              "schema_projection_equal": uplift_projection == new_projection,
+              "classification": "INLINE_LOOT_SCHEMA_UPLIFT_PASS"
+          }
+          assert old_functions >= 1
+          assert uplift_modifier == old_functions
+          assert new_modifier >= uplift_modifier
+          assert uplift_projection
+          assert uplift_projection == new_projection[:len(uplift_projection)]
+          outp.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          print("SUPRACRAFT_INLINE_LOOT_EXACT_PASS")
+          PY
+
+      - name: Upload derived receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: inline-loot-26.2-to-26.3-qualification
+          path: |
+            ${{ runner.temp }}/uplift-receipt.json
+            ${{ runner.temp }}/inline-loot-qualification.json
+          retention-days: 14
+          if-no-files-found: error
