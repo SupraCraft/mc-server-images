@@ -52,10 +52,19 @@ jobs:
             github:PrismarineJS/node-canvas-webgl#c183e0a8e5ad8bdc2f1e4f3c1ba0b2592ad952f0
           echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
 
+      - name: Install headless OpenGL runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            xvfb libgl1-mesa-dev libglu1-mesa-dev libglew-dev libxi-dev mesa-utils
+
       - name: Confirm headless renderer
         shell: bash
         run: |
           set -euo pipefail
+          command -v xvfb-run
           node - <<'NODE'
           const viewer=require('prismarine-viewer/package.json')
           const canvasWebgl=require('node-canvas-webgl/package.json')
@@ -68,9 +77,10 @@ jobs:
           set -euo pipefail
           rm -rf "$RUNNER_TEMP/named-place-visual"
           mkdir -p "$RUNNER_TEMP/named-place-visual"
-          python tools/probe_named_place_visual_26_3.py \
-            --evidence probes/26.3-release-identity.json \
-            --output-dir "$RUNNER_TEMP/named-place-visual"
+          xvfb-run -a -s "-ac -screen 0 1280x1024x24" \
+            python tools/probe_named_place_visual_26_3.py \
+              --evidence probes/26.3-release-identity.json \
+              --output-dir "$RUNNER_TEMP/named-place-visual"
 
       - name: Publish receipt
         if: always()
