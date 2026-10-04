@@ -1,0 +1,23 @@
+From: SupraCraft qualification work
+Subject: [PATCH 1/1] viewer: use 26.1 assets for local 26.3 qualification
+
+This is a local-build bridge, not an upstream support claim.
+
+The protocol/world client remains exact Java 26.3. Prismarine Viewer 1.33.0
+currently ships generated 26.1 render assets, and its two-component 26.x
+version numbering does not fall through the legacy same-major resolver.
+
+Keep the compatibility decision isolated in getVersion() so it can be deleted
+when exact 26.3 assets are generated and qualified.
+
+diff --git a/viewer/lib/version.js b/viewer/lib/version.js
+--- a/viewer/lib/version.js
++++ b/viewer/lib/version.js
+@@ -22,6 +22,7 @@ function minor (version) {
+ 
+ function getVersion (version) {
+   if (supportedVersions.indexOf(version) !== -1) return version
++  if (version === '26.3') return '26.1'
+   const major = toMajor(version)
+   if (lastOfMajor[major] === undefined) {
+     return null
