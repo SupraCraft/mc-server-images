@@ -79,21 +79,38 @@ async function createVisualSession () {
   return { canvas, renderer, viewer, worldView }
 }
 
-async function syncVisualSession (session) {
-  await session.worldView.updatePosition(bot.entity.position, true)
-  await session.viewer.waitForChunksToRender()
-  session.viewer.setFirstPersonCamera(bot.entity.position, bot.entity.yaw, bot.entity.pitch)
-
-  // setFirstPersonCamera uses the viewer's normal camera tween. Let that tween
-  // reach the requested bot position before taking the deterministic frame.
-  await sleep(80)
-  session.viewer.update()
+function inspectionAngles (position, target, playerHeight) {
+  const eye = position.offset(0, playerHeight, 0)
+  const delta = target.minus(eye)
+  const yaw = Math.atan2(-delta.x, -delta.z)
+  const groundDistance = Math.sqrt(delta.x * delta.x + delta.z * delta.z)
+  const pitch = Math.atan2(delta.y, groundDistance)
+  return { yaw, pitch }
 }
 
-async function captureOneFrame (session, name) {
+async function syncVisualSession (session, cameraPosition = null, target = null) {
+  const position = cameraPosition
+    ? new Vec3(cameraPosition[0], cameraPosition[1], cameraPosition[2])
+    : bot.entity.position.clone()
+  const angles = cameraPosition
+    ? inspectionAngles(position, new Vec3(target[0], target[1], target[2]), session.viewer.playerHeight)
+    : { yaw: bot.entity.yaw, pitch: bot.entity.pitch }
+
+  await session.worldView.updatePosition(position, true)
+  await session.viewer.waitForChunksToRender()
+  session.viewer.setFirstPersonCamera(position, angles.yaw, angles.pitch)
+
+  // setFirstPersonCamera uses the viewer's normal camera tween. Let that tween
+  // reach the requested position before taking the deterministic frame.
+  await sleep(80)
+  session.viewer.update()
+  return position
+}
+
+async function captureOneFrame (session, name, cameraPosition = null, target = null) {
   const out = path.join(outputDir, name + '.jpg')
   stage('capture:' + name + ':sync')
-  await syncVisualSession(session)
+  const renderedFrom = await syncVisualSession(session, cameraPosition, target)
 
   stage('capture:' + name + ':render')
   session.renderer.render(session.viewer.scene, session.viewer.camera)
@@ -110,7 +127,17 @@ async function captureOneFrame (session, name) {
   }
 
   stage('capture:' + name + ':done')
-  return { name, path: out, bytes: jpeg.length, bot_position: pos() }
+  return {
+    name,
+    path: out,
+    bytes: jpeg.length,
+    camera_position: [
+      Number(renderedFrom.x.toFixed(3)),
+      Number(renderedFrom.y.toFixed(3)),
+      Number(renderedFrom.z.toFixed(3))
+    ],
+    bot_position: pos()
+  }
 }
 
 async function closeVisualSession (session) {
@@ -161,18 +188,17 @@ async function main () {
     stage('walk:end')
     views.push(await captureOneFrame(visualSession, '02_after_walk'))
 
-    // Remaining views are inspection cameras; restore creative so elevated
-    // viewpoints remain stable while the structure itself stays unchanged.
-    bot.chat('/gamemode creative @s')
-    await sleep(500)
-    await teleportAndLook([16, 75, 16], [0, 76, 0])
-    views.push(await captureOneFrame(visualSession, '03_three_quarter'))
-
-    await teleportAndLook([0, 73, 1], [0, 74, 0])
-    views.push(await captureOneFrame(visualSession, '04_interior'))
-
-    await teleportAndLook([0, 84, 42], [0, 76, 0])
-    views.push(await captureOneFrame(visualSession, '05_landmark_distance'))
+    // Remaining views are presentation-only inspection cameras. Keep the
+    // traversal actor grounded where it walked and move only the viewer camera.
+    views.push(await captureOneFrame(
+      visualSession, '03_three_quarter', [16, 75, 16], [0, 76, 0]
+    ))
+    views.push(await captureOneFrame(
+      visualSession, '04_interior', [0, 71, 2], [0, 74, 0]
+    ))
+    views.push(await captureOneFrame(
+      visualSession, '05_landmark_distance', [0, 84, 42], [0, 76, 0]
+    ))
 
     const dx = walkEnd[0] - walkStart[0]
     const dy = walkEnd[1] - walkStart[1]
@@ -188,7 +214,8 @@ async function main () {
         client_world_source: 'mineflayer exact-26.3 connection',
         asset_policy: 'viewer 26.1 presentation assets via local compatibility bridge',
         capture: 'node-canvas-webgl after explicit chunk-render completion',
-        render_view_distance_chunks: 4
+        render_view_distance_chunks: 4,
+        inspection_camera_policy: 'viewer-only; traversal actor remains grounded'
       },
       traversal: {
         start: walkStart,
