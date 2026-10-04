@@ -42,7 +42,13 @@ def exists(repo: Path, spec: str) -> bool:
 
 def legacy_paths(repo: Path, old: str) -> list[str]:
     out = git(repo, "grep", "-l", "map_color=", old, "--", "*.mcfunction", check=False)
-    return sorted(x for x in out.splitlines() if x)
+    prefix = old + ":"
+    paths = []
+    for raw in out.splitlines():
+        if not raw:
+            continue
+        paths.append(raw[len(prefix):] if raw.startswith(prefix) else raw)
+    return sorted(paths)
 
 
 def mine(repo: Path, old: str, new: str) -> dict:
