@@ -70,7 +70,7 @@ async function createVisualSession () {
     throw new Error('viewer rejected exact bot version')
   }
 
-  const worldView = new WorldView(bot.world, 2, bot.entity.position)
+  const worldView = new WorldView(bot.world, 4, bot.entity.position)
   viewer.listen(worldView)
   await worldView.init(bot.entity.position)
   await viewer.waitForChunksToRender()
@@ -179,7 +179,8 @@ async function main () {
         semantic_authority: false,
         client_world_source: 'mineflayer exact-26.3 connection',
         asset_policy: 'viewer 26.1 presentation assets via local compatibility bridge',
-        capture: 'node-canvas-webgl after explicit chunk-render completion'
+        capture: 'node-canvas-webgl after explicit chunk-render completion',
+        render_view_distance_chunks: 4
       },
       traversal: {
         start: walkStart,
