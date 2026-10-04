@@ -1,0 +1,54 @@
+name: legacy uplift Baphomet predicate confirmation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/analyze_baphomet_third_corpus.py'
+      - '.github/workflows/worldgen-legacy-uplift-baphomet-confirm.yml'
+
+concurrency:
+  group: legacy-uplift-baphomet-confirm
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  confirm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Exact tag comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/baphomet"
+          old='v0.11.0+mc26.2'
+          new='v0.12.0+mc26.3'
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/Baphomet42/Data-Packs.git
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$old:refs/tags/$old"
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$new:refs/tags/$new"
+
+          python tools/analyze_baphomet_third_corpus.py             --repo "$repo"             --old "$old"             --new "$new"             --output "$RUNNER_TEMP/baphomet-confirm.json"
+
+          cat "$RUNNER_TEMP/baphomet-confirm.json"
+          echo SUPRACRAFT_BAPHOMET_PREDICATE_CONFIRM_PASS
+
+      - name: Upload derived receipt only
+        uses: actions/upload-artifact@v4
+        with:
+          name: baphomet-26.2-to-26.3-predicate-confirm
+          path: ${{ runner.temp }}/baphomet-confirm.json
+          retention-days: 14
+          if-no-files-found: error
