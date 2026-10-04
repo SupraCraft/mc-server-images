@@ -1,0 +1,52 @@
+name: legacy uplift sign dataflow evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/analyze_sign_op_features_dataflow.py'
+      - 'tests/test_sign_op_features_dataflow.py'
+      - '.github/workflows/worldgen-legacy-uplift-sign-dataflow.yml'
+
+concurrency:
+  group: legacy-uplift-sign-dataflow-evidence
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests
+        run: python -m unittest tests.test_sign_op_features_dataflow -v
+      - name: Classify exact Sprint sign dataflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+          python tools/analyze_sign_op_features_dataflow.py \
+            --repo "$repo" --old "$old" --new "$new" \
+            --output "$RUNNER_TEMP/sign-dataflow-evidence.json"
+          echo SUPRACRAFT_SIGN_DATAFLOW_EVIDENCE_PASS
+      - name: Upload derived receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sign-op-features-dataflow-evidence
+          path: ${{ runner.temp }}/sign-dataflow-evidence.json
+          retention-days: 14
+          if-no-files-found: error
