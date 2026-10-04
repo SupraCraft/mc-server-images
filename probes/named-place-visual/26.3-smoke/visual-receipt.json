@@ -1,7 +1,7 @@
 {
   "schema": "supracraft.named-place-visual-smoke/v0.1",
   "result": "error",
-  "error": "Error: screenshot timeout: 01_approach\n    at /home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:86:37\n    at async shot (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:84:3)\n    at async main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:140:14)",
+  "error": "Error: canvas capture timeout: 01_approach\n    at /home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:96:37\n    at async shot (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:84:19)\n    at async main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:154:14)",
   "browser_console": [],
   "browser_errors": []
 }
