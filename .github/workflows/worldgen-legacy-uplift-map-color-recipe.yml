@@ -2,14 +2,6 @@ name: legacy uplift map-color project recipe
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'bench/worldgen/corpora/sprint-racer-map-color-recipe-26.3.json'
-      - 'tools/uplift_map_color_with_mapping.py'
-      - 'tests/test_map_color_with_mapping.py'
-      - '.github/workflows/worldgen-legacy-uplift-map-color-recipe.yml'
 
 concurrency:
   group: legacy-uplift-map-color-project-recipe
