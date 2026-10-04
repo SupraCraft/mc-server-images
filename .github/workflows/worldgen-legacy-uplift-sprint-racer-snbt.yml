@@ -2,13 +2,6 @@ name: legacy uplift Sprint Racer embedded Block State SNBT
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/uplift_mcfunction_block_state_snbt.py'
-      - 'tests/test_mcfunction_block_state_uplift.py'
-      - '.github/workflows/worldgen-legacy-uplift-sprint-racer-snbt.yml'
 
 permissions:
   contents: read
