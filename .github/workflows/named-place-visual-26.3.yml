@@ -51,6 +51,8 @@ jobs:
           npm --prefix "$runtime_root/runtime" install --no-save \
             prismarine-viewer@1.33.0 \
             github:PrismarineJS/node-canvas-webgl#c183e0a8e5ad8bdc2f1e4f3c1ba0b2592ad952f0
+          python tools/apply_prismarine_viewer_26_3_assets_fallback.py \
+            "$runtime_root/runtime/node_modules/prismarine-viewer"
           echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
 
       - name: Install headless OpenGL runtime
