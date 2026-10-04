@@ -2,13 +2,6 @@ name: legacy uplift map-color evidence
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/analyze_map_color_replacement.py'
-      - 'tests/test_map_color_replacement.py'
-      - '.github/workflows/worldgen-legacy-uplift-map-color.yml'
 
 concurrency:
   group: legacy-uplift-map-color-evidence
