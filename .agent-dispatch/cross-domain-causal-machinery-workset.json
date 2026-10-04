@@ -774,6 +774,87 @@
           ],
           "result": "one automatic generic candidate/regression spine; historical qualification/runtime reps are manual-only"
         }
+      },
+      "handoff": {
+        "state": "READY_FOR_NEXT_ACTOR",
+        "prepared_from_live_state": true,
+        "implementation_branch": "feat/legacy-uplift-263-v1",
+        "implementation_head": "73462f5573b796f4056fead738cdccd15ba822af",
+        "primary_authority": "SupraCraft/mc-server-images#35",
+        "corpus_authority": "SupraCraft/mc-server-images#34",
+        "regression_spine": {
+          "workflow": ".github/workflows/worldgen-legacy-uplift-263.yml",
+          "last_known_pass_run": 37166457762,
+          "state": "PASS",
+          "catalog_rule_count": 16
+        },
+        "latest_integrated_capabilities": [
+          "scope-aware predicate condition->type plus legacy reference collapse",
+          "generic Block State SNBT Name/Properties->id/properties across qualified fields",
+          "inline loot functions->modifier and loot function discriminator function->type",
+          "structure spawn minCount/maxCount->count IntProvider",
+          "bounded Voidblock 26.2->26.3 worldgen uplift with exact 26.3 load/initialization qualification"
+        ],
+        "current_frontier": {
+          "id": "swing_animation_split",
+          "candidate_class": "STRUCTURAL_REIMPLEMENTATION",
+          "run_id": 37166610437,
+          "job_id": 111330707691,
+          "state": "FAILED_QUALIFICATION_HARNESS_TOO_STRICT",
+          "unit_tests": "PASS_4_OF_4",
+          "direct_mapping": "legacy minecraft:swing_animation requires explicit attack/interact/both mode",
+          "observed_exact_pair": {
+            "source": "Baphomet42/Data-Packs v0.11.0+mc26.2 -> v0.12.0+mc26.3",
+            "direct_example": "minecraft:swing_animation -> minecraft:attack_animation",
+            "whole_file_cmp": "FAIL at simple misc.mcfunction line 84",
+            "diagnosed_reason": "Maintainer 26.3 reorders attack_animation within the component compound; byte order differs even when the targeted component mapping matches."
+          },
+          "preserved_boundaries": [
+            "Do not classify swing split as SAFE_SYNTACTIC.",
+            "Do not infer attack vs interact automatically when intent is ambiguous.",
+            "Negated component keys, component predicates, and storage/path references require structural follow-up and are not auto-rewritten.",
+            "Replace byte-for-byte whole-file acceptance with semantic/projection equivalence for the targeted component while retaining independent checks that unrelated content is preserved."
+          ]
+        },
+        "next_ready": [
+          {
+            "priority": 1,
+            "task": "Repair only the swing qualification oracle: compare parsed/projection-equivalent component maps rather than raw key order, preserving existing unit tests and structural boundaries; rerun exact Baphomet direct-map and control-flow reps.",
+            "expected_result": "Either STRUCTURAL_MIGRATION_BOUNDARY_CONFIRMED or a preserved semantic mismatch.",
+            "budget": "one cheap static GHA lane; no Minecraft runtime."
+          },
+          {
+            "priority": 2,
+            "task": "If swing qualification passes, integrate only the explicit structural candidate into durable catalog/docs; do not make it automatic. Then run the single generic candidate/regression spine once.",
+            "budget": "serialized catalog writer; reuse automatic spine."
+          },
+          {
+            "priority": 3,
+            "task": "Resume high-frequency Sprint filled-map/custom-name residual mining for the next migration family.",
+            "budget": "static/source analysis; no runtime until a bounded semantic question survives."
+          }
+        ],
+        "historical_state_to_preserve": {
+          "waves_2_4": "PASS with receipts recorded in this workset",
+          "inline_loot": "QUALIFIED_AND_INTEGRATED",
+          "third_corpus": "Baphomet exact 26.2/26.3 isolated confirmation PASS",
+          "voidblock_unresolved_noise": "three noise-settings deltas remain structural/semantic; do not blanket-promote beardifier restoration",
+          "selector_ordering": "discovery-only, not a compatibility rule"
+        },
+        "resource_policy": [
+          "one automatic generic candidate/regression spine",
+          "historical qualification/runtime workflows manual-only",
+          "max two concurrent cheap static lanes when wave execution is needed",
+          "max one exact-runtime qualification and only when static/source evidence cannot answer the question",
+          "no automatic retries, no cron, no recursive dispatch, preserve failures"
+        ],
+        "hard_boundaries": [
+          "#381 Sidecar/trusted-host remains WAIT",
+          "PR #12 / accepted Redstone authority remains separate and must not be mutated by uplift work",
+          "source evidence remains immutable",
+          "restricted/no-license third-party sources are ephemeral; derived receipts only",
+          "no semantic promotion from static similarity alone"
+        ]
       }
     }
   },
