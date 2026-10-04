@@ -605,34 +605,116 @@
           }
         },
         "wave_3": {
-          "state": "EXECUTING",
-          "run_id": 37165556370,
-          "lanes": [
-            {
-              "id": "vanilla_noise_settings_oracle",
-              "authority": "official Mojang 26.2 + 26.3 server artifacts",
-              "goal": "Resolve whether remaining Voidblock noise-settings residuals are required compatibility semantics or maintainer content/tuning."
+          "state": "PARTIAL_FAILURE_DIAGNOSED_AND_RESOLVED_WITH_ISOLATED_REP",
+          "initial_run": {
+            "run_id": 37165556370,
+            "conclusion": "FAIL",
+            "vanilla_noise_job": {
+              "job_id": 111327608843,
+              "state": "PASS"
             },
-            {
-              "id": "third_corpus_baphomet",
-              "authority": [
-                "Baphomet42/Data-Packs@v0.11.0+mc26.2",
-                "Baphomet42/Data-Packs@v0.12.0+mc26.3"
-              ],
-              "exact_commits": {
-                "old": "0a5cfbdac02fb2a2218e3a26613fa3eeb89eb927",
-                "new": "47a568a174b510603aeb8e8fe501a64daf096d96"
-              },
-              "pack_formats": {
-                "old": 107,
-                "new": 121
-              },
-              "source_boundary": "No LICENSE/COPYING file found; README permits showcase/fork with credit. Ephemeral analysis and derived receipts only.",
-              "goal": "Independently validate accepted predicate migration and discover additional 26.3 uplift families."
-            }
-          ],
-          "max_parallel": 2,
-          "runtime_boot": false
+            "baphomet_job": {
+              "job_id": 111327609006,
+              "state": "FAIL_ACCEPTANCE_TOO_STRICT"
+            },
+            "failure_reason": "Initial third-corpus gate incorrectly required the predicate discriminator rule to explain every other change in the same file.",
+            "preserved": true
+          },
+          "vanilla_noise_oracle": {
+            "state": "PASS",
+            "settings": [
+              "overworld",
+              "large_biomes",
+              "nether"
+            ],
+            "sea_level_preserved_count": 3,
+            "default_block_preserved_count": 3,
+            "removed_noise_size_fields_count": 3,
+            "explicit_beardifier_in_new_vanilla_count": 1,
+            "conclusion": "Vanilla 26.3 final-density serialization is context-dependent; explicit beardifier restoration remains structural/semantic, not blanket SAFE_SYNTACTIC. Voidblock sea-level/default-block deltas are maintainer tuning/content."
+          },
+          "third_corpus": {
+            "repository": "Baphomet42/Data-Packs",
+            "old_ref": "v0.11.0+mc26.2",
+            "old_commit": "0a5cfbdac02fb2a2218e3a26613fa3eeb89eb927",
+            "old_pack_format": 107,
+            "new_ref": "v0.12.0+mc26.3",
+            "new_commit": "47a568a174b510603aeb8e8fe501a64daf096d96",
+            "new_pack_format": 121,
+            "source_boundary": "No LICENSE/COPYING file found; analyze ephemerally and retain derived receipts only.",
+            "isolated_confirmation": {
+              "run_id": 37165684584,
+              "job_id": 111327976729,
+              "state": "PASS",
+              "artifact_id": 11289048488,
+              "artifact_digest": "sha256:8a25f60d4ee79d8c02c4f98ca74c5fb4dc30d55f7faa966fa2a1b7f146964721",
+              "changed_files": 195,
+              "predicate_candidates": 34,
+              "predicate_discriminator_migrated": 34,
+              "predicate_mismatches": 0,
+              "exact_whole_file_after_top_level_only_rule": 29,
+              "additional_delta_files": 5
+            },
+            "discovered_candidates": [
+              "recursive nested predicate condition->type",
+              "minecraft:reference predicate -> direct predicate id",
+              "DisplayState Block State compound -> modern Block State representation",
+              "inline loot functions->modifier and loot-function function->type",
+              "swing_animation -> attack/interact animation structural migration"
+            ]
+          }
+        },
+        "wave_4": {
+          "state": "PASS_INTEGRATED",
+          "run_id": 37165935003,
+          "head": "c41a47dbe528aecbd5675eb5b51cd9a6b5d4c3b1",
+          "predicate": {
+            "job_id": 111328692384,
+            "state": "PASS",
+            "candidate_files": 34,
+            "exact_after_scope_aware_uplift": 34,
+            "nonexact": 0,
+            "discriminator_rewrites": 41,
+            "legacy_reference_collapses": 3,
+            "artifact_id": 11288529411,
+            "artifact_digest": "sha256:9f015daddf90e3e92e6afa93fc73ac8e8a4710161ab20d349d9b976e985b4148"
+          },
+          "block_state_snbt": {
+            "job_id": 111328692170,
+            "state": "PASS",
+            "field": "carriedBlockState",
+            "candidate_files": 46,
+            "occurrences": 46,
+            "changed_keys": 46,
+            "exact_whole_file_matches": 46,
+            "partial_files": 0,
+            "artifact_id": 11289642312,
+            "artifact_digest": "sha256:ec608076d7ac425856523cc46540d576f081f727125630c519fb14fa72e79aff"
+          },
+          "reconciliation": {
+            "state": "PASS",
+            "artifact_id": 11288883681,
+            "artifact_digest": "sha256:8aa496a224858e93efef0e3282f1aa992f3e9da857d4e7368c17c85e92371461"
+          },
+          "integration": {
+            "generic_materializer_commit": "f63db6a545949be6b6747196d01a6470cd544190",
+            "catalog_commit": "9bbb0ea26f0d131010ba4f987ccbb692bc59d3a9",
+            "integrated_test_commit": "bfe010fff73f8e423debc464ac93c12a3f9694ef",
+            "catalog_rule_count": 14,
+            "candidate_validation_run": 37166087584,
+            "candidate_validation_state": "PASS"
+          }
+        },
+        "current_static_candidate": {
+          "id": "inline_loot_schema",
+          "state": "QUALIFICATION_RETRY_AFTER_HARNESS_SCOPE_FIX",
+          "tool": "tools/uplift_inline_loot_snbt.py",
+          "test": "tests/test_inline_loot_uplift.py",
+          "initial_failed_run": 37166260736,
+          "failure": "scope regex encoded literal backslash-s and rejected valid loot commands",
+          "fix_commit": "8a519c2286155adef508adaa9fe2683a4760f4d7",
+          "acceptance_criteria_changed": false,
+          "runtime_required": false
         }
       }
     }
