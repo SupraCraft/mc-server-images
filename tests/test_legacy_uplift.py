@@ -127,6 +127,72 @@ class LegacyUpliftTests(unittest.TestCase):
                 "minecraft:random_chance",
             )
 
+    def test_apply_safe_handles_nested_predicate_and_carried_block_state(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            root = base / "source"
+            root.mkdir()
+
+            pred = root / "data/demo/predicate/nested.json"
+            pred.parent.mkdir(parents=True)
+            pred.write_text(json.dumps({
+                "condition": "minecraft:all_of",
+                "terms": [
+                    {"condition": "minecraft:reference", "name": "demo:a"},
+                    {
+                        "condition": "minecraft:inverted",
+                        "term": {
+                            "condition": "minecraft:entity_properties",
+                            "entity": "this",
+                            "predicate": {
+                                "demo:component": {
+                                    "condition": "domain-data-must-stay"
+                                }
+                            }
+                        }
+                    }
+                ]
+            }), encoding="utf-8")
+
+            fn = root / "data/demo/function/state.mcfunction"
+            fn.parent.mkdir(parents=True)
+            fn.write_text(
+                'data merge entity @s {CustomName:"Keep",'
+                'carriedBlockState:{Name:"minecraft:gold_block"},'
+                'Other:{Name:"minecraft:stone"}}\\n',
+                encoding="utf-8",
+            )
+
+            out = base / "uplifted"
+            p = run_tool(root, "--catalog", CATALOG, "--apply-safe", out, "--fail-on-safe")
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            data = json.loads(p.stdout)
+            self.assertEqual(data["safe_apply"]["residual_safe_finding_count"], 0)
+
+            upgraded = json.loads((out / "data/demo/predicate/nested.json").read_text())
+            self.assertEqual(upgraded["type"], "minecraft:all_of")
+            self.assertEqual(upgraded["terms"][0], "demo:a")
+            self.assertEqual(upgraded["terms"][1]["type"], "minecraft:inverted")
+            self.assertEqual(
+                upgraded["terms"][1]["term"]["type"],
+                "minecraft:entity_properties",
+            )
+            self.assertEqual(
+                upgraded["terms"][1]["term"]["predicate"]["demo:component"]["condition"],
+                "domain-data-must-stay",
+            )
+
+            text = (out / "data/demo/function/state.mcfunction").read_text()
+            self.assertIn('carriedBlockState:{id:"minecraft:gold_block"}', text)
+            self.assertIn('CustomName:"Keep"', text)
+            self.assertIn('Other:{Name:"minecraft:stone"}', text)
+
+            self.assertEqual(len(data["safe_apply"]["mcfunction_changes"]), 1)
+            self.assertEqual(
+                data["safe_apply"]["mcfunction_changes"][0]["fields"],
+                ["carriedBlockState"],
+            )
+
     def test_fail_on_safe_detects_unmigrated_tree(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
