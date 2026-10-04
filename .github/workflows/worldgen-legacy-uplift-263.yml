@@ -9,6 +9,8 @@ on:
       - 'bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json'
       - 'tools/analyze_legacy_uplift_candidates.py'
       - 'tests/test_legacy_uplift.py'
+      - 'tools/uplift_sign_allow_op_features.py'
+      - 'tests/test_sign_allow_op_features.py'
       - '.github/workflows/worldgen-legacy-uplift-263.yml'
 
 concurrency:
@@ -30,7 +32,7 @@ jobs:
           python-version: '3.12'
 
       - name: Unit tests
-        run: python -m unittest tests.test_legacy_uplift -v
+        run: python -m unittest tests.test_legacy_uplift tests.test_sign_allow_op_features -v
 
       - name: Synthetic apply/rescan receipt
         shell: bash
