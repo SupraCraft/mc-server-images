@@ -11,6 +11,10 @@ on:
       - 'tests/test_legacy_uplift.py'
       - '.github/workflows/worldgen-legacy-uplift-263.yml'
 
+concurrency:
+  group: legacy-uplift-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
