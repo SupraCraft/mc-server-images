@@ -74,13 +74,14 @@ def is_sign_id(block_id: str) -> bool:
 
 
 def top_level_has_key(body: str, key: str) -> bool:
+    entries: list[str] = []
+    start = 0
     depth_curly = depth_square = 0
     in_string = False
     quote = ""
     escape = False
-    i = 0
-    while i < len(body):
-        ch = body[i]
+
+    for i, ch in enumerate(body):
         if in_string:
             if escape:
                 escape = False
@@ -88,14 +89,11 @@ def top_level_has_key(body: str, key: str) -> bool:
                 escape = True
             elif ch == quote:
                 in_string = False
-            i += 1
             continue
         if ch in {'"', "'"}:
             in_string = True
             quote = ch
-            i += 1
-            continue
-        if ch == "{":
+        elif ch == "{":
             depth_curly += 1
         elif ch == "}":
             depth_curly -= 1
@@ -103,16 +101,17 @@ def top_level_has_key(body: str, key: str) -> bool:
             depth_square += 1
         elif ch == "]":
             depth_square -= 1
-        elif depth_curly == 0 and depth_square == 0 and body.startswith(key, i):
-            before_ok = i == 0 or not (body[i - 1].isalnum() or body[i - 1] in "_:")
-            j = i + len(key)
-            after_ok = j >= len(body) or not (body[j].isalnum() or body[j] in "_:")
-            k = j
-            while k < len(body) and body[k].isspace():
-                k += 1
-            if before_ok and after_ok and k < len(body) and body[k] == ":":
-                return True
-        i += 1
+        elif ch == "," and depth_curly == 0 and depth_square == 0:
+            entries.append(body[start:i])
+            start = i + 1
+
+    entries.append(body[start:])
+    for entry in entries:
+        if ":" not in entry:
+            continue
+        raw_key = entry.split(":", 1)[0].strip().strip('"\'')
+        if raw_key == key:
+            return True
     return False
 
 
