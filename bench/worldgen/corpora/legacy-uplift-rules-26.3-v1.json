@@ -617,13 +617,19 @@
       ],
       "validation": [
         "official Minecraft Java 26.3 removes minecraft:map_color",
-        "Sprint Racer exact 26.2->26.3 maintained pairs replace legacy colors with semantic resource-pack models for race/battle/selected roles"
+        "Sprint Racer exact 26.2->26.3 maintained pairs replace legacy colors with semantic resource-pack models for race/battle/selected roles",
+        "Sprint project-scoped explicit mapping recipe qualifies 228/228 files and 1313/1313 occurrences with zero unresolved"
       ],
       "runtime_equivalence_required": true,
       "evidence": [
         "Minecraft Java 26.3 Snapshot 7 / release technical changes",
         "SupraCraft/mc-server-images#35 comment 5982138517",
-        "jarrodmmoore/Sprint-Racer-Dev b674e09699818878749570760444ed7147fea3dc -> 93cdfcff9f2462313de4d568f169c0e442d94e42"
+        "jarrodmmoore/Sprint-Racer-Dev b674e09699818878749570760444ed7147fea3dc -> 93cdfcff9f2462313de4d568f169c0e442d94e42",
+        "workflow:37217755031",
+        "workflow:37217977456",
+        "artifact:11309068126",
+        "artifact:11308149595",
+        "recipe:bench/worldgen/corpora/sprint-racer-map-color-recipe-26.3.json"
       ]
     }
   ]
