@@ -24,6 +24,7 @@ from typing import Any
 from uplift_predicate_26_2_to_26_3 import uplift_predicate_document
 from uplift_mcfunction_block_state_snbt import rewrite_text as rewrite_block_state_snbt
 from uplift_inline_loot_snbt import rewrite_text as rewrite_inline_loot_snbt
+from uplift_sign_allow_op_features import rewrite_text as rewrite_sign_op_features
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = REPO_ROOT / "bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json"
@@ -121,6 +122,7 @@ def safe_findings_for_json(path: Path, root: Path, data: Any) -> list[dict[str, 
 def safe_findings_for_mcfunction(path: Path, root: Path, text: str) -> list[dict[str, Any]]:
     _updated_block, block_receipts = rewrite_block_state_snbt(text)
     _updated_loot, loot_receipts = rewrite_inline_loot_snbt(text)
+    _updated_sign, sign_receipts = rewrite_sign_op_features(text)
     findings: list[dict[str, Any]] = []
 
     for receipt in block_receipts:
@@ -133,6 +135,19 @@ def safe_findings_for_mcfunction(path: Path, root: Path, text: str) -> list[dict
             "detail": {
                 "field": receipt.get("field"),
                 "change_count": receipt["change_count"],
+            },
+        })
+
+    for receipt in sign_receipts:
+        findings.append({
+            "rule_id": "direct_sign_allow_op_features_true",
+            "class": "SAFE_SYNTACTIC",
+            "automatic": True,
+            "path": relstr(path, root),
+            "json_pointer": f"@offset:{receipt['offset']}",
+            "detail": {
+                "block_id": receipt["block_id"],
+                "change": receipt["change"],
             },
         })
 
@@ -343,8 +358,9 @@ def apply_safe(source: Path, output: Path, catalog: dict[str, Any]) -> dict[str,
             except UnicodeDecodeError:
                 continue
             block_updated, block_receipts = rewrite_block_state_snbt(text)
-            fully_updated, loot_receipts = rewrite_inline_loot_snbt(block_updated)
-            if block_receipts or loot_receipts:
+            loot_updated, loot_receipts = rewrite_inline_loot_snbt(block_updated)
+            fully_updated, sign_receipts = rewrite_sign_op_features(loot_updated)
+            if block_receipts or loot_receipts or sign_receipts:
                 path.write_text(fully_updated, encoding="utf-8")
                 mcfunction_changes.append({
                     "path": relstr(path, output),
@@ -356,6 +372,7 @@ def apply_safe(source: Path, output: Path, catalog: dict[str, Any]) -> dict[str,
                         int(x.get("loot_function_discriminator_changes", 0))
                         for x in loot_receipts
                     ),
+                    "changed_direct_sign_op_features_count": len(sign_receipts),
                 })
 
     post_scan = scan(output, catalog)
