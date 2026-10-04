@@ -81,16 +81,30 @@ async function renderState () {
 async function shot (name) {
   const out = path.join(outputDir, name + '.png')
   stage('screenshot:' + name + ':start')
-  await Promise.race([
-    page.screenshot({ path: out }),
-    sleep(15000).then(() => { throw new Error('screenshot timeout: ' + name) })
+  const capture = await Promise.race([
+    page.evaluate(() => {
+      const canvas = document.querySelector('canvas')
+      if (!canvas) throw new Error('viewer canvas missing')
+      return {
+        data: canvas.toDataURL('image/png'),
+        width: canvas.width,
+        height: canvas.height,
+        clientWidth: canvas.clientWidth,
+        clientHeight: canvas.clientHeight
+      }
+    }),
+    sleep(15000).then(() => { throw new Error('canvas capture timeout: ' + name) })
   ])
+  const comma = capture.data.indexOf(',')
+  if (comma < 0) throw new Error('invalid canvas data URL')
+  fs.writeFileSync(out, Buffer.from(capture.data.slice(comma + 1), 'base64'))
   stage('screenshot:' + name + ':done')
   const stat = fs.statSync(out)
   const state = await renderState()
   if (stat.size < 5000) {
     throw new Error('screenshot unexpectedly small: ' + out + '; diagnostics=' + JSON.stringify({
       bytes: stat.size,
+      capture: { width: capture.width, height: capture.height, clientWidth: capture.clientWidth, clientHeight: capture.clientHeight },
       state,
       browserConsole: browserConsole.slice(-30),
       browserErrors: browserErrors.slice(-30)
