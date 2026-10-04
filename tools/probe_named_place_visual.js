@@ -113,7 +113,7 @@ async function main () {
   page.on('console', msg => browserConsole.push(msg.type() + ': ' + msg.text()))
   page.on('pageerror', err => browserErrors.push(String(err && err.stack ? err.stack : err)))
   await page.setViewport({ width: 960, height: 540, deviceScaleFactor: 1 })
-  await page.goto('http://127.0.0.1:3007', { waitUntil: 'networkidle2', timeout: 30000 })
+  await page.goto('http://127.0.0.1:3007', { waitUntil: 'domcontentloaded', timeout: 30000 })
   await sleep(3500)
 
   const views = []
