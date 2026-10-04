@@ -2,13 +2,6 @@ name: legacy uplift inline loot qualification
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/uplift_inline_loot_snbt.py'
-      - 'tests/test_inline_loot_uplift.py'
-      - '.github/workflows/worldgen-legacy-uplift-inline-loot.yml'
 
 concurrency:
   group: legacy-uplift-inline-loot
