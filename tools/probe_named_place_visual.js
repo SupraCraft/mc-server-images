@@ -143,20 +143,28 @@ async function main () {
   let visualSession
 
   try {
-    await teleportAndLook([0, 72, 24], [0, 76, 0])
+    // The approach is a real grounded traversal rep, not a creative-flight
+    // displacement. The presentation plane is at y=69, so feet belong at y=70.
+    bot.chat('/gamemode survival @s')
+    await sleep(500)
+    await teleportAndLook([0, 70, 24], [0, 74, 0])
     visualSession = await createVisualSession()
     views.push(await captureOneFrame(visualSession, '01_approach'))
 
     const walkStart = pos()
     stage('walk:start')
     bot.setControlState('forward', true)
-    await sleep(1800)
+    await sleep(2500)
     bot.setControlState('forward', false)
     await sleep(500)
     const walkEnd = pos()
     stage('walk:end')
     views.push(await captureOneFrame(visualSession, '02_after_walk'))
 
+    // Remaining views are inspection cameras; restore creative so elevated
+    // viewpoints remain stable while the structure itself stays unchanged.
+    bot.chat('/gamemode creative @s')
+    await sleep(500)
     await teleportAndLook([16, 75, 16], [0, 76, 0])
     views.push(await captureOneFrame(visualSession, '03_three_quarter'))
 
