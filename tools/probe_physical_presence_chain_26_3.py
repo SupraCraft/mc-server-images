@@ -208,6 +208,25 @@ def active_predicate() -> str:
     )
 
 
+def expected_server_shutdown_transport_error(
+    bot_result: dict[str, Any],
+) -> bool:
+    error = str(bot_result.get("error") or "")
+    kicked = bot_result.get("kicked") or {}
+    translate = (
+        kicked.get("value", {})
+        .get("translate", {})
+        .get("value")
+        if isinstance(kicked, dict)
+        else None
+    )
+    return (
+        bot_result.get("end_reason") == "socketClosed"
+        and translate == "multiplayer.disconnect.server_shutdown"
+        and "ECONNRESET" in error
+    )
+
+
 def collect_bot_failure(
     bot: subprocess.Popen[str],
     bot_result_path: Path,
@@ -397,7 +416,10 @@ def main() -> int:
                 "Mineflayer player never reached spawn: "
                 + json.dumps(bot_result, sort_keys=True)
             )
-        if bot_result.get("error"):
+        shutdown_transport_error = expected_server_shutdown_transport_error(
+            bot_result
+        )
+        if bot_result.get("error") and not shutdown_transport_error:
             raise RuntimeError(
                 "Mineflayer presence worker error: "
                 + json.dumps(bot_result, sort_keys=True)
@@ -428,6 +450,9 @@ def main() -> int:
                 "kind": "real_connected_offline_player",
                 "username": BOT_NAME,
                 "mineflayer": bot_result,
+                "expected_server_shutdown_transport_error": (
+                    shutdown_transport_error
+                ),
             },
             "fixture": {
                 "pressure_plate": PLATE,
@@ -480,6 +505,7 @@ def main() -> int:
                 "qualifies only this exact Java 26.3 fixture and one occupancy/reset cycle",
                 "does not establish all pressure-plate timing or all redstone/access actuators",
                 "Mineflayer supplies embodiment but is not the semantic oracle",
+                "post-stop ECONNRESET is tolerated only when paired with the explicit server-shutdown kick",
                 "does not establish equivalence with any datapack realization",
             ],
         }
