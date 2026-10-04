@@ -21,6 +21,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from uplift_predicate_26_2_to_26_3 import uplift_predicate_document
+from uplift_mcfunction_block_state_snbt import rewrite_text as rewrite_block_state_snbt
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = REPO_ROOT / "bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json"
 BLOCK_ID_RE = re.compile(r"^[a-z0-9_.-]+:[a-z0-9_./-]+$")
@@ -82,15 +85,20 @@ def safe_findings_for_json(path: Path, root: Path, data: Any) -> list[dict[str, 
     rel = relstr(path, root)
     parts = path.relative_to(root).parts
 
-    if "predicate" in parts and isinstance(data, dict) and "condition" in data and "type" not in data:
-        findings.append({
-            "rule_id": "predicate_condition_to_type",
-            "class": "SAFE_SYNTACTIC",
-            "automatic": True,
-            "path": rel,
-            "json_pointer": "",
-            "detail": {"condition_value": data["condition"]},
-        })
+    if "predicate" in parts:
+        _updated_predicate, predicate_changes = uplift_predicate_document(data)
+        for change in predicate_changes:
+            findings.append({
+                "rule_id": change["rule"],
+                "class": "SAFE_SYNTACTIC",
+                "automatic": True,
+                "path": rel,
+                "json_pointer": change.get("pointer", ""),
+                "detail": {
+                    k: v for k, v in change.items()
+                    if k not in {"rule", "pointer"}
+                },
+            })
 
     for obj, pointer_parts in iter_objects(data):
         if looks_like_block_state(obj):
@@ -106,6 +114,24 @@ def safe_findings_for_json(path: Path, root: Path, data: Any) -> list[dict[str, 
                     "Name": obj.get("Name"),
                 },
             })
+    return findings
+
+
+def safe_findings_for_mcfunction(path: Path, root: Path, text: str) -> list[dict[str, Any]]:
+    _updated, receipts = rewrite_block_state_snbt(text)
+    findings: list[dict[str, Any]] = []
+    for receipt in receipts:
+        findings.append({
+            "rule_id": "mcfunction_block_state_snbt_Name_Properties_to_id_properties",
+            "class": "SAFE_SYNTACTIC",
+            "automatic": True,
+            "path": relstr(path, root),
+            "json_pointer": f"@offset:{receipt['offset']}",
+            "detail": {
+                "field": receipt.get("field"),
+                "change_count": receipt["change_count"],
+            },
+        })
     return findings
 
 
@@ -183,6 +209,9 @@ def scan(root: Path, catalog: dict[str, Any]) -> dict[str, Any]:
             else:
                 findings.extend(safe_findings_for_json(path, root, data))
 
+        if path.suffix.lower() == ".mcfunction":
+            findings.extend(safe_findings_for_mcfunction(path, root, text))
+
         findings.extend(advisory_findings(path, root, text, catalog))
 
     # Dedupe path-based safe findings so a directory with many files does not
@@ -214,9 +243,9 @@ def transform_json(data: Any, *, predicate_file: bool) -> tuple[Any, int]:
     data = copy.deepcopy(data)
     changes = 0
 
-    if predicate_file and isinstance(data, dict) and "condition" in data and "type" not in data:
-        data["type"] = data.pop("condition")
-        changes += 1
+    if predicate_file:
+        data, predicate_changes = uplift_predicate_document(data)
+        changes += len(predicate_changes)
 
     def visit(v: Any):
         nonlocal changes
@@ -266,19 +295,37 @@ def apply_safe(source: Path, output: Path, catalog: dict[str, Any]) -> dict[str,
 
     path_moves = rename_worldgen_dirs(output)
     json_changes: list[dict[str, Any]] = []
+    mcfunction_changes: list[dict[str, Any]] = []
 
     for path in sorted(output.rglob("*")):
-        if not path.is_file() or path.suffix.lower() not in {".json", ".mcmeta"}:
+        if not path.is_file():
             continue
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        predicate_file = "predicate" in path.relative_to(output).parts
-        updated, changes = transform_json(data, predicate_file=predicate_file)
-        if changes:
-            path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            json_changes.append({"path": relstr(path, output), "change_count": changes})
+
+        if path.suffix.lower() in {".json", ".mcmeta"}:
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            predicate_file = "predicate" in path.relative_to(output).parts
+            updated, changes = transform_json(data, predicate_file=predicate_file)
+            if changes:
+                path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+                json_changes.append({"path": relstr(path, output), "change_count": changes})
+
+        elif path.suffix.lower() == ".mcfunction":
+            try:
+                text = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            updated_text, receipts = rewrite_block_state_snbt(text)
+            if receipts:
+                path.write_text(updated_text, encoding="utf-8")
+                mcfunction_changes.append({
+                    "path": relstr(path, output),
+                    "changed_occurrence_count": len(receipts),
+                    "changed_key_count": sum(int(x["change_count"]) for x in receipts),
+                    "fields": sorted({str(x.get("field")) for x in receipts}),
+                })
 
     post_scan = scan(output, catalog)
     residual_safe = [
@@ -291,6 +338,7 @@ def apply_safe(source: Path, output: Path, catalog: dict[str, Any]) -> dict[str,
         "output": str(output),
         "path_moves": path_moves,
         "json_changes": json_changes,
+        "mcfunction_changes": mcfunction_changes,
         "post_scan": post_scan,
         "residual_safe_finding_count": len(residual_safe),
         "residual_safe_findings": residual_safe,
