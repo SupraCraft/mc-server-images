@@ -1,0 +1,5 @@
+{
+  "schema": "supracraft.named-place-visual-smoke/v0.1",
+  "result": "error",
+  "error": "Error: screenshot unexpectedly small: /home/runner/work/_temp/named-place-visual/01_approach.png\n    at shot (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:62:31)\n    at async main (/home/runner/work/mc-server-images/mc-server-images/tools/probe_named_place_visual.js:92:14)"
+}
