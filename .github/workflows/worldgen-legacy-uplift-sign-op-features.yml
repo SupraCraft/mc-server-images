@@ -1,0 +1,109 @@
+name: legacy uplift sign op-features candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/uplift_sign_allow_op_features.py'
+      - 'tests/test_sign_allow_op_features.py'
+      - '.github/workflows/worldgen-legacy-uplift-sign-op-features.yml'
+
+concurrency:
+  group: legacy-uplift-sign-op-features
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests
+        run: python -m unittest tests.test_sign_allow_op_features -v
+
+      - name: Exact Sprint direct-sign qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+          p1="datapacks/sr_language_all/data/sprint_racer_language/function/lobby/options/admin_mode.mcfunction"
+          p2="datapacks/sr_language_all/data/sprint_racer_language/function/_dlc_4/lobby/cheat_room/floating_text/customai.mcfunction"
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+
+          for name in p1 p2; do
+            path="${!name}"
+            git -C "$repo" show "$old:$path" > "$RUNNER_TEMP/$name-old.mcfunction"
+            git -C "$repo" show "$new:$path" > "$RUNNER_TEMP/$name-new.mcfunction"
+            python tools/uplift_sign_allow_op_features.py \
+              "$RUNNER_TEMP/$name-old.mcfunction" \
+              "$RUNNER_TEMP/$name-uplift.mcfunction" \
+              --receipt "$RUNNER_TEMP/$name-receipt.json" \
+              --require-change
+          done
+
+          python - "$RUNNER_TEMP" <<'PY'
+          import json, pathlib, sys
+
+          root = pathlib.Path(sys.argv[1])
+          total = 0
+          results = []
+          for name in ("p1", "p2"):
+              old = (root / f"{name}-old.mcfunction").read_text().splitlines()
+              uplift = (root / f"{name}-uplift.mcfunction").read_text().splitlines()
+              new = (root / f"{name}-new.mcfunction").read_text().splitlines()
+              receipt = json.loads((root / f"{name}-receipt.json").read_text())
+              assert len(old) == len(uplift) == len(new)
+              changed = [i for i, (a, b) in enumerate(zip(old, uplift)) if a != b]
+              assert changed, name
+              assert len(changed) == receipt["changed_direct_sign_count"]
+              for i in changed:
+                  assert "setblock " in old[i]
+                  old_suffix = old[i][old[i].index("setblock "):]
+                  uplift_suffix = uplift[i][uplift[i].index("setblock "):]
+                  new_suffix = new[i][new[i].index("setblock "):]
+                  assert "allow_op_features" not in old_suffix
+                  assert uplift_suffix == new_suffix, (name, i + 1)
+              total += len(changed)
+              results.append({"file": name, "qualified_direct_sign_lines": len(changed)})
+
+          assert total >= 2
+          out = {
+              "schema": "supracraft-sign-op-features-exact-qualification/1",
+              "source": "jarrodmmoore/Sprint-Racer-Dev exact 26.2->26.3 commits",
+              "qualified_direct_sign_lines": total,
+              "files": results,
+              "classification": "DIRECT_SIGN_COMPATIBILITY_PASS"
+          }
+          (root / "sign-op-features-qualification.json").write_text(
+              json.dumps(out, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(out, indent=2, sort_keys=True))
+          print("SUPRACRAFT_SIGN_OP_FEATURES_CANDIDATE_PASS")
+          PY
+
+      - name: Upload derived receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sign-op-features-26.3-candidate
+          path: |
+            ${{ runner.temp }}/p1-receipt.json
+            ${{ runner.temp }}/p2-receipt.json
+            ${{ runner.temp }}/sign-op-features-qualification.json
+          retention-days: 14
+          if-no-files-found: error
