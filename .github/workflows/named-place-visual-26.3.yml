@@ -47,10 +47,10 @@ jobs:
           set -euo pipefail
           runtime_root="/tmp/supracraft-prismarine-26.3"
           bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
-          npm --prefix "$runtime_root/runtime" install --no-save --ignore-scripts \
+          npm --prefix "$runtime_root/runtime" install --no-save \
             prismarine-viewer@1.33.0 \
-            puppeteer-core@24.26.1
-          npm --prefix "$runtime_root/runtime" install --no-save canvas@3.2.0
+            puppeteer-core@24.26.1 \
+            canvas@3.2.0
           echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
 
       - name: Confirm renderer and browser
