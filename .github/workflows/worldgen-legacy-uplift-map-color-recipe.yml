@@ -1,0 +1,110 @@
+name: legacy uplift map-color project recipe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'bench/worldgen/corpora/sprint-racer-map-color-recipe-26.3.json'
+      - 'tools/uplift_map_color_with_mapping.py'
+      - 'tests/test_map_color_with_mapping.py'
+      - '.github/workflows/worldgen-legacy-uplift-map-color-recipe.yml'
+
+concurrency:
+  group: legacy-uplift-map-color-project-recipe
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests
+        run: python -m unittest tests.test_map_color_with_mapping -v
+      - name: Exact Sprint project recipe qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+          mapping="$GITHUB_WORKSPACE/bench/worldgen/corpora/sprint-racer-map-color-recipe-26.3.json"
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+          python - "$repo" "$old" "$new" "$mapping" "$RUNNER_TEMP/map-color-recipe-qualification.json" <<'PY'
+          import json, pathlib, subprocess, sys
+          from tools.uplift_map_color_with_mapping import load_mapping, rewrite_text
+
+          repo, old, new, mapping_p, out_p = sys.argv[1:]
+          mapping = load_mapping(pathlib.Path(mapping_p))
+
+          def git(*args, check=True):
+              p = subprocess.run(['git','-C',repo,*args], text=True, capture_output=True, check=check)
+              return p.stdout
+
+          raw = git('grep','-l','map_color=',old,'--','*.mcfunction',check=False)
+          prefix = old + ':'
+          paths = sorted(x[len(prefix):] if x.startswith(prefix) else x for x in raw.splitlines() if x)
+
+          changed = unresolved = qualified_lines = qualified_files = 0
+          for path in paths:
+              old_text = git('show',f'{old}:{path}')
+              new_text = git('show',f'{new}:{path}')
+              transformed, receipts, unresolved_rows = rewrite_text(old_text, mapping)
+              changed += len(receipts)
+              unresolved += len(unresolved_rows)
+              if not receipts:
+                  continue
+              qualified_files += 1
+              old_lines = old_text.splitlines()
+              transformed_lines = transformed.splitlines()
+              new_lines = new_text.splitlines()
+              assert len(old_lines) == len(transformed_lines) == len(new_lines), path
+              for i, (a, b) in enumerate(zip(old_lines, transformed_lines)):
+                  if a == b:
+                      continue
+                  assert 'minecraft:filled_map[' in a, (path, i + 1)
+                  marker = 'minecraft:filled_map['
+                  transformed_suffix = b[b.index(marker):]
+                  target = new_lines[i]
+                  assert marker in target, (path, i + 1)
+                  target_suffix = target[target.index(marker):]
+                  assert transformed_suffix == target_suffix, (path, i + 1)
+                  qualified_lines += 1
+
+          assert len(paths) == 228, len(paths)
+          assert changed == 1313, changed
+          assert unresolved == 0, unresolved
+          assert qualified_files == 228, qualified_files
+          assert qualified_lines == 1313, qualified_lines
+
+          result = {
+              'schema':'supracraft-map-color-project-recipe-qualification/1',
+              'candidate_files':len(paths),
+              'qualified_files':qualified_files,
+              'qualified_occurrences':changed,
+              'qualified_lines':qualified_lines,
+              'unresolved_occurrences':unresolved,
+              'classification':'SPRINT_PROJECT_STRUCTURAL_RECIPE_PASS'
+          }
+          pathlib.Path(out_p).write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,indent=2,sort_keys=True))
+          print('SUPRACRAFT_MAP_COLOR_PROJECT_RECIPE_PASS')
+          PY
+      - name: Upload derived receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-map-color-project-recipe
+          path: ${{ runner.temp }}/map-color-recipe-qualification.json
+          retention-days: 14
+          if-no-files-found: error
