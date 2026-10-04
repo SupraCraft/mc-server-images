@@ -2,13 +2,6 @@ name: legacy uplift static wave 3
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/probe_vanilla_noise_settings_uplift.py'
-      - 'tools/analyze_baphomet_third_corpus.py'
-      - '.github/workflows/worldgen-legacy-uplift-static-wave3.yml'
 
 concurrency:
   group: legacy-uplift-static-wave3-${{ github.ref }}
