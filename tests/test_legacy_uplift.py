@@ -229,6 +229,39 @@ class LegacyUpliftTests(unittest.TestCase):
             self.assertEqual(change["changed_loot_entry_count"], 1)
             self.assertEqual(change["loot_function_discriminator_change_count"], 2)
 
+    def test_apply_safe_handles_direct_sign_op_features(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            root = base / "source"
+            root.mkdir()
+
+            fn = root / "data/demo/function/sign.mcfunction"
+            fn.parent.mkdir(parents=True)
+            fn.write_text(
+                'execute if entity @s run setblock 1 2 3 '
+                'minecraft:pale_oak_wall_sign[facing=south]'
+                '{front_text:{messages:[{text:"",click_event:'
+                '{action:"run_command",command:"trigger demo"}}]},is_waxed:1b}\n'
+                'setblock 4 5 6 minecraft:oak_sign'
+                '{front_text:{messages:[{text:"plain"}]},is_waxed:1b}\n'
+                'data merge block 7 8 9 {front_text:{messages:['
+                '{click_event:{action:"run_command",command:"trigger later"}}]}}\n',
+                encoding="utf-8",
+            )
+
+            out = base / "uplifted"
+            p = run_tool(root, "--catalog", CATALOG, "--apply-safe", out, "--fail-on-safe")
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            data = json.loads(p.stdout)
+            self.assertEqual(data["safe_apply"]["residual_safe_finding_count"], 0)
+
+            text = (out / "data/demo/function/sign.mcfunction").read_text()
+            self.assertIn('is_waxed:1b,allow_op_features:1b}', text)
+            self.assertIn('setblock 4 5 6 minecraft:oak_sign', text)
+            self.assertIn('data merge block 7 8 9', text)
+            change = data["safe_apply"]["mcfunction_changes"][0]
+            self.assertEqual(change["changed_direct_sign_op_features_count"], 1)
+
     def test_fail_on_safe_detects_unmigrated_tree(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
