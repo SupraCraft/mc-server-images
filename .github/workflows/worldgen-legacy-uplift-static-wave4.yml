@@ -1,0 +1,252 @@
+name: legacy uplift static wave 4
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/uplift_predicate_26_2_to_26_3.py'
+      - 'tools/uplift_mcfunction_block_state_snbt.py'
+      - 'tests/test_predicate_uplift.py'
+      - 'tests/test_mcfunction_block_state_uplift.py'
+      - '.github/workflows/worldgen-legacy-uplift-static-wave4.yml'
+
+concurrency:
+  group: legacy-uplift-static-wave4-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        lane:
+          - baphomet-predicate
+          - sprint-block-state-fields
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest             tests.test_predicate_uplift             tests.test_mcfunction_block_state_uplift -v
+
+      - name: Qualify recursive predicate uplift on exact Baphomet tags
+        if: matrix.lane == 'baphomet-predicate'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/baphomet"
+          old='v0.11.0+mc26.2'
+          new='v0.12.0+mc26.3'
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/Baphomet42/Data-Packs.git
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$old:refs/tags/$old"
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$new:refs/tags/$new"
+
+          python - "$repo" "$old" "$new" "$RUNNER_TEMP/wave4-baphomet-predicate.json" <<'PY'
+          import json, pathlib, subprocess, sys
+          from tools.uplift_predicate_26_2_to_26_3 import uplift_predicate_document
+
+          repo = pathlib.Path(sys.argv[1])
+          old, new = sys.argv[2], sys.argv[3]
+          out = pathlib.Path(sys.argv[4])
+
+          def git(*args):
+              return subprocess.run(
+                  ["git", "-C", str(repo), *args],
+                  check=True, capture_output=True, text=True,
+              ).stdout
+
+          paths = [
+              p for p in git("diff", "--name-only", old, new).splitlines()
+              if "/predicate/" in f"/{p}" and p.endswith(".json")
+          ]
+
+          candidates = []
+          exact = []
+          changed_by_rule = {}
+          nonexact = []
+
+          for path in paths:
+              old_data = json.loads(git("show", f"{old}:{path}"))
+              new_data = json.loads(git("show", f"{new}:{path}"))
+              if not isinstance(old_data, dict) or "condition" not in old_data:
+                  continue
+              candidates.append(path)
+              uplifted, changes = uplift_predicate_document(old_data)
+              for ch in changes:
+                  changed_by_rule[ch["rule"]] = changed_by_rule.get(ch["rule"], 0) + 1
+              if uplifted == new_data:
+                  exact.append(path)
+              else:
+                  nonexact.append(path)
+
+          result = {
+              "schema": "supracraft-wave4-baphomet-predicate/1",
+              "old": old,
+              "new": new,
+              "candidate_file_count": len(candidates),
+              "exact_after_scope_aware_uplift_count": len(exact),
+              "nonexact_count": len(nonexact),
+              "nonexact_paths": nonexact,
+              "changes_by_rule": changed_by_rule,
+              "classification": (
+                  "EXACT_CORPUS_PREDICATE_UPLIFT_PASS"
+                  if candidates and len(exact) == len(candidates)
+                  else "PREDICATE_UPLIFT_REVIEW"
+              )
+          }
+          out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          assert result["classification"] == "EXACT_CORPUS_PREDICATE_UPLIFT_PASS"
+          print("SUPRACRAFT_WAVE4_BAPHOMET_PREDICATE_PASS")
+          PY
+
+      - name: Qualify carriedBlockState uplift on exact Sprint releases
+        if: matrix.lane == 'sprint-block-state-fields'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint"
+          old='b674e09699818878749570760444ed7147fea3dc'
+          new='93cdfcff9f2462313de4d568f169c0e442d94e42'
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+
+          python - "$repo" "$old" "$new" "$RUNNER_TEMP/wave4-sprint-block-state-fields.json" <<'PY'
+          import json, pathlib, subprocess, sys
+          from tools.uplift_mcfunction_block_state_snbt import rewrite_text
+
+          repo = pathlib.Path(sys.argv[1])
+          old, new = sys.argv[2], sys.argv[3]
+          out = pathlib.Path(sys.argv[4])
+
+          def git(*args):
+              return subprocess.run(
+                  ["git", "-C", str(repo), *args],
+                  check=True, capture_output=True, text=True,
+              ).stdout
+
+          paths = [
+              p for p in git("diff", "--name-only", old, new, "--", "*.mcfunction").splitlines()
+              if p
+          ]
+          candidates = []
+          exact = []
+          partial = []
+          occurrences = 0
+          key_changes = 0
+
+          for path in paths:
+              old_text = git("show", f"{old}:{path}")
+              if "carriedBlockState:{Name:" not in old_text:
+                  continue
+              new_text = git("show", f"{new}:{path}")
+              uplifted, receipt = rewrite_text(old_text)
+              carried = [r for r in receipt if r.get("field") == "carriedBlockState"]
+              if not carried:
+                  continue
+              candidates.append(path)
+              occurrences += len(carried)
+              key_changes += sum(int(r["change_count"]) for r in carried)
+              if uplifted == new_text:
+                  exact.append(path)
+              else:
+                  partial.append(path)
+
+          result = {
+              "schema": "supracraft-wave4-sprint-carried-block-state/1",
+              "candidate_file_count": len(candidates),
+              "occurrence_count": occurrences,
+              "changed_key_count": key_changes,
+              "exact_whole_file_count": len(exact),
+              "partial_file_count": len(partial),
+              "partial_paths": partial[:50],
+              "classification": (
+                  "CARRIED_BLOCK_STATE_UPLIFT_PASS"
+                  if candidates and not partial
+                  else "CARRIED_BLOCK_STATE_UPLIFT_REVIEW"
+              )
+          }
+          out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          assert result["classification"] == "CARRIED_BLOCK_STATE_UPLIFT_PASS"
+          print("SUPRACRAFT_WAVE4_SPRINT_BLOCK_STATE_PASS")
+          PY
+
+      - name: Upload derived lane receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-wave4-${{ matrix.lane }}
+          path: ${{ runner.temp }}/wave4-${{ matrix.lane }}.json
+          retention-days: 14
+          if-no-files-found: error
+
+  reconcile:
+    needs: qualify
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: uplift-wave4-*
+          path: receipts
+          merge-multiple: true
+
+      - name: Reconcile Wave 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          root = pathlib.Path("receipts")
+          expected = {
+              "wave4-baphomet-predicate.json",
+              "wave4-sprint-block-state-fields.json",
+          }
+          actual = {p.name for p in root.glob("*.json")}
+          missing = sorted(expected - actual)
+          data = {
+              name: json.loads((root / name).read_text())
+              for name in sorted(expected & actual)
+          }
+          result = {
+              "schema": "supracraft-legacy-uplift-wave4/1",
+              "received_lane_count": len(data),
+              "missing_receipts": missing,
+              "lanes": data,
+              "runtime_launch_decision": "NONE_REQUIRED",
+          }
+          pathlib.Path("wave4-reconciliation.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(result, indent=2, sort_keys=True))
+          if missing:
+              raise SystemExit("Wave 4 incomplete")
+          print("SUPRACRAFT_WAVE4_RECONCILE_PASS")
+          PY
+
+      - name: Upload Wave 4 reconciliation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-wave4-reconciliation
+          path: wave4-reconciliation.json
+          retention-days: 14
+          if-no-files-found: warn
