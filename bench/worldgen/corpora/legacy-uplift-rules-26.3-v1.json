@@ -551,6 +551,47 @@
         "commit:c3e4ecdef18b167e7628713e9f9a1c5ff3190fa2",
         "Baphomet42/Data-Packs v0.11.0+mc26.2 -> v0.12.0+mc26.3"
       ]
+    },
+    {
+      "id": "direct_sign_allow_op_features_true",
+      "class": "SAFE_SYNTACTIC",
+      "automatic": true,
+      "source_scope": "26.2 mcfunction setblock commands whose block id proves a sign/hanging-sign target and whose same block-entity SNBT contains a run_command click_event",
+      "target_scope": "26.3+ minecraft:sign / minecraft:hanging_sign block-entity data",
+      "detect": {
+        "kind": "scoped_mcfunction_setblock_sign_snbt",
+        "required_semantics": [
+          "sign_or_hanging_sign_block_id",
+          "same_payload_run_command_click_event"
+        ],
+        "absent_top_level_key": "allow_op_features"
+      },
+      "transform": "append top-level allow_op_features:1b to the same sign block-entity SNBT payload",
+      "preconditions": [
+        "command is setblock or execute ... run setblock",
+        "setblock block id itself proves a vanilla sign or hanging-sign target",
+        "the same SNBT payload contains a click_event with action run_command",
+        "allow_op_features is absent at top level"
+      ],
+      "hard_negatives": [
+        "existing allow_op_features true or false",
+        "non-sign block entities",
+        "sign text without privileged run_command click event",
+        "generic data merge block where sign identity is not proven",
+        "sign created in one command and privileged/resolved text injected or copied later"
+      ],
+      "validation": [
+        "7 helper unit tests including existing true/false and cross-command hard negatives",
+        "exact Sprint Racer 26.2->26.3 direct sign examples converge on setblock command suffix",
+        "official Minecraft 26.3 sign semantics require explicit allow_op_features to retain prior privileged click/text behavior"
+      ],
+      "runtime_equivalence_required": false,
+      "evidence": [
+        "workflow:37217040586",
+        "failed-predecessor-workflow:37216991278",
+        "jarrodmmoore/Sprint-Racer-Dev b674e09699818878749570760444ed7147fea3dc -> 93cdfcff9f2462313de4d568f169c0e442d94e42",
+        "Minecraft Java 26.3 Snapshot 4 / release technical changes"
+      ]
     }
   ]
 }
