@@ -54,6 +54,9 @@ def main() -> int:
     changed = [p for p in git(args.repo, "diff", "--name-only", args.old, args.new).splitlines() if p]
     predicate_exact = []
     predicate_candidates = []
+    predicate_discriminator_migrated = []
+    predicate_additional_delta = []
+    predicate_discriminator_mismatch = []
     display_state_candidates = []
     carried_state_candidates = []
     loot_modifier_candidates = []
@@ -80,10 +83,22 @@ def main() -> int:
                 continue
             if isinstance(old, dict) and "condition" in old and "type" not in old:
                 predicate_candidates.append(path)
+                migrated = (
+                    isinstance(new, dict)
+                    and new.get("type") == old.get("condition")
+                    and "condition" not in new
+                )
+                if migrated:
+                    predicate_discriminator_migrated.append(path)
+                else:
+                    predicate_discriminator_mismatch.append(path)
+
                 transformed = dict(old)
                 transformed["type"] = transformed.pop("condition")
                 if canonical(transformed) == canonical(new):
                     predicate_exact.append(path)
+                elif migrated:
+                    predicate_additional_delta.append(path)
 
         if path.endswith(".mcfunction"):
             old_text = show(args.repo, f"{args.old}:{path}")
@@ -123,8 +138,13 @@ def main() -> int:
         "changed_file_count": len(changed),
         "predicate_condition_to_type": {
             "candidate_files": len(predicate_candidates),
+            "discriminator_migrated_files": len(predicate_discriminator_migrated),
+            "discriminator_mismatch_files": len(predicate_discriminator_mismatch),
             "exact_json_equivalent_files": len(predicate_exact),
+            "additional_delta_files": len(predicate_additional_delta),
             "exact_paths": predicate_exact[:100],
+            "additional_delta_paths": predicate_additional_delta[:100],
+            "mismatch_paths": predicate_discriminator_mismatch[:100],
         },
         "candidate_new_migration_families": {
             "carried_block_state_Name_to_id_files": len(carried_state_candidates),
@@ -140,12 +160,17 @@ def main() -> int:
         },
         "classification": (
             "THIRD_CORPUS_PREDICATE_RULE_CONFIRMED"
-            if predicate_candidates and len(predicate_candidates) == len(predicate_exact)
+            if (
+                predicate_candidates
+                and len(predicate_candidates) == len(predicate_discriminator_migrated)
+                and not predicate_discriminator_mismatch
+            )
             else "THIRD_CORPUS_REQUIRES_REVIEW"
         ),
         "boundary": (
-            "Only exact predicate condition->type matches are independent confirmation. "
-            "Other repeated deltas are discovery candidates until separately qualified."
+            "Predicate confirmation is scoped to discriminator migration: old condition value must become the "
+            "new top-level type and condition must disappear. Files may contain additional independent 26.3 edits. "
+            "Other repeated deltas remain discovery candidates until separately qualified."
         ),
     }
 
