@@ -592,6 +592,39 @@
         "jarrodmmoore/Sprint-Racer-Dev b674e09699818878749570760444ed7147fea3dc -> 93cdfcff9f2462313de4d568f169c0e442d94e42",
         "Minecraft Java 26.3 Snapshot 4 / release technical changes"
       ]
+    },
+    {
+      "id": "removed_filled_map_color_requires_visual_reimplementation",
+      "class": "STRUCTURAL_REIMPLEMENTATION",
+      "automatic": false,
+      "source_scope": "26.2 command/item component syntax using minecraft:filled_map[...] with map_color=...",
+      "target_scope": "26.3+ item presentation after removal of the minecraft:map_color component/tint source",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "minecraft:filled_map\\\\[[^\\\\n\\\\]]*\\\\bmap_color\\\\s*="
+      },
+      "transform": "recover the legacy visual-role contract, remove the unsupported map_color component, and select an explicit 26.3+ presentation strategy such as an appropriate resource-pack item_model only when that mapping is known",
+      "preconditions": [
+        "legacy map_color occurrence is identified on a filled-map item",
+        "the intended visual role of the color is recovered",
+        "any replacement resource-pack model is available and semantically appropriate"
+      ],
+      "hard_negatives": [
+        "blind map_color integer -> item_model mapping",
+        "deleting map_color when the tint communicated gameplay state",
+        "assuming Sprint Racer resource-pack model ids are universal",
+        "rewriting unrelated color fields or map data"
+      ],
+      "validation": [
+        "official Minecraft Java 26.3 removes minecraft:map_color",
+        "Sprint Racer exact 26.2->26.3 maintained pairs replace legacy colors with semantic resource-pack models for race/battle/selected roles"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "Minecraft Java 26.3 Snapshot 7 / release technical changes",
+        "SupraCraft/mc-server-images#35 comment 5982138517",
+        "jarrodmmoore/Sprint-Racer-Dev b674e09699818878749570760444ed7147fea3dc -> 93cdfcff9f2462313de4d568f169c0e442d94e42"
+      ]
     }
   ]
 }
