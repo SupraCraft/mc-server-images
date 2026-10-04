@@ -1,9 +1,15 @@
 const fs = require('fs')
 const path = require('path')
-const net = require('net')
 const mineflayer = require('mineflayer')
-const headlessViewer = require('prismarine-viewer').headless
+const { Worker } = require('worker_threads')
 const { Vec3 } = require('vec3')
+
+const viewerRoot = path.dirname(require.resolve('prismarine-viewer/package.json'))
+global.THREE = require(path.join(viewerRoot, 'node_modules/three'))
+global.Worker = Worker
+
+const { createCanvas } = require(path.join(viewerRoot, 'node_modules/node-canvas-webgl/lib'))
+const { Viewer, WorldView, getBufferFromStream } = require('prismarine-viewer').viewer
 
 const host = process.env.MC_HOST || '127.0.0.1'
 const port = Number(process.env.MC_PORT || '25571')
@@ -54,70 +60,70 @@ async function teleportAndLook (xyz, target) {
   await sleep(500)
 }
 
-async function captureOneFrame (name) {
-  const out = path.join(outputDir, name + '.jpg')
-  stage('capture:' + name + ':listen')
+async function createVisualSession () {
+  stage('viewer:create')
+  const canvas = createCanvas(640, 360)
+  const renderer = new THREE.WebGLRenderer({ canvas })
+  const viewer = new Viewer(renderer)
 
-  let server
-  const framePromise = new Promise((resolve, reject) => {
-    server = net.createServer(socket => {
-      let buffer = Buffer.alloc(0)
-      let expected = null
-      socket.on('data', chunk => {
-        buffer = Buffer.concat([buffer, chunk])
-        if (expected === null && buffer.length >= 4) {
-          expected = buffer.readUInt32LE(0)
-          buffer = buffer.subarray(4)
-        }
-        if (expected !== null && buffer.length >= expected) {
-          const jpeg = buffer.subarray(0, expected)
-          fs.writeFileSync(out, jpeg)
-          resolve({ bytes: jpeg.length })
-          socket.destroy()
-        }
-      })
-      socket.on('error', reject)
-    })
-    server.on('error', reject)
-  })
-
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', resolve)
-    server.once('error', reject)
-  })
-  const address = server.address()
-  const renderPort = address.port
-
-  stage('capture:' + name + ':render')
-  let client
-  try {
-    client = headlessViewer(bot, {
-      output: '127.0.0.1:' + renderPort,
-      frames: 1,
-      width: 640,
-      height: 360,
-      viewDistance: 2,
-      jpegOptions: { quality: 0.95 }
-    })
-    if (!client) throw new Error('headless viewer rejected exact bot version')
-  } catch (err) {
-    server.close()
-    throw err
+  if (!viewer.setVersion(bot.version)) {
+    throw new Error('viewer rejected exact bot version')
   }
 
-  const frame = await Promise.race([
-    framePromise,
-    sleep(30000).then(() => { throw new Error('headless frame timeout: ' + name) })
-  ])
-  server.close()
-  if (client && typeof client.destroy === 'function') client.destroy()
+  const worldView = new WorldView(bot.world, 2, bot.entity.position)
+  viewer.listen(worldView)
+  await worldView.init(bot.entity.position)
+  await viewer.waitForChunksToRender()
 
-  if (frame.bytes < 5000) {
-    throw new Error('headless frame unexpectedly small: ' + name + ' bytes=' + frame.bytes)
+  stage('viewer:ready')
+  return { canvas, renderer, viewer, worldView }
+}
+
+async function syncVisualSession (session) {
+  await session.worldView.updatePosition(bot.entity.position, true)
+  await session.viewer.waitForChunksToRender()
+  session.viewer.setFirstPersonCamera(bot.entity.position, bot.entity.yaw, bot.entity.pitch)
+
+  // setFirstPersonCamera uses the viewer's normal camera tween. Let that tween
+  // reach the requested bot position before taking the deterministic frame.
+  await sleep(80)
+  session.viewer.update()
+}
+
+async function captureOneFrame (session, name) {
+  const out = path.join(outputDir, name + '.jpg')
+  stage('capture:' + name + ':sync')
+  await syncVisualSession(session)
+
+  stage('capture:' + name + ':render')
+  session.renderer.render(session.viewer.scene, session.viewer.camera)
+  const imageStream = session.canvas.createJPEGStream({
+    bufsize: 4096,
+    quality: 0.95,
+    progressive: false
+  })
+  const jpeg = await getBufferFromStream(imageStream)
+  fs.writeFileSync(out, jpeg)
+
+  if (jpeg.length < 5000) {
+    throw new Error('rendered frame unexpectedly small: ' + name + ' bytes=' + jpeg.length)
   }
 
   stage('capture:' + name + ':done')
-  return { name, path: out, bytes: frame.bytes, bot_position: pos() }
+  return { name, path: out, bytes: jpeg.length, bot_position: pos() }
+}
+
+async function closeVisualSession (session) {
+  if (!session) return
+  stage('viewer:close')
+  for (const worker of session.viewer.world.workers) {
+    if (worker && typeof worker.terminate === 'function') {
+      await worker.terminate()
+    }
+  }
+  if (session.renderer && typeof session.renderer.dispose === 'function') {
+    session.renderer.dispose()
+  }
 }
 
 async function main () {
@@ -134,62 +140,68 @@ async function main () {
   stage('op:ready')
 
   const views = []
+  let visualSession
 
-  await teleportAndLook([0, 72, 24], [0, 76, 0])
-  views.push(await captureOneFrame('01_approach'))
+  try {
+    await teleportAndLook([0, 72, 24], [0, 76, 0])
+    visualSession = await createVisualSession()
+    views.push(await captureOneFrame(visualSession, '01_approach'))
 
-  const walkStart = pos()
-  stage('walk:start')
-  bot.setControlState('forward', true)
-  await sleep(1800)
-  bot.setControlState('forward', false)
-  await sleep(500)
-  const walkEnd = pos()
-  stage('walk:end')
-  views.push(await captureOneFrame('02_after_walk'))
+    const walkStart = pos()
+    stage('walk:start')
+    bot.setControlState('forward', true)
+    await sleep(1800)
+    bot.setControlState('forward', false)
+    await sleep(500)
+    const walkEnd = pos()
+    stage('walk:end')
+    views.push(await captureOneFrame(visualSession, '02_after_walk'))
 
-  await teleportAndLook([16, 75, 16], [0, 76, 0])
-  views.push(await captureOneFrame('03_three_quarter'))
+    await teleportAndLook([16, 75, 16], [0, 76, 0])
+    views.push(await captureOneFrame(visualSession, '03_three_quarter'))
 
-  await teleportAndLook([0, 73, 1], [0, 74, 0])
-  views.push(await captureOneFrame('04_interior'))
+    await teleportAndLook([0, 73, 1], [0, 74, 0])
+    views.push(await captureOneFrame(visualSession, '04_interior'))
 
-  await teleportAndLook([0, 84, 42], [0, 76, 0])
-  views.push(await captureOneFrame('05_landmark_distance'))
+    await teleportAndLook([0, 84, 42], [0, 76, 0])
+    views.push(await captureOneFrame(visualSession, '05_landmark_distance'))
 
-  const dx = walkEnd[0] - walkStart[0]
-  const dy = walkEnd[1] - walkStart[1]
-  const dz = walkEnd[2] - walkStart[2]
-  const walkDistance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+    const dx = walkEnd[0] - walkStart[0]
+    const dy = walkEnd[1] - walkStart[1]
+    const dz = walkEnd[2] - walkStart[2]
+    const walkDistance = Math.sqrt(dx * dx + dy * dy + dz * dz)
 
-  const result = {
-    schema: 'supracraft.named-place-visual-smoke/v0.2',
-    minecraft: { edition: 'java', version: '26.3' },
-    renderer: {
-      name: 'prismarine-viewer-headless',
-      semantic_authority: false,
-      client_world_source: 'mineflayer exact-26.3 connection',
-      asset_policy: 'viewer 26.x compatible assets',
-      capture: 'node-canvas-webgl JPEG stream'
-    },
-    traversal: {
-      start: walkStart,
-      end: walkEnd,
-      distance: Number(walkDistance.toFixed(3)),
-      passed: walkDistance >= 1.0
-    },
-    views,
-    result: walkDistance >= 1.0 ? 'qualified_render_smoke' : 'failed_traversal'
+    const result = {
+      schema: 'supracraft.named-place-visual-smoke/v0.3',
+      minecraft: { edition: 'java', version: '26.3' },
+      renderer: {
+        name: 'prismarine-viewer-core',
+        semantic_authority: false,
+        client_world_source: 'mineflayer exact-26.3 connection',
+        asset_policy: 'viewer 26.1 presentation assets via local compatibility bridge',
+        capture: 'node-canvas-webgl after explicit chunk-render completion'
+      },
+      traversal: {
+        start: walkStart,
+        end: walkEnd,
+        distance: Number(walkDistance.toFixed(3)),
+        passed: walkDistance >= 1.0
+      },
+      views,
+      result: walkDistance >= 1.0 ? 'qualified_render_smoke' : 'failed_traversal'
+    }
+
+    fs.writeFileSync(resultFile, JSON.stringify(result, null, 2) + '\n')
+    if (!result.traversal.passed) process.exitCode = 2
+  } finally {
+    await closeVisualSession(visualSession)
   }
-
-  fs.writeFileSync(resultFile, JSON.stringify(result, null, 2) + '\n')
-  if (!result.traversal.passed) process.exitCode = 2
 }
 
 main()
   .catch(err => {
     fs.writeFileSync(resultFile, JSON.stringify({
-      schema: 'supracraft.named-place-visual-smoke/v0.2',
+      schema: 'supracraft.named-place-visual-smoke/v0.3',
       result: 'error',
       error: String(err && err.stack ? err.stack : err)
     }, null, 2) + '\n')
