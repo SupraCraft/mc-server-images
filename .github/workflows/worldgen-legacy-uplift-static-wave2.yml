@@ -1,0 +1,159 @@
+name: legacy uplift static wave 2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/analyze_legacy_uplift_wave2.py'
+      - '.github/workflows/worldgen-legacy-uplift-static-wave2.yml'
+
+concurrency:
+  group: legacy-uplift-static-wave2-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  residual-lanes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        lane:
+          - sprint-clusters
+          - voidblock-classify
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Sprint Racer residual cluster mining
+        if: matrix.lane == 'sprint-clusters'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint-racer"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+
+          python tools/analyze_legacy_uplift_wave2.py sprint-clusters             --repo "$repo"             --old "$old"             --new "$new"             --output "$RUNNER_TEMP/wave2-sprint-clusters.json"
+
+          cat "$RUNNER_TEMP/wave2-sprint-clusters.json"
+          echo SUPRACRAFT_WAVE2_SPRINT_CLUSTER_PASS
+
+      - name: Voidblock residual semantic classification
+        if: matrix.lane == 'voidblock-classify'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/voidblock"
+          pin="ea2dc4ea4eddb6ed4df10fa80ef418fd966b2e19"
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/Loweredgames/Voidblock.git
+          git -C "$repo" fetch --depth=1 origin "$pin"
+          git -C "$repo" checkout --detach FETCH_HEAD
+
+          source_pack="$repo/datapacks/Voidblock datapacks"
+          generated="$RUNNER_TEMP/voidblock-generated-26.3"
+
+          python tools/analyze_legacy_uplift_candidates.py             "$source_pack/voidblock_mc26.2"             --apply-safe "$generated"             --output-json "$RUNNER_TEMP/voidblock-safe.json"             --fail-on-safe
+
+          python tools/uplift_worldgen_26_2_to_26_3.py             "$generated"             --output-json "$RUNNER_TEMP/voidblock-worldgen.json"
+
+          python tools/analyze_legacy_uplift_wave2.py voidblock-classify             --generated "$generated"             --maintained "$source_pack/voidblock_mc26.3"             --source-26-2 "$source_pack/voidblock_mc26.2"             --output "$RUNNER_TEMP/wave2-voidblock-classify.json"
+
+          cat "$RUNNER_TEMP/wave2-voidblock-classify.json"
+          echo SUPRACRAFT_WAVE2_VOIDBLOCK_CLASSIFY_PASS
+
+      - name: Upload derived lane receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-wave2-${{ matrix.lane }}
+          path: ${{ runner.temp }}/wave2-${{ matrix.lane }}.json
+          retention-days: 14
+          if-no-files-found: error
+
+  reconcile:
+    needs: residual-lanes
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: uplift-wave2-*
+          path: receipts
+          merge-multiple: true
+
+      - name: Reconcile Wave 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+
+          root = pathlib.Path("receipts")
+          expected = {
+              "wave2-sprint-clusters.json",
+              "wave2-voidblock-classify.json",
+          }
+          actual = {p.name for p in root.glob("*.json")}
+          missing = sorted(expected - actual)
+
+          data = {
+              name: json.loads((root / name).read_text())
+              for name in sorted(expected & actual)
+          }
+
+          runtime_candidates = []
+          voidblock = data.get("wave2-voidblock-classify.json", {})
+          for entry in voidblock.get("residuals", []):
+              if entry.get("runtime_needed"):
+                  runtime_candidates.append({
+                      "source": "voidblock",
+                      "path": entry["path"],
+                      "class": entry["class"],
+                  })
+
+          result = {
+              "schema": "supracraft-legacy-uplift-wave2/1",
+              "expected_lane_count": 2,
+              "received_lane_count": len(data),
+              "missing_receipts": missing,
+              "lanes": data,
+              "runtime_candidates": runtime_candidates,
+              "runtime_launch_decision": "NOT_AUTOMATIC",
+              "rule": "Choose at most one runtime follow-up after reviewing static candidate value and whether exact source evidence can answer it first.",
+          }
+
+          pathlib.Path("wave2-reconciliation.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(result, indent=2, sort_keys=True))
+
+          if missing:
+              raise SystemExit("Wave 2 lane failure; preserve evidence and do not launch runtime")
+          print("SUPRACRAFT_WAVE2_RECONCILE_PASS")
+          PY
+
+      - name: Upload Wave 2 reconciliation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-wave2-reconciliation
+          path: wave2-reconciliation.json
+          retention-days: 14
+          if-no-files-found: warn
