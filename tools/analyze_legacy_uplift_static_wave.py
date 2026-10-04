@@ -13,6 +13,7 @@ from pathlib import Path
 from uplift_mcfunction_block_state_snbt import rewrite_text as rewrite_block_state_snbt
 from uplift_inline_loot_snbt import rewrite_text as rewrite_inline_loot_snbt
 from uplift_sign_allow_op_features import rewrite_text as rewrite_sign_op_features
+from uplift_map_color_with_mapping import load_mapping as load_map_color_mapping, rewrite_text as rewrite_map_color
 
 
 SELECTOR_START = re.compile(r"@[pares]\[")
@@ -117,7 +118,7 @@ def canonicalize_selector_order(text: str) -> str:
     return "".join(out)
 
 
-def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
+def sprint_residual(repo: Path, old: str, new: str, output: Path, map_color_recipe: Path | None = None) -> None:
     paths = [
         p for p in git(repo, "diff", "--name-only", old, new, "--", "*.mcfunction").splitlines()
         if p
@@ -130,11 +131,16 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
     selector_order_explains: list[str] = []
     residual: list[str] = []
     map_color_candidate_files: list[str] = []
+    project_recipe_candidate_files: list[str] = []
+    project_recipe_exact_files: list[str] = []
     changed_occurrences = 0
     changed_keys = 0
     loot_occurrences = 0
     sign_occurrences = 0
     map_color_occurrences = 0
+    project_recipe_occurrences = 0
+    project_recipe_unresolved = 0
+    project_mapping = load_map_color_mapping(map_color_recipe) if map_color_recipe else None
 
     residual_command_heads = collections.Counter()
     map_color_re = re.compile(r"minecraft:filled_map\[[^\n\]]*\bmap_color\s*=")
@@ -148,7 +154,17 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
 
         block_updated, block_receipts = rewrite_block_state_snbt(old_text)
         loot_updated, loot_receipts = rewrite_inline_loot_snbt(block_updated)
-        transformed, sign_receipts = rewrite_sign_op_features(loot_updated)
+        sign_updated, sign_receipts = rewrite_sign_op_features(loot_updated)
+
+        if project_mapping is not None:
+            transformed, map_receipts, map_unresolved = rewrite_map_color(sign_updated, project_mapping)
+            if map_receipts:
+                project_recipe_candidate_files.append(path)
+                project_recipe_occurrences += len(map_receipts)
+            project_recipe_unresolved += len(map_unresolved)
+        else:
+            transformed = sign_updated
+            map_receipts = []
 
         if block_receipts:
             block_candidates.append(path)
@@ -169,6 +185,8 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
         if transformed == new_text:
             if block_receipts or loot_receipts or sign_receipts:
                 safe_exact.append(path)
+            if map_receipts:
+                project_recipe_exact_files.append(path)
             continue
 
         if canonicalize_selector_order(transformed) == canonicalize_selector_order(new_text):
@@ -207,6 +225,11 @@ def sprint_residual(repo: Path, old: str, new: str, output: Path) -> None:
         "direct_sign_candidate_file_count": len(sign_candidates),
         "direct_sign_occurrence_count": sign_occurrences,
         "accepted_safe_pipeline_exact_file_count": len(safe_exact),
+        "project_map_color_recipe": str(map_color_recipe) if map_color_recipe else None,
+        "project_map_color_recipe_candidate_file_count": len(project_recipe_candidate_files),
+        "project_map_color_recipe_occurrence_count": project_recipe_occurrences,
+        "project_map_color_recipe_unresolved_count": project_recipe_unresolved,
+        "project_map_color_recipe_exact_file_count": len(project_recipe_exact_files),
         "map_color_structural_candidate_file_count": len(map_color_candidate_files),
         "map_color_structural_occurrence_count": map_color_occurrences,
         "map_color_candidate_sample": map_color_candidate_files[:50],
@@ -296,6 +319,7 @@ def main() -> int:
     s.add_argument("--old", required=True)
     s.add_argument("--new", required=True)
     s.add_argument("--output", type=Path, required=True)
+    s.add_argument("--map-color-recipe", type=Path)
 
     v = sub.add_parser("compare-trees")
     v.add_argument("--generated", type=Path, required=True)
@@ -306,7 +330,7 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
     if args.command == "sprint-residual":
-        sprint_residual(args.repo, args.old, args.new, args.output)
+        sprint_residual(args.repo, args.old, args.new, args.output, args.map_color_recipe)
     elif args.command == "compare-trees":
         compare_trees(args.generated, args.maintained, args.output)
     return 0
