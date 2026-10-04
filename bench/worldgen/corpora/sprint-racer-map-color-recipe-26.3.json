@@ -1,0 +1,29 @@
+{
+  "schema": "supracraft-map-color-project-recipe/1",
+  "id": "sprint-racer-26.2-to-26.3-map-color",
+  "class": "STRUCTURAL_REIMPLEMENTATION",
+  "automatic": false,
+  "source": {
+    "repository": "jarrodmmoore/Sprint-Racer-Dev",
+    "old": "b674e09699818878749570760444ed7147fea3dc",
+    "new": "93cdfcff9f2462313de4d568f169c0e442d94e42"
+  },
+  "mapping": {
+    "43775": "sr/item/vote_race",
+    "10066176": "sr/item/vote_selected",
+    "10066329": "sr/item/vote_base",
+    "16720384": "sr/item/vote_battle"
+  },
+  "preconditions": [
+    "legacy item is minecraft:filled_map",
+    "map_color value is one of the explicitly mapped project values",
+    "target resource pack contains the mapped item_model",
+    "item_model is not already present"
+  ],
+  "hard_negatives": [
+    "unknown map_color values",
+    "non-filled-map map_color-like fields",
+    "already-present item_model",
+    "use outside the pinned project recipe without independent qualification"
+  ]
+}
