@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           viewer_root="/tmp/supracraft-prismarine-viewer-26.3"
-          bash tools/install_prismarine_viewer_local_26_3.sh "$viewer_root"
+          bash tools/install_prismarine_viewer_local_26_3.sh             "$viewer_root" "$PRISMARINE_RUNTIME"
           cat "$viewer_root/build-receipt.json"
           echo "PRISMARINE_VIEWER_ROOT=$viewer_root" >> "$GITHUB_ENV"
           echo "NODE_PATH=$viewer_root/local-node_modules:$PRISMARINE_RUNTIME/node_modules" >> "$GITHUB_ENV"
