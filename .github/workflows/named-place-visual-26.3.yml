@@ -1,0 +1,99 @@
+name: Named-place visual Java 26.3 smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/named-place-visual-26.3.yml'
+      - 'tools/probe_named_place_visual.js'
+      - 'tools/probe_named_place_visual_26_3.py'
+      - 'tools/install_experimental_prismarine_26_3.sh'
+      - 'tools/apply_mineflayer_tick_end_26_3.py'
+      - 'probes/mineflayer-runtime/**'
+      - 'probes/26.3-release-identity.json'
+
+concurrency:
+  group: named-place-visual-26-3-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  visual-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Assemble exact 26.3 client stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_root="/tmp/supracraft-prismarine-26.3"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          npm --prefix "$runtime_root/runtime" install --no-save --ignore-scripts \
+            prismarine-viewer@1.33.0 \
+            puppeteer-core@24.26.1
+          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
+
+      - name: Confirm renderer and browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const viewer=require('prismarine-viewer/package.json')
+          const puppeteer=require('puppeteer-core/package.json')
+          console.log(JSON.stringify({viewer:viewer.version,puppeteer:puppeteer.version},null,2))
+          NODE
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser
+
+      - name: Exact server-client walk and render smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/named-place-visual"
+          mkdir -p "$RUNNER_TEMP/named-place-visual"
+          python tools/probe_named_place_visual_26_3.py \
+            --evidence probes/26.3-release-identity.json \
+            --output-dir "$RUNNER_TEMP/named-place-visual"
+
+      - name: Publish receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$RUNNER_TEMP/named-place-visual/visual-receipt.json" ]]; then
+            {
+              echo '## Named-place visual Java 26.3 smoke'
+              echo
+              echo '~~~json'
+              cat "$RUNNER_TEMP/named-place-visual/visual-receipt.json"
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload derived visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: named-place-visual-26.3-smoke
+          path: |
+            ${{ runner.temp }}/named-place-visual/visual-receipt.json
+            ${{ runner.temp }}/named-place-visual/*.png
+          retention-days: 14
+          if-no-files-found: warn
