@@ -1,0 +1,97 @@
+name: legacy uplift swing animation candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/uplift_swing_animation_candidate.py'
+      - 'tests/test_swing_animation_candidate.py'
+      - '.github/workflows/worldgen-legacy-uplift-swing-animation.yml'
+
+concurrency:
+  group: legacy-uplift-swing-animation
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests
+        run: python -m unittest tests.test_swing_animation_candidate -v
+
+      - name: Exact Baphomet direct-map and control-flow reps
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/baphomet"
+          old='v0.11.0+mc26.2'
+          new='v0.12.0+mc26.3'
+          simple='datapacks/BaphomethSlab/data/42/function/labs/items/simple/misc.mcfunction'
+          control='datapacks/BaphomethSlab/data/42/function/labs/util/store_all_components.mcfunction'
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/Baphomet42/Data-Packs.git
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$old:refs/tags/$old"
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$new:refs/tags/$new"
+
+          git -C "$repo" show "$old:$simple" > "$RUNNER_TEMP/simple-old.mcfunction"
+          git -C "$repo" show "$new:$simple" > "$RUNNER_TEMP/simple-new.mcfunction"
+          git -C "$repo" show "$old:$control" > "$RUNNER_TEMP/control-old.mcfunction"
+
+          python tools/uplift_swing_animation_candidate.py             "$RUNNER_TEMP/simple-old.mcfunction"             "$RUNNER_TEMP/simple-uplift.mcfunction"             --mode attack             --receipt "$RUNNER_TEMP/simple-receipt.json"             --require-change
+
+          cmp "$RUNNER_TEMP/simple-uplift.mcfunction" "$RUNNER_TEMP/simple-new.mcfunction"
+
+          python tools/uplift_swing_animation_candidate.py             "$RUNNER_TEMP/control-old.mcfunction"             "$RUNNER_TEMP/control-uplift.mcfunction"             --mode both             --receipt "$RUNNER_TEMP/control-receipt.json"
+
+          python - "$RUNNER_TEMP/simple-receipt.json" "$RUNNER_TEMP/control-receipt.json" "$RUNNER_TEMP/swing-qualification.json" <<'PY'
+          import json, pathlib, sys
+          simple_p, control_p, out_p = map(pathlib.Path, sys.argv[1:])
+          simple = json.loads(simple_p.read_text())
+          control = json.loads(control_p.read_text())
+
+          assert simple["direct_component_rewrite_count"] == 2
+          assert not simple["requires_structural_followup"]
+
+          counts = control["unhandled_control_surface_counts"]
+          assert control["direct_component_rewrite_count"] == 0
+          assert control["requires_structural_followup"]
+          assert counts["negated_component_key"] >= 1
+          assert counts["component_predicate"] >= 1
+          assert counts["storage_or_path_reference"] >= 1
+
+          result = {
+              "schema": "supracraft-swing-animation-exact-qualification/1",
+              "simple_attack_mode_exact_whole_file": True,
+              "simple_direct_component_rewrites": simple["direct_component_rewrite_count"],
+              "control_flow_requires_structural_followup": True,
+              "control_unhandled_counts": counts,
+              "classification": "STRUCTURAL_MIGRATION_BOUNDARY_CONFIRMED"
+          }
+          out_p.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2, sort_keys=True))
+          print("SUPRACRAFT_SWING_ANIMATION_CANDIDATE_PASS")
+          PY
+
+      - name: Upload derived receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: swing-animation-26.3-candidate
+          path: |
+            ${{ runner.temp }}/simple-receipt.json
+            ${{ runner.temp }}/control-receipt.json
+            ${{ runner.temp }}/swing-qualification.json
+          retention-days: 14
+          if-no-files-found: error
