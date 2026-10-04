@@ -49,8 +49,7 @@ jobs:
           bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
           npm --prefix "$runtime_root/runtime" install --no-save \
             prismarine-viewer@1.33.0 \
-            puppeteer-core@24.26.1 \
-            canvas@3.2.0
+            github:PrismarineJS/node-canvas-webgl#c183e0a8e5ad8bdc2f1e4f3c1ba0b2592ad952f0
           echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
 
       - name: Confirm renderer and browser
@@ -59,10 +58,10 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const viewer=require('prismarine-viewer/package.json')
-          const puppeteer=require('puppeteer-core/package.json')
-          console.log(JSON.stringify({viewer:viewer.version,puppeteer:puppeteer.version},null,2))
+          const canvasWebgl=require('node-canvas-webgl/package.json')
+          console.log(JSON.stringify({viewer:viewer.version,nodeCanvasWebgl:canvasWebgl.version},null,2))
           NODE
-          command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser
+          command -v ffmpeg
 
       - name: Exact server-client walk and render smoke
         shell: bash
@@ -111,6 +110,6 @@ jobs:
           name: named-place-visual-26.3-smoke
           path: |
             ${{ runner.temp }}/named-place-visual/visual-receipt.json
-            ${{ runner.temp }}/named-place-visual/*.png
+            ${{ runner.temp }}/named-place-visual/*.jpg
           retention-days: 14
           if-no-files-found: warn
