@@ -42,6 +42,8 @@ const bot = mineflayer.createBot({
 let browser
 let page
 let viewerStarted = false
+const browserConsole = []
+const browserErrors = []
 
 function pos () {
   const p = bot.entity.position
@@ -55,12 +57,37 @@ async function teleportAndLook (xyz, target) {
   await sleep(750)
 }
 
+async function renderState () {
+  return await page.evaluate(() => {
+    const canvases = [...document.querySelectorAll('canvas')].map(c => ({
+      width: c.width,
+      height: c.height,
+      clientWidth: c.clientWidth,
+      clientHeight: c.clientHeight
+    }))
+    return {
+      readyState: document.readyState,
+      title: document.title,
+      bodyText: document.body ? document.body.innerText.slice(0, 500) : '',
+      canvases
+    }
+  })
+}
+
 async function shot (name) {
   const out = path.join(outputDir, name + '.png')
   await page.screenshot({ path: out })
   const stat = fs.statSync(out)
-  if (stat.size < 5000) throw new Error('screenshot unexpectedly small: ' + out)
-  return { name, path: out, bytes: stat.size, bot_position: pos() }
+  const state = await renderState()
+  if (stat.size < 5000) {
+    throw new Error('screenshot unexpectedly small: ' + out + '; diagnostics=' + JSON.stringify({
+      bytes: stat.size,
+      state,
+      browserConsole: browserConsole.slice(-30),
+      browserErrors: browserErrors.slice(-30)
+    }))
+  }
+  return { name, path: out, bytes: stat.size, bot_position: pos(), render_state: state }
 }
 
 async function main () {
@@ -83,6 +110,8 @@ async function main () {
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=swiftshader']
   })
   page = await browser.newPage()
+  page.on('console', msg => browserConsole.push(msg.type() + ': ' + msg.text()))
+  page.on('pageerror', err => browserErrors.push(String(err && err.stack ? err.stack : err)))
   await page.setViewport({ width: 960, height: 540, deviceScaleFactor: 1 })
   await page.goto('http://127.0.0.1:3007', { waitUntil: 'networkidle2', timeout: 30000 })
   await sleep(3500)
@@ -140,7 +169,9 @@ main()
     fs.writeFileSync(resultFile, JSON.stringify({
       schema: 'supracraft.named-place-visual-smoke/v0.1',
       result: 'error',
-      error: String(err && err.stack ? err.stack : err)
+      error: String(err && err.stack ? err.stack : err),
+      browser_console: browserConsole.slice(-50),
+      browser_errors: browserErrors.slice(-50)
     }, null, 2) + '\n')
     process.exitCode = 1
   })
