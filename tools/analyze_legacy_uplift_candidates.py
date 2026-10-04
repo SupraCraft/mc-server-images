@@ -23,6 +23,7 @@ from typing import Any
 
 from uplift_predicate_26_2_to_26_3 import uplift_predicate_document
 from uplift_mcfunction_block_state_snbt import rewrite_text as rewrite_block_state_snbt
+from uplift_inline_loot_snbt import rewrite_text as rewrite_inline_loot_snbt
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = REPO_ROOT / "bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json"
@@ -118,9 +119,11 @@ def safe_findings_for_json(path: Path, root: Path, data: Any) -> list[dict[str, 
 
 
 def safe_findings_for_mcfunction(path: Path, root: Path, text: str) -> list[dict[str, Any]]:
-    _updated, receipts = rewrite_block_state_snbt(text)
+    _updated_block, block_receipts = rewrite_block_state_snbt(text)
+    _updated_loot, loot_receipts = rewrite_inline_loot_snbt(text)
     findings: list[dict[str, Any]] = []
-    for receipt in receipts:
+
+    for receipt in block_receipts:
         findings.append({
             "rule_id": "mcfunction_block_state_snbt_Name_Properties_to_id_properties",
             "class": "SAFE_SYNTACTIC",
@@ -132,6 +135,28 @@ def safe_findings_for_mcfunction(path: Path, root: Path, text: str) -> list[dict
                 "change_count": receipt["change_count"],
             },
         })
+
+    for receipt in loot_receipts:
+        offset = receipt["offset"]
+        findings.append({
+            "rule_id": "inline_loot_functions_to_modifier",
+            "class": "SAFE_SYNTACTIC",
+            "automatic": True,
+            "path": relstr(path, root),
+            "json_pointer": f"@offset:{offset}",
+            "detail": {"field_change": "functions_to_modifier"},
+        })
+        if int(receipt.get("loot_function_discriminator_changes", 0)):
+            findings.append({
+                "rule_id": "inline_loot_function_discriminator_to_type",
+                "class": "SAFE_SYNTACTIC",
+                "automatic": True,
+                "path": relstr(path, root),
+                "json_pointer": f"@offset:{offset}:loot-functions",
+                "detail": {
+                    "change_count": int(receipt["loot_function_discriminator_changes"])
+                },
+            })
     return findings
 
 
@@ -317,14 +342,20 @@ def apply_safe(source: Path, output: Path, catalog: dict[str, Any]) -> dict[str,
                 text = path.read_text(encoding="utf-8")
             except UnicodeDecodeError:
                 continue
-            updated_text, receipts = rewrite_block_state_snbt(text)
-            if receipts:
-                path.write_text(updated_text, encoding="utf-8")
+            block_updated, block_receipts = rewrite_block_state_snbt(text)
+            fully_updated, loot_receipts = rewrite_inline_loot_snbt(block_updated)
+            if block_receipts or loot_receipts:
+                path.write_text(fully_updated, encoding="utf-8")
                 mcfunction_changes.append({
                     "path": relstr(path, output),
-                    "changed_occurrence_count": len(receipts),
-                    "changed_key_count": sum(int(x["change_count"]) for x in receipts),
-                    "fields": sorted({str(x.get("field")) for x in receipts}),
+                    "changed_occurrence_count": len(block_receipts),
+                    "changed_key_count": sum(int(x["change_count"]) for x in block_receipts),
+                    "fields": sorted({str(x.get("field")) for x in block_receipts}),
+                    "changed_loot_entry_count": len(loot_receipts),
+                    "loot_function_discriminator_change_count": sum(
+                        int(x.get("loot_function_discriminator_changes", 0))
+                        for x in loot_receipts
+                    ),
                 })
 
     post_scan = scan(output, catalog)
