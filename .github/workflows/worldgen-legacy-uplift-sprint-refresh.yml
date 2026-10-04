@@ -1,0 +1,55 @@
+name: legacy uplift sprint residual refresh
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/analyze_legacy_uplift_static_wave.py'
+      - '.github/workflows/worldgen-legacy-uplift-sprint-refresh.yml'
+
+concurrency:
+  group: legacy-uplift-sprint-refresh
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Refresh exact Sprint residual receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/sprint"
+          old="b674e09699818878749570760444ed7147fea3dc"
+          new="93cdfcff9f2462313de4d568f169c0e442d94e42"
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/jarrodmmoore/Sprint-Racer-Dev.git
+          git -C "$repo" fetch --depth=1 origin "$old"
+          git -C "$repo" fetch --depth=1 origin "$new"
+          python -m py_compile \
+            tools/analyze_legacy_uplift_static_wave.py \
+            tools/uplift_mcfunction_block_state_snbt.py \
+            tools/uplift_inline_loot_snbt.py \
+            tools/uplift_sign_allow_op_features.py
+          python tools/analyze_legacy_uplift_static_wave.py sprint-residual \
+            --repo "$repo" --old "$old" --new "$new" \
+            --output "$RUNNER_TEMP/sprint-residual-current.json"
+          cat "$RUNNER_TEMP/sprint-residual-current.json"
+          echo SUPRACRAFT_SPRINT_RESIDUAL_REFRESH_PASS
+      - name: Upload derived receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-residual-current
+          path: ${{ runner.temp }}/sprint-residual-current.json
+          retention-days: 14
+          if-no-files-found: error
