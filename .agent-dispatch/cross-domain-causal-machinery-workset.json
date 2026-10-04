@@ -540,19 +540,13 @@
         "next_ready": [
           {
             "priority": 1,
-            "task": "Cluster the remaining 329 Sprint Racer residual mcfunction files into high-yield migration families using static analysis only.",
-            "budget": "one cheap static lane",
-            "gate": "Do not promote selector ordering without independent semantic need/evidence."
+            "task": "Develop a nonautomatic 26.3 migration method for legacy minecraft:swing_animation, preserving the attack/interact semantic split and requiring explicit mode selection.",
+            "budget": "static/source only initially; no runtime until a concrete behavior contract is selected."
           },
           {
             "priority": 2,
-            "task": "Split the 15 Voidblock residual common files into version metadata/content changes vs unresolved worldgen semantics.",
-            "budget": "static first; exact runtime only for one unresolved semantic family if static/source evidence cannot decide."
-          },
-          {
-            "priority": 3,
-            "task": "Seek a third independently maintained exact 26.2/26.3 artifact for rule generalization.",
-            "budget": "research/static intake; no server boot unless it exposes a unique bounded semantic question."
+            "task": "Mine high-frequency Sprint filled-map/custom-name residuals for another schema migration family.",
+            "budget": "one static lane after swing method is bounded."
           }
         ],
         "wave_2": {
@@ -715,6 +709,70 @@
           "fix_commit": "8a519c2286155adef508adaa9fe2683a4760f4d7",
           "acceptance_criteria_changed": false,
           "runtime_required": false
+        },
+        "inline_loot": {
+          "state": "QUALIFIED_AND_INTEGRATED",
+          "rule_ids": [
+            "inline_loot_functions_to_modifier",
+            "inline_loot_function_discriminator_to_type"
+          ],
+          "tool": "tools/uplift_inline_loot_snbt.py",
+          "initial_failed_run": {
+            "run_id": 37166260736,
+            "cause": "scope regex accidentally matched literal backslash-s rather than whitespace",
+            "preserved": true,
+            "acceptance_criteria_changed": false
+          },
+          "fixed_run": {
+            "run_id": 37166325066,
+            "job_id": 111329846442,
+            "state": "PASS",
+            "artifact_id": 11289657588,
+            "artifact_digest": "sha256:749f6fbb442c10f686ebe8b3f53173dd03044c3ab5bf8216fdd7adefb99ba498",
+            "legacy_functions_lists": 1,
+            "uplift_modifier_lists": 1,
+            "maintainer_modifier_lists": 1,
+            "uplift_function_types": [
+              "set_components",
+              "copy_components"
+            ],
+            "maintainer_function_types": [
+              "set_components",
+              "copy_components"
+            ],
+            "schema_projection_equal": true
+          },
+          "generic_integration": {
+            "commit": "60d2b704dc9d150b7896cb54d0334559388e94c1",
+            "catalog_commit": "f1b93ab9d021baf98e9c6062c0dff64116ac008a",
+            "end_to_end_test_commit": "9d7a09835f546f2d442aeb501a29f7d33b6daf49",
+            "catalog_rule_count": 16,
+            "validation_run": 37166428001,
+            "validation_state": "PASS"
+          },
+          "boundary": "Only functions->modifier and loot-function discriminator function->type are automatic. Loot condition schema and other 26.3 changes remain separate."
+        },
+        "resource_cleanup": {
+          "automatic_regression_spine": {
+            "workflow": ".github/workflows/worldgen-legacy-uplift-263.yml",
+            "concurrency_group": "legacy-uplift-candidate-${github.ref}",
+            "cancel_in_progress": true,
+            "last_run": 37166457762,
+            "last_state": "PASS"
+          },
+          "historical_workflows_manual_only": [
+            "worldgen-legacy-uplift-static-wave.yml",
+            "worldgen-legacy-uplift-static-wave2.yml",
+            "worldgen-legacy-uplift-static-wave3.yml",
+            "worldgen-legacy-uplift-static-wave4.yml",
+            "worldgen-legacy-uplift-sprint-racer-snbt.yml",
+            "worldgen-legacy-uplift-inline-loot.yml",
+            "worldgen-legacy-uplift-baphomet-confirm.yml",
+            "worldgen-legacy-uplift-263-runtime.yml",
+            "worldgen-legacy-uplift-263-runtime-v2.yml",
+            "worldgen-legacy-uplift-vanilla-spawn-oracle.yml"
+          ],
+          "result": "one automatic generic candidate/regression spine; historical qualification/runtime reps are manual-only"
         }
       }
     }
