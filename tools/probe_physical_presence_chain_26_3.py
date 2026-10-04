@@ -21,7 +21,7 @@ PORT = 25569
 PLATE = [0, 70, 0]
 WIRE = [1, 70, 0]
 TRAPDOOR = [2, 70, 0]
-LAMP = [1, 70, 1]
+LAMP = [1, 69, 0]
 INSIDE = [0.5, 70.1, 0.5]
 OUTSIDE = [10.5, 70.1, 0.5]
 
@@ -166,7 +166,7 @@ def reset_diagnostics() -> dict[str, str]:
             "if block 2 70 0 minecraft:iron_trapdoor[open=false,powered=false]"
         ),
         "lamp_unlit": (
-            "if block 1 70 1 minecraft:redstone_lamp[lit=false]"
+            "if block 1 69 0 minecraft:redstone_lamp[lit=false]"
         ),
     }
 
@@ -183,7 +183,7 @@ def active_diagnostics() -> dict[str, str]:
             "if block 2 70 0 minecraft:iron_trapdoor[open=true,powered=true]"
         ),
         "lamp_lit": (
-            "if block 1 70 1 minecraft:redstone_lamp[lit=true]"
+            "if block 1 69 0 minecraft:redstone_lamp[lit=true]"
         ),
     }
 
@@ -194,7 +194,7 @@ def reset_predicate() -> str:
         "if block 0 70 0 minecraft:stone_pressure_plate[powered=false] "
         "if block 1 70 0 minecraft:redstone_wire[power=0] "
         "if block 2 70 0 minecraft:iron_trapdoor[open=false,powered=false] "
-        "if block 1 70 1 minecraft:redstone_lamp[lit=false]"
+        "if block 1 69 0 minecraft:redstone_lamp[lit=false]"
     )
 
 
@@ -204,7 +204,7 @@ def active_predicate() -> str:
         "if block 0 70 0 minecraft:stone_pressure_plate[powered=true] "
         "if block 1 70 0 minecraft:redstone_wire[power=15] "
         "if block 2 70 0 minecraft:iron_trapdoor[open=true,powered=true] "
-        "if block 1 70 1 minecraft:redstone_lamp[lit=true]"
+        "if block 1 69 0 minecraft:redstone_lamp[lit=true]"
     )
 
 
@@ -279,7 +279,7 @@ def main() -> int:
                 send(server, "setblock 0 70 0 minecraft:stone_pressure_plate")
                 send(server, "setblock 1 70 0 minecraft:redstone_wire")
                 send(server, "setblock 2 70 0 minecraft:iron_trapdoor")
-                send(server, "setblock 1 70 1 minecraft:redstone_lamp")
+                send(server, "setblock 1 69 0 minecraft:redstone_lamp")
                 time.sleep(1)
 
                 initial_attempts, initial_wait = wait_for_state(
