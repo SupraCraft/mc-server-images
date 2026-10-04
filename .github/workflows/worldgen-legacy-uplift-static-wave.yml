@@ -2,18 +2,6 @@ name: legacy uplift static wave
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/legacy-uplift-263-v1
-    paths:
-      - 'tools/analyze_legacy_uplift_static_wave.py'
-      - 'tools/analyze_legacy_uplift_candidates.py'
-      - 'tools/uplift_worldgen_26_2_to_26_3.py'
-      - 'tools/uplift_mcfunction_block_state_snbt.py'
-      - 'tests/test_legacy_uplift.py'
-      - 'tests/test_mcfunction_block_state_uplift.py'
-      - 'bench/worldgen/corpora/legacy-uplift-rules-26.3-v1.json'
-      - '.github/workflows/worldgen-legacy-uplift-static-wave.yml'
 
 concurrency:
   group: legacy-uplift-static-wave-${{ github.ref }}
