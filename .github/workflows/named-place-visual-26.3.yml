@@ -11,6 +11,7 @@ on:
       - 'tools/probe_named_place_visual_26_3.py'
       - 'tools/install_experimental_prismarine_26_3.sh'
       - 'tools/apply_mineflayer_tick_end_26_3.py'
+      - 'tools/apply_prismarine_viewer_26_3_assets_fallback.py'
       - 'probes/mineflayer-runtime/**'
       - 'probes/26.3-release-identity.json'
 
