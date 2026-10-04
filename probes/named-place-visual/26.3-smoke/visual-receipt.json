@@ -1,82 +1,111 @@
 {
-  "schema": "supracraft.named-place-visual-smoke/v0.3",
+  "chrome_executable": "google-chrome",
   "minecraft": {
     "edition": "java",
     "version": "26.3"
   },
+  "official_server_verified": true,
   "renderer": {
-    "name": "prismarine-viewer-core",
-    "semantic_authority": false,
-    "client_world_source": "mineflayer exact-26.3 connection",
     "asset_policy": "viewer 26.1 presentation assets via local compatibility bridge",
     "capture": "node-canvas-webgl after explicit chunk-render completion",
-    "render_view_distance_chunks": 4
+    "client_world_source": "mineflayer exact-26.3 connection",
+    "inspection_camera_policy": "viewer-only; traversal actor remains grounded",
+    "name": "prismarine-viewer-core",
+    "render_view_distance_chunks": 4,
+    "semantic_authority": false
   },
+  "result": "qualified_render_smoke",
+  "schema": "supracraft.named-place-visual-smoke/v0.3",
+  "status_protocol": 777,
   "traversal": {
+    "distance": 11.435,
+    "end": [
+      0.391,
+      69.938,
+      13.066
+    ],
+    "passed": true,
     "start": [
       0.5,
       69.938,
       24.5
-    ],
-    "end": [
-      0.389,
-      69.938,
-      12.85
-    ],
-    "distance": 11.651,
-    "passed": true
+    ]
   },
   "views": [
     {
-      "name": "01_approach",
-      "path": "/home/runner/work/_temp/named-place-visual/01_approach.jpg",
-      "bytes": 48847,
       "bot_position": [
         0.5,
         69.938,
         24.5
-      ]
-    },
-    {
-      "name": "02_after_walk",
-      "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg",
-      "bytes": 120678,
-      "bot_position": [
-        0.389,
+      ],
+      "bytes": 48847,
+      "camera_position": [
+        0.5,
         69.938,
-        12.85
-      ]
+        24.5
+      ],
+      "name": "01_approach",
+      "path": "/home/runner/work/_temp/named-place-visual/01_approach.jpg"
     },
     {
+      "bot_position": [
+        0.391,
+        69.938,
+        13.066
+      ],
+      "bytes": 118260,
+      "camera_position": [
+        0.391,
+        69.938,
+        13.066
+      ],
+      "name": "02_after_walk",
+      "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
+    },
+    {
+      "bot_position": [
+        0.391,
+        69.938,
+        13.066
+      ],
+      "bytes": 56256,
+      "camera_position": [
+        16,
+        75,
+        16
+      ],
       "name": "03_three_quarter",
-      "path": "/home/runner/work/_temp/named-place-visual/03_three_quarter.jpg",
-      "bytes": 19730,
-      "bot_position": [
-        16.5,
-        39.105,
-        16.5
-      ]
+      "path": "/home/runner/work/_temp/named-place-visual/03_three_quarter.jpg"
     },
     {
-      "name": "04_interior",
-      "path": "/home/runner/work/_temp/named-place-visual/04_interior.jpg",
-      "bytes": 101127,
       "bot_position": [
-        0.5,
+        0.391,
+        69.938,
+        13.066
+      ],
+      "bytes": 87894,
+      "camera_position": [
+        0,
         71,
-        1.5
-      ]
+        2
+      ],
+      "name": "04_interior",
+      "path": "/home/runner/work/_temp/named-place-visual/04_interior.jpg"
     },
     {
-      "name": "05_landmark_distance",
-      "path": "/home/runner/work/_temp/named-place-visual/05_landmark_distance.jpg",
-      "bytes": 15142,
       "bot_position": [
-        0.5,
-        48.105,
-        42.5
-      ]
+        0.391,
+        69.938,
+        13.066
+      ],
+      "bytes": 17057,
+      "camera_position": [
+        0,
+        84,
+        42
+      ],
+      "name": "05_landmark_distance",
+      "path": "/home/runner/work/_temp/named-place-visual/05_landmark_distance.jpg"
     }
-  ],
-  "result": "qualified_render_smoke"
+  ]
 }
