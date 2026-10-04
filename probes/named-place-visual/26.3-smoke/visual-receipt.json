@@ -15,52 +15,52 @@
   "traversal": {
     "start": [
       0.5,
-      72,
+      69.938,
       24.5
     ],
     "end": [
-      0.42,
-      72,
-      24.3
+      0.389,
+      69.938,
+      12.85
     ],
-    "distance": 0.215,
-    "passed": false
+    "distance": 11.651,
+    "passed": true
   },
   "views": [
     {
       "name": "01_approach",
       "path": "/home/runner/work/_temp/named-place-visual/01_approach.jpg",
-      "bytes": 136268,
+      "bytes": 48847,
       "bot_position": [
         0.5,
-        72,
+        69.938,
         24.5
       ]
     },
     {
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg",
-      "bytes": 135911,
+      "bytes": 120678,
       "bot_position": [
-        0.42,
-        72,
-        24.3
+        0.389,
+        69.938,
+        12.85
       ]
     },
     {
       "name": "03_three_quarter",
       "path": "/home/runner/work/_temp/named-place-visual/03_three_quarter.jpg",
-      "bytes": 122880,
+      "bytes": 19730,
       "bot_position": [
         16.5,
-        75,
+        39.105,
         16.5
       ]
     },
     {
       "name": "04_interior",
       "path": "/home/runner/work/_temp/named-place-visual/04_interior.jpg",
-      "bytes": 105454,
+      "bytes": 101127,
       "bot_position": [
         0.5,
         71,
@@ -70,13 +70,13 @@
     {
       "name": "05_landmark_distance",
       "path": "/home/runner/work/_temp/named-place-visual/05_landmark_distance.jpg",
-      "bytes": 123997,
+      "bytes": 15142,
       "bot_position": [
         0.5,
-        84,
+        48.105,
         42.5
       ]
     }
   ],
-  "result": "failed_traversal"
+  "result": "qualified_render_smoke"
 }
