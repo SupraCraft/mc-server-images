@@ -1,0 +1,130 @@
+name: legacy uplift static wave 3
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/legacy-uplift-263-v1
+    paths:
+      - 'tools/probe_vanilla_noise_settings_uplift.py'
+      - 'tools/analyze_baphomet_third_corpus.py'
+      - '.github/workflows/worldgen-legacy-uplift-static-wave3.yml'
+
+concurrency:
+  group: legacy-uplift-static-wave3-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-lanes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        lane:
+          - vanilla-noise-oracle
+          - baphomet-third-corpus
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Exact Mojang noise-settings oracle
+        if: matrix.lane == 'vanilla-noise-oracle'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_vanilla_noise_settings_uplift.py             --old 26.2             --new 26.3             --output "$RUNNER_TEMP/wave3-vanilla-noise-oracle.json"
+          cat "$RUNNER_TEMP/wave3-vanilla-noise-oracle.json"
+          echo SUPRACRAFT_WAVE3_VANILLA_NOISE_PASS
+
+      - name: Exact Baphomet42 third-corpus intake
+        if: matrix.lane == 'baphomet-third-corpus'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/baphomet"
+          old='v0.11.0+mc26.2'
+          new='v0.12.0+mc26.3'
+
+          git init "$repo"
+          git -C "$repo" remote add origin https://github.com/Baphomet42/Data-Packs.git
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$old:refs/tags/$old"
+          git -C "$repo" fetch --depth=1 origin "refs/tags/$new:refs/tags/$new"
+
+          python tools/analyze_baphomet_third_corpus.py             --repo "$repo"             --old "$old"             --new "$new"             --output "$RUNNER_TEMP/wave3-baphomet-third-corpus.json"
+
+          cat "$RUNNER_TEMP/wave3-baphomet-third-corpus.json"
+          echo SUPRACRAFT_WAVE3_BAPHOMET_PASS
+
+      - name: Upload derived lane receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-wave3-${{ matrix.lane }}
+          path: ${{ runner.temp }}/wave3-${{ matrix.lane }}.json
+          retention-days: 14
+          if-no-files-found: error
+
+  reconcile:
+    needs: evidence-lanes
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: uplift-wave3-*
+          path: receipts
+          merge-multiple: true
+
+      - name: Reconcile Wave 3
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+
+          root = pathlib.Path("receipts")
+          expected = {
+              "wave3-vanilla-noise-oracle.json",
+              "wave3-baphomet-third-corpus.json",
+          }
+          actual = {p.name for p in root.glob("*.json")}
+          missing = sorted(expected - actual)
+          data = {
+              name: json.loads((root / name).read_text())
+              for name in sorted(expected & actual)
+          }
+
+          result = {
+              "schema": "supracraft-legacy-uplift-wave3/1",
+              "expected_lane_count": 2,
+              "received_lane_count": len(data),
+              "missing_receipts": missing,
+              "lanes": data,
+              "runtime_launch_decision": "NOT_AUTOMATIC",
+              "rule": "Use exact static/source authority first; runtime is eligible only if a semantic uncertainty survives reconciliation.",
+          }
+          pathlib.Path("wave3-reconciliation.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(result, indent=2, sort_keys=True))
+          if missing:
+              raise SystemExit("Wave 3 lane failure; do not launch runtime")
+          print("SUPRACRAFT_WAVE3_RECONCILE_PASS")
+          PY
+
+      - name: Upload Wave 3 reconciliation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uplift-wave3-reconciliation
+          path: wave3-reconciliation.json
+          retention-days: 14
+          if-no-files-found: warn
