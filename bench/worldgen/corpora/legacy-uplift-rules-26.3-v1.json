@@ -515,6 +515,42 @@
         "artifact:11289657588",
         "Minecraft Java 26.3 loot schema"
       ]
+    },
+    {
+      "id": "swing_animation_split_explicit_mode",
+      "class": "STRUCTURAL_REIMPLEMENTATION",
+      "automatic": false,
+      "source_scope": "26.2 direct quoted minecraft:swing_animation item-component map entries in command SNBT",
+      "target_scope": "26.3+ minecraft:attack_animation and/or minecraft:interact_animation item components",
+      "detect": {
+        "kind": "text_regex",
+        "pattern": "\"minecraft:swing_animation\"\\s*:"
+      },
+      "transform": "after recovering interaction intent, explicitly map swing_animation to attack_animation, interact_animation, or both; never infer the mode from syntax alone",
+      "preconditions": [
+        "legacy occurrence is a direct quoted item-component map key",
+        "attack/interact/both intent is explicitly established",
+        "component value is preserved exactly",
+        "source is retained as immutable provenance"
+      ],
+      "hard_negatives": [
+        "negated component keys",
+        "component predicates",
+        "storage or NBT path references",
+        "ambiguous attack versus interact intent",
+        "arbitrary quoted text containing the component id"
+      ],
+      "validation": [
+        "unit hard negatives preserve control-flow surfaces",
+        "Baphomet exact 26.2->26.3 direct-map example converges under attack mode using an order-insensitive component-map semantic projection",
+        "all unrelated source lines and all non-component text on targeted lines remain exact"
+      ],
+      "runtime_equivalence_required": true,
+      "evidence": [
+        "workflow:37215610558",
+        "commit:c3e4ecdef18b167e7628713e9f9a1c5ff3190fa2",
+        "Baphomet42/Data-Packs v0.11.0+mc26.2 -> v0.12.0+mc26.3"
+      ]
     }
   ]
 }
