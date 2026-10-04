@@ -554,7 +554,86 @@
             "task": "Seek a third independently maintained exact 26.2/26.3 artifact for rule generalization.",
             "budget": "research/static intake; no server boot unless it exposes a unique bounded semantic question."
           }
-        ]
+        ],
+        "wave_2": {
+          "state": "PASS",
+          "run_id": 37165273326,
+          "head": "26887142efdfd9a9cac170ee0e6023feb2f4e3b9",
+          "artifacts": {
+            "sprint": {
+              "id": 11289187499,
+              "digest": "sha256:e21bd5605c25d4e6403850b62092d4edd11b7eac4e6b0d3cdb9eb74bb48b9d40"
+            },
+            "voidblock": {
+              "id": 11288827970,
+              "digest": "sha256:2997a365a4320403b95e146effa8e43512bbeb3935215edcf544965140fe308e"
+            },
+            "reconcile": {
+              "id": 11288858047,
+              "digest": "sha256:5a623c3fc0426f2a0021cd4b285ef4b45b855c8b40ba156dd9ef5782668319c8"
+            }
+          },
+          "voidblock": {
+            "residual_count": 15,
+            "classes": {
+              "RELEASE_METADATA_ONLY": 6,
+              "MAINTAINER_BEHAVIOR_CHANGE": 3,
+              "MAINTAINER_NEW_CONTENT_TAG_MEMBERSHIP": 1,
+              "MAINTAINER_SPAWN_CONTENT_CHANGE": 2,
+              "UNRESOLVED_WORLDGEN_SEMANTIC_DELTA": 3
+            },
+            "runtime_candidates": [
+              "data/minecraft/worldgen/noise_settings/large_biomes.json",
+              "data/minecraft/worldgen/noise_settings/nether.json",
+              "data/minecraft/worldgen/noise_settings/overworld.json"
+            ],
+            "conclusion": "12/15 residuals are release metadata or intentional maintainer content/behavior; only three noise-settings deltas remain semantically unresolved."
+          },
+          "sprint": {
+            "residual_files_after_known_normalizations": 329,
+            "release_metadata_only_files": 0,
+            "notable_repeated_candidates": [
+              "filled-map/custom-name/item representation changes across voting UI",
+              "sign/front_text representation changes",
+              "carriedBlockState legacy Name -> id observed repeatedly"
+            ],
+            "boundary": "Repeated signatures are candidate migration families only; selector ordering remains discovery-only."
+          },
+          "reconciliation": {
+            "state": "PASS",
+            "runtime_auto_launch": false
+          }
+        },
+        "wave_3": {
+          "state": "EXECUTING",
+          "run_id": 37165556370,
+          "lanes": [
+            {
+              "id": "vanilla_noise_settings_oracle",
+              "authority": "official Mojang 26.2 + 26.3 server artifacts",
+              "goal": "Resolve whether remaining Voidblock noise-settings residuals are required compatibility semantics or maintainer content/tuning."
+            },
+            {
+              "id": "third_corpus_baphomet",
+              "authority": [
+                "Baphomet42/Data-Packs@v0.11.0+mc26.2",
+                "Baphomet42/Data-Packs@v0.12.0+mc26.3"
+              ],
+              "exact_commits": {
+                "old": "0a5cfbdac02fb2a2218e3a26613fa3eeb89eb927",
+                "new": "47a568a174b510603aeb8e8fe501a64daf096d96"
+              },
+              "pack_formats": {
+                "old": 107,
+                "new": 121
+              },
+              "source_boundary": "No LICENSE/COPYING file found; README permits showcase/fork with credit. Ephemeral analysis and derived receipts only.",
+              "goal": "Independently validate accepted predicate migration and discover additional 26.3 uplift families."
+            }
+          ],
+          "max_parallel": 2,
+          "runtime_boot": false
+        }
       }
     }
   },
