@@ -228,7 +228,10 @@ async function main () {
       visualSession, '03_three_quarter', [16, 75, 16], [0, 76, 0]
     ))
     views.push(await captureOneFrame(
-      visualSession, '04_interior', [0, 71, 2], [0, 74, 0]
+      // Put the viewer just inside the south doorway and look down the central
+      // aisle at eye level. This exposes use-space depth, both side bays, and
+      // the loft without the previous steep upward composition.
+      visualSession, '04_interior', [0, 70.1, 5], [0, 72, -3]
     ))
     views.push(await captureOneFrame(
       visualSession, '05_landmark_distance', [0, 84, 42], [0, 76, 0]
