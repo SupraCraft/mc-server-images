@@ -1,0 +1,92 @@
+{
+  "schema": "supracraft.named-place-route/v0.1",
+  "place_id": "redroof_husbandry_hall",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "anchor": [
+    0,
+    69,
+    0
+  ],
+  "target": [
+    0,
+    74,
+    0
+  ],
+  "authored_views": [
+    {
+      "id": "approach",
+      "position": [
+        0.5,
+        69.938,
+        24.5
+      ],
+      "role": "approach"
+    },
+    {
+      "id": "after_walk",
+      "position": [
+        0.5,
+        69.938,
+        14
+      ],
+      "role": "approach_progress"
+    },
+    {
+      "id": "three_quarter",
+      "position": [
+        16,
+        75,
+        16
+      ],
+      "role": "three_quarter"
+    },
+    {
+      "id": "interior",
+      "position": [
+        0,
+        70.1,
+        5
+      ],
+      "role": "interior"
+    },
+    {
+      "id": "hay_storage",
+      "position": [
+        0,
+        70.5,
+        5.5
+      ],
+      "target": [
+        5,
+        71.5,
+        4
+      ],
+      "role": "recognition_cue_detail"
+    },
+    {
+      "id": "landmark_distance",
+      "position": [
+        0,
+        84,
+        42
+      ],
+      "role": "landmark_distance"
+    }
+  ],
+  "grounded_walk": {
+    "start": [
+      0.5,
+      69.938,
+      24.5
+    ],
+    "heading": "toward main south doorway",
+    "target_duration_ms": 2500,
+    "expected_distance_blocks": {
+      "min": 10,
+      "max": 13
+    }
+  }
+}
