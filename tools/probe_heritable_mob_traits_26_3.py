@@ -233,10 +233,14 @@ def verify_entity(
     expected_traits: set[str],
     marker: str,
 ) -> None:
+    """Verify semantic tags and modifier amounts with separable diagnostics."""
     reset_probe_scores(process)
     holders = iter(("#a", "#b", "#c", "#d"))
-    score_checks: list[str] = []
+    modifier_checks: list[tuple[str, int, str, str]] = []
 
+    # First collect every expected modifier value.  Keep the score even when the
+    # query fails so the following scoreboard get leaves a useful first-failure
+    # diagnostic in the official server log.
     for trait in ("large", "swift", "fierce"):
         if trait not in expected_traits:
             continue
@@ -253,8 +257,9 @@ def verify_entity(
                     f"{modifier_id} 1000"
                 ),
             )
-            score_checks.append(
-                f"if score {holder} {PROBE_OBJECTIVE} matches {expected_scaled_value}"
+            send(process, f"scoreboard players get {holder} {PROBE_OBJECTIVE}")
+            modifier_checks.append(
+                (holder, expected_scaled_value, attribute_id, modifier_id)
             )
 
     tag_checks: list[str] = []
@@ -265,14 +270,37 @@ def verify_entity(
         else:
             tag_checks.append(f"unless entity @s[tag={tag}]")
 
-    predicate = " ".join(
-        [
-            f"execute as @e[tag={fixture_tag},limit=1]",
-            *tag_checks,
-            *score_checks,
-        ]
+    # Split tag and modifier assertions so a failed composite predicate does not
+    # hide whether the datapack function ran or only an attribute oracle differs.
+    say_if(
+        process,
+        log_path,
+        marker + "_TAGS",
+        " ".join(
+            [
+                f"execute as @e[tag={fixture_tag},limit=1]",
+                *tag_checks,
+            ]
+        ),
     )
-    say_if(process, log_path, marker, predicate)
+
+    for index, (holder, expected, attribute_id, modifier_id) in enumerate(
+        modifier_checks
+    ):
+        say_if(
+            process,
+            log_path,
+            f"{marker}_MOD_{index}",
+            (
+                f"execute if score {holder} {PROBE_OBJECTIVE} "
+                f"matches {expected}"
+            ),
+        )
+
+    # Emit the original aggregate marker only after all split assertions pass.
+    baseline = marker_count(log_path, marker)
+    send(process, f"say {marker}")
+    wait_for_marker(log_path, marker, baseline)
 
 
 def stop_server(process: subprocess.Popen[str]) -> int:
