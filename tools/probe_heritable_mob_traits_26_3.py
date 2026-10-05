@@ -98,6 +98,10 @@ def write_datapack(root: Path) -> dict[str, Any]:
             f"scoreboard objectives add {ROLL_OBJECTIVE} dummy",
             f"scoreboard objectives add {PROBE_OBJECTIVE} dummy",
         ],
+        "fixture/init": [
+            "data merge entity @s {NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b}",
+            "tag @s add supracraft.fixture_new",
+        ],
         "apply/large": [
             "execute unless entity @s[tag=supracraft.large] run attribute @s minecraft:scale modifier add supracraft:large_scale 0.35 add_multiplied_base",
             "execute unless entity @s[tag=supracraft.large] run attribute @s minecraft:max_health modifier add supracraft:large_health 0.25 add_multiplied_base",
@@ -213,32 +217,39 @@ def summon_fixture(
     fixture_tag: str,
     x: float,
 ) -> None:
-    """Create one fixture and assign command-tag identity in summon context."""
-    extra = ",IsImmuneToZombification:1b" if entity_type == "hoglin" else ""
-    # execute-summon binds @s directly to the entity it just created.  Use the
-    # tag command itself for harness identity rather than assuming raw Tags NBT
-    # is selector-equivalent in this runtime.
+    """Create and stabilize one fixture entirely inside summon context."""
+    # Clear only the transient handoff identity from any prior fixture.
+    send(process, "tag @e[tag=supracraft.fixture_new] remove supracraft.fixture_new")
+    # Function execution inherits @s from execute-summon, so persistence and the
+    # transient handoff identity are established before any later selector is
+    # needed. This removes the no-player despawn race from fixture creation.
     send(
         process,
         (
             f"execute positioned {x} 100 0 summon minecraft:{entity_type} "
-            f"run tag @s add {fixture_tag}"
+            "run function supracraft_traits:fixture/init"
         ),
     )
     time.sleep(0.10)
-    # Once identity is observable, stabilize the entity for the remainder of
-    # the bounded rep and for save/restart persistence treatment.
-    stable = (
-        "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b"
-        f"{extra}}}"
-    )
     send(
         process,
         (
-            f"execute as @e[tag={fixture_tag},limit=1] "
-            f"run data merge entity @s {stable}"
+            "tag @e[tag=supracraft.fixture_new,limit=1] "
+            f"add {fixture_tag}"
         ),
     )
+    send(
+        process,
+        "tag @e[tag=supracraft.fixture_new] remove supracraft.fixture_new",
+    )
+    if entity_type == "hoglin":
+        send(
+            process,
+            (
+                f"execute as @e[tag={fixture_tag},limit=1] "
+                "run data merge entity @s {IsImmuneToZombification:1b}"
+            ),
+        )
     time.sleep(0.10)
 
 
