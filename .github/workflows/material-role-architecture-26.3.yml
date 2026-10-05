@@ -1,0 +1,71 @@
+name: Material role architecture Java 26.3 RDTE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/material-role-architecture-26.3.yml'
+      - 'tools/probe_material_role_architecture_26_3.py'
+      - 'tools/smoke_vanilla_runtime.py'
+      - 'probes/architecture/wayside-arch-material-context-v0.1.json'
+      - 'probes/26.3-release-identity.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: material-role-architecture-26-3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  material-role-architecture-rdte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Run civilization material-lowering rep
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_material_role_architecture_26_3.py             --evidence probes/26.3-release-identity.json             --projection probes/architecture/wayside-arch-material-context-v0.1.json             --output probes/architecture/wayside-arch-material-context-26.3-result.json
+
+      - name: Publish compact receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/architecture/wayside-arch-material-context-26.3-result.json ]]; then
+            {
+              echo '## Wayside arch civilization material-lowering RDTE'
+              echo
+              echo '~~~json'
+              cat probes/architecture/wayside-arch-material-context-26.3-result.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain compact evidence
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f probes/architecture/wayside-arch-material-context-26.3-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/architecture/wayside-arch-material-context-26.3-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain material-lowering RDTE evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
