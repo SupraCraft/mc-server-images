@@ -1,0 +1,82 @@
+{
+  "schema": "supracraft.architecture-only-runtime-projection/v0.1",
+  "blueprint_id": "wayside_stone_arch",
+  "named_place_identity": false,
+  "gameplay_structure_semantics": false,
+  "capabilities": [],
+  "instances": [
+    {
+      "instance_id": "wayside_stone_arch.0000",
+      "anchor": [
+        0,
+        70,
+        0
+      ]
+    },
+    {
+      "instance_id": "wayside_stone_arch.0001",
+      "anchor": [
+        12,
+        70,
+        0
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "kind": "fill",
+      "from": [
+        -2,
+        0,
+        0
+      ],
+      "to": [
+        -2,
+        3,
+        0
+      ],
+      "block": "minecraft:stone_bricks"
+    },
+    {
+      "kind": "fill",
+      "from": [
+        2,
+        0,
+        0
+      ],
+      "to": [
+        2,
+        3,
+        0
+      ],
+      "block": "minecraft:stone_bricks"
+    },
+    {
+      "kind": "fill",
+      "from": [
+        -2,
+        4,
+        0
+      ],
+      "to": [
+        2,
+        4,
+        0
+      ],
+      "block": "minecraft:stone_bricks"
+    },
+    {
+      "kind": "setblock",
+      "at": [
+        0,
+        5,
+        0
+      ],
+      "block": "minecraft:chiseled_stone_bricks"
+    }
+  ],
+  "source": {
+    "authority": "SupraCraft/mc-structure-foundry-private#17",
+    "checkpoint": "875c65911093e804d83b0bed459dec1cb8ad6d38"
+  }
+}
