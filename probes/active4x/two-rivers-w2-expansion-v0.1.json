@@ -1,0 +1,139 @@
+{
+  "schema": "supracraft.active4x-w2-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "76c8611200d3327e2804b9cec020bed43ee361ec",
+  "base_scenario_ref": "probes/active4x/two-rivers-v0.1.json",
+  "shared_construction_engine": "resource_gated_bounded_actuation",
+  "expansions": [
+    {
+      "civilization_id": "stone_crown",
+      "settlement_id": "stoneford",
+      "qualifying_branch": "supply_stoneford_bricks",
+      "decision_action": "build_granary",
+      "intent": {
+        "kind": "food_storage",
+        "required_capabilities": [
+          "grain_storage"
+        ]
+      },
+      "designation": {
+        "id": "stoneford_granary_area",
+        "bounds": {
+          "min": [
+            -8,
+            69,
+            -8
+          ],
+          "max": [
+            8,
+            82,
+            8
+          ]
+        },
+        "terrain": [
+          "flat"
+        ],
+        "anchor_preference": [
+          0,
+          70,
+          0
+        ]
+      },
+      "selected_candidate": {
+        "id": "stone_granary",
+        "structure_id": "granary",
+        "architecture_blueprint_id": "granary_shell",
+        "capabilities": [
+          "grain_storage"
+        ],
+        "work_site_template_id": "granary_blueprint_site",
+        "requires_civilization_capabilities": [
+          "dressed_stone",
+          "timber_roofing"
+        ]
+      },
+      "build_context": {
+        "context_id": "early_stone",
+        "material_role": "masonry_primary",
+        "selected_block": "minecraft:stone_bricks",
+        "requires_capabilities": [
+          "dressed_stone"
+        ],
+        "requires_resources": [
+          "fieldstone"
+        ]
+      }
+    },
+    {
+      "civilization_id": "ember_clay",
+      "settlement_id": "kilnreach",
+      "qualifying_branch": "feed_kilnreach",
+      "decision_action": "expand_brickworks",
+      "intent": {
+        "kind": "industry",
+        "required_capabilities": [
+          "brickworks_extension"
+        ]
+      },
+      "designation": {
+        "id": "kilnreach_brickworks_annex_area",
+        "bounds": {
+          "min": [
+            -8,
+            69,
+            -8
+          ],
+          "max": [
+            8,
+            82,
+            8
+          ]
+        },
+        "terrain": [
+          "flat"
+        ],
+        "anchor_preference": [
+          0,
+          70,
+          0
+        ]
+      },
+      "selected_candidate": {
+        "id": "brickworks_annex",
+        "structure_id": "brickworks_annex",
+        "architecture_blueprint_id": "brickworks_annex_shell",
+        "capabilities": [
+          "brickworks_extension"
+        ],
+        "work_site_template_id": "brickworks_annex_blueprint_site",
+        "requires_civilization_capabilities": [
+          "kiln_firing",
+          "fired_brick",
+          "timber_roofing"
+        ]
+      },
+      "build_context": {
+        "context_id": "fired_brick",
+        "material_role": "masonry_primary",
+        "selected_block": "minecraft:bricks",
+        "requires_capabilities": [
+          "kiln_firing",
+          "fired_brick"
+        ],
+        "requires_resources": [
+          "clay",
+          "fuelwood"
+        ]
+      }
+    }
+  ],
+  "acceptance": {
+    "decision_receipt_drives_intent": true,
+    "designation_resolves_to_constructible_candidate": true,
+    "civilization_capabilities_admit_candidate": true,
+    "civilization_material_context_applied": true,
+    "reuses_existing_construction_engine": true,
+    "no_world_scan": true,
+    "no_second_construction_engine": true
+  }
+}
