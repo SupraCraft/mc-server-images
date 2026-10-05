@@ -73,7 +73,18 @@ async function runHauler (bot) {
   const depotContainer = await bot.openContainer(depot)
   await depotContainer.deposit(cauldron.id, null, 2, null)
   await depotContainer.deposit(waterBucket.id, null, 2, null)
+
+  // Wait for the exact-version window state to settle before disconnecting.
+  // The first embodiment rep closed and quit immediately; the client-side
+  // inventory was empty but the server-side hopper remained empty, indicating
+  // the final window transactions had not been durably acknowledged.
+  await sleep(750)
+  const depotItems = depotContainer.containerItems().map(item => ({
+    name: item.name,
+    count: item.count
+  }))
   await depotContainer.close()
+  await sleep(500)
 
   const remaining = bot.inventory.items().filter(item =>
     item.name === 'cauldron' || item.name === 'water_bucket'
@@ -83,6 +94,7 @@ async function runHauler (bot) {
     role: 'hauler',
     withdrew: afterWithdraw,
     walk,
+    depot_items_observed_before_close: depotItems,
     remaining_inventory: remaining,
     result: remaining.length === 0 ? 'delivered' : 'incomplete'
   }
