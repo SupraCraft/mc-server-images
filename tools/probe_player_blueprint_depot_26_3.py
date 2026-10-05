@@ -25,6 +25,7 @@ from smoke_vanilla_runtime import download_verified_server, status_query
 from probe_blueprint_depot_26_3 import (
     capability_eval_commands,
     full_bom_condition,
+    refresh_bom_scores,
     run_builder,
     xyz,
 )
@@ -142,6 +143,7 @@ def main() -> int:
                 send(server, "forceload add -16 -16 16 16")
                 send(server, "scoreboard objectives add supracraft_cap dummy")
                 send(server, "scoreboard objectives add supracraft_metric dummy")
+                send(server, "scoreboard objectives add supracraft_bom dummy")
 
                 controller = xyz(work_site["controller"]["at"])
                 depot = xyz(work_site["depot"]["at"])
@@ -191,7 +193,7 @@ def main() -> int:
                 # Materials are supplied to the player actor; all movement into
                 # the work-site depot after this point is a real client
                 # inventory/container operation.
-                send(server, f"tp {BOT_NAME} 0 70 4")
+                send(server, f"tp {BOT_NAME} 0.5 72 2.5")
                 send(server, f"give {BOT_NAME} minecraft:cauldron 2")
                 send(server, f"give {BOT_NAME} minecraft:water_bucket 2")
                 time.sleep(0.75)
@@ -215,6 +217,10 @@ def main() -> int:
                         + client_stdout[-5000:]
                     )
 
+                # Hopper intake may stack identical items in any slot.
+                # Refresh aggregate item-count scores rather than depending on
+                # a particular container slot layout.
+                refresh_bom_scores(server, work_site)
                 marker(
                     server,
                     f"execute {full_bom_condition(work_site)} "
@@ -292,6 +298,8 @@ def main() -> int:
             "work_site_id": work_site["work_site_id"],
             "initiation": "player_material_delivery",
             "client_inventory_interaction": True,
+            "delivery_mode": "physical_item_drop_into_hopper",
+            "bill_semantics": "aggregate_item_quantity",
             "reuse_existing_construction_engine": True,
             "world_scan": False,
             "oracles": observed,
