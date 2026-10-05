@@ -1,0 +1,43 @@
+{
+  "negative_control": {
+    "admitted": false,
+    "path": "unqualified_magic_scan",
+    "reason": "not present in qualified_realization_paths"
+  },
+  "path_results": [
+    {
+      "checks": {
+        "capability_present": true,
+        "metric_threshold": true,
+        "place_identity_persisted": true,
+        "qualified_path_has_run_evidence": true
+      },
+      "path": "player_blueprint_depot",
+      "result": "RESOLVED"
+    },
+    {
+      "checks": {
+        "capability_present": true,
+        "metric_threshold": true,
+        "place_identity_persisted": true,
+        "qualified_path_has_run_evidence": true
+      },
+      "path": "architect_build_team",
+      "result": "RESOLVED"
+    },
+    {
+      "checks": {
+        "capability_present": true,
+        "metric_threshold": true,
+        "place_identity_persisted": true,
+        "qualified_path_has_run_evidence": true
+      },
+      "path": "physical_builder_client",
+      "result": "RESOLVED"
+    }
+  ],
+  "result": "PASS",
+  "scenario_id": "first_hearthstead_dry_season",
+  "schema": "supracraft.story-scenario-public-rdte/v0.1",
+  "world_scan": false
+}
