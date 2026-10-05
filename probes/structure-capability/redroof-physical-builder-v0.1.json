@@ -1,0 +1,72 @@
+{
+  "schema": "supracraft.physical-builder-projection/v0.1",
+  "structure_id": "husbandry_hall",
+  "architecture_blueprint_id": "redroof_husbandry_hall",
+  "capability_id": "stock_watering",
+  "work_site_ref": "probes/structure-capability/redroof-stock-watering-blueprint-depot-v0.1.json",
+  "builder": {
+    "username": "SupraBuilder"
+  },
+  "realization_path": "physical_builder_client",
+  "atomic_construction_actuator_used": false,
+  "support_blocks": [
+    {
+      "at": [
+        -5,
+        70,
+        -5
+      ],
+      "block": "minecraft:stone_bricks"
+    },
+    {
+      "at": [
+        5,
+        70,
+        -5
+      ],
+      "block": "minecraft:stone_bricks"
+    }
+  ],
+  "target_components": [
+    {
+      "at": [
+        -5,
+        71,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    },
+    {
+      "at": [
+        5,
+        71,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    }
+  ],
+  "bill_of_materials": [
+    {
+      "item": "minecraft:cauldron",
+      "count": 2
+    },
+    {
+      "item": "minecraft:water_bucket",
+      "count": 2
+    }
+  ],
+  "expected_semantic_effect": {
+    "metric": "husbandry_capacity",
+    "base_value": 8,
+    "active_value": 12,
+    "unit": "animals"
+  },
+  "expected_oracles": [
+    "builder_withdrew_bom",
+    "builder_placed_first_component",
+    "builder_placed_second_component",
+    "capability_activated",
+    "atomic_actuator_not_used"
+  ],
+  "world_scan": false
+}
