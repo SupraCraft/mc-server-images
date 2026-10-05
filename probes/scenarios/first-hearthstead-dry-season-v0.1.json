@@ -1,0 +1,49 @@
+{
+  "schema": "supracraft.story-scenario-public-projection/v0.1",
+  "scenario_id": "first_hearthstead_dry_season",
+  "place_identity": {
+    "id": "first_hearthstead",
+    "name": "First Hearthstead",
+    "kind": "settlement",
+    "anchor": [
+      0,
+      70,
+      0
+    ],
+    "story_key": "founding_homestead"
+  },
+  "opening": {
+    "capabilities": [
+      "shelter",
+      "paired_pens",
+      "feed_storage"
+    ],
+    "metrics": {
+      "husbandry_capacity": 8
+    },
+    "flags": [
+      "dry_season"
+    ]
+  },
+  "objective": {
+    "capability_present": "stock_watering",
+    "metric_at_least": {
+      "husbandry_capacity": 12
+    }
+  },
+  "qualified_realization_paths": {
+    "player_blueprint_depot": {
+      "run_id": 37358878324
+    },
+    "architect_build_team": {
+      "run_id": 37360006251
+    },
+    "physical_builder_client": {
+      "run_id": 37360653523
+    }
+  },
+  "resolved_flags": [
+    "herd_secured"
+  ],
+  "world_scan": false
+}
