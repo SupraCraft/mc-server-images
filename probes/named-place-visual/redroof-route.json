@@ -1,6 +1,8 @@
 {
-  "schema": "supracraft.named-place-route/v0.1",
-  "place_id": "redroof_husbandry_hall",
+  "schema": "supracraft.visual-route/v0.2",
+  "subject_class": "structure_exemplar",
+  "subject_id": "redroof_husbandry_hall",
+  "display_name": "Redroof Husbandry Hall",
   "minecraft": {
     "edition": "java",
     "version": "26.3"
@@ -87,6 +89,212 @@
     "expected_distance_blocks": {
       "min": 10,
       "max": 13
+    },
+    "capture_fps": 12
+  },
+  "presentation_standard": {
+    "schema": "supracraft.realestate-walkthrough/v0.1",
+    "realestate_fps": 15,
+    "loop_fps": 12,
+    "realestate_shots": [
+      {
+        "id": "front_approach",
+        "kind": "linear",
+        "frames": 45,
+        "from": [
+          0,
+          71,
+          32
+        ],
+        "to": [
+          0,
+          71,
+          12
+        ],
+        "target_from": [
+          0,
+          75,
+          0
+        ],
+        "target_to": [
+          0,
+          75,
+          0
+        ]
+      },
+      {
+        "id": "front_three_quarter_orbit",
+        "kind": "orbit",
+        "frames": 45,
+        "center": [
+          0,
+          74,
+          0
+        ],
+        "radius": 24,
+        "camera_y": 76,
+        "start_degrees": 35,
+        "end_degrees": 130,
+        "look_at": [
+          0,
+          75,
+          0
+        ]
+      },
+      {
+        "id": "side_yard_pass",
+        "kind": "linear",
+        "frames": 30,
+        "from": [
+          20,
+          71,
+          10
+        ],
+        "to": [
+          20,
+          71,
+          -10
+        ],
+        "target_from": [
+          0,
+          72,
+          2
+        ],
+        "target_to": [
+          0,
+          72,
+          -2
+        ]
+      },
+      {
+        "id": "doorway_entry_and_aisle",
+        "kind": "linear",
+        "frames": 45,
+        "from": [
+          0,
+          70.3,
+          9
+        ],
+        "to": [
+          0,
+          70.3,
+          -4
+        ],
+        "target_from": [
+          0,
+          72,
+          0
+        ],
+        "target_to": [
+          0,
+          72,
+          -8
+        ]
+      },
+      {
+        "id": "hay_storage_pan",
+        "kind": "pan",
+        "frames": 30,
+        "position": [
+          0,
+          70.4,
+          4.5
+        ],
+        "target_from": [
+          6,
+          72,
+          4
+        ],
+        "target_to": [
+          -6,
+          72,
+          4
+        ]
+      },
+      {
+        "id": "loft_lookup",
+        "kind": "pan",
+        "frames": 20,
+        "position": [
+          0,
+          70.4,
+          0
+        ],
+        "target_from": [
+          0,
+          73,
+          -3
+        ],
+        "target_to": [
+          0,
+          81,
+          0
+        ]
+      },
+      {
+        "id": "rear_reveal",
+        "kind": "linear",
+        "frames": 30,
+        "from": [
+          0,
+          70.4,
+          -4
+        ],
+        "to": [
+          0,
+          74,
+          -18
+        ],
+        "target_from": [
+          0,
+          73,
+          0
+        ],
+        "target_to": [
+          0,
+          76,
+          0
+        ]
+      },
+      {
+        "id": "flyover",
+        "kind": "orbit",
+        "frames": 90,
+        "center": [
+          0,
+          74,
+          0
+        ],
+        "radius": 28,
+        "camera_y": 84,
+        "start_degrees": 180,
+        "end_degrees": 540,
+        "look_at": [
+          0,
+          75,
+          0
+        ]
+      }
+    ],
+    "loop_shot": {
+      "id": "continuous_flyover_loop",
+      "kind": "orbit",
+      "frames": 72,
+      "center": [
+        0,
+        74,
+        0
+      ],
+      "radius": 25,
+      "camera_y": 82,
+      "start_degrees": 0,
+      "end_degrees": 360,
+      "look_at": [
+        0,
+        75,
+        0
+      ],
+      "closed_loop": true
     }
   }
 }
