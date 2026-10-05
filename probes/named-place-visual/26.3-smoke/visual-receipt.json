@@ -19,11 +19,11 @@
   "schema": "supracraft.named-place-visual-smoke/v0.4",
   "status_protocol": 777,
   "traversal": {
-    "distance": 11.435,
+    "distance": 11.651,
     "end": [
-      0.391,
+      0.389,
       69.938,
-      13.066
+      12.85
     ],
     "passed": true,
     "start": [
@@ -31,7 +31,7 @@
       69.938,
       24.5
     ],
-    "walkthrough_frames": 14,
+    "walkthrough_frames": 13,
     "walkthrough_target_duration_ms": 2500
   },
   "views": [
@@ -41,7 +41,7 @@
         69.938,
         24.5
       ],
-      "bytes": 50292,
+      "bytes": 74500,
       "camera_position": [
         0.5,
         69.938,
@@ -52,26 +52,26 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 118267,
+      "bytes": 130411,
       "camera_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 59064,
+      "bytes": 81553,
       "camera_position": [
         16,
         75,
@@ -82,11 +82,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 98715,
+      "bytes": 99361,
       "camera_position": [
         0,
         70.1,
@@ -97,11 +97,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 29760,
+      "bytes": 69327,
       "camera_position": [
         0,
         84,
@@ -112,11 +112,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 45662,
+      "bytes": 122301,
       "camera_position": [
         0,
         96,
