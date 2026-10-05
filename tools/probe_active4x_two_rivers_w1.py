@@ -42,19 +42,23 @@ def main() -> int:
         if row["settlement_id"] == "kilnreach"
     ]
 
+    breached_contracts = [
+        row for row in contracts if row.get("status") == "breached"
+    ]
+    breached_ids = {row["contract_id"] for row in breached_contracts}
+
     checks = {
         "baseline_contract_fulfilled": any(
             row.get("status") == "fulfilled"
             for row in baseline["state"]["contracts"].values()
         ),
-        "disrupted_contract_breached": any(
-            row.get("status") == "breached" for row in contracts
-        ),
+        "disrupted_contract_breached": len(breached_contracts) == 1,
         "cargo_disruption_recorded": any(
             row["kind"] == "cargo_disrupted" for row in disrupted["ledger"]
         ),
         "disrupted_contract_not_fulfilled": not any(
             row["kind"] == "trade_contract_fulfilled"
+            and row["owner"] in breached_ids
             for row in disrupted["ledger"]
         ),
         "later_kilnreach_secure_route": (
