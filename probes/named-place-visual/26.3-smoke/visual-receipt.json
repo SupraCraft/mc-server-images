@@ -6,23 +6,24 @@
   },
   "official_server_verified": true,
   "renderer": {
-    "asset_policy": "viewer 26.1 presentation assets via local compatibility bridge",
+    "asset_policy": "exact-version viewer assets",
     "capture": "node-canvas-webgl after explicit chunk-render completion",
     "client_world_source": "mineflayer exact-26.3 connection",
     "inspection_camera_policy": "viewer-only; traversal actor remains grounded",
     "name": "prismarine-viewer-core",
+    "presentation_asset_version": "26.3",
     "render_view_distance_chunks": 4,
     "semantic_authority": false
   },
   "result": "qualified_render_smoke",
-  "schema": "supracraft.named-place-visual-smoke/v0.3",
+  "schema": "supracraft.named-place-visual-smoke/v0.4",
   "status_protocol": 777,
   "traversal": {
-    "distance": 11.435,
+    "distance": 11.651,
     "end": [
-      0.391,
+      0.389,
       69.938,
-      13.066
+      12.85
     ],
     "passed": true,
     "start": [
@@ -38,7 +39,7 @@
         69.938,
         24.5
       ],
-      "bytes": 48847,
+      "bytes": 48866,
       "camera_position": [
         0.5,
         69.938,
@@ -49,26 +50,26 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 118260,
+      "bytes": 120698,
       "camera_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 56256,
+      "bytes": 56186,
       "camera_position": [
         16,
         75,
@@ -79,11 +80,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 87894,
+      "bytes": 87895,
       "camera_position": [
         0,
         71,
@@ -94,11 +95,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 17057,
+      "bytes": 17076,
       "camera_position": [
         0,
         84,
