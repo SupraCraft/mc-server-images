@@ -1,0 +1,34 @@
+{
+  "blueprint_id": "wayside_arch",
+  "gameplay_structure_semantics": false,
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "named_place_identity": false,
+  "official_server_verified": true,
+  "oracles": {
+    "early_stone_variant_present": true,
+    "fired_brick_variant_present": true,
+    "material_contexts_distinct": true
+  },
+  "result": "PASS",
+  "schema": "supracraft.material-role-architecture-runtime-rdte/v0.1",
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "variants": [
+    {
+      "context_id": "early_stone",
+      "selected_materials": {
+        "masonry_primary": "minecraft:stone_bricks"
+      }
+    },
+    {
+      "context_id": "fired_brick",
+      "selected_materials": {
+        "masonry_primary": "minecraft:bricks"
+      }
+    }
+  ],
+  "world_scan": false
+}
