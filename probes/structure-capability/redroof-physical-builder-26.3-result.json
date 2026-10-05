@@ -1,0 +1,85 @@
+{
+  "atomic_construction_actuator_used": false,
+  "builder": {
+    "client": "mineflayer exact-26.3",
+    "components": [
+      {
+        "result": "water_cauldron_complete",
+        "support": [
+          -5,
+          70,
+          -5
+        ],
+        "target": [
+          -5,
+          71,
+          -5
+        ]
+      },
+      {
+        "result": "water_cauldron_complete",
+        "support": [
+          5,
+          70,
+          -5
+        ],
+        "target": [
+          5,
+          71,
+          -5
+        ]
+      }
+    ],
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
+    "realization_path": "physical_builder_client",
+    "remaining_bom_inventory": [],
+    "result": "built",
+    "schema": "supracraft.physical-builder-client-rdte/v0.1",
+    "username": "SupraBuilder",
+    "withdrew": [
+      {
+        "count": 2,
+        "name": "cauldron"
+      },
+      {
+        "count": 1,
+        "name": "water_bucket"
+      },
+      {
+        "count": 1,
+        "name": "water_bucket"
+      }
+    ]
+  },
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "atomic_actuator_not_used": true,
+    "capability_activated": true,
+    "first_component": true,
+    "second_component": true
+  },
+  "realization_path": "physical_builder_client",
+  "result": "PASS",
+  "schema": "supracraft.physical-builder-runtime-rdte/v0.1",
+  "semantic_convergence_target": {
+    "active_value": 12,
+    "atomic_path_run": 37341673072,
+    "metric": "husbandry_capacity"
+  },
+  "semantic_effect": {
+    "active_value": 12,
+    "base_value": 8,
+    "metric": "husbandry_capacity",
+    "unit": "animals"
+  },
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "world_scan": false
+}
