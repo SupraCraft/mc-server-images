@@ -229,9 +229,15 @@ async function main () {
     ))
     views.push(await captureOneFrame(
       // Put the viewer just inside the south doorway and look down the central
-      // aisle at eye level. This exposes use-space depth, both side bays, and
-      // the loft without the previous steep upward composition.
+      // aisle at eye level. This exposes use-space depth without the previous
+      // steep upward composition.
       visualSession, '04_interior', [0, 70.1, 5], [0, 72, -3]
+    ))
+    views.push(await captureOneFrame(
+      // Recognition-cue detail: from the threshold, turn across the working
+      // bay so the required hay-storage cue is directly reviewable rather
+      // than inferred from the model contract.
+      visualSession, '04b_hay_storage', [0, 70.5, 5.5], [5, 71.5, 4]
     ))
     views.push(await captureOneFrame(
       visualSession, '05_landmark_distance', [0, 84, 42], [0, 76, 0]
