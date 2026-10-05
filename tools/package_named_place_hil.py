@@ -73,7 +73,8 @@ def main() -> int:
         "schema": "supracraft.named-place-stock-client-hil/v0.1",
         "place_id": args.place_id,
         "minecraft": {"edition": "java", "version": "26.3"},
-        "semantic_authority": "stock_vanilla_client_hil",
+        "semantic_authority": False,
+        "intended_review_authority": "stock_vanilla_client_hil",
         "world_zip": {
             "name": world_zip.name,
             "bytes": world_zip.stat().st_size,
