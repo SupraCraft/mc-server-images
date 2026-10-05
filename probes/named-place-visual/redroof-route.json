@@ -212,23 +212,23 @@
         ]
       },
       {
-        "id": "loft_lookup",
+        "id": "interior_turnaround",
         "kind": "pan",
         "frames": 20,
         "position": [
           0,
           70.4,
-          0
-        ],
-        "target_from": [
-          0,
-          73,
           -3
         ],
+        "target_from": [
+          -6,
+          72,
+          4
+        ],
         "target_to": [
-          0,
-          81,
-          0
+          6,
+          72,
+          4
         ]
       },
       {
