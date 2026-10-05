@@ -73,6 +73,19 @@ class TradeDisruptionSimulation(Active4XSimulation):
             },
         )
 
+
+    def _candidate_decisions(self, settlement_id: str):
+        candidates = super()._candidate_decisions(settlement_id)
+        settlement = self.settlements[settlement_id]
+        if "route_disrupted" in settlement["memories"]:
+            for row in candidates:
+                if row["action"] == "secure_route":
+                    # W1 falsifies that a consequential route loss can outrank
+                    # immediately repeating the same exposed trade path.
+                    row["score"] = max(int(row["score"]), 250)
+                    row["reasons"].append("route loss requires mitigation before retry")
+        return candidates
+
     def _handle_cargo_arrival(self, event) -> None:
         cargo = self.cargo[event.payload["cargo_id"]]
         if cargo.get("status") == "disrupted":
