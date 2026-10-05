@@ -1,0 +1,100 @@
+{
+  "schema": "supracraft.blueprint-depot-work-site-projection/v0.1",
+  "work_site_id": "redroof_stock_watering_blueprint_depot",
+  "initiation": "blueprint_site",
+  "target": {
+    "structure_id": "husbandry_hall",
+    "architecture_blueprint_id": "redroof_husbandry_hall",
+    "capability_id": "stock_watering"
+  },
+  "anchor": [
+    0,
+    70,
+    0
+  ],
+  "bounds": {
+    "min": [
+      -8,
+      69,
+      -8
+    ],
+    "max": [
+      8,
+      74,
+      8
+    ]
+  },
+  "controller": {
+    "at": [
+      0,
+      70,
+      0
+    ],
+    "block": "minecraft:lodestone"
+  },
+  "depot": {
+    "at": [
+      0,
+      70,
+      2
+    ],
+    "block": "minecraft:hopper",
+    "bill_of_materials": [
+      {
+        "slot": "container.0",
+        "item": "minecraft:cauldron",
+        "count": 1
+      },
+      {
+        "slot": "container.1",
+        "item": "minecraft:cauldron",
+        "count": 1
+      },
+      {
+        "slot": "container.2",
+        "item": "minecraft:water_bucket",
+        "count": 1
+      },
+      {
+        "slot": "container.3",
+        "item": "minecraft:water_bucket",
+        "count": 1
+      }
+    ]
+  },
+  "architecture_delta": [
+    {
+      "kind": "setblock",
+      "at": [
+        -5,
+        71,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    },
+    {
+      "kind": "setblock",
+      "at": [
+        5,
+        71,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    }
+  ],
+  "consume_materials_on_success": true,
+  "expected_oracles": [
+    "site_registered",
+    "empty_depot_no_build",
+    "partial_materials_no_build",
+    "full_materials_consumed",
+    "architecture_completed",
+    "capability_activated",
+    "damage_revoked"
+  ],
+  "world_scan": false,
+  "source": {
+    "authority": "SupraCraft/mc-structure-foundry-private#17",
+    "checkpoint": "9f8ecde1054f821741bf687b48167a298e9412c2"
+  }
+}
