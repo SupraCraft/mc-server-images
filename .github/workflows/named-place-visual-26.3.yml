@@ -12,7 +12,9 @@ on:
       - 'tools/install_experimental_prismarine_26_3.sh'
       - 'tools/apply_mineflayer_tick_end_26_3.py'
       - 'tools/install_prismarine_viewer_local_26_3.sh'
+      - 'tools/install_prismarine_viewer_exact_26_3.sh'
       - 'patches/prismarine-viewer/**'
+      - 'patches/prismarine-viewer-exact/**'
       - 'probes/mineflayer-runtime/**'
       - 'probes/26.3-release-identity.json'
 
@@ -60,12 +62,13 @@ jobs:
           bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
           echo "PRISMARINE_RUNTIME=$runtime_root/runtime" >> "$GITHUB_ENV"
 
-      - name: Build pinned Prismarine Viewer locally
+      - name: Build exact-26.3 Prismarine Viewer locally
         shell: bash
         run: |
           set -euo pipefail
           viewer_root="/tmp/supracraft-prismarine-viewer-26.3"
-          bash tools/install_prismarine_viewer_local_26_3.sh             "$viewer_root" "$PRISMARINE_RUNTIME"
+          bash tools/install_prismarine_viewer_exact_26_3.sh \
+            "$viewer_root" "$PRISMARINE_RUNTIME"
           cat "$viewer_root/build-receipt.json"
           echo "PRISMARINE_VIEWER_ROOT=$viewer_root" >> "$GITHUB_ENV"
           echo "NODE_PATH=$viewer_root/local-node_modules:$PRISMARINE_RUNTIME/node_modules" >> "$GITHUB_ENV"
@@ -85,7 +88,7 @@ jobs:
             exactClient:'26.3',
             renderAssets:getVersion('26.3')
           },null,2))
-          if (getVersion('26.3') !== '26.1') process.exit(2)
+          if (getVersion('26.3') !== '26.3') process.exit(2)
           NODE
 
       - name: Exact server-client walk and render smoke
