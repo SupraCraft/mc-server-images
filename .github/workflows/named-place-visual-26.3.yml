@@ -16,6 +16,7 @@ on:
       - 'patches/prismarine-viewer/**'
       - 'patches/prismarine-viewer-exact/**'
       - 'probes/mineflayer-runtime/**'
+      - 'probes/named-place-visual/redroof-route.json'
       - 'probes/26.3-release-identity.json'
 
 concurrency:
@@ -102,19 +103,43 @@ jobs:
               --evidence probes/26.3-release-identity.json \
               --output-dir "$RUNNER_TEMP/named-place-visual"
 
-      - name: Encode short traversal walkthrough
+      - name: Encode proof walk, real-estate tour, and continuous loop
         if: success()
         shell: bash
         run: |
           set -euo pipefail
-          frames="$RUNNER_TEMP/named-place-visual/walkthrough-frames"
-          test -d "$frames"
-          test "$(find "$frames" -maxdepth 1 -name '*.jpg' | wc -l)" -ge 6
+          root="$RUNNER_TEMP/named-place-visual"
+          proof="$root/proof-walk-frames"
+          tour="$root/realestate-frames"
+          loop="$root/loop-frames"
+
+          test -d "$proof"
+          test -d "$tour"
+          test -d "$loop"
+          test "$(find "$proof" -maxdepth 1 -name '*.jpg' | wc -l)" -ge 18
+          test "$(find "$tour" -maxdepth 1 -name '*.jpg' | wc -l)" -ge 250
+          test "$(find "$loop" -maxdepth 1 -name '*.jpg' | wc -l)" -ge 60
+
           ffmpeg -hide_banner -loglevel error -y \
-            -framerate 6 -pattern_type glob -i "$frames/*.jpg" \
+            -framerate 12 -pattern_type glob -i "$proof/*.jpg" \
             -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
-            "$RUNNER_TEMP/named-place-visual/redroof-walkthrough.mp4"
-          test -s "$RUNNER_TEMP/named-place-visual/redroof-walkthrough.mp4"
+            "$root/redroof-proof-walk.mp4"
+          cp "$root/redroof-proof-walk.mp4" "$root/redroof-walkthrough.mp4"
+
+          ffmpeg -hide_banner -loglevel error -y \
+            -framerate 15 -pattern_type glob -i "$tour/*.jpg" \
+            -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
+            "$root/redroof-realestate-walkthrough.mp4"
+
+          ffmpeg -hide_banner -loglevel error -y \
+            -framerate 12 -pattern_type glob -i "$loop/*.jpg" \
+            -vf "fps=12,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer" \
+            -loop 0 "$root/redroof-realestate-loop.gif"
+
+          test -s "$root/redroof-proof-walk.mp4"
+          test -s "$root/redroof-walkthrough.mp4"
+          test -s "$root/redroof-realestate-walkthrough.mp4"
+          test -s "$root/redroof-realestate-loop.gif"
 
       - name: Publish receipt
         if: always()
@@ -141,7 +166,7 @@ jobs:
             # in the expiring Actions artifact so binary world archives do not
             # accumulate in repository history.
             find "$RUNNER_TEMP/named-place-visual" -maxdepth 1 -type f \
-              \( -name '*.jpg' -o -name '*.mp4' -o -name '*.json' \) \
+              \( -name '*.jpg' -o -name '*.mp4' -o -name '*.gif' -o -name '*.json' \) \
               -exec cp {} probes/named-place-visual/26.3-smoke/ \;
           fi
           git config user.name "github-actions[bot]"
@@ -162,6 +187,7 @@ jobs:
             ${{ runner.temp }}/named-place-visual/visual-receipt.json
             ${{ runner.temp }}/named-place-visual/*.jpg
             ${{ runner.temp }}/named-place-visual/*.mp4
+            ${{ runner.temp }}/named-place-visual/*.gif
             ${{ runner.temp }}/named-place-visual/*.zip
             ${{ runner.temp }}/named-place-visual/*-hil-receipt.json
           retention-days: 14
