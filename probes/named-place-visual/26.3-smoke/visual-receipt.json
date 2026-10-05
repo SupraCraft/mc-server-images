@@ -19,11 +19,11 @@
   "schema": "supracraft.named-place-visual-smoke/v0.4",
   "status_protocol": 777,
   "traversal": {
-    "distance": 11.435,
+    "distance": 11.648,
     "end": [
-      0.391,
+      0.389,
       69.938,
-      13.066
+      12.853
     ],
     "passed": true,
     "start": [
@@ -52,24 +52,24 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 118267,
+      "bytes": 120668,
       "camera_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.853
       ],
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
       "bytes": 56186,
       "camera_position": [
@@ -82,24 +82,24 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 87895,
+      "bytes": 98715,
       "camera_position": [
         0,
-        71,
-        2
+        70.1,
+        5
       ],
       "name": "04_interior",
       "path": "/home/runner/work/_temp/named-place-visual/04_interior.jpg"
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
       "bytes": 17076,
       "camera_position": [
