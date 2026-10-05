@@ -136,8 +136,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p probes/named-place-visual/26.3-smoke
-          if compgen -G "$RUNNER_TEMP/named-place-visual/*" > /dev/null; then
-            cp "$RUNNER_TEMP"/named-place-visual/* probes/named-place-visual/26.3-smoke/
+          if [[ -d "$RUNNER_TEMP/named-place-visual" ]]; then
+            find "$RUNNER_TEMP/named-place-visual" -maxdepth 1 -type f \
+              -exec cp {} probes/named-place-visual/26.3-smoke/ \;
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
