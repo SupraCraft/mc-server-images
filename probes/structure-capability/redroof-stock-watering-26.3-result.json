@@ -2,10 +2,10 @@
   "architecture_blueprint_id": "redroof_husbandry_hall",
   "capability_id": "stock_watering",
   "diagnostics": {
-    "both_troughs_present": false,
-    "trough_one_present": false,
-    "trough_one_still_present": false,
-    "trough_two_present": false
+    "both_troughs_present": true,
+    "trough_one_present": true,
+    "trough_one_still_present": true,
+    "trough_two_present": true
   },
   "minecraft": {
     "edition": "java",
@@ -14,11 +14,11 @@
   "official_server_verified": true,
   "oracles": {
     "base_inactive": true,
-    "complete_activated": false,
+    "complete_activated": true,
     "damage_revoked": true,
     "partial_rejected": true
   },
-  "result": "FAIL",
+  "result": "PASS",
   "schema": "supracraft.structure-capability-runtime-rdte/v0.2",
   "semantic_effect": {
     "active_value": 12,
