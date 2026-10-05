@@ -205,13 +205,18 @@ async function main () {
 
     const walkStart = pos()
     const walkthroughFrames = []
+    const walkDurationMs = 2500
+    const walkDeadline = Date.now() + walkDurationMs
     stage('walk:start')
     bot.setControlState('forward', true)
-    for (let frameIndex = 0; frameIndex < 15; frameIndex++) {
-      await sleep(170)
+    const stopWalkTimer = setTimeout(() => bot.setControlState('forward', false), walkDurationMs)
+    for (let frameIndex = 0; frameIndex < 15 && Date.now() < walkDeadline; frameIndex++) {
       walkthroughFrames.push(await captureWalkthroughFrame(visualSession, frameIndex))
+      if (Date.now() < walkDeadline) await sleep(80)
     }
+    clearTimeout(stopWalkTimer)
     bot.setControlState('forward', false)
+    if (Date.now() < walkDeadline) await sleep(walkDeadline - Date.now())
     await sleep(300)
     const walkEnd = pos()
     stage('walk:end')
@@ -256,7 +261,7 @@ async function main () {
         distance: Number(walkDistance.toFixed(3)),
         passed: walkDistance >= 1.0,
         walkthrough_frames: walkthroughFrames.length,
-        walkthrough_frame_interval_ms: 170
+        walkthrough_target_duration_ms: walkDurationMs
       },
       views,
       result: walkDistance >= 1.0 ? 'qualified_render_smoke' : 'failed_traversal'
