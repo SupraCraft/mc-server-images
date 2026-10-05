@@ -236,6 +236,9 @@ async function main () {
     views.push(await captureOneFrame(
       visualSession, '05_landmark_distance', [0, 84, 42], [0, 76, 0]
     ))
+    views.push(await captureOneFrame(
+      visualSession, '06_terrain_probe', [0, 96, 16], [0, 69, 16]
+    ))
 
     const dx = walkEnd[0] - walkStart[0]
     const dy = walkEnd[1] - walkStart[1]
