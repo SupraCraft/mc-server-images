@@ -1,0 +1,106 @@
+{
+  "schema": "supracraft.material-role-architecture-runtime-projection/v0.1",
+  "blueprint_id": "wayside_arch",
+  "named_place_identity": false,
+  "gameplay_structure_semantics": false,
+  "variants": [
+    {
+      "context_id": "early_stone",
+      "anchor": [
+        0,
+        70,
+        0
+      ],
+      "material_decisions": {
+        "masonry_primary": {
+          "selected_block": "minecraft:stone_bricks",
+          "requires_capabilities": [
+            "dressed_stone"
+          ],
+          "requires_resources": [
+            "fieldstone"
+          ]
+        }
+      }
+    },
+    {
+      "context_id": "fired_brick",
+      "anchor": [
+        12,
+        70,
+        0
+      ],
+      "material_decisions": {
+        "masonry_primary": {
+          "selected_block": "minecraft:bricks",
+          "requires_capabilities": [
+            "kiln_firing",
+            "fired_brick"
+          ],
+          "requires_resources": [
+            "clay",
+            "fuelwood"
+          ]
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "kind": "fill",
+      "from": [
+        -2,
+        0,
+        0
+      ],
+      "to": [
+        -2,
+        3,
+        0
+      ],
+      "role": "masonry_primary"
+    },
+    {
+      "kind": "fill",
+      "from": [
+        2,
+        0,
+        0
+      ],
+      "to": [
+        2,
+        3,
+        0
+      ],
+      "role": "masonry_primary"
+    },
+    {
+      "kind": "fill",
+      "from": [
+        -2,
+        4,
+        0
+      ],
+      "to": [
+        2,
+        4,
+        0
+      ],
+      "role": "masonry_primary"
+    },
+    {
+      "kind": "setblock",
+      "at": [
+        0,
+        5,
+        0
+      ],
+      "role": "masonry_primary"
+    }
+  ],
+  "world_scan": false,
+  "source": {
+    "authority": "SupraCraft/mc-structure-foundry-private#17",
+    "note": "Same reusable architecture blueprint lowered under two civilization build contexts."
+  }
+}
