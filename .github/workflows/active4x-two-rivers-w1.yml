@@ -7,6 +7,7 @@ on:
       - feat/named-place-visual-qualification-v1
     paths:
       - '.github/workflows/active4x-two-rivers-w1.yml'
+      - 'tools/active4x_sim.py'
       - 'tools/active4x_trade_w1.py'
       - 'tools/probe_active4x_two_rivers_w1.py'
       - 'tests/test_active4x_trade_w1.py'
