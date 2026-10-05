@@ -38,13 +38,6 @@ bot.on('kicked', reason => console.log('PLAYER_DEPOT_KICKED ' + JSON.stringify(r
 bot.on('error', err => console.log('PLAYER_DEPOT_ERROR ' + String(err && err.stack ? err.stack : err)))
 bot.on('end', reason => console.log('PLAYER_DEPOT_END ' + String(reason)))
 
-async function tossRequired (itemName, count) {
-  const item = bot.registry.itemsByName[itemName]
-  if (!item) throw new Error('registry missing item ' + itemName)
-  await bot.toss(item.id, null, count)
-  await sleep(500)
-}
-
 async function main () {
   await new Promise((resolve, reject) => {
     bot.once('spawn', resolve)
@@ -71,14 +64,19 @@ async function main () {
     throw new Error('registered material hopper not visible to player client')
   }
 
-  // The exact-26.3 adapter does not yet qualify container-open interaction,
-  // so exercise the more Minecraft-native hopper intake path: stand directly
-  // above the registered intake and physically toss the required materials.
-  // The hopper collects the dropped item entities through normal game rules.
-  await bot.lookAt(new Vec3(0.5, 69.5, 2.5), true)
-  await tossRequired('cauldron', 2)
-  await tossRequired('water_bucket', 2)
-  await sleep(2500)
+  // Use normal container interaction for the player-facing work site.
+  // This is the intended low-ceremony UX: open the registered depot and deposit
+  // the required materials. The builder still evaluates only the bounded work
+  // site and aggregate bill of materials.
+  await bot.lookAt(new Vec3(0.5, 70.5, 2.5), true)
+  const container = await bot.openContainer(hopper)
+  const cauldron = bot.registry.itemsByName.cauldron
+  const waterBucket = bot.registry.itemsByName.water_bucket
+  if (!cauldron || !waterBucket) throw new Error('registry missing required BOM item')
+  await container.deposit(cauldron.id, null, 2, null)
+  await container.deposit(waterBucket.id, null, 2, null)
+  await container.close()
+  await sleep(500)
 
   const remaining = bot.inventory.items().map(item => ({
     name: item.name,
@@ -91,9 +89,9 @@ async function main () {
     minecraft: { edition: 'java', version: '26.3' },
     client: 'mineflayer exact-26.3',
     initiation: 'player_material_delivery',
-    delivery_mode: 'physical_item_drop_into_hopper',
+    delivery_mode: 'container_deposit_into_registered_hopper',
     depot: { block: 'minecraft:hopper', at: [0, 70, 2] },
-    tossed: [
+    deposited: [
       { name: 'cauldron', count: 2 },
       { name: 'water_bucket', count: 2 }
     ],
