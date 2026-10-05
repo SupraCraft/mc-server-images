@@ -5,15 +5,15 @@
   },
   "official_server_verified": true,
   "oracles": {
-    "build_team_constructed": true,
-    "capability_activated": true,
-    "haul_plan_delivered": true,
+    "build_team_constructed": false,
+    "capability_activated": false,
+    "haul_plan_delivered": false,
     "source_stockpiles_decremented": true,
     "team_plan_admitted": true
   },
   "order_id": "north_pasture_stock_watering_order",
   "physical_navigation_qualified": false,
-  "result": "PASS",
+  "result": "FAIL",
   "reuse_existing_construction_engine": true,
   "schema": "supracraft.architect-logistics-runtime-rdte/v0.1",
   "semantic_effect": {
