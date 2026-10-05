@@ -22,6 +22,7 @@ from smoke_vanilla_runtime import download_verified_server, status_query
 from probe_blueprint_depot_26_3 import (
     capability_eval_commands,
     full_bom_condition,
+    refresh_bom_scores,
     run_builder,
     xyz,
 )
@@ -139,6 +140,7 @@ def main() -> int:
                 send(process, "forceload add -16 -16 16 16")
                 send(process, "scoreboard objectives add supracraft_cap dummy")
                 send(process, "scoreboard objectives add supracraft_metric dummy")
+                send(process, "scoreboard objectives add supracraft_bom dummy")
 
                 controller = xyz(work_site["controller"]["at"])
                 depot = xyz(work_site["depot"]["at"])
@@ -184,6 +186,7 @@ def main() -> int:
                     source = find_stockpile(plan, source_id)
                     send(process, f"data remove block {xyz(source['at'])} Items")
 
+                refresh_bom_scores(process, work_site)
                 marker(
                     process,
                     f"execute {full_bom_condition(work_site)} "
