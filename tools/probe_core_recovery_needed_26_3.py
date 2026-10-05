@@ -233,7 +233,10 @@ def main() -> int:
                 wait_file(ready, bot, 40)
 
                 # Treatment A: player possesses core; empty socket.
-                send(server, f"give {BOT_NAME} {CORE} 1")
+                send(
+                    server,
+                    f"item replace entity {BOT_NAME} inventory.0 with {CORE} 1",
+                )
                 has_attempts, has_wait = require_true(
                     server,
                     log_path,
