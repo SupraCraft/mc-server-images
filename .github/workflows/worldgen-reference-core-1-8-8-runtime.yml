@@ -1,0 +1,100 @@
+name: worldgen CORE exact 1.8.8 runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE original intake run
+        required: true
+        default: "36559943983"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/run_legacy_reference_server.py'
+      - '.github/workflows/worldgen-reference-core-1-8-8-runtime.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Run original CORE on exact vanilla 1.8.8
+        run: |
+          python tools/run_legacy_reference_server.py \
+            --version 1.8.8 \
+            --world-zip source/original-world.zip \
+            --output-dir out
+
+      - name: Verify exact-runtime receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/runtime-receipt.json").read_text())
+          assert d["status"]=="success"
+          assert d["minecraft_version"]=="1.8.8"
+          assert d["server_expected_sha1"]==d["server_observed_sha1"]
+          assert d["runtime_policy"]["world_upgrade"] is False
+          assert d["runtime_policy"]["datafix_to_current"] is False
+          assert "1.8" in d["java_version_output"]
+          print("CORE-EXACT-1.8.8-RUNTIME-PASS")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-exact-1.8.8-runtime
+          path: out/
+          retention-days: 14

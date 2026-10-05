@@ -1,0 +1,76 @@
+{
+  "schema": "supracraft-redstone-mechanism-taxonomy/1",
+  "purpose": "Reference vocabulary and validation contracts for topology-to-mechanism inference; names are hypotheses until structural and runtime requirements pass.",
+  "provenance": [
+    {
+      "kind": "official_book",
+      "title": "Minecraft: Guide to Redstone (Updated)",
+      "publisher": "Random House Worlds",
+      "authors": ["Mojang AB", "The Official Minecraft Team"],
+      "year": 2022,
+      "url": "https://www.penguinrandomhouse.com/books/625087/minecraft-guide-to-redstone-updated-by-mojang-ab-and-the-official-minecraft-team/"
+    },
+    {
+      "kind": "official_education",
+      "title": "Minecraft Boolean Logic",
+      "publisher": "Minecraft Education",
+      "url": "https://education.minecraft.net/en-us/lessons/minecraft-boolean-logic"
+    },
+    {
+      "kind": "community_reference",
+      "title": "Minecraft Wiki redstone circuit taxonomy and style guidance",
+      "url": "https://minecraft.wiki/w/Minecraft_Wiki:Style_guide/Redstone"
+    }
+  ],
+  "families": [
+    {
+      "family": "transmission",
+      "mechanisms": [
+        "wire_path",
+        "buffered_delay_line",
+        "diode_like_path",
+        "signal_strength_bus"
+      ],
+      "minimum_runtime_contract": "input transition must produce the predicted downstream transition with bounded direction/strength/timing"
+    },
+    {
+      "family": "combinational_logic",
+      "mechanisms": ["not", "and", "or", "xor", "nand", "nor", "xnor", "multiplexer"],
+      "minimum_runtime_contract": "exercise the complete relevant Boolean truth table; output must be memoryless within the qualified settling window"
+    },
+    {
+      "family": "pulse",
+      "mechanisms": ["rising_edge_detector", "falling_edge_detector", "dual_edge_detector", "monostable", "pulse_limiter", "pulse_extender"],
+      "minimum_runtime_contract": "measure input edge, output edge, pulse width, retrigger behavior, and reset/settling behavior"
+    },
+    {
+      "family": "memory",
+      "mechanisms": ["rs_latch", "t_flip_flop", "d_latch", "counter"],
+      "minimum_runtime_contract": "exercise set/reset/toggle/data sequences and demonstrate retained state across input quiescence"
+    },
+    {
+      "family": "clock",
+      "mechanisms": ["oscillator", "repeater_clock", "comparator_clock", "hopper_clock"],
+      "minimum_runtime_contract": "observe repeated transitions over multiple periods and characterize period/duty cycle; a directed cycle alone is insufficient"
+    },
+    {
+      "family": "mechanical",
+      "mechanisms": ["piston_sequence", "door", "elevator", "item_transport", "sorter"],
+      "minimum_runtime_contract": "correlate signal/state transitions with the predicted mechanical or inventory state sequence"
+    },
+    {
+      "family": "programmable",
+      "mechanisms": ["command_actuation_chain", "command_state_machine"],
+      "minimum_runtime_contract": "correlate triggering topology with exact command execution identity and resulting state mutations"
+    }
+  ],
+  "invariants": [
+    "topological resemblance is not behavioral identity",
+    "mechanism names are version-scoped unless cross-version behavior is independently qualified",
+    "truth-table mechanisms require truth-table evidence",
+    "temporal mechanisms require temporal evidence",
+    "stateful mechanisms require state-retention evidence",
+    "runtime execution and client presentation remain separate evidence layers",
+    "hard negatives are retained as first-class template falsifiers"
+  ]
+}

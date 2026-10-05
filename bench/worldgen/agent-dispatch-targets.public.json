@@ -1,0 +1,14 @@
+{
+  "worldgen-public-vanilla-runtime": {
+    "kind": "github-actions",
+    "repository": "SupraCraft/mc-server-images",
+    "workflow": "agent-dispatch-vanilla-runtime.yml",
+    "ref": "main",
+    "capabilities": [
+      "minecraft-vanilla-runtime-smoke"
+    ],
+    "public_workflow_inputs": {
+      "version": "26.3"
+    }
+  }
+}

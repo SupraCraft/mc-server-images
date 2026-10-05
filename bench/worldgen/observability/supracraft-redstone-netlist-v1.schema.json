@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:supracraft:schema:redstone-netlist:1",
+  "title": "SupraCraft redstone netlist v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "source_schema",
+    "analysis_kind",
+    "component_count",
+    "net_count",
+    "collapsed_wire_node_count",
+    "components",
+    "nets",
+    "motif_candidates",
+    "signatures",
+    "limitations"
+  ],
+  "properties": {
+    "schema": {"const": "supracraft-redstone-netlist/1"},
+    "source_schema": {"type": ["string", "null"]},
+    "analysis_kind": {"const": "eda_style_redstone_netlist_candidate"},
+    "component_count": {"type": "integer", "minimum": 0},
+    "net_count": {"type": "integer", "minimum": 0},
+    "collapsed_wire_node_count": {"type": "integer", "minimum": 0},
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "component_id", "block", "primitive", "position",
+          "properties", "roles", "ports"
+        ]
+      }
+    },
+    "nets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "net_id", "wire_node_count", "wire_nodes",
+          "bounds", "ports", "net_signature_sha256"
+        ]
+      }
+    },
+    "motif_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "template", "confidence", "component_ids",
+          "net_ids", "evidence", "required_runtime_contract"
+        ]
+      }
+    },
+    "signatures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "horizontal_d4_topology_sha256",
+        "functional_netlist_sha256"
+      ],
+      "properties": {
+        "horizontal_d4_topology_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "functional_netlist_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    }
+  }
+}

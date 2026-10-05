@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/SupraCraft/mc-server-images/bench/worldgen/schemas/generator-adapter-v1.schema.json",
+  "title": "World Generator Adapter v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "adapter_id", "generator", "minecraft", "seed_semantics", "capabilities", "ownership", "artifacts"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "adapter_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,95}$"},
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "family", "source"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "family": {"type": "string", "enum": ["control", "procedural", "rule-grammar", "template-jigsaw", "constraint-wfc", "simulation", "learned", "hybrid"]},
+        "source": {"type": "string", "minLength": 1},
+        "revision": {"type": ["string", "null"]},
+        "license": {"type": ["string", "null"]}
+      }
+    },
+    "minecraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["java_version"],
+      "properties": {
+        "java_version": {"const": "26.3"},
+        "protocol": {"type": ["integer", "null"]},
+        "data_version": {"type": ["integer", "null"]}
+      }
+    },
+    "seed_semantics": {"type": "string", "minLength": 1},
+    "capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owns", "preserves"],
+      "properties": {
+        "owns": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "preserves": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_kind", "redistribution"],
+      "properties": {
+        "output_kind": {"type": "string", "enum": ["minecraft-world", "voxel-tensor", "heightfield", "structure", "other"]},
+        "redistribution": {"type": "string", "enum": ["allowed", "reference-only", "unknown"]}
+      }
+    }
+  }
+}

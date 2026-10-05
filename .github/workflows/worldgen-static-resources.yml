@@ -1,0 +1,132 @@
+name: worldgen static resources and biomes
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Accepted public bootstrap run containing canonical worlds
+        required: true
+        default: "36509631901"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/analyze_worldgen_region_resources.py'
+      - 'tests/test_worldgen_region_resources.py'
+      - '.github/workflows/worldgen-static-resources.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - normal
+          - flat-null-control
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36509631901"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded analyzer dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Unit-test palette decoding
+        run: python -m unittest -v tests.test_worldgen_region_resources
+
+      - name: Resolve accepted source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          if [[ -z "$run_id" ]]; then
+            run_id="$DEFAULT_SOURCE_RUN_ID"
+          fi
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: worldgen-bootstrap-${{ matrix.profile }}
+          path: source
+
+      - name: Record canonical world archive layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "WORLD_ARCHIVE_LAYOUT_BEGIN"
+          unzip -l source/world.zip | sed -n '1,240p'
+          echo "WORLD_ARCHIVE_LAYOUT_END"
+
+      - name: Analyze static resources and biomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "out/${{ matrix.profile }}/analysis"
+          python tools/analyze_worldgen_region_resources.py \
+            --world-zip source/world.zip \
+            --output "out/${{ matrix.profile }}/analysis/resources-biomes.json"
+
+      - name: Validate control semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("out/${{ matrix.profile }}/analysis/resources-biomes.json")
+          d=json.loads(p.read_text())
+          assert d["decode_errors"] == [], d["decode_errors"]
+          assert d["chunks_seen"] > 0
+          if "${{ matrix.profile }}" == "flat-null-control":
+              # The null control must not accidentally look like an ordinary resource-bearing survival start.
+              assert d["resource_counts"].get("wood", 0) == 0
+              assert d["resource_counts"].get("coal", 0) == 0
+              assert d["resource_counts"].get("iron", 0) == 0
+          print(json.dumps({
+              "profile":"${{ matrix.profile }}",
+              "chunks_seen":d["chunks_seen"],
+              "biome_diversity":d["biome_palette_diversity"],
+              "resource_counts":d["resource_counts"],
+              "early_game":d["early_game_static_checks"],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-static-resources-${{ matrix.profile }}
+          path: out/${{ matrix.profile }}/
+          retention-days: 14

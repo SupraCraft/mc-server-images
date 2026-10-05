@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "trace_id": "fixture.hard-progressing",
+  "world_ref": "fixture",
+  "artifact_version_ref": null,
+  "persona": "cautious_survivalist",
+  "objective": "reach objective",
+  "profile": "parkour_time_trial",
+  "events": [
+    {
+      "t": 0,
+      "position": [
+        0,
+        64,
+        0
+      ],
+      "kind": "observation",
+      "action": null,
+      "target": null,
+      "success": null,
+      "progress_id": null,
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 7,
+      "position": [
+        5,
+        66,
+        0
+      ],
+      "kind": "progress",
+      "action": "jump",
+      "target": "checkpoint-1",
+      "success": true,
+      "progress_id": "cp1",
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 12,
+      "position": [
+        6,
+        66,
+        0
+      ],
+      "kind": "failure",
+      "action": "jump",
+      "target": "gap-2",
+      "success": false,
+      "progress_id": null,
+      "failure_class": "fall",
+      "notes": null
+    },
+    {
+      "t": 18,
+      "position": [
+        5,
+        66,
+        0
+      ],
+      "kind": "retry",
+      "action": "reset",
+      "target": "checkpoint-1",
+      "success": true,
+      "progress_id": null,
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 27,
+      "position": [
+        12,
+        70,
+        0
+      ],
+      "kind": "progress",
+      "action": "jump",
+      "target": "checkpoint-2",
+      "success": true,
+      "progress_id": "cp2",
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 34,
+      "position": [
+        13,
+        70,
+        0
+      ],
+      "kind": "failure",
+      "action": "jump",
+      "target": "gap-3",
+      "success": false,
+      "progress_id": null,
+      "failure_class": "fall",
+      "notes": null
+    },
+    {
+      "t": 40,
+      "position": [
+        12,
+        70,
+        0
+      ],
+      "kind": "retry",
+      "action": "reset",
+      "target": "checkpoint-2",
+      "success": true,
+      "progress_id": null,
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 50,
+      "position": [
+        20,
+        74,
+        0
+      ],
+      "kind": "objective_complete",
+      "action": "jump",
+      "target": "goal",
+      "success": true,
+      "progress_id": "done",
+      "failure_class": null,
+      "notes": null
+    }
+  ]
+}
