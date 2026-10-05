@@ -127,6 +127,13 @@ def build_barn_fixture(server: subprocess.Popen[str]) -> None:
         "fill 4 71 3 6 73 5 minecraft:hay_block",
         # approach path
         "fill -2 69 7 2 69 24 minecraft:dirt_path",
+        # bounded terrain-render diagnostic swatches, outside the authored route.
+        # These distinguish grass-specific presentation loss from generic
+        # horizontal-surface/chunk rendering defects in the exact-26.3 viewer.
+        "fill 20 69 8 27 69 15 minecraft:grass_block",
+        "fill 20 69 17 27 69 24 minecraft:dirt",
+        "fill -27 69 8 -20 69 15 minecraft:stone",
+        "fill -27 69 17 -20 69 24 minecraft:green_concrete",
     ]
     for command in commands:
         send(server, command)
