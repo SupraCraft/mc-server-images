@@ -1,0 +1,35 @@
+{
+  "schema": "supracraft.named-place-stock-client-review/v0.1",
+  "place_id": "redroof_husbandry_hall",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "reviewer": "",
+  "reviewed_at_utc": "",
+  "source": {
+    "world_zip_sha256": "",
+    "continuous_run": "",
+    "continuous_head": ""
+  },
+  "dimensions": {
+    "recognizability": null,
+    "silhouette": null,
+    "palette_material_language": null,
+    "terrain_fit": null,
+    "spatial_grammar": null,
+    "scale_compression": null,
+    "traversal_readability": null,
+    "interior_use_space": null
+  },
+  "required_cues": {
+    "red_gable": null,
+    "barn_mass": null,
+    "cupola": null,
+    "paired_pens": null,
+    "hay_loft": null,
+    "approach_path": null
+  },
+  "result": null,
+  "notes": ""
+}
