@@ -213,20 +213,29 @@ def summon_fixture(
     fixture_tag: str,
     x: float,
 ) -> None:
-    """Summon one bounded fixture, then assign its test identity explicitly."""
+    """Summon one bounded fixture, then bind the newly created entity."""
     extra = ",IsImmuneToZombification:1b" if entity_type == "hoglin" else ""
     nbt = (
         "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b"
         f"{extra}}}"
     )
     send(process, f"summon minecraft:{entity_type} {x} 100 0 {nbt}")
-    # Do not depend on summon-NBT custom tag ingestion for harness identity.
-    # The exact coordinate has just received one entity of the requested type.
+    # Ambient target species are cleared once and natural spawning is disabled
+    # before treatments.  Every older fixture is marked fixture_bound, so the
+    # one newly summoned unbound entity is a deterministic harness identity.
     send(
         process,
         (
-            f"tag @e[type=minecraft:{entity_type},x={x},y=100,z=0,"
-            f"distance=..0.75,limit=1] add {fixture_tag}"
+            f"tag @e[type=minecraft:{entity_type},"
+            "tag=!supracraft.fixture_bound] "
+            f"add {fixture_tag}"
+        ),
+    )
+    send(
+        process,
+        (
+            f"tag @e[type=minecraft:{entity_type},tag={fixture_tag}] "
+            "add supracraft.fixture_bound"
         ),
     )
 
@@ -624,6 +633,9 @@ def main() -> int:
             try:
                 status = wait_server(server, protocol)
                 send(server, "forceload add 0 0")
+                send(server, "gamerule doMobSpawning false")
+                send(server, "kill @e[type=minecraft:wolf]")
+                send(server, "kill @e[type=minecraft:hoglin]")
                 send(server, "function supracraft_traits:setup")
                 time.sleep(0.5)
 
