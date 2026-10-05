@@ -1,0 +1,174 @@
+{
+  "schema": "supracraft.active4x-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "6dca93e68f9ab01193f5b9f4d7d15eb200381b2c",
+  "scenario": {
+    "format": "supracraft/active4x-scenario/v0.1",
+    "id": "two_rivers_v0_1",
+    "name": "Two Rivers",
+    "seed": 260305,
+    "horizon": 24,
+    "civilizations": [
+      {
+        "id": "stone_crown",
+        "name": "Stone Crown",
+        "capabilities": [
+          "farming",
+          "dressed_stone",
+          "timber_roofing"
+        ],
+        "preferences": {
+          "trade": 55,
+          "expansion": 60,
+          "resource_control": 50,
+          "security": 45
+        },
+        "settlement": "stoneford"
+      },
+      {
+        "id": "ember_clay",
+        "name": "Ember Clay",
+        "capabilities": [
+          "kiln_firing",
+          "fired_brick",
+          "timber_roofing"
+        ],
+        "preferences": {
+          "trade": 65,
+          "expansion": 50,
+          "resource_control": 65,
+          "security": 55
+        },
+        "settlement": "kilnreach"
+      }
+    ],
+    "settlements": [
+      {
+        "id": "stoneford",
+        "civilization_id": "stone_crown",
+        "population": 18,
+        "labor": 10,
+        "stock": {
+          "grain": 20,
+          "bricks": 1,
+          "iron_ore": 0
+        },
+        "capabilities": [
+          "grain_farming"
+        ],
+        "production": [
+          {
+            "id": "grain_cycle",
+            "every": 4,
+            "resource": "grain",
+            "amount": 4
+          }
+        ],
+        "consumption": [
+          {
+            "id": "food_cycle",
+            "every": 3,
+            "resource": "grain",
+            "amount": 2
+          }
+        ],
+        "decision_start": 3,
+        "decision_every": 6
+      },
+      {
+        "id": "kilnreach",
+        "civilization_id": "ember_clay",
+        "population": 16,
+        "labor": 9,
+        "stock": {
+          "grain": 4,
+          "bricks": 14,
+          "iron_ore": 0
+        },
+        "capabilities": [
+          "brick_firing"
+        ],
+        "production": [
+          {
+            "id": "brick_cycle",
+            "every": 5,
+            "resource": "bricks",
+            "amount": 3
+          }
+        ],
+        "consumption": [
+          {
+            "id": "food_cycle",
+            "every": 3,
+            "resource": "grain",
+            "amount": 2
+          }
+        ],
+        "decision_start": 2,
+        "decision_every": 6
+      }
+    ],
+    "relations": [
+      {
+        "a": "stone_crown",
+        "b": "ember_clay",
+        "trust": 5,
+        "trade_access": true,
+        "hostility": false
+      }
+    ],
+    "contested_sites": [
+      {
+        "id": "iron_ford",
+        "resource": "iron_ore",
+        "claimed_by": null,
+        "strategic_value": 65
+      }
+    ],
+    "player_stock": {
+      "grain": 8,
+      "bricks": 6,
+      "iron_ore": 0
+    },
+    "interventions": {
+      "none": [],
+      "feed_kilnreach": [
+        {
+          "time": 1,
+          "kind": "player_transfer",
+          "resource": "grain",
+          "amount": 6,
+          "to_settlement": "kilnreach"
+        }
+      ],
+      "supply_stoneford_bricks": [
+        {
+          "time": 1,
+          "kind": "player_transfer",
+          "resource": "bricks",
+          "amount": 5,
+          "to_settlement": "stoneford"
+        }
+      ],
+      "sabotage_kilnreach_route": [
+        {
+          "time": 1,
+          "kind": "route_disruption",
+          "settlement_id": "kilnreach",
+          "severity": 1
+        }
+      ]
+    },
+    "acceptance": {
+      "require_distinct_decisions": [
+        "none",
+        "feed_kilnreach",
+        "supply_stoneford_bricks",
+        "sabotage_kilnreach_route"
+      ],
+      "require_balance": true,
+      "require_replay_equal": true,
+      "world_scan": false
+    }
+  }
+}
