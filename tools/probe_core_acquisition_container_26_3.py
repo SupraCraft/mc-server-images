@@ -169,6 +169,8 @@ def main() -> int:
         log_path = root / "server.log"
         bot_result_path = root / "bot-result.json"
         first_file = root / "bot-first.ready"
+        second_file = root / "bot-second.ready"
+        done_file = root / "bot-done.ready"
 
         with log_path.open("w", encoding="utf-8") as log:
             server = subprocess.Popen(
@@ -214,6 +216,8 @@ def main() -> int:
                         "MC_PORT": str(PORT),
                         "BOT_READY_FILE": str(ready),
                         "BOT_FIRST_FILE": str(first_file),
+                        "BOT_SECOND_FILE": str(second_file),
+                        "BOT_DONE_FILE": str(done_file),
                         "BOT_RESULT_FILE": str(bot_result_path),
                     }
                 )
@@ -269,13 +273,26 @@ def main() -> int:
                     "with minecraft:redstone_block 1",
                 )
 
+                wait_file(second_file, bot, 50)
+                second_attempts, second_wait = wait_for_predicate(
+                    server,
+                    log_path,
+                    marker=REACQUIRED,
+                    predicate=(
+                        inventory_has_core()
+                        + " "
+                        + source_lacks_core().removeprefix("execute ")
+                    ),
+                )
+                done_file.write_text("verified\n", "utf-8")
+
                 try:
-                    bot_stdout, _ = bot.communicate(timeout=60)
+                    bot_stdout, _ = bot.communicate(timeout=30)
                 except subprocess.TimeoutExpired:
                     bot.kill()
                     bot_stdout, _ = bot.communicate(timeout=10)
                     raise RuntimeError(
-                        "Mineflayer container worker timed out: "
+                        "Mineflayer container worker did not exit after verification: "
                         + bot_stdout[-4000:]
                     )
 
@@ -296,17 +313,6 @@ def main() -> int:
                         + " stdout="
                         + bot_stdout[-4000:]
                     )
-
-                second_attempts, second_wait = wait_for_predicate(
-                    server,
-                    log_path,
-                    marker=REACQUIRED,
-                    predicate=(
-                        inventory_has_core()
-                        + " "
-                        + source_lacks_core().removeprefix("execute ")
-                    ),
-                )
 
                 send(server, "stop")
                 server_rc = server.wait(timeout=40)
