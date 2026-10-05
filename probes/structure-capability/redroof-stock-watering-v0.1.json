@@ -1,0 +1,71 @@
+{
+  "schema": "supracraft.structure-capability-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_branch": "feat/named-places-affordance-worldgen-v1",
+  "source_checkpoint": "18505c8e2e262ed3cbe419835984edce3b6635af",
+  "structure_id": "husbandry_hall",
+  "architecture_blueprint_id": "redroof_husbandry_hall",
+  "capability_id": "stock_watering",
+  "anchor": [
+    0,
+    70,
+    0
+  ],
+  "base_capabilities": [
+    "shelter",
+    "paired_pens",
+    "feed_storage"
+  ],
+  "architecture_delta": [
+    {
+      "kind": "setblock",
+      "at": [
+        -5,
+        1,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    },
+    {
+      "kind": "setblock",
+      "at": [
+        5,
+        1,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    }
+  ],
+  "completion_predicates": [
+    {
+      "kind": "block",
+      "at": [
+        -5,
+        1,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    },
+    {
+      "kind": "block",
+      "at": [
+        5,
+        1,
+        -5
+      ],
+      "block": "minecraft:water_cauldron"
+    }
+  ],
+  "semantic_effect": {
+    "metric": "husbandry_capacity",
+    "base_value": 8,
+    "active_value": 12,
+    "unit": "animals"
+  },
+  "expected_oracles": [
+    "base_inactive",
+    "partial_rejected",
+    "complete_activated",
+    "damage_revoked"
+  ]
+}
