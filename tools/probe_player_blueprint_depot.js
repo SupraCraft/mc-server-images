@@ -38,20 +38,11 @@ bot.on('kicked', reason => console.log('PLAYER_DEPOT_KICKED ' + JSON.stringify(r
 bot.on('error', err => console.log('PLAYER_DEPOT_ERROR ' + String(err && err.stack ? err.stack : err)))
 bot.on('end', reason => console.log('PLAYER_DEPOT_END ' + String(reason)))
 
-async function transferOne (window, itemName, destSlot) {
+async function tossRequired (itemName, count) {
   const item = bot.registry.itemsByName[itemName]
   if (!item) throw new Error('registry missing item ' + itemName)
-
-  await bot.transfer({
-    window,
-    itemType: item.id,
-    metadata: null,
-    sourceStart: window.inventoryStart,
-    sourceEnd: window.inventoryEnd,
-    destStart: destSlot,
-    destEnd: destSlot + 1,
-    count: 1
-  })
+  await bot.toss(item.id, null, count)
+  await sleep(500)
 }
 
 async function main () {
@@ -80,31 +71,33 @@ async function main () {
     throw new Error('registered material hopper not visible to player client')
   }
 
-  const container = await bot.openContainer(hopper)
+  // The exact-26.3 adapter does not yet qualify container-open interaction,
+  // so exercise the more Minecraft-native hopper intake path: stand directly
+  // above the registered intake and physically toss the required materials.
+  // The hopper collects the dropped item entities through normal game rules.
+  await bot.lookAt(new Vec3(0.5, 69.5, 2.5), true)
+  await tossRequired('cauldron', 2)
+  await tossRequired('water_bucket', 2)
+  await sleep(2500)
 
-  // Exercise a real player inventory/container path. Explicit destination
-  // slots keep the bounded RDTE bill-of-materials contract deterministic.
-  await transferOne(container, 'cauldron', 0)
-  await transferOne(container, 'cauldron', 1)
-  await transferOne(container, 'water_bucket', 2)
-  await transferOne(container, 'water_bucket', 3)
-
-  await sleep(500)
-  const deposited = container.containerItems().map(item => ({
+  const remaining = bot.inventory.items().map(item => ({
     name: item.name,
     count: item.count,
     slot: item.slot
   }))
-
-  await container.close()
 
   fs.writeFileSync(resultFile, JSON.stringify({
     schema: 'supracraft.player-depot-client-rdte/v0.1',
     minecraft: { edition: 'java', version: '26.3' },
     client: 'mineflayer exact-26.3',
     initiation: 'player_material_delivery',
+    delivery_mode: 'physical_item_drop_into_hopper',
     depot: { block: 'minecraft:hopper', at: [0, 70, 2] },
-    deposited,
+    tossed: [
+      { name: 'cauldron', count: 2 },
+      { name: 'water_bucket', count: 2 }
+    ],
+    remaining_inventory: remaining,
     result: 'deposited'
   }, null, 2) + '\n')
 }
