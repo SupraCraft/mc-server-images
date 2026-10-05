@@ -8,7 +8,7 @@ itself.
 
 ## Goal
 
-Minimize operator toil: materialize one deterministic packaged world plus a
+Minimize operator toil: materialize one canonical, content-addressed packaged world plus a
 small review packet so the human only has to open vanilla Minecraft, load the
 world, follow the authored route, and record PASS or REVISE.
 
@@ -59,3 +59,11 @@ preflight that the ZIP loads on an exact 26.3 server.
 
 The operator should not have to reconstruct commands, copy coordinates, or
 assemble evidence manually.
+
+## Reproducibility note
+
+The ZIP writer normalizes archive ordering, timestamps, and modes. Vanilla may
+still write volatile metadata inside the saved world, so the HIL packet is
+identified by its recorded SHA-256 rather than assuming two independent server
+runs will be byte-identical. Semantic reproducibility is established by the
+exact-version fixture/oracle checks, not by a misleading byte-for-byte claim.
