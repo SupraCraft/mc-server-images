@@ -5,6 +5,21 @@
     "version": "26.3"
   },
   "official_server_verified": true,
+  "presentation": {
+    "expected_artifacts": {
+      "compatibility_alias_mp4": "redroof-walkthrough.mp4",
+      "loop_gif": "redroof-realestate-loop.gif",
+      "proof_walk_mp4": "redroof-proof-walk.mp4",
+      "realestate_mp4": "redroof-realestate-walkthrough.mp4"
+    },
+    "loop_authority": "presentation_only",
+    "loop_fps": 12,
+    "loop_frames": 72,
+    "realestate_authority": "presentation_only",
+    "realestate_fps": 15,
+    "realestate_frames": 335,
+    "standard": "supracraft.realestate-walkthrough/v0.1"
+  },
   "renderer": {
     "asset_policy": "exact-version viewer assets",
     "capture": "node-canvas-webgl after explicit chunk-render completion",
@@ -16,22 +31,29 @@
     "semantic_authority": false
   },
   "result": "qualified_render_smoke",
-  "schema": "supracraft.named-place-visual-smoke/v0.4",
+  "schema": "supracraft.named-place-visual-smoke/v0.5",
   "status_protocol": 777,
+  "subject": {
+    "class": "structure_exemplar",
+    "display_name": "Redroof Husbandry Hall",
+    "id": "redroof_husbandry_hall"
+  },
   "traversal": {
-    "distance": 11.651,
+    "authority": "grounded_traversal_evidence",
+    "distance": 11.432,
     "end": [
-      0.389,
+      0.391,
       69.938,
-      12.85
+      13.069
     ],
     "passed": true,
+    "proof_walk_fps": 12,
     "start": [
       0.5,
       69.938,
       24.5
     ],
-    "walkthrough_frames": 13,
+    "walkthrough_frames": 30,
     "walkthrough_target_duration_ms": 2500
   },
   "views": [
@@ -52,24 +74,24 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
-      "bytes": 130411,
+      "bytes": 129037,
       "camera_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.069
       ],
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "bytes": 81553,
       "camera_position": [
@@ -82,9 +104,9 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "bytes": 99361,
       "camera_position": [
@@ -97,9 +119,9 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "bytes": 107018,
       "camera_position": [
@@ -112,9 +134,9 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "bytes": 69338,
       "camera_position": [
@@ -127,9 +149,9 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "bytes": 122293,
       "camera_position": [

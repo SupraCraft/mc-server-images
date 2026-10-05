@@ -12,6 +12,21 @@
       "version": "26.3"
     },
     "official_server_verified": true,
+    "presentation": {
+      "expected_artifacts": {
+        "compatibility_alias_mp4": "redroof-walkthrough.mp4",
+        "loop_gif": "redroof-realestate-loop.gif",
+        "proof_walk_mp4": "redroof-proof-walk.mp4",
+        "realestate_mp4": "redroof-realestate-walkthrough.mp4"
+      },
+      "loop_authority": "presentation_only",
+      "loop_fps": 12,
+      "loop_frames": 72,
+      "realestate_authority": "presentation_only",
+      "realestate_fps": 15,
+      "realestate_frames": 335,
+      "standard": "supracraft.realestate-walkthrough/v0.1"
+    },
     "renderer": {
       "asset_policy": "exact-version viewer assets",
       "capture": "node-canvas-webgl after explicit chunk-render completion",
@@ -23,22 +38,29 @@
       "semantic_authority": false
     },
     "result": "qualified_render_smoke",
-    "schema": "supracraft.named-place-visual-smoke/v0.4",
+    "schema": "supracraft.named-place-visual-smoke/v0.5",
     "status_protocol": 777,
+    "subject": {
+      "class": "structure_exemplar",
+      "display_name": "Redroof Husbandry Hall",
+      "id": "redroof_husbandry_hall"
+    },
     "traversal": {
-      "distance": 11.651,
+      "authority": "grounded_traversal_evidence",
+      "distance": 11.432,
       "end": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.069
       ],
       "passed": true,
+      "proof_walk_fps": 12,
       "start": [
         0.5,
         69.938,
         24.5
       ],
-      "walkthrough_frames": 13,
+      "walkthrough_frames": 30,
       "walkthrough_target_duration_ms": 2500
     },
     "views": [
@@ -59,24 +81,24 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 130411,
+        "bytes": 129037,
         "camera_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.069
         ],
         "name": "02_after_walk",
         "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 81553,
         "camera_position": [
@@ -89,9 +111,9 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 99361,
         "camera_position": [
@@ -104,9 +126,9 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 107018,
         "camera_position": [
@@ -119,9 +141,9 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 69338,
         "camera_position": [
@@ -134,9 +156,9 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 122293,
         "camera_position": [
@@ -227,7 +249,9 @@
         "role": "landmark_distance"
       }
     ],
+    "display_name": "Redroof Husbandry Hall",
     "grounded_walk": {
+      "capture_fps": 12,
       "expected_distance_blocks": {
         "max": 13,
         "min": 10
@@ -244,8 +268,214 @@
       "edition": "java",
       "version": "26.3"
     },
-    "place_id": "redroof_husbandry_hall",
-    "schema": "supracraft.named-place-route/v0.1",
+    "presentation_standard": {
+      "loop_fps": 12,
+      "loop_shot": {
+        "camera_y": 82,
+        "center": [
+          0,
+          74,
+          0
+        ],
+        "closed_loop": true,
+        "end_degrees": 360,
+        "frames": 72,
+        "id": "continuous_flyover_loop",
+        "kind": "orbit",
+        "look_at": [
+          0,
+          75,
+          0
+        ],
+        "radius": 25,
+        "start_degrees": 0
+      },
+      "realestate_fps": 15,
+      "realestate_shots": [
+        {
+          "frames": 45,
+          "from": [
+            0,
+            71,
+            32
+          ],
+          "id": "front_approach",
+          "kind": "linear",
+          "target_from": [
+            0,
+            75,
+            0
+          ],
+          "target_to": [
+            0,
+            75,
+            0
+          ],
+          "to": [
+            0,
+            71,
+            12
+          ]
+        },
+        {
+          "camera_y": 76,
+          "center": [
+            0,
+            74,
+            0
+          ],
+          "end_degrees": 130,
+          "frames": 45,
+          "id": "front_three_quarter_orbit",
+          "kind": "orbit",
+          "look_at": [
+            0,
+            75,
+            0
+          ],
+          "radius": 24,
+          "start_degrees": 35
+        },
+        {
+          "frames": 30,
+          "from": [
+            20,
+            71,
+            10
+          ],
+          "id": "side_yard_pass",
+          "kind": "linear",
+          "target_from": [
+            0,
+            72,
+            2
+          ],
+          "target_to": [
+            0,
+            72,
+            -2
+          ],
+          "to": [
+            20,
+            71,
+            -10
+          ]
+        },
+        {
+          "frames": 45,
+          "from": [
+            0,
+            70.3,
+            9
+          ],
+          "id": "doorway_entry_and_aisle",
+          "kind": "linear",
+          "target_from": [
+            0,
+            72,
+            0
+          ],
+          "target_to": [
+            0,
+            72,
+            -8
+          ],
+          "to": [
+            0,
+            70.3,
+            -4
+          ]
+        },
+        {
+          "frames": 30,
+          "id": "hay_storage_pan",
+          "kind": "pan",
+          "position": [
+            0,
+            70.4,
+            4.5
+          ],
+          "target_from": [
+            6,
+            72,
+            4
+          ],
+          "target_to": [
+            -6,
+            72,
+            4
+          ]
+        },
+        {
+          "frames": 20,
+          "id": "loft_lookup",
+          "kind": "pan",
+          "position": [
+            0,
+            70.4,
+            0
+          ],
+          "target_from": [
+            0,
+            73,
+            -3
+          ],
+          "target_to": [
+            0,
+            81,
+            0
+          ]
+        },
+        {
+          "frames": 30,
+          "from": [
+            0,
+            70.4,
+            -4
+          ],
+          "id": "rear_reveal",
+          "kind": "linear",
+          "target_from": [
+            0,
+            73,
+            0
+          ],
+          "target_to": [
+            0,
+            76,
+            0
+          ],
+          "to": [
+            0,
+            74,
+            -18
+          ]
+        },
+        {
+          "camera_y": 84,
+          "center": [
+            0,
+            74,
+            0
+          ],
+          "end_degrees": 540,
+          "frames": 90,
+          "id": "flyover",
+          "kind": "orbit",
+          "look_at": [
+            0,
+            75,
+            0
+          ],
+          "radius": 28,
+          "start_degrees": 180
+        }
+      ],
+      "schema": "supracraft.realestate-walkthrough/v0.1"
+    },
+    "schema": "supracraft.visual-route/v0.2",
+    "subject_class": "structure_exemplar",
+    "subject_id": "redroof_husbandry_hall",
     "target": [
       0,
       74,
@@ -255,8 +485,8 @@
   "schema": "supracraft.named-place-stock-client-hil/v0.1",
   "semantic_authority": false,
   "world_zip": {
-    "bytes": 560435,
+    "bytes": 557572,
     "name": "redroof-husbandry-hall-vanilla-26.3-world.zip",
-    "sha256": "32ef63507166e32b2ae4e73349f1157105ab4d6a2695810e9751bab310a78889"
+    "sha256": "961ed6df06c3c812541475b8d6e362ec69d3ced3f80566f3b7c1df1f0fdb96ff"
   }
 }
