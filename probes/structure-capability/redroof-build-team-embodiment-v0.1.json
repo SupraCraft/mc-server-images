@@ -1,0 +1,74 @@
+{
+  "schema": "supracraft.build-team-embodiment-projection/v0.1",
+  "order_id": "north_pasture_stock_watering_order",
+  "work_site_ref": "probes/structure-capability/redroof-stock-watering-blueprint-depot-v0.1.json",
+  "actors": {
+    "hauler": {
+      "username": "SupraHauler",
+      "role": "hauler"
+    },
+    "builder": {
+      "username": "SupraBuilder",
+      "role": "builder"
+    }
+  },
+  "source_stockpile": {
+    "id": "settlement_stockpile_a",
+    "block": "minecraft:barrel",
+    "at": [
+      -8,
+      70,
+      2
+    ],
+    "inventory": [
+      {
+        "item": "minecraft:cauldron",
+        "count": 2
+      },
+      {
+        "item": "minecraft:water_bucket",
+        "count": 2
+      }
+    ]
+  },
+  "work_path": {
+    "floor_y": 69,
+    "min": [
+      -12,
+      69,
+      -3
+    ],
+    "max": [
+      8,
+      69,
+      5
+    ]
+  },
+  "build_start_control": {
+    "block": "minecraft:lever",
+    "at": [
+      1,
+      70,
+      0
+    ],
+    "required_state": "powered=true"
+  },
+  "actor_semantics": {
+    "hauler": "withdraw from explicit source, walk to registered depot, deposit complete BOM",
+    "builder": "walk to registered work site and explicitly start bounded builder actuator",
+    "architect": "planning/recruitment authority already qualified separately",
+    "physical_block_placement_by_builder": false
+  },
+  "expected_oracles": [
+    "hauler_withdrew_bom",
+    "hauler_walked_to_site",
+    "hauler_deposited_bom",
+    "builder_walked_to_site",
+    "builder_started_work",
+    "architecture_completed",
+    "capability_activated",
+    "materials_consumed"
+  ],
+  "world_scan": false,
+  "authority_boundary": "This rep qualifies actor movement/container interaction/start-work embodiment. It reuses the already-qualified bounded construction actuator and does not claim block-by-block NPC placement."
+}
