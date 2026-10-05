@@ -213,6 +213,34 @@ def say_if(
     wait_for_marker(log_path, marker, baseline)
 
 
+def wait_fixture_chunks_loaded(
+    process: subprocess.Popen[str],
+    log_path: Path,
+    timeout: float = 30.0,
+) -> None:
+    """Gate fixtures on full entity-ticking load of the bounded test corridor."""
+    marker = "SUPRACRAFT_FIXTURE_CHUNKS_LOADED"
+    baseline = marker_count(log_path, marker)
+    predicate = (
+        "execute "
+        "if loaded -18 100 0 "
+        "if loaded 10 100 0 "
+        "if loaded 20 100 0 "
+        "if loaded 30 100 0 "
+        "if loaded 42 100 0 "
+        "if loaded 54 100 0 "
+        f"run say {marker}"
+    )
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        send(process, predicate)
+        time.sleep(0.25)
+        if marker_count(log_path, marker) > baseline:
+            return
+    tail = log_path.read_text("utf-8", errors="replace")[-5000:]
+    raise RuntimeError(f"fixture chunks never became entity-ticking: {tail!r}")
+
+
 def summon_fixture(
     process: subprocess.Popen[str],
     entity_type: str,
@@ -661,7 +689,8 @@ def main() -> int:
             )
             try:
                 status = wait_server(server, protocol)
-                send(server, "forceload add 0 0")
+                send(server, "forceload add -32 0 64 0")
+                wait_fixture_chunks_loaded(server, first_log)
                 send(server, "function supracraft_traits:setup")
                 time.sleep(0.5)
 
