@@ -1,0 +1,75 @@
+name: Vanilla Java 26.3 heritable mob-trait qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - probe/26.3-heritable-mob-traits-v0
+    paths:
+      - .github/workflows/heritable-mob-traits-26.3.yml
+      - tools/probe_heritable_mob_traits_26_3.py
+      - tools/smoke_vanilla_runtime.py
+      - probes/26.3-release-identity.json
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/heritable-mob-traits-26.3.yml
+      - tools/probe_heritable_mob_traits_26_3.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: heritable-mob-traits-26-3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Static preflight
+        run: python -m py_compile tools/probe_heritable_mob_traits_26_3.py
+
+      - name: Qualify bounded vanilla mob traits
+        shell: bash
+        run: |
+          mkdir -p out
+          python tools/probe_heritable_mob_traits_26_3.py \
+            --evidence probes/26.3-release-identity.json \
+            --output out/26.3-heritable-mob-traits.json
+
+      - name: Publish compact evidence
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Minecraft Java 26.3 vanilla mob traits"
+            echo
+            if test -f out/26.3-heritable-mob-traits.json; then
+              echo '~~~json'
+              cat out/26.3-heritable-mob-traits.json
+              echo '~~~'
+            else
+              echo "No terminal qualification receipt was produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vanilla-26.3-heritable-mob-traits
+          path: out/26.3-heritable-mob-traits.json
+          if-no-files-found: warn
