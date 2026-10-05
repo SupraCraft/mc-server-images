@@ -1,0 +1,88 @@
+name: Active 4X Two Rivers W3 Promotion
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/active4x-two-rivers-w3.yml'
+      - 'tools/probe_active4x_two_rivers_w3_26_3.py'
+      - 'tools/probe_active4x_caravan_actor.js'
+      - 'tools/smoke_vanilla_runtime.py'
+      - 'tools/install_experimental_prismarine_26_3.sh'
+      - 'tools/apply_mineflayer_tick_end_26_3.py'
+      - 'probes/active4x/two-rivers-w3-promotion-v0.1.json'
+      - 'probes/structure-capability/redroof-build-team-embodiment-26.3-result.json'
+      - 'probes/26.3-release-identity.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: active4x-two-rivers-w3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  two-rivers-w3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Assemble exact 26.3 client stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_root="/tmp/supracraft-prismarine-active4x-w3-26.3"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          echo "PRISMARINE_RUNTIME=$runtime_root/runtime" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
+
+      - name: Run caravan promotion/demotion rep
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_active4x_two_rivers_w3_26_3.py             --evidence probes/26.3-release-identity.json             --projection probes/active4x/two-rivers-w3-promotion-v0.1.json             --work-team-result probes/structure-capability/redroof-build-team-embodiment-26.3-result.json             --output probes/active4x/two-rivers-w3-result.json
+
+      - name: Publish compact receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/active4x/two-rivers-w3-result.json ]]; then
+            {
+              echo '## Two Rivers active 4X W3 promotion'
+              echo
+              echo '~~~json'
+              cat probes/active4x/two-rivers-w3-result.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain compact evidence
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f probes/active4x/two-rivers-w3-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/active4x/two-rivers-w3-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain Two Rivers W3 promotion evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
