@@ -1,0 +1,71 @@
+name: Structure capability Java 26.3 RDTE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/structure-capability-26.3.yml'
+      - 'tools/probe_structure_capability_26_3.py'
+      - 'tools/smoke_vanilla_runtime.py'
+      - 'probes/structure-capability/**'
+      - 'probes/26.3-release-identity.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: structure-capability-26-3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capability-rdte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Run bounded stock-watering capability rep
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_structure_capability_26_3.py             --evidence probes/26.3-release-identity.json             --projection probes/structure-capability/redroof-stock-watering-v0.1.json             --output probes/structure-capability/redroof-stock-watering-26.3-result.json
+
+      - name: Publish compact receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/structure-capability/redroof-stock-watering-26.3-result.json ]]; then
+            {
+              echo '## Redroof stock-watering capability RDTE'
+              echo
+              echo '~~~json'
+              cat probes/structure-capability/redroof-stock-watering-26.3-result.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain compact evidence
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f probes/structure-capability/redroof-stock-watering-26.3-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/structure-capability/redroof-stock-watering-26.3-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain structure capability RDTE evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
