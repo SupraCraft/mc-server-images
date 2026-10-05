@@ -92,9 +92,10 @@ const publicRoot = path.join(viewerRoot, 'public')
 fs.mkdirSync(path.join(publicRoot, 'textures'), { recursive: true })
 fs.mkdirSync(path.join(publicRoot, 'blocksStates'), { recursive: true })
 fs.writeFileSync(path.join(publicRoot, 'textures/26.3.png'), atlas.image)
+const prepared = prepareBlocksStates(assets, atlas)
 fs.writeFileSync(
   path.join(publicRoot, 'blocksStates/26.3.json'),
-  JSON.stringify(prepareBlocksStates(assets, atlas))
+  JSON.stringify(prepared)
 )
 
 const boundsPath = path.join(publicRoot, 'worldBounds.json')
@@ -106,7 +107,6 @@ bounds['26.3'] = {
 }
 fs.writeFileSync(boundsPath, JSON.stringify(bounds))
 
-const prepared = prepareBlocksStates(assets, atlas)
 const grassRaw = assets.blocksStates.grass_block
 const grassPrepared = prepared.grass_block
 const dirtPathRaw = assets.blocksStates.dirt_path
