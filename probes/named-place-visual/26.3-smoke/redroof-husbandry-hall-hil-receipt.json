@@ -47,11 +47,11 @@
     },
     "traversal": {
       "authority": "grounded_traversal_evidence",
-      "distance": 11.432,
+      "distance": 11.651,
       "end": [
-        0.391,
+        0.389,
         69.938,
-        13.069
+        12.85
       ],
       "passed": true,
       "proof_walk_fps": 12,
@@ -60,7 +60,7 @@
         69.938,
         24.5
       ],
-      "walkthrough_frames": 30,
+      "walkthrough_frames": 31,
       "walkthrough_target_duration_ms": 2500
     },
     "views": [
@@ -81,24 +81,24 @@
       },
       {
         "bot_position": [
-          0.391,
+          0.389,
           69.938,
-          13.066
+          12.85
         ],
-        "bytes": 129037,
+        "bytes": 130411,
         "camera_position": [
-          0.391,
+          0.389,
           69.938,
-          13.069
+          12.85
         ],
         "name": "02_after_walk",
         "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
       },
       {
         "bot_position": [
-          0.391,
+          0.389,
           69.938,
-          13.066
+          12.85
         ],
         "bytes": 81553,
         "camera_position": [
@@ -111,9 +111,9 @@
       },
       {
         "bot_position": [
-          0.391,
+          0.389,
           69.938,
-          13.066
+          12.85
         ],
         "bytes": 99361,
         "camera_position": [
@@ -126,9 +126,9 @@
       },
       {
         "bot_position": [
-          0.391,
+          0.389,
           69.938,
-          13.066
+          12.85
         ],
         "bytes": 107018,
         "camera_position": [
@@ -141,9 +141,9 @@
       },
       {
         "bot_position": [
-          0.391,
+          0.389,
           69.938,
-          13.066
+          12.85
         ],
         "bytes": 69338,
         "camera_position": [
@@ -156,9 +156,9 @@
       },
       {
         "bot_position": [
-          0.391,
+          0.389,
           69.938,
-          13.066
+          12.85
         ],
         "bytes": 122293,
         "camera_position": [
@@ -408,22 +408,22 @@
         },
         {
           "frames": 20,
-          "id": "loft_lookup",
+          "id": "interior_turnaround",
           "kind": "pan",
           "position": [
             0,
             70.4,
-            0
-          ],
-          "target_from": [
-            0,
-            73,
             -3
           ],
+          "target_from": [
+            -6,
+            72,
+            4
+          ],
           "target_to": [
-            0,
-            81,
-            0
+            6,
+            72,
+            4
           ]
         },
         {
@@ -485,8 +485,8 @@
   "schema": "supracraft.named-place-stock-client-hil/v0.1",
   "semantic_authority": false,
   "world_zip": {
-    "bytes": 557572,
+    "bytes": 556679,
     "name": "redroof-husbandry-hall-vanilla-26.3-world.zip",
-    "sha256": "961ed6df06c3c812541475b8d6e362ec69d3ced3f80566f3b7c1df1f0fdb96ff"
+    "sha256": "93c801bf6cc508ec23f6ca470842dfdfc705471669d61e4f53d7e3c916858f32"
   }
 }
