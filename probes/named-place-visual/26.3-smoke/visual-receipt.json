@@ -31,7 +31,7 @@
       69.938,
       24.5
     ],
-    "walkthrough_frames": 13,
+    "walkthrough_frames": 14,
     "walkthrough_target_duration_ms": 2500
   },
   "views": [
@@ -41,7 +41,7 @@
         69.938,
         24.5
       ],
-      "bytes": 48866,
+      "bytes": 50292,
       "camera_position": [
         0.5,
         69.938,
@@ -71,7 +71,7 @@
         69.938,
         13.066
       ],
-      "bytes": 56186,
+      "bytes": 59064,
       "camera_position": [
         16,
         75,
@@ -101,7 +101,7 @@
         69.938,
         13.066
       ],
-      "bytes": 17076,
+      "bytes": 29760,
       "camera_position": [
         0,
         84,
@@ -109,6 +109,21 @@
       ],
       "name": "05_landmark_distance",
       "path": "/home/runner/work/_temp/named-place-visual/05_landmark_distance.jpg"
+    },
+    {
+      "bot_position": [
+        0.391,
+        69.938,
+        13.066
+      ],
+      "bytes": 45662,
+      "camera_position": [
+        0,
+        96,
+        16
+      ],
+      "name": "06_terrain_probe",
+      "path": "/home/runner/work/_temp/named-place-visual/06_terrain_probe.jpg"
     }
   ]
 }
