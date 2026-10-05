@@ -31,7 +31,7 @@
     "schema": "supracraft.player-depot-client-rdte/v0.1"
   },
   "client_inventory_interaction": true,
-  "delivery_mode": "physical_item_drop_into_hopper",
+  "delivery_mode": "container_deposit_into_registered_hopper",
   "initiation": "player_material_delivery",
   "minecraft": {
     "edition": "java",
