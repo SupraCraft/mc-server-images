@@ -1,0 +1,31 @@
+{
+  "initiation": "blueprint_site",
+  "material_depot": "minecraft:hopper",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "architecture_completed": true,
+    "capability_activated": true,
+    "damage_revoked": true,
+    "empty_depot_no_build": true,
+    "full_bom_present": true,
+    "materials_consumed": false,
+    "partial_materials_no_build": true,
+    "site_registered": true
+  },
+  "result": "FAIL",
+  "schema": "supracraft.blueprint-depot-runtime-rdte/v0.1",
+  "semantic_effect": {
+    "active_value": 12,
+    "base_value": 8,
+    "metric": "husbandry_capacity",
+    "unit": "animals"
+  },
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "work_site_id": "redroof_stock_watering_blueprint_depot",
+  "world_scan": false
+}
