@@ -1,0 +1,27 @@
+{
+  "schema": "supracraft.active4x-w1-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "158a626752d14cbcb09e984111f87259ef315206",
+  "base_scenario_ref": "probes/active4x/two-rivers-v0.1.json",
+  "intervention": {
+    "id": "disrupt_first_grain_caravan",
+    "events": [
+      {
+        "time": 3,
+        "kind": "disrupt_first_cargo",
+        "dest_settlement": "kilnreach",
+        "resource": "grain",
+        "trust_delta": -4
+      }
+    ]
+  },
+  "acceptance": {
+    "baseline_contract_fulfilled": true,
+    "disrupted_contract_breached": true,
+    "disrupted_cargo_does_not_arrive": true,
+    "later_kilnreach_decision": "secure_route",
+    "resource_balance": true,
+    "deterministic_replay": true,
+    "world_scan": false
+  }
+}
