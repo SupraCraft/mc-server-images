@@ -1,0 +1,39 @@
+name: Story scenario composition RDTE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/story-scenario-rdte.yml'
+      - 'tools/probe_story_scenario.py'
+      - 'probes/scenarios/first-hearthstead-dry-season-v0.1.json'
+
+permissions:
+  contents: write
+
+jobs:
+  story-scenario:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exercise compositional story paths
+        run: |
+          python tools/probe_story_scenario.py             --scenario probes/scenarios/first-hearthstead-dry-season-v0.1.json             --output probes/scenarios/first-hearthstead-dry-season-result.json
+      - name: Retain receipt
+        if: always() && github.event_name == 'push'
+        run: |
+          test -f probes/scenarios/first-hearthstead-dry-season-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/scenarios/first-hearthstead-dry-season-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain story-scenario RDTE evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
