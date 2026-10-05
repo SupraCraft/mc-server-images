@@ -2,7 +2,17 @@
   "bill_semantics": "aggregate_item_quantity",
   "client": {
     "client": "mineflayer exact-26.3",
-    "delivery_mode": "physical_item_drop_into_hopper",
+    "delivery_mode": "container_deposit_into_registered_hopper",
+    "deposited": [
+      {
+        "count": 2,
+        "name": "cauldron"
+      },
+      {
+        "count": 2,
+        "name": "water_bucket"
+      }
+    ],
     "depot": {
       "at": [
         0,
@@ -18,17 +28,7 @@
     },
     "remaining_inventory": [],
     "result": "deposited",
-    "schema": "supracraft.player-depot-client-rdte/v0.1",
-    "tossed": [
-      {
-        "count": 2,
-        "name": "cauldron"
-      },
-      {
-        "count": 2,
-        "name": "water_bucket"
-      }
-    ]
+    "schema": "supracraft.player-depot-client-rdte/v0.1"
   },
   "client_inventory_interaction": true,
   "delivery_mode": "physical_item_drop_into_hopper",
@@ -39,12 +39,12 @@
   },
   "official_server_verified": true,
   "oracles": {
-    "capability_activated": false,
+    "capability_activated": true,
     "materials_consumed": true,
-    "player_bom_deposited": false,
-    "player_initiated_build_completed": false
+    "player_bom_deposited": true,
+    "player_initiated_build_completed": true
   },
-  "result": "FAIL",
+  "result": "PASS",
   "reuse_existing_construction_engine": true,
   "schema": "supracraft.player-blueprint-depot-runtime-rdte/v0.1",
   "semantic_effect": {
