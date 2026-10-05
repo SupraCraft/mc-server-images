@@ -4,7 +4,7 @@ const { Vec3 } = require('vec3')
 
 const host = process.env.MC_HOST || '127.0.0.1'
 const port = Number(process.env.MC_PORT || '25576')
-const username = process.env.MC_USER || 'SupraCraftBuilder'
+const username = process.env.MC_USER || 'SupraBuilder'
 const readyFile = process.env.BOT_READY_FILE
 const goFile = process.env.BOT_GO_FILE
 const resultFile = process.env.BOT_RESULT_FILE
