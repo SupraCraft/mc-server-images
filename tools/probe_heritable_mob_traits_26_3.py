@@ -220,6 +220,9 @@ def summon_fixture(
         f"{extra}}}"
     )
     send(process, f"summon minecraft:{entity_type} {x} 100 0 {nbt}")
+    # Console commands can be consumed in the same server tick. Give the
+    # freshly added entity a tick boundary before targeting it by selector.
+    time.sleep(0.15)
     # Ambient target species are cleared once and natural spawning is disabled
     # before treatments.  Every older fixture is marked fixture_bound, so the
     # one newly summoned unbound entity is a deterministic harness identity.
@@ -238,6 +241,7 @@ def summon_fixture(
             "add supracraft.fixture_bound"
         ),
     )
+    time.sleep(0.10)
 
 
 def reset_probe_scores(process: subprocess.Popen[str]) -> None:
@@ -633,7 +637,7 @@ def main() -> int:
             try:
                 status = wait_server(server, protocol)
                 send(server, "forceload add 0 0")
-                send(server, "gamerule doMobSpawning false")
+                send(server, "gamerule minecraft:do_mob_spawning false")
                 send(server, "kill @e[type=minecraft:wolf]")
                 send(server, "kill @e[type=minecraft:hoglin]")
                 send(server, "function supracraft_traits:setup")
