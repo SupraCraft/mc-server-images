@@ -158,5 +158,7 @@ jobs:
             ${{ runner.temp }}/named-place-visual/visual-receipt.json
             ${{ runner.temp }}/named-place-visual/*.jpg
             ${{ runner.temp }}/named-place-visual/*.mp4
+            ${{ runner.temp }}/named-place-visual/*.zip
+            ${{ runner.temp }}/named-place-visual/*-hil-receipt.json
           retention-days: 14
           if-no-files-found: warn
