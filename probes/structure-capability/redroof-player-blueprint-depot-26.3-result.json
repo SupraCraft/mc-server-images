@@ -1,0 +1,60 @@
+{
+  "bill_semantics": "aggregate_item_quantity",
+  "client": {
+    "client": "mineflayer exact-26.3",
+    "delivery_mode": "physical_item_drop_into_hopper",
+    "depot": {
+      "at": [
+        0,
+        70,
+        2
+      ],
+      "block": "minecraft:hopper"
+    },
+    "initiation": "player_material_delivery",
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
+    "remaining_inventory": [],
+    "result": "deposited",
+    "schema": "supracraft.player-depot-client-rdte/v0.1",
+    "tossed": [
+      {
+        "count": 2,
+        "name": "cauldron"
+      },
+      {
+        "count": 2,
+        "name": "water_bucket"
+      }
+    ]
+  },
+  "client_inventory_interaction": true,
+  "delivery_mode": "physical_item_drop_into_hopper",
+  "initiation": "player_material_delivery",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "capability_activated": false,
+    "materials_consumed": true,
+    "player_bom_deposited": false,
+    "player_initiated_build_completed": false
+  },
+  "result": "FAIL",
+  "reuse_existing_construction_engine": true,
+  "schema": "supracraft.player-blueprint-depot-runtime-rdte/v0.1",
+  "semantic_effect": {
+    "active_value": 12,
+    "base_value": 8,
+    "metric": "husbandry_capacity",
+    "unit": "animals"
+  },
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "work_site_id": "redroof_stock_watering_blueprint_depot",
+  "world_scan": false
+}
