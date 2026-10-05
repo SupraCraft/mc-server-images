@@ -59,13 +59,39 @@ def xyz(values: list[int]) -> str:
     return " ".join(str(int(v)) for v in values)
 
 
-def full_bom_condition(projection: dict[str, Any]) -> str:
-    depot = xyz(projection["depot"]["at"])
-    terms = []
+def bom_totals(projection: dict[str, Any]) -> list[tuple[str, int]]:
+    totals: dict[str, int] = {}
     for row in projection["depot"]["bill_of_materials"]:
-        if int(row.get("count", 0)) != 1:
-            raise ValueError("bounded RDTE only supports count=1 per slot")
-        terms.append(f"if items block {depot} {row['slot']} {row['item']}")
+        item = str(row.get("item", ""))
+        count = int(row.get("count", 0))
+        if not item.startswith("minecraft:") or count <= 0:
+            raise ValueError("invalid bill_of_materials row")
+        totals[item] = totals.get(item, 0) + count
+    return sorted(totals.items())
+
+
+def refresh_bom_scores(
+    process: subprocess.Popen[str],
+    projection: dict[str, Any],
+) -> None:
+    depot = xyz(projection["depot"]["at"])
+    for index, (item, _required) in enumerate(bom_totals(projection)):
+        holder = f"bom_{index}"
+        send(process, f"scoreboard players set {holder} supracraft_bom 0")
+        send(
+            process,
+            f"execute store result score {holder} supracraft_bom "
+            f"if items block {depot} container.* {item}",
+        )
+    time.sleep(0.12)
+
+
+def full_bom_condition(projection: dict[str, Any]) -> str:
+    terms = []
+    for index, (_item, required) in enumerate(bom_totals(projection)):
+        terms.append(
+            f"if score bom_{index} supracraft_bom matches {required}.."
+        )
     return " ".join(terms)
 
 
@@ -74,9 +100,10 @@ def run_builder(process: subprocess.Popen[str], projection: dict[str, Any]) -> N
     controller_block = projection["controller"]["block"]
     depot = xyz(projection["depot"]["at"])
     depot_block = projection["depot"]["block"]
+    refresh_bom_scores(process, projection)
     bom = full_bom_condition(projection)
 
-    # All construction commands are gated by controller + complete bill of materials.
+    # All construction commands are gated by controller + complete aggregate bill.
     for row in projection["architecture_delta"]:
         if row.get("kind") != "setblock":
             raise ValueError("bounded RDTE only supports setblock architecture deltas")
@@ -182,6 +209,7 @@ def main() -> int:
                 send(process, "forceload add -16 -16 16 16")
                 send(process, "scoreboard objectives add supracraft_cap dummy")
                 send(process, "scoreboard objectives add supracraft_metric dummy")
+                send(process, "scoreboard objectives add supracraft_bom dummy")
 
                 controller = xyz(projection["controller"]["at"])
                 depot = xyz(projection["depot"]["at"])
@@ -228,6 +256,7 @@ def main() -> int:
                         process,
                         f"item replace block {depot} {row['slot']} with {row['item']}",
                     )
+                refresh_bom_scores(process, projection)
                 marker(
                     process,
                     f"execute {full_bom_condition(projection)} "
@@ -307,7 +336,7 @@ def main() -> int:
         passed=exit_code == 0 and all(observed.values()) and not errors
 
         result={
-            "schema":"supracraft.blueprint-depot-runtime-rdte/v0.1",
+            "schema":"supracraft.blueprint-depot-runtime-rdte/v0.2",
             "minecraft":{"edition":"java","version":"26.3"},
             "status_protocol":int(status.get("version",{}).get("protocol",-1)),
             "official_server_verified":True,
@@ -315,6 +344,7 @@ def main() -> int:
             "initiation":"blueprint_site",
             "world_scan":False,
             "material_depot":"minecraft:hopper",
+            "bill_semantics":"aggregate_item_quantity",
             "oracles":observed,
             "semantic_effect":{"metric":"husbandry_capacity","base_value":8,"active_value":12,"unit":"animals"},
             "server_error_count":len(errors),
