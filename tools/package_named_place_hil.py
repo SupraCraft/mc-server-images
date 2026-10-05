@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build a deterministic stock-client HIL packet for one named-place world.
+"""Build a canonical stock-client HIL packet for one named-place world.
+
+Archive metadata is normalized so packaging itself is stable, but vanilla
+world files may contain runtime-written timestamps or other volatile metadata.
+The packet is therefore content-addressed by SHA-256 rather than claiming
+bit-for-bit world reproducibility.
 
 The packet contains only the authored world plus SupraCraft review metadata.
 It never bundles a Minecraft client or Mojang asset corpus.
@@ -33,7 +38,7 @@ def load_json(path: Path) -> dict[str, Any]:
     return data
 
 
-def deterministic_zip(world: Path, output: Path) -> None:
+def canonical_zip(world: Path, output: Path) -> None:
     files = sorted(p for p in world.rglob("*") if p.is_file())
     if not files:
         raise ValueError(f"world has no files: {world}")
@@ -67,7 +72,7 @@ def main() -> int:
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     world_zip = out / f"{args.place_id}-vanilla-26.3-world.zip"
-    deterministic_zip(world, world_zip)
+    canonical_zip(world, world_zip)
 
     receipt = {
         "schema": "supracraft.named-place-stock-client-hil/v0.1",
