@@ -1,0 +1,262 @@
+{
+  "intended_review_authority": "stock_vanilla_client_hil",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "place_id": "redroof-husbandry-hall",
+  "provenance": {
+    "chrome_executable": "google-chrome",
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
+    "official_server_verified": true,
+    "renderer": {
+      "asset_policy": "exact-version viewer assets",
+      "capture": "node-canvas-webgl after explicit chunk-render completion",
+      "client_world_source": "mineflayer exact-26.3 connection",
+      "inspection_camera_policy": "viewer-only; traversal actor remains grounded",
+      "name": "prismarine-viewer-core",
+      "presentation_asset_version": "26.3",
+      "render_view_distance_chunks": 4,
+      "semantic_authority": false
+    },
+    "result": "qualified_render_smoke",
+    "schema": "supracraft.named-place-visual-smoke/v0.4",
+    "status_protocol": 777,
+    "traversal": {
+      "distance": 11.651,
+      "end": [
+        0.389,
+        69.938,
+        12.85
+      ],
+      "passed": true,
+      "start": [
+        0.5,
+        69.938,
+        24.5
+      ],
+      "walkthrough_frames": 13,
+      "walkthrough_target_duration_ms": 2500
+    },
+    "views": [
+      {
+        "bot_position": [
+          0.5,
+          69.938,
+          24.5
+        ],
+        "bytes": 74500,
+        "camera_position": [
+          0.5,
+          69.938,
+          24.5
+        ],
+        "name": "01_approach",
+        "path": "/home/runner/work/_temp/named-place-visual/01_approach.jpg"
+      },
+      {
+        "bot_position": [
+          0.389,
+          69.938,
+          12.85
+        ],
+        "bytes": 130411,
+        "camera_position": [
+          0.389,
+          69.938,
+          12.85
+        ],
+        "name": "02_after_walk",
+        "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
+      },
+      {
+        "bot_position": [
+          0.389,
+          69.938,
+          12.85
+        ],
+        "bytes": 81553,
+        "camera_position": [
+          16,
+          75,
+          16
+        ],
+        "name": "03_three_quarter",
+        "path": "/home/runner/work/_temp/named-place-visual/03_three_quarter.jpg"
+      },
+      {
+        "bot_position": [
+          0.389,
+          69.938,
+          12.85
+        ],
+        "bytes": 99361,
+        "camera_position": [
+          0,
+          70.1,
+          5
+        ],
+        "name": "04_interior",
+        "path": "/home/runner/work/_temp/named-place-visual/04_interior.jpg"
+      },
+      {
+        "bot_position": [
+          0.389,
+          69.938,
+          12.85
+        ],
+        "bytes": 107018,
+        "camera_position": [
+          0,
+          70.5,
+          5.5
+        ],
+        "name": "04b_hay_storage",
+        "path": "/home/runner/work/_temp/named-place-visual/04b_hay_storage.jpg"
+      },
+      {
+        "bot_position": [
+          0.389,
+          69.938,
+          12.85
+        ],
+        "bytes": 69338,
+        "camera_position": [
+          0,
+          84,
+          42
+        ],
+        "name": "05_landmark_distance",
+        "path": "/home/runner/work/_temp/named-place-visual/05_landmark_distance.jpg"
+      },
+      {
+        "bot_position": [
+          0.389,
+          69.938,
+          12.85
+        ],
+        "bytes": 122293,
+        "camera_position": [
+          0,
+          96,
+          16
+        ],
+        "name": "06_terrain_probe",
+        "path": "/home/runner/work/_temp/named-place-visual/06_terrain_probe.jpg"
+      }
+    ]
+  },
+  "review_dimensions": [
+    "recognizability",
+    "silhouette",
+    "palette_material_language",
+    "terrain_fit",
+    "spatial_grammar",
+    "scale_compression",
+    "traversal_readability",
+    "interior_use_space"
+  ],
+  "review_result": null,
+  "route": {
+    "anchor": [
+      0,
+      69,
+      0
+    ],
+    "authored_views": [
+      {
+        "id": "approach",
+        "position": [
+          0.5,
+          69.938,
+          24.5
+        ],
+        "role": "approach"
+      },
+      {
+        "id": "after_walk",
+        "position": [
+          0.5,
+          69.938,
+          14
+        ],
+        "role": "approach_progress"
+      },
+      {
+        "id": "three_quarter",
+        "position": [
+          16,
+          75,
+          16
+        ],
+        "role": "three_quarter"
+      },
+      {
+        "id": "interior",
+        "position": [
+          0,
+          70.1,
+          5
+        ],
+        "role": "interior"
+      },
+      {
+        "id": "hay_storage",
+        "position": [
+          0,
+          70.5,
+          5.5
+        ],
+        "role": "recognition_cue_detail",
+        "target": [
+          5,
+          71.5,
+          4
+        ]
+      },
+      {
+        "id": "landmark_distance",
+        "position": [
+          0,
+          84,
+          42
+        ],
+        "role": "landmark_distance"
+      }
+    ],
+    "grounded_walk": {
+      "expected_distance_blocks": {
+        "max": 13,
+        "min": 10
+      },
+      "heading": "toward main south doorway",
+      "start": [
+        0.5,
+        69.938,
+        24.5
+      ],
+      "target_duration_ms": 2500
+    },
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
+    "place_id": "redroof_husbandry_hall",
+    "schema": "supracraft.named-place-route/v0.1",
+    "target": [
+      0,
+      74,
+      0
+    ]
+  },
+  "schema": "supracraft.named-place-stock-client-hil/v0.1",
+  "semantic_authority": false,
+  "world_zip": {
+    "bytes": 560435,
+    "name": "redroof-husbandry-hall-vanilla-26.3-world.zip",
+    "sha256": "32ef63507166e32b2ae4e73349f1157105ab4d6a2695810e9751bab310a78889"
+  }
+}
