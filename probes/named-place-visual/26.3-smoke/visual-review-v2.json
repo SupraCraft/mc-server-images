@@ -1,0 +1,65 @@
+{
+  "schema": "supracraft.named-place-visual-review/v0.1",
+  "source_run": 37322213992,
+  "source_head": "7931dcaf22f120f2beb117faebb575254ace8fba",
+  "place_id": "redroof_husbandry_hall",
+  "reviewer_class": "machine_vision",
+  "authority": "advisory_only",
+  "overall": "REVISE",
+  "findings": {
+    "recognition_cues": {
+      "red_gable": {
+        "status": "PASS",
+        "evidence": [
+          "01_approach",
+          "03_three_quarter",
+          "05_landmark_distance"
+        ]
+      },
+      "barn_mass": {
+        "status": "PASS",
+        "evidence": [
+          "01_approach",
+          "03_three_quarter"
+        ]
+      },
+      "cupola": {
+        "status": "PASS",
+        "evidence": [
+          "01_approach",
+          "03_three_quarter",
+          "05_landmark_distance"
+        ]
+      },
+      "paired_pens": {
+        "status": "PASS",
+        "evidence": [
+          "03_three_quarter",
+          "05_landmark_distance"
+        ]
+      },
+      "hay_loft": {
+        "status": "REVISE",
+        "reason": "Required hay-storage cue is not directly visible in the current interior/doorway acceptance views."
+      },
+      "approach_path": {
+        "status": "PASS",
+        "evidence": [
+          "01_approach",
+          "02_after_walk",
+          "05_landmark_distance"
+        ]
+      }
+    },
+    "dimensions": {
+      "silhouette": "PASS",
+      "palette_material_language": "PASS",
+      "terrain_fit": "PASS",
+      "spatial_grammar": "PASS",
+      "scale_compression": "PASS_WITH_NOTE",
+      "traversal_readability": "PASS",
+      "interior_use_space": "PASS_WITH_NOTE"
+    }
+  },
+  "note": "Terrain presentation defect is cleared in the repaired deterministic fixture. Final V2 acceptance remains explicit human review; stock vanilla-client HIL remains V3 authority."
+}
