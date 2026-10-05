@@ -222,6 +222,7 @@ def main() -> int:
 
         log_path = root / "server.log"
         bot_result_path = root / "bot-result.json"
+        start_file = root / "bot-start.ready"
         first_file = root / "bot-first.ready"
         loss_file = root / "bot-loss.ready"
         refill_release_file = root / "bot-refill-release.ready"
@@ -248,18 +249,10 @@ def main() -> int:
             try:
                 status = wait_server(server, protocol)
                 send(server, "forceload add 0 0")
-                send(server, "fill -2 69 -2 6 69 4 minecraft:stone")
-                send(server, "fill -2 70 -2 6 72 4 minecraft:air")
+                send(server, "fill 0 69 0 8 69 4 minecraft:stone")
+                send(server, "fill 0 70 0 8 72 4 minecraft:air")
                 send(server, "setblock 0 70 0 minecraft:chest[facing=south]")
                 send(server, f"setblock 4 70 0 minecraft:air")
-
-                source_attempts, source_wait = wait_for_predicate(
-                    server,
-                    log_path,
-                    marker=SOURCE_READY,
-                    predicate=source_has_core(),
-                    timeout=10.0,
-                )
 
                 ready = root / "bot.ready"
                 env = dict(os.environ)
@@ -267,6 +260,7 @@ def main() -> int:
                     {
                         "MC_PORT": str(PORT),
                         "BOT_READY_FILE": str(ready),
+                        "BOT_START_FILE": str(start_file),
                         "BOT_FIRST_FILE": str(first_file),
                         "BOT_LOSS_FILE": str(loss_file),
                         "BOT_REFILL_RELEASE_FILE": str(refill_release_file),
@@ -293,6 +287,15 @@ def main() -> int:
                 wait_file(ready, bot, 40)
                 send(server, f"gamemode survival {BOT_NAME}")
                 send(server, f"tp {BOT_NAME} 0.5 70.0 2.5 180 0")
+
+                source_attempts, source_wait = wait_for_predicate(
+                    server,
+                    log_path,
+                    marker=SOURCE_READY,
+                    predicate=source_has_core(),
+                    timeout=10.0,
+                )
+                start_file.write_text("source-verified\n", "utf-8")
 
                 wait_file(first_file, bot, 50)
                 first_attempts, first_wait = wait_for_predicate(
