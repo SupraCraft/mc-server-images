@@ -1,0 +1,33 @@
+{
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "build_team_constructed": true,
+    "capability_activated": true,
+    "haul_plan_delivered": true,
+    "source_stockpiles_decremented": true,
+    "team_plan_admitted": true
+  },
+  "order_id": "north_pasture_stock_watering_order",
+  "physical_navigation_qualified": false,
+  "result": "PASS",
+  "reuse_existing_construction_engine": true,
+  "schema": "supracraft.architect-logistics-runtime-rdte/v0.1",
+  "semantic_effect": {
+    "active_value": 12,
+    "base_value": 8,
+    "metric": "husbandry_capacity",
+    "unit": "animals"
+  },
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "team": {
+    "architect": "npc.architect.01",
+    "builder": "npc.builder.01",
+    "hauler": "npc.hauler.01"
+  },
+  "world_scan": false
+}
