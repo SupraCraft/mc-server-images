@@ -95,7 +95,7 @@
   "presentation_standard": {
     "schema": "supracraft.realestate-walkthrough/v0.1",
     "realestate_fps": 15,
-    "loop_fps": 12,
+    "loop_fps": 10,
     "realestate_shots": [
       {
         "id": "front_approach",
@@ -279,7 +279,7 @@
     "loop_shot": {
       "id": "continuous_flyover_loop",
       "kind": "orbit",
-      "frames": 72,
+      "frames": 60,
       "center": [
         0,
         74,
