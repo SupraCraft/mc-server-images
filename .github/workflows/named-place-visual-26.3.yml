@@ -145,6 +145,8 @@ jobs:
           git add probes/named-place-visual/26.3-smoke
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "probe: retain named-place visual smoke evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
 
       - name: Upload derived visual evidence
