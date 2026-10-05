@@ -213,20 +213,30 @@ def summon_fixture(
     fixture_tag: str,
     x: float,
 ) -> None:
-    """Create and bind one fixture causally through execute-summon context."""
+    """Create one fixture and assign command-tag identity in summon context."""
     extra = ",IsImmuneToZombification:1b" if entity_type == "hoglin" else ""
-    merged = (
-        "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b,"
-        f'Tags:["{fixture_tag}"]{extra}}}'
-    )
-    # Java's execute-summon context binds @s to the newly created entity.  This
-    # avoids post-hoc nearest/type/coordinate discovery and assigns persistence
-    # plus the unique harness identity before later commands need a selector.
+    # execute-summon binds @s directly to the entity it just created.  Use the
+    # tag command itself for harness identity rather than assuming raw Tags NBT
+    # is selector-equivalent in this runtime.
     send(
         process,
         (
             f"execute positioned {x} 100 0 summon minecraft:{entity_type} "
-            f"run data merge entity @s {merged}"
+            f"run tag @s add {fixture_tag}"
+        ),
+    )
+    time.sleep(0.10)
+    # Once identity is observable, stabilize the entity for the remainder of
+    # the bounded rep and for save/restart persistence treatment.
+    stable = (
+        "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b"
+        f"{extra}}}"
+    )
+    send(
+        process,
+        (
+            f"execute as @e[tag={fixture_tag},limit=1] "
+            f"run data merge entity @s {stable}"
         ),
     )
     time.sleep(0.10)
