@@ -96,8 +96,15 @@ def build_barn_fixture(server: subprocess.Popen[str]) -> None:
         # compatibility surface from structure/world rendering and must not
         # contaminate this first named-place visual slice.
         "gamerule doMobSpawning false",
+        # Java 26.x names the command mutation limit max_block_modifications.
+        # The deterministic clearing volume exceeds the vanilla default, so
+        # raise it explicitly rather than relying on a silent /fill failure.
+        "gamerule max_block_modifications 200000",
         "kill @e[type=!minecraft:player]",
-        "forceload add -3 -3 3 3",
+        # /forceload takes block coordinates, not chunk indexes. Cover the
+        # complete fixture/terrain envelope so subsequent fills cannot straddle
+        # unloaded chunks.
+        "forceload add -96 -96 96 96",
         "setworldspawn 0 70 20",
         "fill -32 68 -32 32 90 48 minecraft:air",
         "fill -90 69 -90 90 69 90 minecraft:grass_block",
