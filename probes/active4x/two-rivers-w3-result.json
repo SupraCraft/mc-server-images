@@ -1,0 +1,83 @@
+{
+  "actor": {
+    "actor_group_id": "caravan.stoneford.kilnreach.0001",
+    "amount": 4,
+    "cargo_id": "contract-001.cargo01",
+    "client": "mineflayer exact-26.3",
+    "destination_items_observed_before_close": [
+      {
+        "count": 4,
+        "name": "wheat"
+      }
+    ],
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
+    "minecraft_item": "minecraft:wheat",
+    "remaining_inventory": [],
+    "result": "delivered",
+    "schema": "supracraft.active4x-caravan-actor-rdte/v0.1",
+    "semantic_resource": "grain",
+    "task_id": "task.trade.contract-001.grain",
+    "username": "TwoRiversCaravan",
+    "walk": {
+      "distance": 16.3515633496767,
+      "end": [
+        7.845851369413244,
+        70,
+        0.06783453684796467
+      ],
+      "start": [
+        -8.5,
+        70,
+        0.5
+      ]
+    },
+    "withdrew": []
+  },
+  "demotion_receipt": {
+    "actor_group_id": "caravan.stoneford.kilnreach.0001",
+    "amount": 4,
+    "cargo_id": "contract-001.cargo01",
+    "destination_settlement": "kilnreach",
+    "physical_evidence": {
+      "grounded_distance": 16.3515633496767,
+      "minecraft_item": "minecraft:wheat"
+    },
+    "schema": "supracraft.fidelity-demotion-receipt/v0.1",
+    "semantic_resource": "grain",
+    "source_settlement": "stoneford",
+    "status": "delivered",
+    "task_id": "task.trade.contract-001.grain"
+  },
+  "identity_preserved": true,
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "destination_incremented": true,
+    "source_decremented": true,
+    "task_identity_preserved": true,
+    "work_team_evidence_reused": true
+  },
+  "promotion": {
+    "actor_group_id": "caravan.stoneford.kilnreach.0001",
+    "amount": 4,
+    "cargo_id": "contract-001.cargo01",
+    "minecraft_item": "minecraft:wheat",
+    "semantic_resource": "grain",
+    "task_id": "task.trade.contract-001.grain"
+  },
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-w3-rdte/v0.1",
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "work_team_reuse": {
+    "qualified": true,
+    "run_id": 37360006251
+  },
+  "world_scan": false
+}
