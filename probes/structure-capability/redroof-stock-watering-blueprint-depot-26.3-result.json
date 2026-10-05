@@ -1,4 +1,5 @@
 {
+  "bill_semantics": "aggregate_item_quantity",
   "initiation": "blueprint_site",
   "material_depot": "minecraft:hopper",
   "minecraft": {
@@ -17,7 +18,7 @@
     "site_registered": true
   },
   "result": "PASS",
-  "schema": "supracraft.blueprint-depot-runtime-rdte/v0.1",
+  "schema": "supracraft.blueprint-depot-runtime-rdte/v0.2",
   "semantic_effect": {
     "active_value": 12,
     "base_value": 8,
