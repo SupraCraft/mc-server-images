@@ -1,0 +1,91 @@
+{
+  "schema": "supracraft.architect-build-team-runtime-projection/v0.1",
+  "order_id": "north_pasture_stock_watering_order",
+  "team": {
+    "architect": "npc.architect.01",
+    "builder": "npc.builder.01",
+    "hauler": "npc.hauler.01"
+  },
+  "work_site_projection_ref": "probes/structure-capability/redroof-stock-watering-blueprint-depot-v0.1.json",
+  "source_stockpiles": [
+    {
+      "id": "settlement_stockpile_a",
+      "at": [
+        -10,
+        70,
+        0
+      ],
+      "block": "minecraft:barrel",
+      "slots": [
+        {
+          "slot": "container.0",
+          "item": "minecraft:cauldron"
+        },
+        {
+          "slot": "container.1",
+          "item": "minecraft:cauldron"
+        },
+        {
+          "slot": "container.2",
+          "item": "minecraft:water_bucket"
+        }
+      ]
+    },
+    {
+      "id": "settlement_stockpile_b",
+      "at": [
+        10,
+        70,
+        0
+      ],
+      "block": "minecraft:barrel",
+      "slots": [
+        {
+          "slot": "container.0",
+          "item": "minecraft:water_bucket"
+        }
+      ]
+    }
+  ],
+  "haul_tasks": [
+    {
+      "actor_id": "npc.hauler.01",
+      "source_id": "settlement_stockpile_a",
+      "source_slot": "container.0",
+      "depot_slot": "container.0",
+      "item": "minecraft:cauldron"
+    },
+    {
+      "actor_id": "npc.hauler.01",
+      "source_id": "settlement_stockpile_a",
+      "source_slot": "container.1",
+      "depot_slot": "container.1",
+      "item": "minecraft:cauldron"
+    },
+    {
+      "actor_id": "npc.hauler.01",
+      "source_id": "settlement_stockpile_a",
+      "source_slot": "container.2",
+      "depot_slot": "container.2",
+      "item": "minecraft:water_bucket"
+    },
+    {
+      "actor_id": "npc.hauler.01",
+      "source_id": "settlement_stockpile_b",
+      "source_slot": "container.0",
+      "depot_slot": "container.3",
+      "item": "minecraft:water_bucket"
+    }
+  ],
+  "actor_semantics": {
+    "architect": "plans/recruits only in this RDTE",
+    "builder": "reuses qualified bounded work-site actuator",
+    "hauler": "resource-transfer actuator under explicit haul plan",
+    "physical_navigation_qualified": false
+  },
+  "world_scan": false,
+  "source": {
+    "authority": "SupraCraft/mc-structure-foundry-private#17",
+    "checkpoint": "fb2340fba67dbf8e5c19f25e89c9d42f03eb6eed"
+  }
+}
