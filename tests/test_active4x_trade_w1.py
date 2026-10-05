@@ -40,9 +40,16 @@ class TwoRiversTradeW1Tests(unittest.TestCase):
         self.assertTrue(
             any(row["kind"] == "cargo_disrupted" for row in result["ledger"])
         )
+        breached = [
+            row for row in result["state"]["contracts"].values()
+            if row.get("status") == "breached"
+        ]
+        self.assertEqual(len(breached), 1)
+        breached_id = breached[0]["contract_id"]
         self.assertFalse(
             any(
                 row["kind"] == "trade_contract_fulfilled"
+                and row["owner"] == breached_id
                 for row in result["ledger"]
             )
         )
