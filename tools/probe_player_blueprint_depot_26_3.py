@@ -298,7 +298,7 @@ def main() -> int:
             "work_site_id": work_site["work_site_id"],
             "initiation": "player_material_delivery",
             "client_inventory_interaction": True,
-            "delivery_mode": "physical_item_drop_into_hopper",
+            "delivery_mode": client_result.get("delivery_mode"),
             "bill_semantics": "aggregate_item_quantity",
             "reuse_existing_construction_engine": True,
             "world_scan": False,
