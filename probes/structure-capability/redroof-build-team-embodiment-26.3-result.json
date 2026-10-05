@@ -34,6 +34,20 @@
     },
     "hauler": {
       "client": "mineflayer exact-26.3",
+      "depot_items_observed_before_close": [
+        {
+          "count": 2,
+          "name": "cauldron"
+        },
+        {
+          "count": 1,
+          "name": "water_bucket"
+        },
+        {
+          "count": 1,
+          "name": "water_bucket"
+        }
+      ],
       "minecraft": {
         "edition": "java",
         "version": "26.3"
@@ -78,14 +92,14 @@
   },
   "official_server_verified": true,
   "oracles": {
-    "architecture_completed": false,
+    "architecture_completed": true,
     "builder_started_work": true,
-    "capability_activated": false,
-    "hauler_deposited_bom": false,
+    "capability_activated": true,
+    "hauler_deposited_bom": true,
     "materials_consumed": true
   },
   "physical_block_placement_by_builder": false,
-  "result": "FAIL",
+  "result": "PASS",
   "reuse_existing_construction_engine": true,
   "schema": "supracraft.build-team-embodiment-runtime-rdte/v0.1",
   "semantic_effect": {
