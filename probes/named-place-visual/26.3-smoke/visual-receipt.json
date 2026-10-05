@@ -13,8 +13,8 @@
       "realestate_mp4": "redroof-realestate-walkthrough.mp4"
     },
     "loop_authority": "presentation_only",
-    "loop_fps": 12,
-    "loop_frames": 72,
+    "loop_fps": 10,
+    "loop_frames": 60,
     "realestate_authority": "presentation_only",
     "realestate_fps": 15,
     "realestate_frames": 335,
@@ -40,11 +40,11 @@
   },
   "traversal": {
     "authority": "grounded_traversal_evidence",
-    "distance": 11.651,
+    "distance": 11.435,
     "end": [
-      0.389,
+      0.391,
       69.938,
-      12.85
+      13.066
     ],
     "passed": true,
     "proof_walk_fps": 12,
@@ -74,24 +74,24 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
-      "bytes": 130411,
+      "bytes": 129091,
       "camera_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "bytes": 81553,
       "camera_position": [
@@ -104,9 +104,9 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "bytes": 99361,
       "camera_position": [
@@ -119,11 +119,11 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
-      "bytes": 107018,
+      "bytes": 107042,
       "camera_position": [
         0,
         70.5,
@@ -134,11 +134,11 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
-      "bytes": 69338,
+      "bytes": 69336,
       "camera_position": [
         0,
         84,
@@ -149,11 +149,11 @@
     },
     {
       "bot_position": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
-      "bytes": 122293,
+      "bytes": 122271,
       "camera_position": [
         0,
         96,

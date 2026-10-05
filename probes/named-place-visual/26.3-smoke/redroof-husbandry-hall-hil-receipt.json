@@ -20,8 +20,8 @@
         "realestate_mp4": "redroof-realestate-walkthrough.mp4"
       },
       "loop_authority": "presentation_only",
-      "loop_fps": 12,
-      "loop_frames": 72,
+      "loop_fps": 10,
+      "loop_frames": 60,
       "realestate_authority": "presentation_only",
       "realestate_fps": 15,
       "realestate_frames": 335,
@@ -47,11 +47,11 @@
     },
     "traversal": {
       "authority": "grounded_traversal_evidence",
-      "distance": 11.651,
+      "distance": 11.435,
       "end": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.066
       ],
       "passed": true,
       "proof_walk_fps": 12,
@@ -81,24 +81,24 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 130411,
+        "bytes": 129091,
         "camera_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "name": "02_after_walk",
         "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 81553,
         "camera_position": [
@@ -111,9 +111,9 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 99361,
         "camera_position": [
@@ -126,11 +126,11 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 107018,
+        "bytes": 107042,
         "camera_position": [
           0,
           70.5,
@@ -141,11 +141,11 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 69338,
+        "bytes": 69336,
         "camera_position": [
           0,
           84,
@@ -156,11 +156,11 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 122293,
+        "bytes": 122271,
         "camera_position": [
           0,
           96,
@@ -269,7 +269,7 @@
       "version": "26.3"
     },
     "presentation_standard": {
-      "loop_fps": 12,
+      "loop_fps": 10,
       "loop_shot": {
         "camera_y": 82,
         "center": [
@@ -279,7 +279,7 @@
         ],
         "closed_loop": true,
         "end_degrees": 360,
-        "frames": 72,
+        "frames": 60,
         "id": "continuous_flyover_loop",
         "kind": "orbit",
         "look_at": [
@@ -485,8 +485,8 @@
   "schema": "supracraft.named-place-stock-client-hil/v0.1",
   "semantic_authority": false,
   "world_zip": {
-    "bytes": 556679,
+    "bytes": 557958,
     "name": "redroof-husbandry-hall-vanilla-26.3-world.zip",
-    "sha256": "93c801bf6cc508ec23f6ca470842dfdfc705471669d61e4f53d7e3c916858f32"
+    "sha256": "1d815667cb20797cfb3fbca332da01c2afbefe8604b813f3c7793c14a0a97851"
   }
 }
