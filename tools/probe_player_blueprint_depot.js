@@ -32,6 +32,12 @@ const bot = mineflayer.createBot({
   auth: 'offline'
 })
 
+bot.on('login', () => console.log('PLAYER_DEPOT_STAGE login'))
+bot.on('spawn', () => console.log('PLAYER_DEPOT_STAGE spawn'))
+bot.on('kicked', reason => console.log('PLAYER_DEPOT_KICKED ' + JSON.stringify(reason)))
+bot.on('error', err => console.log('PLAYER_DEPOT_ERROR ' + String(err && err.stack ? err.stack : err)))
+bot.on('end', reason => console.log('PLAYER_DEPOT_END ' + String(reason)))
+
 async function transferOne (window, itemName, destSlot) {
   const item = bot.registry.itemsByName[itemName]
   if (!item) throw new Error('registry missing item ' + itemName)
