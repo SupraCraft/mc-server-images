@@ -108,6 +108,30 @@ async function syncVisualSession (session, cameraPosition = null, target = null)
   return position
 }
 
+async function captureWalkthroughFrame (session, frameIndex) {
+  const renderedFrom = await syncVisualSession(session)
+  session.renderer.render(session.viewer.scene, session.viewer.camera)
+  const imageStream = session.canvas.createJPEGStream({
+    bufsize: 4096,
+    quality: 0.9,
+    progressive: false
+  })
+  const jpeg = await getBufferFromStream(imageStream)
+  const framesDir = path.join(outputDir, 'walkthrough-frames')
+  fs.mkdirSync(framesDir, { recursive: true })
+  const out = path.join(framesDir, String(frameIndex).padStart(3, '0') + '.jpg')
+  fs.writeFileSync(out, jpeg)
+  return {
+    path: out,
+    bytes: jpeg.length,
+    camera_position: [
+      Number(renderedFrom.x.toFixed(3)),
+      Number(renderedFrom.y.toFixed(3)),
+      Number(renderedFrom.z.toFixed(3))
+    ]
+  }
+}
+
 async function captureOneFrame (session, name, cameraPosition = null, target = null) {
   const out = path.join(outputDir, name + '.jpg')
   stage('capture:' + name + ':sync')
@@ -180,11 +204,15 @@ async function main () {
     views.push(await captureOneFrame(visualSession, '01_approach'))
 
     const walkStart = pos()
+    const walkthroughFrames = []
     stage('walk:start')
     bot.setControlState('forward', true)
-    await sleep(2500)
+    for (let frameIndex = 0; frameIndex < 15; frameIndex++) {
+      await sleep(170)
+      walkthroughFrames.push(await captureWalkthroughFrame(visualSession, frameIndex))
+    }
     bot.setControlState('forward', false)
-    await sleep(500)
+    await sleep(300)
     const walkEnd = pos()
     stage('walk:end')
     views.push(await captureOneFrame(visualSession, '02_after_walk'))
@@ -226,7 +254,9 @@ async function main () {
         start: walkStart,
         end: walkEnd,
         distance: Number(walkDistance.toFixed(3)),
-        passed: walkDistance >= 1.0
+        passed: walkDistance >= 1.0,
+        walkthrough_frames: walkthroughFrames.length,
+        walkthrough_frame_interval_ms: 170
       },
       views,
       result: walkDistance >= 1.0 ? 'qualified_render_smoke' : 'failed_traversal'
