@@ -1,0 +1,16 @@
+From: SupraCraft qualification work
+Subject: [PATCH 1/1] viewer: admit exact Java 26.3 render assets
+
+Keep version admission explicit: once exact 26.3 atlas/blockstate artifacts are
+generated locally, Prismarine Viewer should select them rather than snapping to
+another 26.x presentation version.
+
+This patch is intentionally limited to the supported-version table. Asset
+generation and exact-version qualification remain separate concerns.
+
+diff --git a/viewer/lib/version.js b/viewer/lib/version.js
+--- a/viewer/lib/version.js
++++ b/viewer/lib/version.js
+@@ -1,4 +1,4 @@
+-const supportedVersions = ['1.8.8', '1.9.4', '1.10.2', '1.11.2', '1.12.2', '1.13.2', '1.14.4', '1.15.2', '1.16.1', '1.16.4', '1.17.1', '1.18.1', '1.19', '1.20.1', '1.21.1', '1.21.4', '26.1']
++const supportedVersions = ['1.8.8', '1.9.4', '1.10.2', '1.11.2', '1.12.2', '1.13.2', '1.14.4', '1.15.2', '1.16.1', '1.16.4', '1.17.1', '1.18.1', '1.19', '1.20.1', '1.21.1', '1.21.4', '26.1', '26.3']
