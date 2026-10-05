@@ -75,14 +75,27 @@ def refresh_bom_scores(
     projection: dict[str, Any],
 ) -> None:
     depot = xyz(projection["depot"]["at"])
+    # "if items ... container.*" returns the number of matching *stacks*, not
+    # aggregate item quantity. A player dropping two stackable cauldrons can
+    # therefore legitimately produce one matching stack. Count each bounded
+    # hopper slot's ItemStack count and sum only slots matching the BOM item.
     for index, (item, _required) in enumerate(bom_totals(projection)):
         holder = f"bom_{index}"
+        temp = f"bom_tmp_{index}"
         send(process, f"scoreboard players set {holder} supracraft_bom 0")
-        send(
-            process,
-            f"execute store result score {holder} supracraft_bom "
-            f"if items block {depot} container.* {item}",
-        )
+        for slot in range(5):
+            send(process, f"scoreboard players set {temp} supracraft_bom 0")
+            send(
+                process,
+                f"execute if items block {depot} container.{slot} {item} "
+                f"store result score {temp} supracraft_bom "
+                f"run data get block {depot} Items[{{Slot:{slot}b}}].count 1",
+            )
+            send(
+                process,
+                f"scoreboard players operation {holder} supracraft_bom += "
+                f"{temp} supracraft_bom",
+            )
     time.sleep(0.12)
 
 
