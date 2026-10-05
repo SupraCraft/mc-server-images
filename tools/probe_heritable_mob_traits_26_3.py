@@ -99,8 +99,10 @@ def write_datapack(root: Path) -> dict[str, Any]:
             f"scoreboard objectives add {PROBE_OBJECTIVE} dummy",
         ],
         "fixture/init": [
-            "data merge entity @s {NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b}",
+            "data merge entity @s {NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b,CustomName:{text:'SupraCraft V0 Fixture'}}",
+            "execute if entity @s run say SUPRACRAFT_FIXTURE_INLINE_SELF_OK",
             "tag @s add supracraft.fixture_new",
+            "execute if entity @s[tag=supracraft.fixture_new] run say SUPRACRAFT_FIXTURE_INLINE_TAG_OK",
         ],
         "apply/large": [
             "execute unless entity @s[tag=supracraft.large] run attribute @s minecraft:scale modifier add supracraft:large_scale 0.35 add_multiplied_base",
@@ -231,6 +233,20 @@ def summon_fixture(
         ),
     )
     time.sleep(0.10)
+    send(
+        process,
+        (
+            f"execute if entity @e[type=minecraft:{entity_type},limit=1] "
+            "run say SUPRACRAFT_FIXTURE_EXTERNAL_TYPE_OK"
+        ),
+    )
+    send(
+        process,
+        (
+            "execute if entity @e[tag=supracraft.fixture_new,limit=1] "
+            "run say SUPRACRAFT_FIXTURE_EXTERNAL_TAG_OK"
+        ),
+    )
     send(
         process,
         (
