@@ -92,10 +92,13 @@ def run_builder(process: subprocess.Popen[str], projection: dict[str, Any]) -> N
         f"if block {xyz(row['at'])} {row['block']}"
         for row in projection["architecture_delta"]
     )
+    # Clear the admitted depot inventory after successful construction.
+    # Re-setting the same hopper block can preserve its block-entity inventory,
+    # so remove the Items list explicitly while leaving the depot in place.
     send(
         process,
         f"execute if block {controller} {controller_block} {arch} {bom} "
-        f"run setblock {depot} {depot_block}",
+        f"run data remove block {depot} Items",
     )
     time.sleep(0.25)
 
