@@ -52,7 +52,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             xvfb libgl1-mesa-dev libglu1-mesa-dev libglew-dev libxi-dev mesa-utils \
-            libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+            libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ffmpeg
 
       - name: Assemble exact 26.3 client stack
         shell: bash
@@ -102,6 +102,20 @@ jobs:
               --evidence probes/26.3-release-identity.json \
               --output-dir "$RUNNER_TEMP/named-place-visual"
 
+      - name: Encode short traversal walkthrough
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          frames="$RUNNER_TEMP/named-place-visual/walkthrough-frames"
+          test -d "$frames"
+          test "$(find "$frames" -maxdepth 1 -name '*.jpg' | wc -l)" -ge 10
+          ffmpeg -hide_banner -loglevel error -y \
+            -framerate 6 -pattern_type glob -i "$frames/*.jpg" \
+            -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
+            "$RUNNER_TEMP/named-place-visual/redroof-walkthrough.mp4"
+          test -s "$RUNNER_TEMP/named-place-visual/redroof-walkthrough.mp4"
+
       - name: Publish receipt
         if: always()
         shell: bash
@@ -140,5 +154,6 @@ jobs:
           path: |
             ${{ runner.temp }}/named-place-visual/visual-receipt.json
             ${{ runner.temp }}/named-place-visual/*.jpg
+            ${{ runner.temp }}/named-place-visual/*.mp4
           retention-days: 14
           if-no-files-found: warn
