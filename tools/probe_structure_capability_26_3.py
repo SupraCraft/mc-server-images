@@ -141,6 +141,9 @@ def main() -> int:
                 status = wait_server(process, protocol)
 
                 send(process, "gamerule doMobSpawning false")
+                # Explicitly load only the registered work-site envelope. This
+                # is a bounded construction-site precondition, not world scan.
+                send(process, "forceload add -16 -16 16 16")
                 send(process, "scoreboard objectives add supracraft_cap dummy")
                 send(process, "scoreboard objectives add supracraft_metric dummy")
 
