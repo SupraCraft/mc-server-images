@@ -30,7 +30,7 @@ from probe_blueprint_depot_26_3 import (
 )
 
 PORT = 25576
-BOT_NAME = "SupraCraftBuilder"
+BOT_NAME = "SupraBuilder"
 
 
 def send(process: subprocess.Popen[str], command: str) -> None:
