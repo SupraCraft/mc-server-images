@@ -206,6 +206,10 @@ def main() -> int:
                         "OP_READY_FILE": str(op_ready),
                         "VISUAL_OUTPUT_DIR": str(args.output_dir),
                         "VISUAL_RESULT_FILE": str(result_path),
+                        "VISUAL_ROUTE_FILE": str(
+                            Path(__file__).resolve().parents[1]
+                            / "probes/named-place-visual/redroof-route.json"
+                        ),
                         "CHROME_PATH": chrome,
                     }
                 )
