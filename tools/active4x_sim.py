@@ -328,7 +328,7 @@ class Active4XSimulation:
         route_disrupted = "route_disrupted" in settlement["memories"]
         add(
             "secure_route",
-            120 + int(prefs.get("security", 0) / 10),
+            140 + int(prefs.get("security", 0) / 10),
             route_disrupted,
             ["recent route disruption"] if route_disrupted else ["no route disruption"],
         )
