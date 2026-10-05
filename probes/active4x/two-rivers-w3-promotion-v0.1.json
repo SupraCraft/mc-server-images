@@ -1,0 +1,47 @@
+{
+  "schema": "supracraft.active4x-w3-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "752662eb536ea6e3d60abff97acf421e445772cf",
+  "caravan": {
+    "task_id": "task.trade.contract-001.grain",
+    "cargo_id": "contract-001.cargo01",
+    "source_settlement": "stoneford",
+    "destination_settlement": "kilnreach",
+    "semantic_resource": "grain",
+    "amount": 4,
+    "minecraft_item": "minecraft:wheat",
+    "actor_group_id": "caravan.stoneford.kilnreach.0001",
+    "source_container": {
+      "block": "minecraft:barrel",
+      "at": [
+        -10,
+        70,
+        0
+      ]
+    },
+    "destination_container": {
+      "block": "minecraft:barrel",
+      "at": [
+        10,
+        70,
+        0
+      ]
+    }
+  },
+  "work_team_reuse": {
+    "evidence_run": 37360006251,
+    "retained_result": "probes/structure-capability/redroof-build-team-embodiment-26.3-result.json"
+  },
+  "acceptance": {
+    "exact_actor_withdraws_cargo": true,
+    "grounded_movement_occurs": true,
+    "exact_actor_deposits_same_cargo": true,
+    "cargo_identity_preserved": true,
+    "semantic_quantity_preserved": true,
+    "source_decrements_once": true,
+    "destination_increments_once": true,
+    "demotion_receipt_preserves_task_identity": true,
+    "work_team_actor_semantics_reused": true,
+    "world_scan": false
+  }
+}
