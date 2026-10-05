@@ -1,0 +1,100 @@
+{
+  "actors": {
+    "builder": {
+      "client": "mineflayer exact-26.3",
+      "controller": {
+        "at": [
+          1,
+          70,
+          0
+        ],
+        "block": "minecraft:lever"
+      },
+      "minecraft": {
+        "edition": "java",
+        "version": "26.3"
+      },
+      "result": "start_requested",
+      "role": "builder",
+      "schema": "supracraft.build-team-actor-rdte/v0.1",
+      "username": "SupraBuilder",
+      "walk": {
+        "distance": 3.62586529622142,
+        "end": [
+          2.8962598501307415,
+          70,
+          0.1000549055643527
+        ],
+        "start": [
+          6.5,
+          70,
+          0.5
+        ]
+      }
+    },
+    "hauler": {
+      "client": "mineflayer exact-26.3",
+      "minecraft": {
+        "edition": "java",
+        "version": "26.3"
+      },
+      "remaining_inventory": [],
+      "result": "delivered",
+      "role": "hauler",
+      "schema": "supracraft.build-team-actor-rdte/v0.1",
+      "username": "SupraHauler",
+      "walk": {
+        "distance": 5.784449307731717,
+        "end": [
+          -1.8637810708542337,
+          70,
+          2.198888945379029
+        ],
+        "start": [
+          -7.5,
+          70,
+          3.5
+        ]
+      },
+      "withdrew": [
+        {
+          "count": 2,
+          "name": "cauldron"
+        },
+        {
+          "count": 1,
+          "name": "water_bucket"
+        },
+        {
+          "count": 1,
+          "name": "water_bucket"
+        }
+      ]
+    }
+  },
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "architecture_completed": false,
+    "builder_started_work": true,
+    "capability_activated": false,
+    "hauler_deposited_bom": false,
+    "materials_consumed": true
+  },
+  "physical_block_placement_by_builder": false,
+  "result": "FAIL",
+  "reuse_existing_construction_engine": true,
+  "schema": "supracraft.build-team-embodiment-runtime-rdte/v0.1",
+  "semantic_effect": {
+    "active_value": 12,
+    "base_value": 8,
+    "metric": "husbandry_capacity",
+    "unit": "animals"
+  },
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "world_scan": false
+}
