@@ -4,6 +4,7 @@ const { Vec3 } = require('vec3')
 
 const port = Number(process.env.MC_PORT || '25575')
 const readyFile = process.env.BOT_READY_FILE
+const startFile = process.env.BOT_START_FILE
 const firstFile = process.env.BOT_FIRST_FILE
 const lossFile = process.env.BOT_LOSS_FILE
 const refillReleaseFile = process.env.BOT_REFILL_RELEASE_FILE
@@ -13,6 +14,7 @@ const resultFile = process.env.BOT_RESULT_FILE
 
 for (const [name, value] of Object.entries({
   BOT_READY_FILE: readyFile,
+  BOT_START_FILE: startFile,
   BOT_FIRST_FILE: firstFile,
   BOT_LOSS_FILE: lossFile,
   BOT_REFILL_RELEASE_FILE: refillReleaseFile,
@@ -148,6 +150,7 @@ bot.once('spawn', async () => {
       await bot.waitForTicks(2)
     }
 
+    await waitForFile(startFile, 'initial source verification')
     await withdrawCore('first_acquisition')
     fs.writeFileSync(firstFile, 'first-acquired\n')
 
