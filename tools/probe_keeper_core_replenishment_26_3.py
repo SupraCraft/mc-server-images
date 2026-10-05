@@ -1,0 +1,491 @@
+#!/usr/bin/env python3
+"""Qualify automatic Java 26.3 keeper replacement-core source."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+from typing import Any
+
+from smoke_vanilla_runtime import download_verified_server, status_query
+
+
+BOT_NAME = "SupraCraftProbe"
+PORT = 25575
+CHEST = [0, 70, 0]
+SOCKET = [4, 70, 0]
+CORE = "minecraft:redstone_block"
+
+SOURCE_READY = "SUPRACRAFT_AUTO_SOURCE_READY"
+FIRST_ACQUIRED = "SUPRACRAFT_AUTO_FIRST_ACQUIRED"
+LOSS_OK = "SUPRACRAFT_AUTO_LOSS_OK"
+SOURCE_REFILLED = "SUPRACRAFT_AUTO_SOURCE_REFILLED"
+REACQUIRED = "SUPRACRAFT_AUTO_REACQUIRED"
+UNEXPECTED_REFILL = "SUPRACRAFT_AUTO_UNEXPECTED_REFILL"
+
+
+def write_server_config(root: Path) -> None:
+    (root / "eula.txt").write_text("eula=true\n", "utf-8")
+    (root / "server.properties").write_text(
+        "\n".join(
+            [
+                "online-mode=false",
+                "white-list=false",
+                "enforce-whitelist=false",
+                f"server-port={PORT}",
+                "view-distance=3",
+                "simulation-distance=2",
+                "spawn-protection=0",
+                "max-players=2",
+                "enable-rcon=false",
+                "enable-query=false",
+                "generate-structures=false",
+                "level-seed=4242424242",
+                "sync-chunk-writes=true",
+                "motd=SupraCraft automatic keeper core source",
+                "",
+            ]
+        ),
+        "utf-8",
+    )
+
+
+def write_datapack(root: Path) -> dict[str, Any]:
+    pack = root / "world" / "datapacks" / "supracraft_keeper_core_source"
+    fn = pack / "data" / "supracraft_keeper_core_source" / "function"
+    tag = pack / "data" / "minecraft" / "tags" / "function"
+    fn.mkdir(parents=True, exist_ok=True)
+    tag.mkdir(parents=True, exist_ok=True)
+
+    metadata = {
+        "pack": {
+            "description": "SupraCraft exact 26.3 keeper replacement core",
+            "min_format": [121, 0],
+            "max_format": [121, 0],
+        }
+    }
+    (pack / "pack.mcmeta").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", "utf-8"
+    )
+    (tag / "tick.json").write_text(
+        json.dumps({"values": ["supracraft_keeper_core_source:tick"]}, indent=2)
+        + "\n",
+        "utf-8",
+    )
+
+    command = (
+        f"execute unless block {SOCKET[0]} {SOCKET[1]} {SOCKET[2]} {CORE} "
+        f"unless items entity @a[limit=1] inventory.* {CORE} "
+        f"unless items entity @a[limit=1] hotbar.* {CORE} "
+        f"unless items entity @a[limit=1] weapon.offhand {CORE} "
+        f"unless items block {CHEST[0]} {CHEST[1]} {CHEST[2]} container.0 {CORE} "
+        f"run item replace block {CHEST[0]} {CHEST[1]} {CHEST[2]} "
+        f"container.0 with {CORE} 1"
+    )
+    (fn / "tick.mcfunction").write_text(command + "\n", "utf-8")
+    return {"metadata": metadata, "command": command}
+
+
+def send(process: subprocess.Popen[str], command: str) -> None:
+    if process.stdin is None:
+        raise RuntimeError("server stdin unavailable")
+    process.stdin.write(command + "\n")
+    process.stdin.flush()
+
+
+def wait_server(
+    process: subprocess.Popen[str], protocol: int, timeout: int = 180
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout
+    last_error = ""
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError(f"server exited early: {process.returncode}")
+        try:
+            status = status_query("127.0.0.1", PORT, protocol)
+            if int(status.get("version", {}).get("protocol", -1)) == protocol:
+                return status
+        except Exception as exc:
+            last_error = str(exc)
+        time.sleep(1)
+    raise RuntimeError(f"server readiness timeout: {last_error}")
+
+
+def wait_file(path: Path, process: subprocess.Popen[str], timeout: int) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if path.exists():
+            return
+        if process.poll() is not None:
+            output = process.stdout.read()[-4000:] if process.stdout else ""
+            raise RuntimeError(
+                f"worker exited before {path.name}: "
+                f"exit={process.returncode}; stdout={output!r}"
+            )
+        time.sleep(0.2)
+    raise RuntimeError(f"timeout waiting for {path.name}")
+
+
+def marker_count(path: Path, marker: str) -> int:
+    text = path.read_text("utf-8", errors="replace")
+    return sum(marker in line for line in text.splitlines())
+
+
+def wait_for_predicate(
+    process: subprocess.Popen[str],
+    log_path: Path,
+    *,
+    marker: str,
+    predicate: str,
+    timeout: float = 8.0,
+) -> tuple[int, float]:
+    baseline = marker_count(log_path, marker)
+    started = time.monotonic()
+    attempts = 0
+    while time.monotonic() - started < timeout:
+        attempts += 1
+        send(process, f"{predicate} run say {marker}")
+        time.sleep(0.2)
+        if marker_count(log_path, marker) > baseline:
+            return attempts, time.monotonic() - started
+    raise RuntimeError(
+        f"predicate timed out for {marker}; attempts={attempts}; "
+        f"tail={log_path.read_text('utf-8', errors='replace')[-5000:]!r}"
+    )
+
+
+def require_false(
+    process: subprocess.Popen[str],
+    log_path: Path,
+    *,
+    marker: str,
+    predicate: str,
+    settle: float = 0.8,
+) -> float:
+    baseline = marker_count(log_path, marker)
+    started = time.monotonic()
+    send(process, f"{predicate} run say {marker}")
+    time.sleep(settle)
+    if marker_count(log_path, marker) != baseline:
+        raise RuntimeError(
+            f"predicate unexpectedly true for {marker}; "
+            f"tail={log_path.read_text('utf-8', errors='replace')[-5000:]!r}"
+        )
+    return time.monotonic() - started
+
+
+def source_has_core() -> str:
+    return (
+        f"execute if items block {CHEST[0]} {CHEST[1]} {CHEST[2]} "
+        f"container.0 {CORE}"
+    )
+
+
+def source_lacks_core() -> str:
+    return (
+        f"execute unless items block {CHEST[0]} {CHEST[1]} {CHEST[2]} "
+        f"container.0 {CORE}"
+    )
+
+
+def inventory_has_core() -> str:
+    return f"execute if items entity {BOT_NAME} inventory.* {CORE}"
+
+
+def inventory_lacks_core() -> str:
+    return f"execute unless items entity {BOT_NAME} inventory.* {CORE}"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--evidence", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+
+    evidence = json.loads(args.evidence.read_text("utf-8"))
+    info = evidence["artifact_version_json"]
+    if info["id"] != "26.3":
+        raise RuntimeError("probe requires Minecraft Java 26.3")
+    protocol = int(info["protocol_version"])
+
+    with tempfile.TemporaryDirectory(prefix="keeper-source-26.3-") as td:
+        root = Path(td)
+        server_jar = root / "server.jar"
+        download_verified_server(evidence, server_jar)
+        write_server_config(root)
+        datapack = write_datapack(root)
+
+        log_path = root / "server.log"
+        bot_result_path = root / "bot-result.json"
+        first_file = root / "bot-first.ready"
+        loss_file = root / "bot-loss.ready"
+        refill_release_file = root / "bot-refill-release.ready"
+        second_file = root / "bot-second.ready"
+        done_file = root / "bot-done.ready"
+
+        with log_path.open("w", encoding="utf-8") as log:
+            server = subprocess.Popen(
+                [
+                    "java",
+                    "-Xms512M",
+                    "-Xmx1536M",
+                    "-jar",
+                    str(server_jar),
+                    "nogui",
+                ],
+                cwd=root,
+                stdin=subprocess.PIPE,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            bot: subprocess.Popen[str] | None = None
+            try:
+                status = wait_server(server, protocol)
+                send(server, "forceload add 0 0")
+                send(server, "fill -2 69 -2 6 69 4 minecraft:stone")
+                send(server, "fill -2 70 -2 6 72 4 minecraft:air")
+                send(server, "setblock 0 70 0 minecraft:chest[facing=south]")
+                send(server, f"setblock 4 70 0 minecraft:air")
+
+                source_attempts, source_wait = wait_for_predicate(
+                    server,
+                    log_path,
+                    marker=SOURCE_READY,
+                    predicate=source_has_core(),
+                    timeout=10.0,
+                )
+
+                ready = root / "bot.ready"
+                env = dict(os.environ)
+                env.update(
+                    {
+                        "MC_PORT": str(PORT),
+                        "BOT_READY_FILE": str(ready),
+                        "BOT_FIRST_FILE": str(first_file),
+                        "BOT_LOSS_FILE": str(loss_file),
+                        "BOT_REFILL_RELEASE_FILE": str(refill_release_file),
+                        "BOT_SECOND_FILE": str(second_file),
+                        "BOT_DONE_FILE": str(done_file),
+                        "BOT_RESULT_FILE": str(bot_result_path),
+                    }
+                )
+                bot = subprocess.Popen(
+                    [
+                        "node",
+                        str(
+                            Path(__file__).with_name(
+                                "probe_mineflayer_auto_recovery_source.js"
+                            )
+                        ),
+                    ],
+                    cwd=Path(__file__).resolve().parents[1],
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                wait_file(ready, bot, 40)
+                send(server, f"gamemode survival {BOT_NAME}")
+                send(server, f"tp {BOT_NAME} 0.5 70.0 2.5 180 0")
+
+                wait_file(first_file, bot, 50)
+                first_attempts, first_wait = wait_for_predicate(
+                    server,
+                    log_path,
+                    marker=FIRST_ACQUIRED,
+                    predicate=(
+                        inventory_has_core()
+                        + " "
+                        + source_lacks_core().removeprefix("execute ")
+                    ),
+                )
+                no_duplicate_first = require_false(
+                    server,
+                    log_path,
+                    marker=UNEXPECTED_REFILL + "_FIRST",
+                    predicate=source_has_core(),
+                )
+
+                send(server, f"clear {BOT_NAME} {CORE}")
+                wait_file(loss_file, bot, 30)
+                loss_attempts, loss_wait = wait_for_predicate(
+                    server,
+                    log_path,
+                    marker=LOSS_OK,
+                    predicate=inventory_lacks_core(),
+                )
+
+                refill_attempts, refill_wait = wait_for_predicate(
+                    server,
+                    log_path,
+                    marker=SOURCE_REFILLED,
+                    predicate=source_has_core(),
+                    timeout=10.0,
+                )
+                refill_release_file.write_text("observed\n", "utf-8")
+
+                wait_file(second_file, bot, 50)
+                second_attempts, second_wait = wait_for_predicate(
+                    server,
+                    log_path,
+                    marker=REACQUIRED,
+                    predicate=(
+                        inventory_has_core()
+                        + " "
+                        + source_lacks_core().removeprefix("execute ")
+                    ),
+                )
+                no_duplicate_second = require_false(
+                    server,
+                    log_path,
+                    marker=UNEXPECTED_REFILL + "_SECOND",
+                    predicate=source_has_core(),
+                )
+                done_file.write_text("verified\n", "utf-8")
+
+                try:
+                    bot_stdout, _ = bot.communicate(timeout=30)
+                except subprocess.TimeoutExpired:
+                    bot.kill()
+                    bot_stdout, _ = bot.communicate(timeout=10)
+                    raise RuntimeError(
+                        "worker did not exit after final verification: "
+                        + bot_stdout[-4000:]
+                    )
+
+                if not bot_result_path.exists():
+                    raise RuntimeError(
+                        "worker produced no result: " + bot_stdout[-4000:]
+                    )
+                bot_result = json.loads(bot_result_path.read_text("utf-8"))
+                if (
+                    bot.returncode != 0
+                    or bot_result.get("error")
+                    or len(bot_result.get("acquisitions", [])) != 2
+                ):
+                    raise RuntimeError(
+                        "automatic recovery-source worker failed: "
+                        + json.dumps(bot_result, sort_keys=True)
+                    )
+
+                send(server, "stop")
+                server_rc = server.wait(timeout=40)
+            finally:
+                if bot is not None and bot.poll() is None:
+                    bot.terminate()
+                    try:
+                        bot.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        bot.kill()
+                        bot.wait(timeout=5)
+                if server.poll() is None:
+                    try:
+                        send(server, "stop")
+                        server.wait(timeout=20)
+                    except Exception:
+                        server.kill()
+                        server.wait(timeout=10)
+
+        if server_rc != 0:
+            raise RuntimeError(f"server exit code {server_rc}")
+        server_log = log_path.read_text("utf-8", errors="replace")
+        error_lines = [
+            line
+            for line in server_log.splitlines()
+            if "/ERROR]:" in line or "/ERROR] " in line
+        ]
+        if error_lines:
+            raise RuntimeError(
+                "server emitted ERROR lines: " + " | ".join(error_lines[-20:])
+            )
+
+        result = {
+            "schema": "supracraft.keeper-replacement-core-source/v0.1",
+            "minecraft": {
+                "edition": "java",
+                "version": "26.3",
+                "protocol": protocol,
+                "world_version": int(info["world_version"]),
+                "server_sha1": evidence["server_artifact"]["actual_sha1"],
+                "server_sha256": evidence["server_artifact"]["sha256"],
+            },
+            "datapack": datapack,
+            "source": {
+                "block": "minecraft:chest",
+                "position": CHEST,
+                "slot": "container.0",
+                "core": CORE,
+                "target_socket": SOCKET,
+                "controller_refill": False,
+            },
+            "player_treatment": {
+                "kind": "real_connected_offline_player",
+                "username": BOT_NAME,
+                "controller_positioned": True,
+                "controller_introduced_loss": True,
+                "mineflayer": bot_result,
+            },
+            "oracle": {
+                "authority": "official_vanilla_server",
+                "initial_datapack_refill": {
+                    "source_has_core": True,
+                    "attempts": source_attempts,
+                    "wait_seconds": round(source_wait, 6),
+                },
+                "first_acquisition": {
+                    "player_has_core": True,
+                    "source_empty": True,
+                    "attempts": first_attempts,
+                    "wait_seconds": round(first_wait, 6),
+                    "no_duplicate_wait_seconds": round(
+                        no_duplicate_first, 6
+                    ),
+                },
+                "controlled_loss": {
+                    "player_has_core": False,
+                    "attempts": loss_attempts,
+                    "wait_seconds": round(loss_wait, 6),
+                },
+                "automatic_replenishment": {
+                    "source_has_core": True,
+                    "attempts": refill_attempts,
+                    "wait_seconds": round(refill_wait, 6),
+                },
+                "reacquisition": {
+                    "player_has_core": True,
+                    "source_empty": True,
+                    "attempts": second_attempts,
+                    "wait_seconds": round(second_wait, 6),
+                    "no_duplicate_wait_seconds": round(
+                        no_duplicate_second, 6
+                    ),
+                },
+                "server_error_log_count": len(error_lines),
+            },
+            "status_protocol": int(status.get("version", {}).get("protocol", -1)),
+            "result": "qualified",
+            "limitations": [
+                "qualifies one exact Java 26.3 single-player keeper-source policy",
+                "controller positions the player and introduces the loss treatment",
+                "does not track dropped core item entities or other storage",
+                "does not establish autonomous navigation or narrative legibility",
+                "datapack is the source replenishment realization",
+            ],
+        }
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps(result, indent=2, sort_keys=True) + "\n",
+            "utf-8",
+        )
+        print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
