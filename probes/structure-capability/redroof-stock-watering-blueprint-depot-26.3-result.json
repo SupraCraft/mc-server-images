@@ -12,11 +12,11 @@
     "damage_revoked": true,
     "empty_depot_no_build": true,
     "full_bom_present": true,
-    "materials_consumed": false,
+    "materials_consumed": true,
     "partial_materials_no_build": true,
     "site_registered": true
   },
-  "result": "FAIL",
+  "result": "PASS",
   "schema": "supracraft.blueprint-depot-runtime-rdte/v0.1",
   "semantic_effect": {
     "active_value": 12,
