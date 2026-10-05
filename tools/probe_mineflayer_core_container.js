@@ -5,10 +5,14 @@ const { Vec3 } = require('vec3')
 const port = Number(process.env.MC_PORT || '25573')
 const readyFile = process.env.BOT_READY_FILE
 const firstFile = process.env.BOT_FIRST_FILE
+const secondFile = process.env.BOT_SECOND_FILE
+const doneFile = process.env.BOT_DONE_FILE
 const resultFile = process.env.BOT_RESULT_FILE
 
-if (!readyFile || !firstFile || !resultFile) {
-  throw new Error('BOT_READY_FILE, BOT_FIRST_FILE and BOT_RESULT_FILE are required')
+if (!readyFile || !firstFile || !secondFile || !doneFile || !resultFile) {
+  throw new Error(
+    'BOT_READY_FILE, BOT_FIRST_FILE, BOT_SECOND_FILE, BOT_DONE_FILE and BOT_RESULT_FILE are required'
+  )
 }
 
 const CORE_ITEM = 'redstone_block'
@@ -179,6 +183,16 @@ bot.once('spawn', async () => {
     if (!refilled) throw new Error('replacement core never appeared in source')
 
     await withdrawCore('reacquisition')
+    fs.writeFileSync(secondFile, 'second-acquired\n')
+
+    const releaseDeadline = Date.now() + 30000
+    while (Date.now() < releaseDeadline && !fs.existsSync(doneFile)) {
+      await bot.waitForTicks(2)
+    }
+    if (!fs.existsSync(doneFile)) {
+      throw new Error('controller did not release worker after reacquisition')
+    }
+    result.milestones.controller_verified_reacquisition = Date.now()
     finish(0)
   } catch (err) {
     result.error = String(err && err.stack ? err.stack : err)
