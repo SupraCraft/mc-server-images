@@ -103,6 +103,8 @@ def main() -> int:
         (root / "server.properties").write_text(
             "\n".join([
                 "online-mode=false",
+                "white-list=false",
+                "enforce-whitelist=false",
                 f"server-port={PORT}",
                 "view-distance=3",
                 "simulation-distance=2",
