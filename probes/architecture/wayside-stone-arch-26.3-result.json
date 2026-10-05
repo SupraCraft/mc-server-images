@@ -1,0 +1,22 @@
+{
+  "blueprint_id": "wayside_stone_arch",
+  "capabilities": [],
+  "gameplay_structure_semantics": false,
+  "instance_count": 2,
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "named_place_identity": false,
+  "official_server_verified": true,
+  "oracles": {
+    "first_instance_damaged": true,
+    "instance_one_present": true,
+    "instance_two_present": true,
+    "second_instance_independent": true
+  },
+  "result": "PASS",
+  "schema": "supracraft.architecture-only-runtime-rdte/v0.1",
+  "server_error_count": 0,
+  "status_protocol": 777
+}
