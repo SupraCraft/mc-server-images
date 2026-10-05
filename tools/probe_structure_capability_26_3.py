@@ -170,6 +170,11 @@ def main() -> int:
                 first = projection["architecture_delta"][0]
                 x, y, z = abs_pos(projection["anchor"], first["at"])
                 send(process, f"setblock {x} {y} {z} {first['block']}")
+                marker(
+                    process,
+                    f"execute if block {x} {y} {z} {first['block']} "
+                    "run say SUPRACRAFT_TROUGH_ONE_PRESENT",
+                )
                 for command in eval_cmds:
                     send(process, command)
                 marker(
@@ -183,6 +188,22 @@ def main() -> int:
                 second = projection["architecture_delta"][1]
                 x2, y2, z2 = abs_pos(projection["anchor"], second["at"])
                 send(process, f"setblock {x2} {y2} {z2} {second['block']}")
+                marker(
+                    process,
+                    f"execute if block {x} {y} {z} {first['block']} "
+                    "run say SUPRACRAFT_TROUGH_ONE_STILL_PRESENT",
+                )
+                marker(
+                    process,
+                    f"execute if block {x2} {y2} {z2} {second['block']} "
+                    "run say SUPRACRAFT_TROUGH_TWO_PRESENT",
+                )
+                marker(
+                    process,
+                    f"execute if block {x} {y} {z} {first['block']} "
+                    f"if block {x2} {y2} {z2} {second['block']} "
+                    "run say SUPRACRAFT_BOTH_TROUGHS_PRESENT",
+                )
                 for command in eval_cmds:
                     send(process, command)
                 marker(
@@ -230,18 +251,20 @@ def main() -> int:
             "damage_revoked": "SUPRACRAFT_DAMAGE_REVOKED",
         }
         observed = {key: value in server_log for key, value in required_markers.items()}
-        if not all(observed.values()):
-            raise RuntimeError(f"missing capability oracle markers: {observed}")
+        diagnostics = {
+            "trough_one_present": "SUPRACRAFT_TROUGH_ONE_PRESENT" in server_log,
+            "trough_one_still_present": "SUPRACRAFT_TROUGH_ONE_STILL_PRESENT" in server_log,
+            "trough_two_present": "SUPRACRAFT_TROUGH_TWO_PRESENT" in server_log,
+            "both_troughs_present": "SUPRACRAFT_BOTH_TROUGHS_PRESENT" in server_log,
+        }
 
         errors = [
             line for line in server_log.splitlines()
             if "/ERROR]:" in line or "/ERROR] " in line
         ]
-        if errors:
-            raise RuntimeError("server emitted ERROR lines: " + " | ".join(errors[-20:]))
-
+        passed = all(observed.values()) and not errors
         result = {
-            "schema": "supracraft.structure-capability-runtime-rdte/v0.1",
+            "schema": "supracraft.structure-capability-runtime-rdte/v0.2",
             "minecraft": {"edition": "java", "version": "26.3"},
             "status_protocol": int(status.get("version", {}).get("protocol", -1)),
             "official_server_verified": True,
@@ -251,11 +274,22 @@ def main() -> int:
             "capability_id": projection["capability_id"],
             "semantic_effect": projection["semantic_effect"],
             "oracles": observed,
-            "result": "PASS",
+            "diagnostics": diagnostics,
+            "server_error_count": len(errors),
+            "result": "PASS" if passed else "FAIL",
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", "utf-8")
         print(json.dumps(result, indent=2, sort_keys=True))
+
+        if errors:
+            raise RuntimeError("server emitted ERROR lines: " + " | ".join(errors[-20:]))
+        if not all(observed.values()):
+            tail = server_log[-8000:].replace("\n", " | ")
+            raise RuntimeError(
+                f"missing capability oracle markers: {observed}; "
+                f"diagnostics={diagnostics}; log_tail={tail}"
+            )
 
     return 0
 
