@@ -213,12 +213,22 @@ def summon_fixture(
     fixture_tag: str,
     x: float,
 ) -> None:
+    """Summon one bounded fixture, then assign its test identity explicitly."""
     extra = ",IsImmuneToZombification:1b" if entity_type == "hoglin" else ""
     nbt = (
-        "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b,"
-        f'Tags:["{fixture_tag}"]{extra}}}'
+        "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b"
+        f"{extra}}}"
     )
     send(process, f"summon minecraft:{entity_type} {x} 100 0 {nbt}")
+    # Do not depend on summon-NBT custom tag ingestion for harness identity.
+    # The exact coordinate has just received one entity of the requested type.
+    send(
+        process,
+        (
+            f"tag @e[type=minecraft:{entity_type},x={x},y=100,z=0,"
+            f"distance=..0.75,limit=1] add {fixture_tag}"
+        ),
+    )
 
 
 def reset_probe_scores(process: subprocess.Popen[str]) -> None:
