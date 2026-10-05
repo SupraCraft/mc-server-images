@@ -1,11 +1,11 @@
 {
   "schema": "supracraft.named-place-visual-review/v0.1",
-  "source_run": 37322213992,
-  "source_head": "7931dcaf22f120f2beb117faebb575254ace8fba",
+  "source_run": 37324425194,
+  "source_head": "b93ddf053873d283b9a6246e9b2be5373633059c",
   "place_id": "redroof_husbandry_hall",
   "reviewer_class": "machine_vision",
   "authority": "advisory_only",
-  "overall": "REVISE",
+  "overall": "PASS_CANDIDATE",
   "findings": {
     "recognition_cues": {
       "red_gable": {
@@ -39,8 +39,11 @@
         ]
       },
       "hay_loft": {
-        "status": "REVISE",
-        "reason": "Required hay-storage cue is not directly visible in the current interior/doorway acceptance views."
+        "status": "PASS",
+        "evidence": [
+          "04b_hay_storage"
+        ],
+        "note": "Targeted threshold-side view directly shows the required hay-storage cue."
       },
       "approach_path": {
         "status": "PASS",
@@ -61,5 +64,5 @@
       "interior_use_space": "PASS_WITH_NOTE"
     }
   },
-  "note": "Terrain presentation defect is cleared in the repaired deterministic fixture. Final V2 acceptance remains explicit human review; stock vanilla-client HIL remains V3 authority."
+  "note": "All declared Redroof recognition cues are now directly reviewable in the exact-26.3 continuous presentation evidence. This is advisory machine-vision PASS_CANDIDATE only; final V2 acceptance remains explicit human review, and stock vanilla-client HIL remains mandatory V3 authority."
 }
