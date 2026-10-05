@@ -106,11 +106,31 @@ bounds['26.3'] = {
 }
 fs.writeFileSync(boundsPath, JSON.stringify(bounds))
 
+const prepared = prepareBlocksStates(assets, atlas)
+const grassRaw = assets.blocksStates.grass_block
+const grassPrepared = prepared.grass_block
+const dirtPathRaw = assets.blocksStates.dirt_path
+const dirtPathPrepared = prepared.dirt_path
+
 console.log(JSON.stringify({
   textureAtlasBytes: atlas.image.length,
   blockStateCount: Object.keys(assets.blocksStates).length,
   modelCount: Object.keys(assets.blocksModels).length,
-  worldBounds: bounds['26.3']
+  worldBounds: bounds['26.3'],
+  terrainDiagnostics: {
+    grass_block: {
+      raw_present: Boolean(grassRaw),
+      prepared_present: Boolean(grassPrepared),
+      raw: grassRaw ?? null,
+      prepared: grassPrepared ?? null
+    },
+    dirt_path: {
+      raw_present: Boolean(dirtPathRaw),
+      prepared_present: Boolean(dirtPathPrepared),
+      raw: dirtPathRaw ?? null,
+      prepared: dirtPathPrepared ?? null
+    }
+  }
 }, null, 2))
 NODE
 
