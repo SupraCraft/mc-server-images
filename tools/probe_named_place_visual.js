@@ -10,6 +10,7 @@ global.Worker = Worker
 
 const { createCanvas } = require(path.join(viewerRoot, 'node_modules/node-canvas-webgl/lib'))
 const { Viewer, WorldView, getBufferFromStream } = require('prismarine-viewer').viewer
+const { getVersion } = require(path.join(viewerRoot, 'viewer/lib/version'))
 
 const host = process.env.MC_HOST || '127.0.0.1'
 const port = Number(process.env.MC_PORT || '25571')
@@ -205,14 +206,18 @@ async function main () {
     const dz = walkEnd[2] - walkStart[2]
     const walkDistance = Math.sqrt(dx * dx + dy * dy + dz * dz)
 
+    const renderAssetVersion = getVersion(bot.version)
     const result = {
-      schema: 'supracraft.named-place-visual-smoke/v0.3',
+      schema: 'supracraft.named-place-visual-smoke/v0.4',
       minecraft: { edition: 'java', version: '26.3' },
       renderer: {
         name: 'prismarine-viewer-core',
         semantic_authority: false,
         client_world_source: 'mineflayer exact-26.3 connection',
-        asset_policy: 'viewer 26.1 presentation assets via local compatibility bridge',
+        asset_policy: renderAssetVersion === bot.version
+          ? 'exact-version viewer assets'
+          : 'compatible viewer asset fallback',
+        presentation_asset_version: renderAssetVersion,
         capture: 'node-canvas-webgl after explicit chunk-render completion',
         render_view_distance_chunks: 4,
         inspection_camera_policy: 'viewer-only; traversal actor remains grounded'
@@ -237,7 +242,7 @@ async function main () {
 main()
   .catch(err => {
     fs.writeFileSync(resultFile, JSON.stringify({
-      schema: 'supracraft.named-place-visual-smoke/v0.3',
+      schema: 'supracraft.named-place-visual-smoke/v0.4',
       result: 'error',
       error: String(err && err.stack ? err.stack : err)
     }, null, 2) + '\n')
