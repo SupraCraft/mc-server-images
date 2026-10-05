@@ -1,0 +1,86 @@
+name: Vanilla Java 26.3 datapack core-restoration qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - probe/26.3-core-restoration-datapack
+    paths:
+      - .github/workflows/core-restoration-datapack-26.3.yml
+      - tools/probe_core_restoration_datapack_26_3.py
+      - tools/probe_mineflayer_core_place.js
+      - tools/smoke_vanilla_runtime.py
+      - tools/install_experimental_prismarine_26_3.sh
+      - probes/26.3-release-identity.json
+      - probes/mineflayer-runtime/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/core-restoration-datapack-26.3.yml
+      - tools/probe_core_restoration_datapack_26_3.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-restoration-datapack-26-3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Assemble pinned experimental Prismarine stack
+        shell: bash
+        run: |
+          runtime_root="/tmp/supracraft-prismarine-26.3"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
+
+      - name: Qualify datapack restoration consequence
+        shell: bash
+        run: |
+          mkdir -p out
+          python tools/probe_core_restoration_datapack_26_3.py \
+            --evidence probes/26.3-release-identity.json \
+            --output out/26.3-datapack-core-restoration.json
+
+      - name: Publish compact evidence
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Minecraft Java 26.3 datapack core restoration"
+            echo
+            if test -f out/26.3-datapack-core-restoration.json; then
+              echo '~~~json'
+              cat out/26.3-datapack-core-restoration.json
+              echo '~~~'
+            else
+              echo "No terminal qualification receipt was produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vanilla-26.3-datapack-core-restoration
+          path: out/26.3-datapack-core-restoration.json
+          if-no-files-found: warn
