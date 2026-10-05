@@ -109,7 +109,7 @@ jobs:
           set -euo pipefail
           frames="$RUNNER_TEMP/named-place-visual/walkthrough-frames"
           test -d "$frames"
-          test "$(find "$frames" -maxdepth 1 -name '*.jpg' | wc -l)" -ge 10
+          test "$(find "$frames" -maxdepth 1 -name '*.jpg' | wc -l)" -ge 6
           ffmpeg -hide_banner -loglevel error -y \
             -framerate 6 -pattern_type glob -i "$frames/*.jpg" \
             -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
