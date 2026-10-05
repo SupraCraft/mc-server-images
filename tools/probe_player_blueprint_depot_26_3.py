@@ -167,7 +167,24 @@ def main() -> int:
                     stderr=subprocess.STDOUT,
                     text=True,
                 )
-                wait_file(ready, bot, 45)
+                try:
+                    wait_file(ready, bot, 60)
+                except Exception as exc:
+                    if bot.poll() is None:
+                        bot.kill()
+                    try:
+                        diagnostic_stdout, _ = bot.communicate(timeout=10)
+                    except Exception:
+                        diagnostic_stdout = "<client stdout unavailable>"
+                    try:
+                        server_tail = log_path.read_text("utf-8", errors="replace")[-7000:]
+                    except Exception:
+                        server_tail = "<server log unavailable>"
+                    raise RuntimeError(
+                        f"player client readiness failed: {exc}; "
+                        f"client_stdout={diagnostic_stdout[-7000:]!r}; "
+                        f"server_log_tail={server_tail!r}"
+                    ) from exc
 
                 # Materials are supplied to the player actor; all movement into
                 # the work-site depot after this point is a real client
