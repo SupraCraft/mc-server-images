@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -277,6 +278,33 @@ def main() -> int:
         receipt["status_protocol"] = int(status.get("version", {}).get("protocol", -1))
         receipt["chrome_executable"] = Path(chrome).name
         result_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", "utf-8")
+
+        # Materialize the stock-client HIL packet while the exact saved world is
+        # still available. This is presentation/review preparation only; it
+        # does not confer semantic or visual acceptance.
+        repo_root = Path(__file__).resolve().parents[1]
+        world_dir = root / "world"
+        route_path = repo_root / "probes/named-place-visual/redroof-route.json"
+        packager = repo_root / "tools/package_named_place_hil.py"
+        subprocess.run(
+            [
+                sys.executable,
+                str(packager),
+                "--world",
+                str(world_dir),
+                "--provenance",
+                str(result_path),
+                "--route",
+                str(route_path),
+                "--output-dir",
+                str(args.output_dir),
+                "--place-id",
+                "redroof-husbandry-hall",
+            ],
+            cwd=repo_root,
+            check=True,
+        )
+
         print(json.dumps(receipt, indent=2, sort_keys=True))
 
     return 0
