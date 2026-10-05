@@ -213,32 +213,20 @@ def summon_fixture(
     fixture_tag: str,
     x: float,
 ) -> None:
-    """Summon one bounded fixture, then bind the newly created entity."""
+    """Create and bind one fixture causally through execute-summon context."""
     extra = ",IsImmuneToZombification:1b" if entity_type == "hoglin" else ""
-    nbt = (
-        "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b"
-        f"{extra}}}"
+    merged = (
+        "{NoAI:1b,NoGravity:1b,Invulnerable:1b,PersistenceRequired:1b,"
+        f'Tags:["{fixture_tag}"]{extra}}}'
     )
-    send(process, f"summon minecraft:{entity_type} {x} 100 0 {nbt}")
-    # Console commands can be consumed in the same server tick. Give the
-    # freshly added entity a tick boundary before targeting it by selector.
-    time.sleep(0.15)
-    # Ambient target species are cleared once and natural spawning is disabled
-    # before treatments.  Every older fixture is marked fixture_bound, so the
-    # one newly summoned unbound entity is a deterministic harness identity.
+    # Java's execute-summon context binds @s to the newly created entity.  This
+    # avoids post-hoc nearest/type/coordinate discovery and assigns persistence
+    # plus the unique harness identity before later commands need a selector.
     send(
         process,
         (
-            f"tag @e[type=minecraft:{entity_type},"
-            "tag=!supracraft.fixture_bound] "
-            f"add {fixture_tag}"
-        ),
-    )
-    send(
-        process,
-        (
-            f"tag @e[type=minecraft:{entity_type},tag={fixture_tag}] "
-            "add supracraft.fixture_bound"
+            f"execute positioned {x} 100 0 summon minecraft:{entity_type} "
+            f"run data merge entity @s {merged}"
         ),
     )
     time.sleep(0.10)
@@ -637,9 +625,6 @@ def main() -> int:
             try:
                 status = wait_server(server, protocol)
                 send(server, "forceload add 0 0")
-                send(server, "gamerule minecraft:do_mob_spawning false")
-                send(server, "kill @e[type=minecraft:wolf]")
-                send(server, "kill @e[type=minecraft:hoglin]")
                 send(server, "function supracraft_traits:setup")
                 time.sleep(0.5)
 
