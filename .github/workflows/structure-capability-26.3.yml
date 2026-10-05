@@ -9,7 +9,7 @@ on:
       - '.github/workflows/structure-capability-26.3.yml'
       - 'tools/probe_structure_capability_26_3.py'
       - 'tools/smoke_vanilla_runtime.py'
-      - 'probes/structure-capability/**'
+      - 'probes/structure-capability/redroof-stock-watering-v0.1.json'
       - 'probes/26.3-release-identity.json'
 
 permissions:
