@@ -38,7 +38,7 @@ class TwoRiversExpansionW2Tests(unittest.TestCase):
             "resource_gated_bounded_actuation",
         )
 
-    def test_kilnreach_decision_composes_to_brickworks_task(self):
+    def test_kilnreach_decision_composes_to_resource_outpost_task(self):
         scenario, w2 = self.load()
         expansion = next(
             row for row in w2["expansions"]
@@ -50,7 +50,7 @@ class TwoRiversExpansionW2Tests(unittest.TestCase):
         self.assertTrue(plan["admitted"])
         self.assertEqual(
             plan["decision_receipt"]["selected"]["action"],
-            "expand_brickworks",
+            "claim_iron_ford",
         )
         self.assertEqual(
             plan["material_lowering"]["selected_block"],
