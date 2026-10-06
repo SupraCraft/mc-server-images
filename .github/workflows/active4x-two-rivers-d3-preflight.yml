@@ -1,0 +1,61 @@
+name: Active 4X Two Rivers D3 HIL Preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/active4x-two-rivers-d3-preflight.yml'
+      - 'deploy/active4x-two-rivers/d3/**'
+      - 'tools/probe_active4x_two_rivers_d3_preflight.sh'
+      - 'deploy/active4x-two-rivers/d2a/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: active4x-two-rivers-d3-preflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  two-rivers-d3-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Qualify D3 stock-client fixture and harness boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/probe_active4x_two_rivers_d3_preflight.sh             probes/active4x/two-rivers-d3-preflight-result.json
+
+      - name: Publish compact receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/active4x/two-rivers-d3-preflight-result.json ]]; then
+            {
+              echo '## Two Rivers D3 stock-client HIL preflight'
+              echo
+              echo '~~~json'
+              cat probes/active4x/two-rivers-d3-preflight-result.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain compact evidence
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f probes/active4x/two-rivers-d3-preflight-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/active4x/two-rivers-d3-preflight-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain Two Rivers D3 HIL preflight evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
