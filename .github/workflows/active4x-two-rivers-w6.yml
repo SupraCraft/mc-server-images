@@ -1,0 +1,74 @@
+name: Active 4X Two Rivers W6 Soak
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/active4x-two-rivers-w6.yml'
+      - 'tools/active4x_sim.py'
+      - 'tools/active4x_soak_w6.py'
+      - 'tools/probe_active4x_two_rivers_w6.py'
+      - 'tests/test_active4x_soak_w6.py'
+      - 'probes/active4x/two-rivers-v0.1.json'
+      - 'probes/active4x/two-rivers-w6-soak-v0.1.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: active4x-two-rivers-w6-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  two-rivers-w6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Unit and soak-bound tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=tools python -m unittest -v tests/test_active4x_soak_w6.py
+
+      - name: Run accelerated soak matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_active4x_two_rivers_w6.py             --base probes/active4x/two-rivers-v0.1.json             --w6 probes/active4x/two-rivers-w6-soak-v0.1.json             --output probes/active4x/two-rivers-w6-result.json
+
+      - name: Publish compact receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/active4x/two-rivers-w6-result.json ]]; then
+            {
+              echo '## Two Rivers active 4X W6 soak'
+              echo
+              echo '~~~json'
+              cat probes/active4x/two-rivers-w6-result.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain compact evidence
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f probes/active4x/two-rivers-w6-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/active4x/two-rivers-w6-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain Two Rivers W6 soak evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
