@@ -1,4 +1,8 @@
 forceload add -16 0 16 32
+gamerule spawnRadius 0
+gamerule doMobSpawning false
+difficulty peaceful
+setworldspawn 0 70 10
 fill -10 69 8 10 69 20 minecraft:stone
 setblock -8 70 12 minecraft:barrel
 item replace block -8 70 12 container.0 with minecraft:wheat 2
