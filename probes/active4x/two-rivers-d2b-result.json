@@ -1,0 +1,76 @@
+{
+  "actor": {
+    "actor_group_id": "caravan.stoneford.kilnreach.0001",
+    "amount": 4,
+    "cargo_id": "contract-001.cargo01",
+    "client": "mineflayer exact-26.3",
+    "destination": "kilnreach",
+    "destination_count_observed": 4,
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
+    "minecraft_item": "minecraft:wheat",
+    "movement": {
+      "to_destination": 15.928372525003564,
+      "to_source": 7.511322156155766,
+      "total_grounded_distance": 23.43969468115933
+    },
+    "operation_id": "actor-task:contract-001.cargo01",
+    "remaining_inventory": 0,
+    "result": "delivered",
+    "schema": "supracraft.active4x-actor-result/v0.1",
+    "semantic_resource": "grain",
+    "source": "stoneford",
+    "task_id": "task.trade.contract-001.grain"
+  },
+  "actor_service": {
+    "max_concurrent_actors": 1,
+    "published_ports": "{}"
+  },
+  "checks": {
+    "destination_deposit": true,
+    "director_task_identity_matches_actor_result": true,
+    "duplicate_task_not_reexecuted": true,
+    "exact_26_3_actor_stack": true,
+    "grounded_movement": true,
+    "max_concurrent_actor_bound_1": true,
+    "no_actor_network_port": true,
+    "persistent_result_survives_restart": true,
+    "quantity_preserved": true,
+    "source_withdrawal": true,
+    "task_identity_preserved": true,
+    "world_scan_false": true
+  },
+  "deployment_stage": "D2_bounded_actor_adapter_pool",
+  "director": {
+    "apply": {
+      "accepted": true,
+      "history_count": 1,
+      "operation_id": "actor-task:contract-001.cargo01",
+      "revision": 1,
+      "snapshot_digest": "40fb988a1b3cd5b750499ae40026d5da90bb019dc9f115ce9186c5555a7a0fa6",
+      "state_digest": "71c9be8dc351d4e534d83f3ef6f792c193f60b7a0d2d0e71ffc46961fa1fce74"
+    },
+    "state": {
+      "applied": [
+        "actor-task:contract-001.cargo01"
+      ],
+      "history": [
+        {
+          "kind": "staging_operation",
+          "operation_id": "actor-task:contract-001.cargo01"
+        }
+      ],
+      "revision": 1,
+      "snapshot_digest": "40fb988a1b3cd5b750499ae40026d5da90bb019dc9f115ce9186c5555a7a0fa6"
+    }
+  },
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-d2b-rdte/v0.1",
+  "world_scan": false
+}
