@@ -326,16 +326,25 @@ def main() -> int:
         )
         final_logs = compose.logs("minecraft")
 
+        print()
+        legibility = input(
+            "Did you see and understand the trade output, build change, "
+            "obstruction/damage consequences, and caravan encounter? [y/N]: "
+        ).strip().lower() in {"y", "yes"}
+
         checks = {
             "stock_client_attested_exact_26_3": True,
             "trade_legible": "SUPRACRAFT_D3_TRADE_COMPLETE" in final_logs,
             "construction_help_legible": "SUPRACRAFT_D3_BUILD_HELP_COMPLETE" in final_logs,
             "construction_obstruction_legible": "SUPRACRAFT_D3_OBSTRUCT_COMPLETE" in final_logs,
-            "caravan_encounter": actor_result.get("result") == "delivered",
+            "caravan_encounter": (
+                actor_result.get("result") == "delivered" and legibility
+            ),
             "damage_consequence_legible": "SUPRACRAFT_D3_DAMAGE_COMPLETE" in final_logs,
             "logout_rejoin": join_count(final_logs, player) >= 2,
             "restart_recovery_persists": "SUPRACRAFT_D3_STATE_SURVIVED_RESTART" in final_logs,
             "semantic_revision_monotonic": director_state.get("revision") == 1,
+            "human_legibility_attested": legibility,
             "no_manual_admin_commands_required": True,
             "world_scan_false": True,
         }
@@ -347,6 +356,7 @@ def main() -> int:
             "checks": checks,
             "actor": actor_result,
             "director": {"apply": director_apply_json, "state": director_state},
+            "human_legibility_attested": legibility,
             "two_simultaneous_humans": "NOT_RUN_OPTIONAL",
             "world_scan": False,
             "result": "PASS" if all(checks.values()) else "REVISE",
