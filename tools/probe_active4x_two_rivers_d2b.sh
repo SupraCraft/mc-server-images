@@ -14,7 +14,21 @@ compose() {
 cleanup() {
   compose down -v --remove-orphans >/dev/null 2>&1 || true
 }
-trap cleanup EXIT
+diagnose() {
+  local rc=$?
+  if (( rc != 0 )); then
+    echo "D2B_DIAGNOSTIC_BEGIN rc=$rc" >&2
+    compose ps -a >&2 || true
+    for service in minecraft director actor-adapter; do
+      echo "D2B_DIAGNOSTIC_SERVICE=$service" >&2
+      compose logs --tail=120 "$service" >&2 || true
+    done
+    echo "D2B_DIAGNOSTIC_END" >&2
+  fi
+  cleanup
+  return "$rc"
+}
+trap diagnose EXIT
 
 wait_minecraft() {
   local deadline=$((SECONDS + 150))
