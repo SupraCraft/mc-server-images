@@ -1,0 +1,229 @@
+{
+  "candidate_primitives_exercised": [
+    "Intent",
+    "Task",
+    "DecisionReceipt"
+  ],
+  "checks": {
+    "all_expansions_admitted": true,
+    "civilization_materials_are_distinct": true,
+    "decision_receipts_drive_intents": true,
+    "no_second_construction_engine": true,
+    "tasks_reference_same_engine": true,
+    "world_scan_false": true
+  },
+  "deployment_stage": "D0_pure_deterministic_ci",
+  "minecraft_runtime_required": false,
+  "plans": [
+    {
+      "admitted": true,
+      "candidate": {
+        "architecture_blueprint_id": "granary_shell",
+        "capabilities": [
+          "grain_storage"
+        ],
+        "id": "stone_granary",
+        "requires_civilization_capabilities": [
+          "dressed_stone",
+          "timber_roofing"
+        ],
+        "structure_id": "granary",
+        "work_site_template_id": "granary_blueprint_site"
+      },
+      "checks": {
+        "candidate_satisfies_intent": true,
+        "civilization_capabilities_admit_candidate": true,
+        "constructible_work_site_present": true,
+        "decision_receipt_present": true,
+        "designation_bounded": true,
+        "material_context_admitted": true,
+        "shared_construction_engine": true,
+        "world_scan_false": true
+      },
+      "civilization_id": "stone_crown",
+      "decision_receipt": {
+        "decision_id": "decision-0002",
+        "revision_observed": 4,
+        "selected": {
+          "action": "build_granary",
+          "feasible": true,
+          "reasons": [
+            "bricks=6",
+            "grain=14",
+            "already_has_granary=False"
+          ],
+          "score": 106
+        },
+        "time": 3
+      },
+      "designation": {
+        "anchor_preference": [
+          0,
+          70,
+          0
+        ],
+        "bounds": {
+          "max": [
+            8,
+            82,
+            8
+          ],
+          "min": [
+            -8,
+            69,
+            -8
+          ]
+        },
+        "id": "stoneford_granary_area",
+        "terrain": [
+          "flat"
+        ]
+      },
+      "intent": {
+        "intent_id": "intent.stoneford.decision-0002.build_granary",
+        "kind": "food_storage",
+        "required_capabilities": [
+          "grain_storage"
+        ],
+        "schema": "supracraft.intent/v0.1",
+        "source_decision_id": "decision-0002"
+      },
+      "material_lowering": {
+        "context_id": "early_stone",
+        "required_capabilities": [
+          "dressed_stone"
+        ],
+        "required_resources": [
+          "fieldstone"
+        ],
+        "role": "masonry_primary",
+        "selected_block": "minecraft:stone_bricks"
+      },
+      "missing": {
+        "civilization_capabilities": [],
+        "intent_capabilities": [],
+        "material_context_capabilities": []
+      },
+      "qualifying_branch": "supply_stoneford_bricks",
+      "schema": "supracraft.active4x-expansion-plan/v0.1",
+      "settlement_id": "stoneford",
+      "task": {
+        "construction_engine": "resource_gated_bounded_actuation",
+        "kind": "materialize_work_site",
+        "schema": "supracraft.task/v0.1",
+        "source_intent_id": "intent.stoneford.decision-0002.build_granary",
+        "task_id": "task.intent.stoneford.decision-0002.build_granary.materialize",
+        "work_site_template_id": "granary_blueprint_site"
+      }
+    },
+    {
+      "admitted": true,
+      "candidate": {
+        "architecture_blueprint_id": "brick_resource_outpost_shell",
+        "capabilities": [
+          "resource_outpost"
+        ],
+        "id": "brick_resource_outpost",
+        "requires_civilization_capabilities": [
+          "kiln_firing",
+          "fired_brick",
+          "timber_roofing"
+        ],
+        "structure_id": "resource_outpost",
+        "work_site_template_id": "resource_outpost_blueprint_site"
+      },
+      "checks": {
+        "candidate_satisfies_intent": true,
+        "civilization_capabilities_admit_candidate": true,
+        "constructible_work_site_present": true,
+        "decision_receipt_present": true,
+        "designation_bounded": true,
+        "material_context_admitted": true,
+        "shared_construction_engine": true,
+        "world_scan_false": true
+      },
+      "civilization_id": "ember_clay",
+      "decision_receipt": {
+        "decision_id": "decision-0001",
+        "revision_observed": 1,
+        "selected": {
+          "action": "claim_iron_ford",
+          "feasible": true,
+          "reasons": [
+            "claimed_by=None",
+            "grain=10"
+          ],
+          "score": 91
+        },
+        "time": 2
+      },
+      "designation": {
+        "anchor_preference": [
+          0,
+          70,
+          0
+        ],
+        "bounds": {
+          "max": [
+            8,
+            82,
+            8
+          ],
+          "min": [
+            -8,
+            69,
+            -8
+          ]
+        },
+        "id": "kilnreach_iron_ford_outpost_area",
+        "terrain": [
+          "flat"
+        ]
+      },
+      "intent": {
+        "intent_id": "intent.kilnreach.decision-0001.claim_iron_ford",
+        "kind": "resource_control",
+        "required_capabilities": [
+          "resource_outpost"
+        ],
+        "schema": "supracraft.intent/v0.1",
+        "source_decision_id": "decision-0001"
+      },
+      "material_lowering": {
+        "context_id": "fired_brick",
+        "required_capabilities": [
+          "kiln_firing",
+          "fired_brick"
+        ],
+        "required_resources": [
+          "clay",
+          "fuelwood"
+        ],
+        "role": "masonry_primary",
+        "selected_block": "minecraft:bricks"
+      },
+      "missing": {
+        "civilization_capabilities": [],
+        "intent_capabilities": [],
+        "material_context_capabilities": []
+      },
+      "qualifying_branch": "feed_kilnreach",
+      "schema": "supracraft.active4x-expansion-plan/v0.1",
+      "settlement_id": "kilnreach",
+      "task": {
+        "construction_engine": "resource_gated_bounded_actuation",
+        "kind": "materialize_work_site",
+        "schema": "supracraft.task/v0.1",
+        "source_intent_id": "intent.kilnreach.decision-0001.claim_iron_ford",
+        "task_id": "task.intent.kilnreach.decision-0001.claim_iron_ford.materialize",
+        "work_site_template_id": "resource_outpost_blueprint_site"
+      }
+    }
+  ],
+  "result": "PASS",
+  "scenario_id": "two_rivers_v0_1",
+  "schema": "supracraft.active4x-two-rivers-w2-rdte/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "private-authority-live-2026-10-06",
+  "world_scan": false
+}
