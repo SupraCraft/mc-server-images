@@ -1,0 +1,35 @@
+{
+  "schema": "supracraft.active4x-d1a-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "ea6985c71cc42abf1d86da7604028dee2c6f6919",
+  "target": {
+    "edition": "java",
+    "version": "26.3",
+    "protocol": 777
+  },
+  "storage": {
+    "id": "supracraft:active4x",
+    "state_path": "state",
+    "journal_path": "journal",
+    "revisions": [
+      {
+        "revision": 1,
+        "operation_id": "bootstrap:two_rivers",
+        "world_id": "two_rivers",
+        "phase": "d1a_bootstrap"
+      },
+      {
+        "revision": 2,
+        "operation_id": "checkpoint:post_restart",
+        "world_id": "two_rivers",
+        "phase": "d1a_post_restart"
+      }
+    ]
+  },
+  "acceptance": {
+    "world_local_storage_survives_restart": true,
+    "operation_journal_survives_restart": true,
+    "read_only_restart_does_not_duplicate_journal": true,
+    "world_scan": false
+  }
+}
