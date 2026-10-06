@@ -125,6 +125,50 @@ def player_left(logs: str, player: str) -> bool:
     )
 
 
+def publish_receipt(repo: Path, local_output: Path, result: dict) -> str:
+    """Publish only the canonical HIL receipt from a clean feature-branch checkout."""
+
+    branch = "feat/named-place-visual-qualification-v1"
+    current = run(["git", "branch", "--show-current"], cwd=repo).strip()
+    if current != branch:
+        raise HilError(
+            f"--publish requires branch {branch}; current branch is {current!r}"
+        )
+
+    canonical = repo / "probes/active4x/two-rivers-d3-hil-result.json"
+    canonical.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", "utf-8")
+
+    allowed = {
+        str(local_output.resolve().relative_to(repo.resolve())).replace("\\", "/"),
+        str(canonical.resolve().relative_to(repo.resolve())).replace("\\", "/"),
+    }
+    dirty = []
+    for line in run(["git", "status", "--porcelain"], cwd=repo).splitlines():
+        path = line[3:].strip().replace("\\", "/")
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        if path not in allowed:
+            dirty.append(line)
+    if dirty:
+        raise HilError(
+            "--publish refuses to touch a worktree with unrelated changes:\n"
+            + "\n".join(dirty)
+        )
+
+    run(["git", "add", str(canonical.relative_to(repo))], cwd=repo)
+    names = run(["git", "diff", "--cached", "--name-only"], cwd=repo).strip()
+    if names:
+        run(
+            ["git", "commit", "-m", "hil: retain Two Rivers D3 stock-client evidence"],
+            cwd=repo,
+        )
+
+    run(["git", "fetch", "origin", branch], cwd=repo)
+    run(["git", "rebase", f"origin/{branch}"], cwd=repo)
+    run(["git", "push", "origin", f"HEAD:{branch}"], cwd=repo)
+    return run(["git", "rev-parse", "HEAD"], cwd=repo).strip()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -136,6 +180,11 @@ def main() -> int:
         "--keep-running",
         action="store_true",
         help="Leave the dedicated HIL Compose project running after PASS.",
+    )
+    ap.add_argument(
+        "--publish",
+        action="store_true",
+        help="On PASS, commit and push only the canonical HIL receipt to the feature branch.",
     )
     args = ap.parse_args()
 
@@ -308,6 +357,10 @@ def main() -> int:
         print()
         print(json.dumps(result, indent=2, sort_keys=True))
         print(f"Receipt written to: {output}")
+
+        if result["result"] == "PASS" and args.publish:
+            published_head = publish_receipt(repo, output, result)
+            print(f"Published canonical HIL receipt at Git head {published_head}")
 
         return 0 if result["result"] == "PASS" else 2
     finally:
