@@ -97,8 +97,17 @@ if ! grep -q 'Starting minecraft server version 26.3' <<<"$minecraft_logs"; then
   printf '%s\n' "$minecraft_logs" >&2
   exit 1
 fi
+
+fixture_deadline=$((SECONDS + 20))
+while (( SECONDS < fixture_deadline )); do
+  minecraft_logs="$(compose logs minecraft)"
+  if grep -q 'SUPRACRAFT_D2B_FIXTURE_READY' <<<"$minecraft_logs"; then
+    break
+  fi
+  sleep 1
+done
 if ! grep -q 'SUPRACRAFT_D2B_FIXTURE_READY' <<<"$minecraft_logs"; then
-  echo "D2B fixture marker missing" >&2
+  echo "D2B fixture marker missing after scheduled setup window" >&2
   printf '%s\n' "$minecraft_logs" >&2
   exit 1
 fi
