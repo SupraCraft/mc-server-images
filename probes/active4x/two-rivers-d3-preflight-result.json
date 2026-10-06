@@ -1,0 +1,15 @@
+{
+  "checks": {
+    "d2a_datapack_loaded": true,
+    "d3_hil_datapack_loaded": true,
+    "exact_26_3_server_healthy": true,
+    "hil_fixture_ready": true,
+    "human_acceptance_not_claimed": true,
+    "world_scan_false": true
+  },
+  "deployment_stage": "D3_stock_client_hil_preflight",
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-d3-preflight/v0.1",
+  "stock_client_hil_required": true,
+  "world_scan": false
+}
