@@ -1,0 +1,4 @@
+services:
+  minecraft:
+    volumes:
+      - ../d3/datapack:/data/world/datapacks/supracraft_active4x_hil:ro
