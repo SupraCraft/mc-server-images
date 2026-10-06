@@ -1,6 +1,4 @@
 fill -12 69 -3 12 69 3 minecraft:stone
-setworldspawn 0 70 0
-gamerule spawnRadius 0
 setblock -10 70 0 minecraft:barrel
 setblock 10 70 0 minecraft:barrel
 item replace block -10 70 0 container.0 with minecraft:wheat 4
