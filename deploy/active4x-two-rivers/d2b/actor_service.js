@@ -72,6 +72,56 @@ async function waitForBlock (bot, pos, expectedName, timeoutMs = 10000) {
   )
 }
 
+function inventoryItemCount (bot, itemName) {
+  return bot.inventory.items()
+    .filter(row => row.name === itemName)
+    .reduce((sum, row) => sum + row.count, 0)
+}
+
+function containerItemCount (container, itemName) {
+  return container.containerItems()
+    .filter(row => row.name === itemName)
+    .reduce((sum, row) => sum + row.count, 0)
+}
+
+async function waitForInventoryCount (bot, itemName, expected, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs
+  let last = inventoryItemCount(bot, itemName)
+  while (Date.now() < deadline) {
+    last = inventoryItemCount(bot, itemName)
+    if (last === expected) return last
+    await sleep(100)
+  }
+  throw new Error(
+    'inventory settlement timeout for ' + itemName +
+    '; expected=' + expected + '; last=' + last
+  )
+}
+
+async function waitForDepositSettlement (
+  bot,
+  container,
+  itemName,
+  expectedContainerCount,
+  timeoutMs = 5000
+) {
+  const deadline = Date.now() + timeoutMs
+  let lastContainer = containerItemCount(container, itemName)
+  let lastInventory = inventoryItemCount(bot, itemName)
+  while (Date.now() < deadline) {
+    lastContainer = containerItemCount(container, itemName)
+    lastInventory = inventoryItemCount(bot, itemName)
+    if (lastContainer >= expectedContainerCount && lastInventory === 0) {
+      return { container: lastContainer, inventory: lastInventory }
+    }
+    await sleep(100)
+  }
+  throw new Error(
+    'deposit settlement timeout for ' + itemName +
+    '; container=' + lastContainer + '; inventory=' + lastInventory
+  )
+}
+
 async function walkNear (bot, target, stopDistance = 1.35, timeoutMs = 30000) {
   const started = bot.entity.position.clone()
   const deadline = Date.now() + timeoutMs
@@ -127,33 +177,46 @@ async function executeTask (task) {
     const toSource = await walkNear(bot, sourcePos.offset(1, 0, 0))
     const source = await waitForBlock(bot, sourcePos, 'barrel')
 
-    const sourceContainer = await bot.openContainer(source)
-    await sourceContainer.withdraw(item.id, null, task.amount, null)
-    await sleep(500)
-    const carried = bot.inventory.items()
-      .filter(row => row.name === task.minecraft_item)
-      .reduce((sum, row) => sum + row.count, 0)
-    await sourceContainer.close()
-    await sleep(300)
-    if (carried !== task.amount) {
-      throw new Error('withdrawn amount mismatch: ' + carried)
+    let carried = inventoryItemCount(bot, task.minecraft_item)
+    if (carried > task.amount) {
+      throw new Error('actor carries more task cargo than expected: ' + carried)
+    }
+
+    if (carried < task.amount) {
+      const sourceContainer = await bot.openContainer(source)
+      const remainingToWithdraw = task.amount - carried
+      await sourceContainer.withdraw(item.id, null, remainingToWithdraw, null)
+      carried = await waitForInventoryCount(
+        bot,
+        task.minecraft_item,
+        task.amount,
+        5000
+      )
+      await sourceContainer.close()
+      await sleep(300)
     }
 
     const toDestination = await walkNear(bot, destinationPos.offset(-1, 0, 0))
     const destination = await waitForBlock(bot, destinationPos, 'barrel')
 
     const destinationContainer = await bot.openContainer(destination)
+    const destinationBefore = containerItemCount(
+      destinationContainer,
+      task.minecraft_item
+    )
     await destinationContainer.deposit(item.id, null, task.amount, null)
-    await sleep(750)
-    const destinationCount = destinationContainer.containerItems()
-      .filter(row => row.name === task.minecraft_item)
-      .reduce((sum, row) => sum + row.count, 0)
+    const settled = await waitForDepositSettlement(
+      bot,
+      destinationContainer,
+      task.minecraft_item,
+      destinationBefore + task.amount,
+      5000
+    )
+    const destinationCount = settled.container
     await destinationContainer.close()
     await sleep(400)
 
-    const remaining = bot.inventory.items()
-      .filter(row => row.name === task.minecraft_item)
-      .reduce((sum, row) => sum + row.count, 0)
+    const remaining = settled.inventory
 
     return {
       schema: 'supracraft.active4x-actor-result/v0.1',
