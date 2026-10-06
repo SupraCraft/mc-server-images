@@ -1,0 +1,381 @@
+{
+  "bounds": {
+    "max_open_contracts": 1,
+    "max_promoted_actor_demand": 4,
+    "max_queue_high_water": 12,
+    "relation_trust_max": 100,
+    "relation_trust_min": -100
+  },
+  "checks": {
+    "accelerated_24h_72h_soak": true,
+    "actor_pool_bounded": true,
+    "all_branch_bounds": true,
+    "bounded_queue_growth": true,
+    "deterministic_replay": true,
+    "no_negative_stocks": true,
+    "no_resource_drift": true,
+    "no_runaway_trade_war_oscillation": true,
+    "world_scan_false": true
+  },
+  "deployment_stage": "D0_accelerated_soak",
+  "matrix": {
+    "24h:feed_kilnreach": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "a9fbb9ae63f5a6510550ef12f9fd0287ec3a3163246f63891630deb5147aaf51",
+      "final_contract_count": 2,
+      "final_first_decisions": {
+        "kilnreach": "claim_iron_ford",
+        "stoneford": "idle"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 11
+        }
+      },
+      "metrics": {
+        "contract_count": 2,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 8,
+        "event_count": 43,
+        "kilnreach_decision_count": 4,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 40
+      },
+      "replay_equal": true
+    },
+    "24h:none": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "2880c6874462f8c9989685c1e167dc690ca37482f2f10f19d4820e575459403a",
+      "final_contract_count": 4,
+      "final_first_decisions": {
+        "kilnreach": "seek_food_trade",
+        "stoneford": "claim_iron_ford"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 17
+        }
+      },
+      "metrics": {
+        "contract_count": 4,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 8,
+        "event_count": 50,
+        "kilnreach_decision_count": 4,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 43
+      },
+      "replay_equal": true
+    },
+    "24h:sabotage_kilnreach_route": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "a96f91a3cebee49e26c69887502c098aa2faad6ba96714395e3d8f7883c45ac8",
+      "final_contract_count": 3,
+      "final_first_decisions": {
+        "kilnreach": "secure_route",
+        "stoneford": "claim_iron_ford"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 14
+        }
+      },
+      "metrics": {
+        "contract_count": 3,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 8,
+        "event_count": 47,
+        "kilnreach_decision_count": 4,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 42
+      },
+      "replay_equal": true
+    },
+    "24h:supply_stoneford_bricks": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "d66694e777f31441277f17b3fd29ff2db7a9f6fabe1aeffd938abefbc3a87bdd",
+      "final_contract_count": 4,
+      "final_first_decisions": {
+        "kilnreach": "seek_food_trade",
+        "stoneford": "build_granary"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 17
+        }
+      },
+      "metrics": {
+        "contract_count": 4,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 8,
+        "event_count": 51,
+        "kilnreach_decision_count": 4,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 44
+      },
+      "replay_equal": true
+    },
+    "72h:feed_kilnreach": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "d833c9112248aac4ead583261cde1690368e6887e98b940cb5a2d5f759391ecc",
+      "final_contract_count": 9,
+      "final_first_decisions": {
+        "kilnreach": "claim_iron_ford",
+        "stoneford": "idle"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 32
+        }
+      },
+      "metrics": {
+        "contract_count": 9,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 24,
+        "event_count": 141,
+        "kilnreach_decision_count": 12,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 124
+      },
+      "replay_equal": true
+    },
+    "72h:none": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "8bc5a6aba47e928d254df97cc691b330238a6a09a9ad5b09689271d81d0eef4c",
+      "final_contract_count": 9,
+      "final_first_decisions": {
+        "kilnreach": "seek_food_trade",
+        "stoneford": "claim_iron_ford"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 32
+        }
+      },
+      "metrics": {
+        "contract_count": 9,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 24,
+        "event_count": 140,
+        "kilnreach_decision_count": 12,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 123
+      },
+      "replay_equal": true
+    },
+    "72h:sabotage_kilnreach_route": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "18a74198d63f52b1051857b60c2ade4410d0a272832566079401432b3b941b80",
+      "final_contract_count": 9,
+      "final_first_decisions": {
+        "kilnreach": "secure_route",
+        "stoneford": "claim_iron_ford"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 32
+        }
+      },
+      "metrics": {
+        "contract_count": 9,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 24,
+        "event_count": 141,
+        "kilnreach_decision_count": 12,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 124
+      },
+      "replay_equal": true
+    },
+    "72h:supply_stoneford_bricks": {
+      "checks": {
+        "actor_demand_bounded": true,
+        "contract_states_valid": true,
+        "no_negative_stocks": true,
+        "open_contracts_bounded": true,
+        "queue_bounded": true,
+        "relations_bounded": true,
+        "resource_balance": true,
+        "trade_rate_bounded_by_decisions": true,
+        "world_scan_false": true
+      },
+      "deterministic_digest": "026a4dec608dee676842ccb7239ee37c32ed63d4414261568e3de196127d82f6",
+      "final_contract_count": 9,
+      "final_first_decisions": {
+        "kilnreach": "seek_food_trade",
+        "stoneford": "build_granary"
+      },
+      "final_relation_state": {
+        "ember_clay|stone_crown": {
+          "a": "stone_crown",
+          "b": "ember_clay",
+          "hostility": false,
+          "trade_access": true,
+          "trust": 32
+        }
+      },
+      "metrics": {
+        "contract_count": 9,
+        "contract_statuses": [
+          "fulfilled"
+        ],
+        "decision_count": 24,
+        "event_count": 141,
+        "kilnreach_decision_count": 12,
+        "max_in_transit_cargo": 2,
+        "max_open_contracts": 1,
+        "negative_stock_observed": false,
+        "queue_high_water": 8,
+        "relation_out_of_bounds": false,
+        "sample_count": 124
+      },
+      "replay_equal": true
+    }
+  },
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-w6-rdte/v0.1",
+  "simulated_time_unit": "hour",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "6e61272f360dec96b06f7bf27cce50018bf54975",
+  "world_scan": false
+}
