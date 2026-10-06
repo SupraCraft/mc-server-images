@@ -1,0 +1,27 @@
+{
+  "schema": "supracraft.active4x-d1b-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "01c3da08db1eb59ea2199de1c11096d915a0ac54",
+  "target": {
+    "edition": "java",
+    "version": "26.3",
+    "protocol": 777,
+    "data_pack_version": 121
+  },
+  "datapack": {
+    "namespace": "supracraft",
+    "function_id": "supracraft:active4x/callback",
+    "schedule_delay_ticks": 100,
+    "storage_id": "supracraft:active4x"
+  },
+  "acceptance": {
+    "exact_26_3_datapack_loads": true,
+    "scheduled_function_is_accepted": true,
+    "scheduled_callback_survives_restart": true,
+    "callback_updates_world_local_storage": true,
+    "callback_executes_exactly_once": true,
+    "callback_state_survives_second_restart": true,
+    "no_strategic_tick_loop": true,
+    "world_scan": false
+  }
+}
