@@ -1,0 +1,71 @@
+name: Active 4X Two Rivers D1B Scheduled Callback
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/active4x-two-rivers-d1b.yml'
+      - 'tools/probe_active4x_two_rivers_d1b_26_3.py'
+      - 'tools/smoke_vanilla_runtime.py'
+      - 'probes/active4x/two-rivers-d1b-scheduled-callback-v0.1.json'
+      - 'probes/26.3-release-identity.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: active4x-two-rivers-d1b-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  two-rivers-d1b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Run exact-26.3 scheduled callback rep
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_active4x_two_rivers_d1b_26_3.py             --evidence probes/26.3-release-identity.json             --projection probes/active4x/two-rivers-d1b-scheduled-callback-v0.1.json             --output probes/active4x/two-rivers-d1b-result.json
+
+      - name: Publish compact receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/active4x/two-rivers-d1b-result.json ]]; then
+            {
+              echo '## Two Rivers active 4X D1B scheduled callback'
+              echo
+              echo '~~~json'
+              cat probes/active4x/two-rivers-d1b-result.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain compact evidence
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f probes/active4x/two-rivers-d1b-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/active4x/two-rivers-d1b-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain Two Rivers D1B scheduled-callback evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
