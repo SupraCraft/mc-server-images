@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "product": "minecraft-hosting-stack",
+  "authority": "SupraCraft/mc-server-images#53",
+  "foundry_boundary": {
+    "owns": ["compose_materialization", "service_wiring", "storage_attachment", "secrets_injection", "health_lifecycle"],
+    "must_not_own": ["world_release_policy", "world_promotion", "game_semantics", "two_rivers_state"]
+  },
+  "ingress": {
+    "service": "velocity",
+    "player_facing": true,
+    "capabilities": ["modern_forwarding", "velocity_identity_optional"]
+  },
+  "backends": {
+    "vanilla": {
+      "proxy_adapter": "SupraCraft/VanillaCord",
+      "semantic_authority_for_two_rivers": true,
+      "independent_qualification": true
+    },
+    "paper": {
+      "proxy_adapter": "native_velocity_forwarding",
+      "semantic_authority_for_two_rivers": false,
+      "independent_qualification": true
+    }
+  },
+  "world_storage": {
+    "baked_into_image": false,
+    "mutable_runtime_mount": true,
+    "release_authority_external": true
+  },
+  "world_agent": {
+    "optional": true,
+    "policy_authority": false,
+    "game_semantics": false,
+    "docker_socket": false,
+    "verbs": ["status", "quiesce", "snapshot", "stage", "activate", "clone", "restore", "resume", "hash"]
+  },
+  "acceptance": [
+    "S0_contract",
+    "S1_vanilla_vanillacord",
+    "S2_velocity_vip",
+    "S3_proxy_transparency",
+    "S4_paper_adapter",
+    "S5_world_agent_mechanics",
+    "S6_foundry_materialization",
+    "S7_truenas_rdte",
+    "S8_physical_hil"
+  ]
+}
