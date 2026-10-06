@@ -1,0 +1,261 @@
+{
+  "cases": [
+    {
+      "balanced": true,
+      "digest": "2880c6874462f8c9989685c1e167dc690ca37482f2f10f19d4820e575459403a",
+      "id": "trade",
+      "ledger_kinds": [
+        "cargo_delivered",
+        "consumption",
+        "decision_committed",
+        "production_completed",
+        "trade_contract_created",
+        "trade_contract_fulfilled"
+      ],
+      "replay_equal": true,
+      "signature": [
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "claim_iron_ford"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "build_granary"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ]
+      ]
+    },
+    {
+      "balanced": true,
+      "digest": "a9fbb9ae63f5a6510550ef12f9fd0287ec3a3163246f63891630deb5147aaf51",
+      "id": "help",
+      "ledger_kinds": [
+        "cargo_delivered",
+        "consumption",
+        "decision_committed",
+        "player_transfer",
+        "production_completed",
+        "trade_contract_created",
+        "trade_contract_fulfilled"
+      ],
+      "replay_equal": true,
+      "signature": [
+        [
+          "kilnreach",
+          "claim_iron_ford"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "idle"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ]
+      ]
+    },
+    {
+      "balanced": true,
+      "digest": "b582556d5e8f332e652da25dc831d4864599bd23c7c721aa4a57277b05b98ed9",
+      "id": "withhold",
+      "ledger_kinds": [
+        "cargo_delivered",
+        "consumption",
+        "decision_committed",
+        "player_withheld",
+        "production_completed",
+        "trade_contract_created",
+        "trade_contract_fulfilled"
+      ],
+      "replay_equal": true,
+      "signature": [
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "claim_iron_ford"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "build_granary"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ]
+      ]
+    },
+    {
+      "balanced": true,
+      "digest": "943d6048c88c5e120399a2b49add0324fe6addd6476d6a475405464dde950d9b",
+      "id": "intercept",
+      "ledger_kinds": [
+        "cargo_arrival_ignored",
+        "cargo_delivered",
+        "cargo_disrupted",
+        "consumption",
+        "decision_committed",
+        "production_completed",
+        "trade_contract_created",
+        "trade_contract_fulfilled"
+      ],
+      "replay_equal": true,
+      "signature": [
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "claim_iron_ford"
+        ],
+        [
+          "kilnreach",
+          "secure_route"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "build_granary"
+        ]
+      ]
+    },
+    {
+      "balanced": true,
+      "digest": "1f52df789e3426d3a76210f25447f4a344f0177a331c9bd60f63faf4808a577e",
+      "id": "damage",
+      "ledger_kinds": [
+        "cargo_delivered",
+        "consumption",
+        "decision_committed",
+        "player_damage",
+        "production_completed",
+        "trade_contract_created",
+        "trade_contract_fulfilled"
+      ],
+      "replay_equal": true,
+      "signature": [
+        [
+          "kilnreach",
+          "secure_route"
+        ],
+        [
+          "stoneford",
+          "claim_iron_ford"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "idle"
+        ],
+        [
+          "kilnreach",
+          "seek_food_trade"
+        ],
+        [
+          "stoneford",
+          "build_granary"
+        ]
+      ]
+    }
+  ],
+  "checks": {
+    "all_surfaces_exercised": true,
+    "deterministic_replay": true,
+    "minimum_three_distinct_downstream_decisions": true,
+    "no_branch_specific_story_scripts": true,
+    "resource_balance": true,
+    "world_scan_false": true
+  },
+  "distinct_downstream_decision_signatures": 4,
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-w4-rdte/v0.1",
+  "world_scan": false
+}
