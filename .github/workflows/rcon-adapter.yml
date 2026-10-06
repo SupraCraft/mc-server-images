@@ -1,0 +1,10 @@
+name: RCON adapter
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: python3 tools/probe_rcon_packet.py
