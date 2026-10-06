@@ -2,8 +2,9 @@
 set -euo pipefail
 work="${RUNNER_TEMP:-/tmp}/mc-stack-s1"
 rm -rf "$work"; mkdir -p "$work"; cd "$work"
-git clone https://github.com/SupraCraft/VanillaCord.git vanillacord\ncd vanillacord\ngit checkout ae95c0e64c4b867a60909b71bd2eb8d17051a5e5\ncd ..
+git clone https://github.com/SupraCraft/VanillaCord.git vanillacord
 cd vanillacord
+git checkout ae95c0e64c4b867a60909b71bd2eb8d17051a5e5
 ./mvnw -B verify
 jar="$(find artifacts target -type f -name 'supracraft-vanillacord-*.jar' 2>/dev/null | head -1)"
 test -n "$jar"
