@@ -1,0 +1,35 @@
+{
+  "checks": {
+    "callback_executes_exactly_once": true,
+    "callback_state_survives_second_restart": true,
+    "callback_updates_world_local_storage": true,
+    "exact_26_3_datapack_loads": false,
+    "no_strategic_tick_loop": true,
+    "protocol_777": true,
+    "scheduled_callback_survives_restart": true,
+    "scheduled_function_is_accepted": true,
+    "world_scan_false": true
+  },
+  "data_pack_version": 121,
+  "deployment_stage": "D1_exact_26_3_scheduled_world_callback",
+  "function_id": "supracraft:active4x/callback",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "callback_fired": true,
+    "callback_scheduled": true,
+    "callback_storage_updated_once": true,
+    "callback_survived_second_restart": true
+  },
+  "pack_error_count": 4,
+  "restart_cycles": 3,
+  "result": "FAIL",
+  "schedule_delay_ticks": 100,
+  "schema": "supracraft.active4x-two-rivers-d1b-rdte/v0.1",
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "world_scan": false
+}
