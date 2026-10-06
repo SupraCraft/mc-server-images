@@ -8,7 +8,10 @@ on:
     paths:
       - '.github/workflows/active4x-two-rivers-d3-preflight.yml'
       - 'deploy/active4x-two-rivers/d3/**'
+      - 'deploy/active4x-two-rivers/d2b/**'
       - 'tools/probe_active4x_two_rivers_d3_preflight.sh'
+      - 'tools/run_active4x_two_rivers_d3_hil.py'
+      - 'tools/Start-TwoRiversD3Hil.ps1'
       - 'deploy/active4x-two-rivers/d2a/**'
 
 permissions:
@@ -24,6 +27,17 @@ jobs:
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate low-toil HIL harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/run_active4x_two_rivers_d3_hil.py
+          docker compose             -f deploy/active4x-two-rivers/d2a/compose.yaml             -f deploy/active4x-two-rivers/d2b/compose.d2b.yaml             -f deploy/active4x-two-rivers/d3/compose.d3.yaml             config >/dev/null
 
       - name: Qualify D3 stock-client fixture and harness boundary
         shell: bash
