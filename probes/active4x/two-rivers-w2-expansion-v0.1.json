@@ -1,7 +1,7 @@
 {
   "schema": "supracraft.active4x-w2-public-projection/v0.1",
   "source_authority": "SupraCraft/mc-structure-foundry-private#17",
-  "source_checkpoint": "76c8611200d3327e2804b9cec020bed43ee361ec",
+  "source_checkpoint": "private-authority-live-2026-10-06",
   "base_scenario_ref": "probes/active4x/two-rivers-v0.1.json",
   "shared_construction_engine": "resource_gated_bounded_actuation",
   "expansions": [
@@ -68,15 +68,15 @@
       "civilization_id": "ember_clay",
       "settlement_id": "kilnreach",
       "qualifying_branch": "feed_kilnreach",
-      "decision_action": "expand_brickworks",
+      "decision_action": "claim_iron_ford",
       "intent": {
-        "kind": "industry",
+        "kind": "resource_control",
         "required_capabilities": [
-          "brickworks_extension"
+          "resource_outpost"
         ]
       },
       "designation": {
-        "id": "kilnreach_brickworks_annex_area",
+        "id": "kilnreach_iron_ford_outpost_area",
         "bounds": {
           "min": [
             -8,
@@ -99,13 +99,13 @@
         ]
       },
       "selected_candidate": {
-        "id": "brickworks_annex",
-        "structure_id": "brickworks_annex",
-        "architecture_blueprint_id": "brickworks_annex_shell",
+        "id": "brick_resource_outpost",
+        "structure_id": "resource_outpost",
+        "architecture_blueprint_id": "brick_resource_outpost_shell",
         "capabilities": [
-          "brickworks_extension"
+          "resource_outpost"
         ],
-        "work_site_template_id": "brickworks_annex_blueprint_site",
+        "work_site_template_id": "resource_outpost_blueprint_site",
         "requires_civilization_capabilities": [
           "kiln_firing",
           "fired_brick",
