@@ -8,6 +8,7 @@ const taskFile = path.join(stateDir, 'task.json')
 const resultFile = path.join(stateDir, 'result.json')
 const completedFile = path.join(stateDir, 'completed.json')
 const readyFile = path.join(stateDir, 'service-ready.json')
+const witnessFile = path.join(stateDir, 'visual-witness.json')
 const host = process.env.MC_HOST || 'minecraft'
 const port = Number(process.env.MC_PORT || '25565')
 const version = process.env.MC_VERSION || '26.3'
@@ -165,8 +166,20 @@ async function executeTask (task) {
   bot.on('kicked', reason => console.log('D2B_ACTOR_KICKED ' + JSON.stringify(reason)))
   bot.on('error', err => console.log('D2B_ACTOR_ERROR ' + String(err && err.stack ? err.stack : err)))
 
+  const witness = { schema: 'supracraft.active4x-visual-witness/v0.1', operation_id: task.operation_id, samples: [] }
+  let witnessPhase = 'connecting'
+  const sampleWitness = () => {
+    if (!bot.entity || !bot.entity.position) return
+    const p = bot.entity.position
+    witness.samples.push({ t_ms: Date.now(), phase: witnessPhase, position: [p.x, p.y, p.z] })
+    if (witness.samples.length > 600) witness.samples.shift()
+    atomicWrite(witnessFile, witness)
+  }
+  const witnessTimer = setInterval(sampleWitness, 250)
+
   try {
     await waitSpawn(bot)
+    witnessPhase = 'spawned'; sampleWitness()
     await sleep(500)
 
     const sourcePos = new Vec3(...task.source_position)
@@ -174,6 +187,7 @@ async function executeTask (task) {
     const item = bot.registry.itemsByName[task.minecraft_item]
     if (!item) throw new Error('registry missing item ' + task.minecraft_item)
 
+    witnessPhase = 'to_source'; sampleWitness()
     const toSource = await walkNear(bot, sourcePos.offset(1, 0, 0))
     const source = await waitForBlock(bot, sourcePos, 'barrel')
 
@@ -183,6 +197,7 @@ async function executeTask (task) {
     }
 
     if (carried < task.amount) {
+      witnessPhase = 'source_interaction'; sampleWitness()
       const sourceContainer = await bot.openContainer(source)
       const remainingToWithdraw = task.amount - carried
       await sourceContainer.withdraw(item.id, null, remainingToWithdraw, null)
@@ -196,9 +211,11 @@ async function executeTask (task) {
       await sleep(300)
     }
 
+    witnessPhase = 'to_destination'; sampleWitness()
     const toDestination = await walkNear(bot, destinationPos.offset(-1, 0, 0))
     const destination = await waitForBlock(bot, destinationPos, 'barrel')
 
+    witnessPhase = 'destination_interaction'; sampleWitness()
     const destinationContainer = await bot.openContainer(destination)
     const destinationBefore = containerItemCount(
       destinationContainer,
@@ -245,6 +262,8 @@ async function executeTask (task) {
       )
     }
   } finally {
+    witnessPhase = 'finished'; sampleWitness()
+    clearInterval(witnessTimer)
     bot.quit('done')
   }
 }
