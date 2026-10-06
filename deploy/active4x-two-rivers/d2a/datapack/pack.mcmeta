@@ -1,0 +1,14 @@
+{
+  "pack": {
+    "pack_format": 121,
+    "min_format": [
+      121,
+      0
+    ],
+    "max_format": [
+      121,
+      0
+    ],
+    "description": "SupraCraft Two Rivers D2A staging datapack"
+  }
+}
