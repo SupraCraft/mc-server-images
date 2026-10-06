@@ -1,5 +1,6 @@
 param(
-    [switch]$KeepRunning
+    [switch]$KeepRunning,
+    [switch]$Publish
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,6 +19,9 @@ if (Get-Command py -ErrorAction SilentlyContinue) {
 $Args = @($Harness)
 if ($KeepRunning) {
     $Args += '--keep-running'
+}
+if ($Publish) {
+    $Args += '--publish'
 }
 
 Push-Location $RepoRoot
