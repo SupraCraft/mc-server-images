@@ -1,0 +1,21 @@
+services:
+  actor-adapter:
+    build:
+      context: ../../..
+      dockerfile: deploy/active4x-two-rivers/d2b/actor.Dockerfile
+    environment:
+      MC_HOST: minecraft
+      MC_PORT: "25565"
+      MC_VERSION: "26.3"
+      ACTOR_MAX_CONCURRENT: "1"
+    volumes:
+      - two_rivers_actor:/actor-state
+    depends_on:
+      minecraft:
+        condition: service_healthy
+      director:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  two_rivers_actor:
