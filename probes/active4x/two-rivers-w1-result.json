@@ -1,0 +1,257 @@
+{
+  "baseline": {
+    "contracts": {
+      "contract-001": {
+        "cargo_ids": [
+          "contract-001.cargo01",
+          "contract-001.cargo02"
+        ],
+        "contract_id": "contract-001",
+        "created_at": 2,
+        "fulfilled_at": 5,
+        "parties": [
+          "ember_clay",
+          "stone_crown"
+        ],
+        "schema": "supracraft.obligation-contract/v0.1",
+        "status": "fulfilled",
+        "terms": [
+          {
+            "amount": 4,
+            "from": "stoneford",
+            "resource": "grain",
+            "to": "kilnreach"
+          },
+          {
+            "amount": 2,
+            "from": "kilnreach",
+            "resource": "bricks",
+            "to": "stoneford"
+          }
+        ]
+      },
+      "contract-002": {
+        "cargo_ids": [
+          "contract-002.cargo03",
+          "contract-002.cargo04"
+        ],
+        "contract_id": "contract-002",
+        "created_at": 8,
+        "fulfilled_at": 11,
+        "parties": [
+          "ember_clay",
+          "stone_crown"
+        ],
+        "schema": "supracraft.obligation-contract/v0.1",
+        "status": "fulfilled",
+        "terms": [
+          {
+            "amount": 4,
+            "from": "stoneford",
+            "resource": "grain",
+            "to": "kilnreach"
+          },
+          {
+            "amount": 2,
+            "from": "kilnreach",
+            "resource": "bricks",
+            "to": "stoneford"
+          }
+        ]
+      },
+      "contract-003": {
+        "cargo_ids": [
+          "contract-003.cargo05",
+          "contract-003.cargo06"
+        ],
+        "contract_id": "contract-003",
+        "created_at": 14,
+        "fulfilled_at": 17,
+        "parties": [
+          "ember_clay",
+          "stone_crown"
+        ],
+        "schema": "supracraft.obligation-contract/v0.1",
+        "status": "fulfilled",
+        "terms": [
+          {
+            "amount": 4,
+            "from": "stoneford",
+            "resource": "grain",
+            "to": "kilnreach"
+          },
+          {
+            "amount": 2,
+            "from": "kilnreach",
+            "resource": "bricks",
+            "to": "stoneford"
+          }
+        ]
+      },
+      "contract-004": {
+        "cargo_ids": [
+          "contract-004.cargo07",
+          "contract-004.cargo08"
+        ],
+        "contract_id": "contract-004",
+        "created_at": 20,
+        "fulfilled_at": 23,
+        "parties": [
+          "ember_clay",
+          "stone_crown"
+        ],
+        "schema": "supracraft.obligation-contract/v0.1",
+        "status": "fulfilled",
+        "terms": [
+          {
+            "amount": 4,
+            "from": "stoneford",
+            "resource": "grain",
+            "to": "kilnreach"
+          },
+          {
+            "amount": 2,
+            "from": "kilnreach",
+            "resource": "bricks",
+            "to": "stoneford"
+          }
+        ]
+      }
+    },
+    "first_decisions": {
+      "kilnreach": "seek_food_trade",
+      "stoneford": "claim_iron_ford"
+    }
+  },
+  "candidate_primitive": "Obligation/Contract",
+  "checks": {
+    "baseline_contract_fulfilled": true,
+    "cargo_disruption_recorded": true,
+    "deterministic_replay": true,
+    "disrupted_contract_breached": true,
+    "disrupted_contract_not_fulfilled": true,
+    "later_kilnreach_secure_route": true,
+    "resource_balance": true,
+    "world_scan_false": true
+  },
+  "deployment_stage": "D0_pure_deterministic_ci",
+  "disrupted": {
+    "contracts": {
+      "contract-001": {
+        "breach_reason": "cargo_disrupted",
+        "breached_at": 3,
+        "cargo_ids": [
+          "contract-001.cargo01",
+          "contract-001.cargo02"
+        ],
+        "contract_id": "contract-001",
+        "created_at": 2,
+        "parties": [
+          "ember_clay",
+          "stone_crown"
+        ],
+        "schema": "supracraft.obligation-contract/v0.1",
+        "status": "breached",
+        "terms": [
+          {
+            "amount": 4,
+            "from": "stoneford",
+            "resource": "grain",
+            "to": "kilnreach"
+          },
+          {
+            "amount": 2,
+            "from": "kilnreach",
+            "resource": "bricks",
+            "to": "stoneford"
+          }
+        ]
+      },
+      "contract-002": {
+        "cargo_ids": [
+          "contract-002.cargo03",
+          "contract-002.cargo04"
+        ],
+        "contract_id": "contract-002",
+        "created_at": 14,
+        "fulfilled_at": 17,
+        "parties": [
+          "ember_clay",
+          "stone_crown"
+        ],
+        "schema": "supracraft.obligation-contract/v0.1",
+        "status": "fulfilled",
+        "terms": [
+          {
+            "amount": 4,
+            "from": "stoneford",
+            "resource": "grain",
+            "to": "kilnreach"
+          },
+          {
+            "amount": 2,
+            "from": "kilnreach",
+            "resource": "bricks",
+            "to": "stoneford"
+          }
+        ]
+      },
+      "contract-003": {
+        "cargo_ids": [
+          "contract-003.cargo05",
+          "contract-003.cargo06"
+        ],
+        "contract_id": "contract-003",
+        "created_at": 20,
+        "fulfilled_at": 23,
+        "parties": [
+          "ember_clay",
+          "stone_crown"
+        ],
+        "schema": "supracraft.obligation-contract/v0.1",
+        "status": "fulfilled",
+        "terms": [
+          {
+            "amount": 4,
+            "from": "stoneford",
+            "resource": "grain",
+            "to": "kilnreach"
+          },
+          {
+            "amount": 2,
+            "from": "kilnreach",
+            "resource": "bricks",
+            "to": "stoneford"
+          }
+        ]
+      }
+    },
+    "first_decisions": {
+      "kilnreach": "seek_food_trade",
+      "stoneford": "claim_iron_ford"
+    },
+    "kilnreach_decisions": [
+      "seek_food_trade",
+      "secure_route",
+      "seek_food_trade",
+      "seek_food_trade"
+    ],
+    "lost_sink": {
+      "grain": 4
+    },
+    "relation": {
+      "ember_clay|stone_crown": {
+        "a": "stone_crown",
+        "b": "ember_clay",
+        "hostility": false,
+        "trade_access": true,
+        "trust": 7
+      }
+    }
+  },
+  "result": "PASS",
+  "scenario_id": "two_rivers_v0_1",
+  "schema": "supracraft.active4x-two-rivers-w1-trade-rdte/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "158a626752d14cbcb09e984111f87259ef315206"
+}
