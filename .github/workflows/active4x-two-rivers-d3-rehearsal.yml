@@ -1,0 +1,66 @@
+name: Active 4X Two Rivers D3 Rehearsal
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/active4x-two-rivers-d3-rehearsal.yml'
+      - 'deploy/active4x-two-rivers/d2a/**'
+      - 'deploy/active4x-two-rivers/d2b/**'
+      - 'deploy/active4x-two-rivers/d3/**'
+      - 'tools/probe_active4x_two_rivers_d3_rehearsal.sh'
+      - 'tools/active4x_persistence_w5.py'
+      - 'tools/install_experimental_prismarine_26_3.sh'
+      - 'tools/apply_mineflayer_tick_end_26_3.py'
+      - 'probes/mineflayer-runtime/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: active4x-two-rivers-d3-rehearsal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  two-rivers-d3-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Exercise full D3 path without claiming human HIL
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/probe_active4x_two_rivers_d3_rehearsal.sh             probes/active4x/two-rivers-d3-rehearsal-result.json
+
+      - name: Publish compact receipt
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/active4x/two-rivers-d3-rehearsal-result.json ]]; then
+            {
+              echo '## Two Rivers D3 automated rehearsal'
+              echo
+              echo '~~~json'
+              cat probes/active4x/two-rivers-d3-rehearsal-result.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain compact evidence
+        if: always() && github.event_name == 'push' && github.ref_name == 'feat/named-place-visual-qualification-v1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f probes/active4x/two-rivers-d3-rehearsal-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/active4x/two-rivers-d3-rehearsal-result.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "probe: retain Two Rivers D3 rehearsal evidence"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
