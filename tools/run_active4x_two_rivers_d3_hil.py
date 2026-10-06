@@ -263,7 +263,7 @@ def main() -> int:
         }
         compose.run(
             "exec", "-T", "actor-adapter", "sh", "-c",
-            "cat > /actor-state/task.json",
+            "cat > /actor-state/task.json.tmp && mv /actor-state/task.json.tmp /actor-state/task.json",
             input_text=json.dumps(task) + "\n",
         )
 
