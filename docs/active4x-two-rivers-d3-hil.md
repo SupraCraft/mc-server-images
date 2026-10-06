@@ -45,3 +45,9 @@ On PASS, `-Publish` commits and pushes only the canonical HIL receipt
 (`probes/active4x/two-rivers-d3-hil-result.json`). It refuses to publish if the
 checkout has unrelated changes, so it will not silently sweep other work into
 the evidence commit.
+
+
+At the end, the harness asks one grouped yes/no HIL question confirming that
+the trade output, build change, obstruction/damage consequences, and caravan
+were actually visible/understandable. This is the only qualitative human
+attestation; automated receipts are not used as a substitute for legibility.
