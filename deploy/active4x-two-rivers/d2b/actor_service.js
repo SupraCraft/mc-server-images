@@ -55,6 +55,23 @@ async function waitSpawn (bot, timeoutMs = 30000) {
   })
 }
 
+async function waitForBlock (bot, pos, expectedName, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs
+  let lastName = null
+  while (Date.now() < deadline) {
+    const block = bot.blockAt(pos)
+    if (block) {
+      lastName = block.name
+      if (block.name === expectedName) return block
+    }
+    await sleep(100)
+  }
+  throw new Error(
+    'timed out waiting for ' + expectedName + ' at ' + pos.toString() +
+    '; last=' + String(lastName)
+  )
+}
+
 async function walkNear (bot, target, stopDistance = 1.35, timeoutMs = 30000) {
   const started = bot.entity.position.clone()
   const deadline = Date.now() + timeoutMs
@@ -108,8 +125,7 @@ async function executeTask (task) {
     if (!item) throw new Error('registry missing item ' + task.minecraft_item)
 
     const toSource = await walkNear(bot, sourcePos.offset(1, 0, 0))
-    const source = bot.blockAt(sourcePos)
-    if (!source || source.name !== 'barrel') throw new Error('source barrel not visible')
+    const source = await waitForBlock(bot, sourcePos, 'barrel')
 
     const sourceContainer = await bot.openContainer(source)
     await sourceContainer.withdraw(item.id, null, task.amount, null)
@@ -124,10 +140,7 @@ async function executeTask (task) {
     }
 
     const toDestination = await walkNear(bot, destinationPos.offset(-1, 0, 0))
-    const destination = bot.blockAt(destinationPos)
-    if (!destination || destination.name !== 'barrel') {
-      throw new Error('destination barrel not visible')
-    }
+    const destination = await waitForBlock(bot, destinationPos, 'barrel')
 
     const destinationContainer = await bot.openContainer(destination)
     await destinationContainer.deposit(item.id, null, task.amount, null)
