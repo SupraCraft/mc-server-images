@@ -35,6 +35,25 @@ jobs:
           set -euo pipefail
           bash tools/probe_active4x_two_rivers_d2b.sh             probes/active4x/two-rivers-d2b-result.json
 
+      - name: Collect non-authoritative runtime witness
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p artifacts/active4x
+          cid="$(docker compose -p supracraft_two_rivers_d2b_ci -f deploy/active4x-two-rivers/d2a/compose.yaml -f deploy/active4x-two-rivers/d2b/compose.d2b.yaml ps -q actor-adapter 2>/dev/null || true)"
+          if [[ -n "$cid" ]]; then
+            docker cp "$cid:/actor-state/visual-witness.json" artifacts/active4x/two-rivers-d2b-visual-witness.json 2>/dev/null || true
+          fi
+
+      - name: Upload runtime witness artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: two-rivers-d2b-runtime-witness
+          path: artifacts/active4x/two-rivers-d2b-visual-witness.json
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Publish compact receipt
         if: always()
         shell: bash
