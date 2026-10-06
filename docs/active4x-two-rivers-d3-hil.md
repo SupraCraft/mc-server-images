@@ -1,0 +1,35 @@
+# Two Rivers D3 — stock-client HIL
+
+This is the first gate that intentionally requires a human using the **unmodified
+Minecraft Java 26.3 client**. All setup, caravan dispatch, restart, evidence
+collection and scoring are automated.
+
+From a checkout of `SupraCraft/mc-server-images` on
+`feat/named-place-visual-qualification-v1`, run:
+
+```powershell
+py tools/run_active4x_two_rivers_d3_hil.py
+```
+
+The harness builds an isolated Docker Compose project, starts the pinned
+exact-26.3 server/director/actor stack, and tells you when to join
+`127.0.0.1:25585`.
+
+The only required human work is ordinary gameplay:
+
+1. Near spawn, move **2 wheat** from the starter barrel at x=-8 into slot 1 of
+   the trade-input barrel at x=-6. The trade output appears at x=-4.
+2. Move **4 bricks** from the starter barrel into slot 1 of the build-supply
+   barrel at x=0.
+3. Break the red-concrete obstruction marker at x=2,z=16.
+4. Break the cobblestone damage marker at x=6,z=16.
+5. Stay nearby long enough to observe the autonomous caravan.
+6. When the game tells you phase 1 is complete, disconnect. The harness restarts
+   the server. Reconnect when the terminal tells you to.
+
+No operator/admin Minecraft commands, evidence copy/paste, or manual scoring are
+required. The harness writes
+`probes/active4x/two-rivers-d3-hil-result.local.json`.
+
+The optional two-simultaneous-human rep is deliberately not required for first
+D3 promotion.
