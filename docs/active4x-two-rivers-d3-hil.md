@@ -33,3 +33,15 @@ required. The harness writes
 
 The optional two-simultaneous-human rep is deliberately not required for first
 D3 promotion.
+
+
+For the lowest-toil evidence path on a clean feature-branch checkout, use:
+
+```powershell
+.\tools\Start-TwoRiversD3Hil.ps1 -Publish
+```
+
+On PASS, `-Publish` commits and pushes only the canonical HIL receipt
+(`probes/active4x/two-rivers-d3-hil-result.json`). It refuses to publish if the
+checkout has unrelated changes, so it will not silently sweep other work into
+the evidence commit.
