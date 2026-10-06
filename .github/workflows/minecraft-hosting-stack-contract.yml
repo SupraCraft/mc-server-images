@@ -1,0 +1,28 @@
+name: Minecraft stack contract
+
+on:
+  push:
+    paths:
+      - 'spec/minecraft-hosting-stack-v1.json'
+      - 'tools/validate_minecraft_hosting_stack.py'
+      - '.github/workflows/minecraft-hosting-stack-contract.yml'
+  pull_request:
+    paths:
+      - 'spec/minecraft-hosting-stack-v1.json'
+      - 'tools/validate_minecraft_hosting_stack.py'
+      - '.github/workflows/minecraft-hosting-stack-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: python tools/validate_minecraft_hosting_stack.py
