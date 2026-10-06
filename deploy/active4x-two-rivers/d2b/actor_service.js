@@ -224,13 +224,15 @@ async function main () {
         completed_operation_ids: [...completed].sort()
       })
     } catch (err) {
+      const errorText = String(err && err.stack ? err.stack : err)
+      console.error('D2B_TASK_ERROR ' + errorText)
       atomicWrite(resultFile, {
         schema: 'supracraft.active4x-actor-result/v0.1',
         operation_id: task.operation_id,
         task_id: task.task_id,
         cargo_id: task.cargo_id,
         result: 'error',
-        error: String(err && err.stack ? err.stack : err)
+        error: errorText
       })
       await sleep(1000)
     }
