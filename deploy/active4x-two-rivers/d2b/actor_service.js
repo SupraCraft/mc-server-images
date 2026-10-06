@@ -201,14 +201,18 @@ async function executeTask (task) {
       const sourceContainer = await bot.openContainer(source)
       const remainingToWithdraw = task.amount - carried
       await sourceContainer.withdraw(item.id, null, remainingToWithdraw, null)
+      // Exact-26.3 Mineflayer does not reliably project the player inventory
+      // until the container window closes. Preserve the W3-qualified ordering:
+      // settle the transaction, close the window, then inspect inventory.
+      await sleep(500)
+      await sourceContainer.close()
+      await sleep(350)
       carried = await waitForInventoryCount(
         bot,
         task.minecraft_item,
         task.amount,
         5000
       )
-      await sourceContainer.close()
-      await sleep(300)
     }
 
     witnessPhase = 'to_destination'; sampleWitness()
@@ -222,18 +226,22 @@ async function executeTask (task) {
       task.minecraft_item
     )
     await destinationContainer.deposit(item.id, null, task.amount, null)
-    const settled = await waitForDepositSettlement(
-      bot,
+    // The container view is authoritative for the destination while the
+    // window is open; the player inventory settles after the window closes.
+    await sleep(750)
+    const destinationCount = containerItemCount(
       destinationContainer,
+      task.minecraft_item
+    )
+    await destinationContainer.close()
+    await sleep(500)
+
+    const remaining = await waitForInventoryCount(
+      bot,
       task.minecraft_item,
-      destinationBefore + task.amount,
+      0,
       5000
     )
-    const destinationCount = settled.container
-    await destinationContainer.close()
-    await sleep(400)
-
-    const remaining = settled.inventory
 
     return {
       schema: 'supracraft.active4x-actor-result/v0.1',
