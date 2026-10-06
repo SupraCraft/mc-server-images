@@ -1,0 +1,34 @@
+{
+  "schema": "supracraft.active4x-w6-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "6e61272f360dec96b06f7bf27cce50018bf54975",
+  "base_scenario_ref": "probes/active4x/two-rivers-v0.1.json",
+  "simulated_time_unit": "hour",
+  "horizons": [
+    24,
+    72
+  ],
+  "branches": [
+    "none",
+    "feed_kilnreach",
+    "supply_stoneford_bricks",
+    "sabotage_kilnreach_route"
+  ],
+  "bounds": {
+    "max_queue_high_water": 12,
+    "max_promoted_actor_demand": 4,
+    "max_open_contracts": 1,
+    "relation_trust_min": -100,
+    "relation_trust_max": 100
+  },
+  "acceptance": {
+    "accelerated_24h_72h_soak": true,
+    "no_resource_drift": true,
+    "deterministic_replay": true,
+    "bounded_queue_growth": true,
+    "no_negative_stocks": true,
+    "no_runaway_trade_war_oscillation": true,
+    "actor_pool_bounded": true,
+    "world_scan": false
+  }
+}
