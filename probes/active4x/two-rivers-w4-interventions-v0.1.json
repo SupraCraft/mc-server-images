@@ -1,0 +1,72 @@
+{
+  "schema": "supracraft.active4x-w4-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "base_scenario_ref": "probes/active4x/two-rivers-v0.1.json",
+  "cases": [
+    {
+      "id": "trade",
+      "events": []
+    },
+    {
+      "id": "help",
+      "events": [
+        {
+          "time": 1,
+          "kind": "player_transfer",
+          "resource": "grain",
+          "amount": 6,
+          "to_settlement": "kilnreach"
+        }
+      ]
+    },
+    {
+      "id": "withhold",
+      "events": [
+        {
+          "time": 1,
+          "kind": "player_withhold",
+          "settlement_id": "kilnreach",
+          "resource": "grain"
+        }
+      ]
+    },
+    {
+      "id": "intercept",
+      "events": [
+        {
+          "time": 3,
+          "kind": "disrupt_first_cargo",
+          "dest_settlement": "kilnreach",
+          "resource": "grain",
+          "trust_delta": -4
+        }
+      ]
+    },
+    {
+      "id": "damage",
+      "events": [
+        {
+          "time": 1,
+          "kind": "player_damage",
+          "settlement_id": "kilnreach",
+          "target": "trade_route",
+          "severity": 1
+        }
+      ]
+    }
+  ],
+  "acceptance": {
+    "surfaces": [
+      "trade",
+      "help",
+      "withhold",
+      "intercept",
+      "damage"
+    ],
+    "minimum_distinct_downstream_decision_signatures": 3,
+    "no_branch_specific_story_scripts": true,
+    "resource_balance": true,
+    "deterministic_replay": true,
+    "world_scan": false
+  }
+}
