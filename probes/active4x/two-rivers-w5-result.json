@@ -1,0 +1,82 @@
+{
+  "after_delivery_snapshot": {
+    "applied": [
+      "deliver:contract-001.cargo01"
+    ],
+    "operation_log": [
+      {
+        "from_revision": 0,
+        "operation_id": "deliver:contract-001.cargo01",
+        "state_digest": "433a15232f55b20485f8d471a1e4e99ed7cab301f5e066c2529cfa1e101ab85b",
+        "to_revision": 1
+      }
+    ],
+    "revision": 1,
+    "snapshot_digest": "b36589fe9a1d229e0088a95d8b06893ccf88b92fb8f276f60629429772dc1d33",
+    "state": {
+      "cargo": {
+        "contract-001.cargo01": {
+          "amount": 4,
+          "destination": "kilnreach",
+          "resource": "grain",
+          "source": "stoneford",
+          "status": "delivered"
+        }
+      },
+      "history": [
+        {
+          "amount": 4,
+          "cargo_id": "contract-001.cargo01",
+          "destination": "kilnreach",
+          "kind": "cargo_delivered",
+          "resource": "grain"
+        }
+      ],
+      "settlements": {
+        "kilnreach": {
+          "grain": 6
+        },
+        "stoneford": {
+          "grain": 12
+        }
+      }
+    }
+  },
+  "checks": {
+    "duplicate_operation_rejected": true,
+    "monotonic_revision": true,
+    "resource_conservation": true,
+    "restart_no_duplicate_delivery": true,
+    "snapshot_integrity_checked": true,
+    "snapshot_replay_equality": true,
+    "stale_proposal_rejected": true,
+    "world_scan_false": true
+  },
+  "delivery_commit": {
+    "accepted": true,
+    "operation_id": "deliver:contract-001.cargo01",
+    "revision": 1,
+    "state_digest": "433a15232f55b20485f8d471a1e4e99ed7cab301f5e066c2529cfa1e101ab85b"
+  },
+  "deployment_stage": "D0_pure_deterministic_ci",
+  "duplicate_retry_result": {
+    "accepted": false,
+    "operation_id": "deliver:contract-001.cargo01",
+    "reason": "duplicate_operation",
+    "revision": 1
+  },
+  "post_restart_revision": 2,
+  "replay_snapshot_digest": "b36589fe9a1d229e0088a95d8b06893ccf88b92fb8f276f60629429772dc1d33",
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-w5-rdte/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "b744cda25ad021d019757a0d9601a81aa650bba5",
+  "stale_result": {
+    "accepted": false,
+    "expected_revision": 0,
+    "operation_id": "stale:new-op",
+    "reason": "stale_revision",
+    "revision": 1
+  },
+  "world_scan": false
+}
