@@ -132,8 +132,8 @@ task_json='{
   "amount":4,
   "source":"stoneford",
   "destination":"kilnreach",
-  "source_position":[-10,-60,0],
-  "destination_position":[10,-60,0],
+  "source_position":[-10,70,0],
+  "destination_position":[10,70,0],
   "username":"TwoRiversD2B",
   "minecraft_version":"26.3"
 }'
