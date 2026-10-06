@@ -8,7 +8,7 @@ const host = process.env.MC_HOST || 'minecraft'
 const port = Number(process.env.MC_PORT || '25565')
 const version = process.env.MC_VERSION || '26.3'
 const mode = process.env.HIL_MODE || 'interact'
-const username = process.env.HIL_USER || 'TwoRiversHilProbe'
+const username = process.env.HIL_USER || 'TwoRiversHIL'
 const caravanUser = process.env.CARAVAN_USER || 'TwoRiversD2B'
 
 fs.mkdirSync(stateDir, { recursive: true })
