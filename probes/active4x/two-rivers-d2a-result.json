@@ -1,0 +1,68 @@
+{
+  "checks": {
+    "actor_pool_deferred_to_d2b": true,
+    "clean_shutdown_restart": true,
+    "datapack_loaded": true,
+    "director_revision_survives_restart_and_recreate": true,
+    "duplicate_director_operation_rejected": true,
+    "exact_26_3_server_healthy": true,
+    "loopback_only_game_port": true,
+    "no_published_admin_port": true,
+    "world_scan_false": true,
+    "world_volume_survives_restart_and_recreate": true
+  },
+  "deployment_stage": "D2_persistent_staging_stack_lifecycle",
+  "director": {
+    "after_recreate": {
+      "applied": [
+        "d2a-bootstrap"
+      ],
+      "history": [
+        {
+          "kind": "staging_operation",
+          "operation_id": "d2a-bootstrap"
+        }
+      ],
+      "revision": 1,
+      "snapshot_digest": "6500895f98c83641f0fe44409ccd34cb917495bc77f3c293166f3388e550619d"
+    },
+    "after_restart": {
+      "applied": [
+        "d2a-bootstrap"
+      ],
+      "history": [
+        {
+          "kind": "staging_operation",
+          "operation_id": "d2a-bootstrap"
+        }
+      ],
+      "revision": 1,
+      "snapshot_digest": "6500895f98c83641f0fe44409ccd34cb917495bc77f3c293166f3388e550619d"
+    },
+    "duplicate_retry": {
+      "accepted": false,
+      "history_count": 1,
+      "operation_id": "d2a-bootstrap",
+      "reason": "duplicate_operation",
+      "revision": 1,
+      "snapshot_digest": "6500895f98c83641f0fe44409ccd34cb917495bc77f3c293166f3388e550619d"
+    },
+    "first_apply": {
+      "accepted": true,
+      "history_count": 1,
+      "operation_id": "d2a-bootstrap",
+      "revision": 1,
+      "snapshot_digest": "6500895f98c83641f0fe44409ccd34cb917495bc77f3c293166f3388e550619d",
+      "state_digest": "1b626f8f669a6f872274130193e70176b8df6adcdc6731f1fb902365f9682892"
+    }
+  },
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "published_game_port": "127.0.0.1:25585",
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-d2a-rdte/v0.1",
+  "world_scan": false,
+  "world_sentinel": "staging-world-ok"
+}
