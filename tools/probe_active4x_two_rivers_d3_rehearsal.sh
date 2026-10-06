@@ -146,7 +146,7 @@ task_json='{
   "username":"TwoRiversD2B",
   "minecraft_version":"26.3"
 }'
-printf '%s\n' "$task_json" | compose exec -T actor-adapter sh -c 'cat > /actor-state/task.json'
+printf '%s\n' "$task_json" | compose exec -T actor-adapter sh -c 'cat > /actor-state/task.json.tmp && mv /actor-state/task.json.tmp /actor-state/task.json'
 compose exec -T hil-probe sh -c 'touch /hil-state/go'
 
 hil_cid="$(compose ps -q hil-probe)"
