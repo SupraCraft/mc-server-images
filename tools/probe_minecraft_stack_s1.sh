@@ -2,14 +2,12 @@
 set -euo pipefail
 work="${RUNNER_TEMP:-/tmp}/mc-stack-s1"
 rm -rf "$work"; mkdir -p "$work"; cd "$work"
-git clone https://github.com/SupraCraft/VanillaCord.git vanillacord
-cd vanillacord
-git checkout ae95c0e64c4b867a60909b71bd2eb8d17051a5e5
-./mvnw -B verify
-jar="$(find artifacts target -type f -name 'supracraft-vanillacord-*.jar' 2>/dev/null | head -1)"
-test -n "$jar"
+vc_url="https://github.com/SupraCraft/VanillaCord/releases/download/v2.9.0/supracraft-vanillacord-2.9.0.jar"
+vc_sha="24e850a261dbf108e2f7ac412c34651ffae753543665ec47d5e40ff9c8981719"
+curl -fsSL "$vc_url" -o vanillacord.jar
+printf '%s  %s\n' "$vc_sha" vanillacord.jar | sha256sum -c -
 mkdir -p "$work/server"
-java -jar "$jar" 26.3
+java -jar "$work/vanillacord.jar" 26.3
 patched="$(find out -type f -name '26.3.jar' | head -1)"
 test -s "$patched"
 cp "$patched" "$work/server/server.jar"
