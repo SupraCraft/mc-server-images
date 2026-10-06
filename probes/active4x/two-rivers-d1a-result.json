@@ -1,0 +1,29 @@
+{
+  "checks": {
+    "operation_journal_survives_restart": true,
+    "protocol_777": true,
+    "read_only_restart_does_not_duplicate_journal": true,
+    "world_local_storage_survives_restart": true,
+    "world_scan_false": true
+  },
+  "deployment_stage": "D1_exact_26_3_world_local_persistence",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3"
+  },
+  "official_server_verified": true,
+  "oracles": {
+    "revision_1_survived_restart": true,
+    "revision_1_written": true,
+    "revision_2_survived_read_only_restart": true,
+    "revision_2_written": true
+  },
+  "restart_cycles": 3,
+  "result": "PASS",
+  "schema": "supracraft.active4x-two-rivers-d1a-rdte/v0.1",
+  "server_error_count": 0,
+  "status_protocol": 777,
+  "storage_files": [],
+  "storage_id": "supracraft:active4x",
+  "world_scan": false
+}
