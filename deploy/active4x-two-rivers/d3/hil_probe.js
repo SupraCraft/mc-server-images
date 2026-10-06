@@ -61,6 +61,20 @@ async function waitForBlock (bot, pos, expectedName, timeoutMs = 10000) {
   throw new Error(`timeout waiting for ${expectedName} at ${pos}; last=${last}`)
 }
 
+async function waitForBlockName (bot, pos, expectedName, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs
+  let last = null
+  while (Date.now() < deadline) {
+    const block = bot.blockAt(pos)
+    last = block ? block.name : null
+    if (last === expectedName) return last
+    await sleep(100)
+  }
+  throw new Error(
+    `block settlement timeout at ${pos}; expected=${expectedName}; last=${last}`
+  )
+}
+
 async function walkNear (bot, target, stopDistance = 1.35, timeoutMs = 30000) {
   const started = bot.entity.position.clone()
   const deadline = Date.now() + timeoutMs
@@ -198,13 +212,13 @@ async function main () {
 
     movement.total += await walkNear(bot, obstructPos.offset(0, 0, -1))
     const obstruction = await waitForBlock(bot, obstructPos, 'red_concrete')
-    await bot.dig(obstruction)
-    await sleep(500)
+    await bot.dig(obstruction, true, 'raycast')
+    await waitForBlockName(bot, obstructPos, 'air', 5000)
 
     movement.total += await walkNear(bot, damagePos.offset(0, 0, -1))
     const damage = await waitForBlock(bot, damagePos, 'cobblestone')
-    await bot.dig(damage)
-    await sleep(750)
+    await bot.dig(damage, true, 'raycast')
+    await waitForBlockName(bot, damagePos, 'air', 5000)
 
     const outputDeadline = Date.now() + 10000
     let tradeOutputCount = 0
