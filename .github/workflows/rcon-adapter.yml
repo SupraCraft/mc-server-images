@@ -8,3 +8,4 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: python3 tools/probe_rcon_packet.py
+      - run: python3 tools/probe_rcon_mock.py
