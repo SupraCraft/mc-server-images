@@ -1,0 +1,23 @@
+services:
+  hil-probe:
+    build:
+      context: ../../..
+      dockerfile: deploy/active4x-two-rivers/d2b/actor.Dockerfile
+    environment:
+      MC_HOST: minecraft
+      MC_PORT: "25565"
+      MC_VERSION: "26.3"
+      HIL_MODE: "interact"
+      HIL_USER: "TwoRiversHilProbe"
+      CARAVAN_USER: "TwoRiversD2B"
+    volumes:
+      - ../d3/hil_probe.js:/hil/hil_probe.js:ro
+      - two_rivers_hil_probe:/hil-state
+    command: ["node", "/hil/hil_probe.js"]
+    depends_on:
+      minecraft:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  two_rivers_hil_probe:
