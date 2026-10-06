@@ -78,8 +78,16 @@ wait_file director /state/service-ready.json 45
 wait_file actor-adapter /actor-state/service-ready.json 90
 
 minecraft_logs="$(compose logs minecraft)"
-grep -q 'Starting minecraft server version 26.3' <<<"$minecraft_logs"
-grep -q 'SUPRACRAFT_D2B_FIXTURE_READY' <<<"$minecraft_logs"
+if ! grep -q 'Starting minecraft server version 26.3' <<<"$minecraft_logs"; then
+  echo "exact 26.3 startup marker missing" >&2
+  printf '%s\n' "$minecraft_logs" >&2
+  exit 1
+fi
+if ! grep -q 'SUPRACRAFT_D2B_FIXTURE_READY' <<<"$minecraft_logs"; then
+  echo "D2B fixture marker missing" >&2
+  printf '%s\n' "$minecraft_logs" >&2
+  exit 1
+fi
 
 operation_id="actor-task:contract-001.cargo01"
 director_apply="$(compose exec -T director python /app/director_ctl.py apply --operation-id "$operation_id")"
