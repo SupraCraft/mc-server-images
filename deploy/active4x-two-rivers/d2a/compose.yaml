@@ -1,0 +1,37 @@
+name: supracraft-two-rivers-d2a
+
+services:
+  minecraft:
+    build:
+      context: ../../..
+      dockerfile: deploy/active4x-two-rivers/d2a/minecraft.Dockerfile
+    environment:
+      MC_VERSION: "26.3"
+      MC_SERVER_URL: "https://piston-data.mojang.com/v1/objects/33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c/server.jar"
+      MC_SERVER_SHA256: "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64"
+    volumes:
+      - two_rivers_world:/data
+    ports:
+      - "127.0.0.1:25585:25565"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/25565'"]
+      interval: 2s
+      timeout: 1s
+      retries: 45
+      start_period: 5s
+    restart: unless-stopped
+
+  director:
+    build:
+      context: ../../..
+      dockerfile: deploy/active4x-two-rivers/d2a/director.Dockerfile
+    volumes:
+      - two_rivers_director:/state
+    depends_on:
+      minecraft:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  two_rivers_world:
+  two_rivers_director:
