@@ -8,7 +8,7 @@ services:
       MC_PORT: "25565"
       MC_VERSION: "26.3"
       HIL_MODE: "interact"
-      HIL_USER: "TwoRiversHilProbe"
+      HIL_USER: "TwoRiversHIL"
       CARAVAN_USER: "TwoRiversD2B"
     volumes:
       - ../d3/hil_probe.js:/hil/hil_probe.js:ro
