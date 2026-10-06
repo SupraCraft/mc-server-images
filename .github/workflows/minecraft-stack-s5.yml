@@ -1,0 +1,17 @@
+name: Minecraft stack S5 world-agent
+on:
+  push:
+    paths: ['tools/minecraft_world_agent.py','tools/probe_minecraft_stack_s5.sh','.github/workflows/minecraft-stack-s5.yml']
+  pull_request:
+    paths: ['tools/minecraft_world_agent.py','tools/probe_minecraft_stack_s5.sh','.github/workflows/minecraft-stack-s5.yml']
+permissions:
+  contents: read
+jobs:
+  s5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.13'}
+      - run: bash tools/probe_minecraft_stack_s5.sh
