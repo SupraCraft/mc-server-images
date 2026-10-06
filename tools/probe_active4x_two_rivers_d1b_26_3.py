@@ -126,6 +126,8 @@ def main() -> int:
                 {
                     "pack": {
                         "pack_format": pack_version,
+                        "min_format": [pack_version, 0],
+                        "max_format": [pack_version, 0],
                         "description": "SupraCraft D1B exact 26.3 scheduled callback probe",
                     }
                 },
@@ -137,6 +139,7 @@ def main() -> int:
         (function_dir / "callback.mcfunction").write_text(
             "\n".join([
                 f'data modify storage {storage_id} callback_state set value {{fired:1}}',
+                f'data modify storage {storage_id} callback_count set value 1',
                 f'data modify storage {storage_id} callbacks append value {{id:"d1b_callback",fired:1}}',
                 "say SUPRACRAFT_D1B_CALLBACK_FIRED",
                 "",
@@ -155,6 +158,7 @@ def main() -> int:
             send(p1, "reload")
             time.sleep(0.7)
             send(p1, f"data modify storage {storage_id} callback_state set value {{fired:0}}")
+            send(p1, f"data modify storage {storage_id} callback_count set value 0")
             send(p1, f"data modify storage {storage_id} callbacks set value []")
             send(p1, f"schedule function {function_id} {delay}t replace")
             send(
@@ -177,11 +181,16 @@ def main() -> int:
         try:
             statuses.append(wait_server(p2, protocol))
             time.sleep(max(7.0, delay / 20.0 + 2.0))
+            send(p2, "scoreboard objectives add supracraft_d1b dummy")
+            send(p2, "scoreboard players set callback_count supracraft_d1b 0")
             send(
                 p2,
-                f'execute if data storage {storage_id} callback_state{{fired:1}} '
-                f'if data storage {storage_id} callbacks[0]{{id:"d1b_callback",fired:1}} '
-                f'unless data storage {storage_id} callbacks[1] '
+                f"execute store result score callback_count supracraft_d1b "
+                f"run data get storage {storage_id} callback_count 1",
+            )
+            send(
+                p2,
+                "execute if score callback_count supracraft_d1b matches 1 "
                 "run say SUPRACRAFT_D1B_CALLBACK_STORAGE_UPDATED_ONCE",
             )
             time.sleep(0.5)
@@ -199,11 +208,16 @@ def main() -> int:
         try:
             statuses.append(wait_server(p3, protocol))
             time.sleep(1.0)
+            send(p3, "scoreboard objectives add supracraft_d1b dummy")
+            send(p3, "scoreboard players set callback_count supracraft_d1b 0")
             send(
                 p3,
-                f'execute if data storage {storage_id} callback_state{{fired:1}} '
-                f'if data storage {storage_id} callbacks[0]{{id:"d1b_callback",fired:1}} '
-                f'unless data storage {storage_id} callbacks[1] '
+                f"execute store result score callback_count supracraft_d1b "
+                f"run data get storage {storage_id} callback_count 1",
+            )
+            send(
+                p3,
+                "execute if score callback_count supracraft_d1b matches 1 "
                 "run say SUPRACRAFT_D1B_CALLBACK_SURVIVED_SECOND_RESTART",
             )
             time.sleep(0.5)
@@ -222,7 +236,10 @@ def main() -> int:
             "callback_storage_updated_once": "SUPRACRAFT_D1B_CALLBACK_STORAGE_UPDATED_ONCE",
             "callback_survived_second_restart": "SUPRACRAFT_D1B_CALLBACK_SURVIVED_SECOND_RESTART",
         }
-        observed = {key: token in combined for key, token in markers.items()}
+        observed = {
+            key: f"[Server] {token}" in combined
+            for key, token in markers.items()
+        }
         errors = [
             line for line in combined.splitlines()
             if "/ERROR]:" in line or "/ERROR] " in line
@@ -259,7 +276,7 @@ def main() -> int:
                 "scheduled_callback_survives_restart": observed["callback_fired"],
                 "callback_updates_world_local_storage": observed["callback_storage_updated_once"],
                 "callback_executes_exactly_once": (
-                    combined.count("SUPRACRAFT_D1B_CALLBACK_FIRED") == 1
+                    combined.count("[Server] SUPRACRAFT_D1B_CALLBACK_FIRED") == 1
                     and observed["callback_storage_updated_once"]
                 ),
                 "callback_state_survives_second_restart": observed["callback_survived_second_restart"],
