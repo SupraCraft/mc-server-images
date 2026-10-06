@@ -1,0 +1,41 @@
+{
+  "schema": "supracraft.active4x-w5-public-projection/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "b744cda25ad021d019757a0d9601a81aa650bba5",
+  "case": {
+    "initial_state": {
+      "settlements": {
+        "stoneford": {
+          "grain": 12
+        },
+        "kilnreach": {
+          "grain": 2
+        }
+      },
+      "cargo": {
+        "contract-001.cargo01": {
+          "source": "stoneford",
+          "destination": "kilnreach",
+          "resource": "grain",
+          "amount": 4,
+          "status": "in_transit"
+        }
+      },
+      "history": []
+    },
+    "delivery_operation": {
+      "operation_id": "deliver:contract-001.cargo01",
+      "expected_revision": 0,
+      "cargo_id": "contract-001.cargo01"
+    }
+  },
+  "acceptance": {
+    "monotonic_revision": true,
+    "stale_proposal_rejected": true,
+    "duplicate_operation_rejected": true,
+    "restart_no_duplicate_delivery": true,
+    "snapshot_integrity_checked": true,
+    "replay_from_initial_and_operation_log_equals_snapshot": true,
+    "world_scan": false
+  }
+}
