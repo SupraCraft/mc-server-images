@@ -1,0 +1,118 @@
+{
+  "branches": {
+    "feed_kilnreach": {
+      "balance_passed": true,
+      "contract_count": 2,
+      "decision_count": 8,
+      "deterministic_digest": "a9fbb9ae63f5a6510550ef12f9fd0287ec3a3163246f63891630deb5147aaf51",
+      "event_count": 43,
+      "final_capabilities": {
+        "kilnreach": [
+          "brick_firing"
+        ],
+        "stoneford": [
+          "grain_farming"
+        ]
+      },
+      "first_decisions": {
+        "kilnreach": "claim_iron_ford",
+        "stoneford": "idle"
+      },
+      "fulfilled_contract_count": 2,
+      "iron_ford_claimed_by": "ember_clay"
+    },
+    "none": {
+      "balance_passed": true,
+      "contract_count": 4,
+      "decision_count": 8,
+      "deterministic_digest": "2880c6874462f8c9989685c1e167dc690ca37482f2f10f19d4820e575459403a",
+      "event_count": 50,
+      "final_capabilities": {
+        "kilnreach": [
+          "brick_firing"
+        ],
+        "stoneford": [
+          "grain_farming",
+          "grain_storage"
+        ]
+      },
+      "first_decisions": {
+        "kilnreach": "seek_food_trade",
+        "stoneford": "claim_iron_ford"
+      },
+      "fulfilled_contract_count": 4,
+      "iron_ford_claimed_by": "stone_crown"
+    },
+    "sabotage_kilnreach_route": {
+      "balance_passed": true,
+      "contract_count": 3,
+      "decision_count": 8,
+      "deterministic_digest": "a96f91a3cebee49e26c69887502c098aa2faad6ba96714395e3d8f7883c45ac8",
+      "event_count": 47,
+      "final_capabilities": {
+        "kilnreach": [
+          "brick_firing",
+          "route_guard"
+        ],
+        "stoneford": [
+          "grain_farming",
+          "grain_storage"
+        ]
+      },
+      "first_decisions": {
+        "kilnreach": "secure_route",
+        "stoneford": "claim_iron_ford"
+      },
+      "fulfilled_contract_count": 3,
+      "iron_ford_claimed_by": "stone_crown"
+    },
+    "supply_stoneford_bricks": {
+      "balance_passed": true,
+      "contract_count": 4,
+      "decision_count": 8,
+      "deterministic_digest": "d66694e777f31441277f17b3fd29ff2db7a9f6fabe1aeffd938abefbc3a87bdd",
+      "event_count": 51,
+      "final_capabilities": {
+        "kilnreach": [
+          "brick_firing"
+        ],
+        "stoneford": [
+          "grain_farming",
+          "grain_storage"
+        ]
+      },
+      "first_decisions": {
+        "kilnreach": "seek_food_trade",
+        "stoneford": "build_granary"
+      },
+      "fulfilled_contract_count": 4,
+      "iron_ford_claimed_by": "stone_crown"
+    }
+  },
+  "candidate_primitives_exercised": [
+    "Event",
+    "DecisionReceipt",
+    "Obligation/Contract",
+    "Intent"
+  ],
+  "checks": {
+    "autonomous_progress_without_player": true,
+    "baseline_trade_contract": true,
+    "brick_aid_changes_stoneford": true,
+    "deterministic_replay": true,
+    "distinct_intervention_decisions": true,
+    "feed_changes_kilnreach": true,
+    "resource_balance": true,
+    "route_disruption_changes_kilnreach": true,
+    "world_scan_false": true
+  },
+  "deployment_stage": "D0_pure_deterministic_ci",
+  "horizon": 24,
+  "minecraft_runtime_required": false,
+  "result": "PASS",
+  "scenario_id": "two_rivers_v0_1",
+  "schema": "supracraft.active4x-two-rivers-rdte/v0.1",
+  "source_authority": "SupraCraft/mc-structure-foundry-private#17",
+  "source_checkpoint": "6dca93e68f9ab01193f5b9f4d7d15eb200381b2c",
+  "world_scan": false
+}
