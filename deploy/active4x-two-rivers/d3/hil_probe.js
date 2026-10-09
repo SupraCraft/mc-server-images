@@ -276,7 +276,8 @@ async function main () {
 
     const wheat = bot.registry.itemsByName.wheat
     const bricks = bot.registry.itemsByName.bricks
-    if (!wheat || !bricks) throw new Error('exact-26.3 registry missing HIL items')
+    const pickaxe = bot.registry.itemsByName.diamond_pickaxe
+    if (!wheat || !bricks || !pickaxe) throw new Error('exact-26.3 registry missing HIL items')
 
     const movement = { total: 0 }
     movement.total += await walkNear(bot, starterPos.offset(1, 0, 0))
@@ -285,11 +286,14 @@ async function main () {
     await starterContainer.withdraw(wheat.id, null, 2, null)
     await sleep(300)
     await starterContainer.withdraw(bricks.id, null, 4, null)
+    await starterContainer.withdraw(pickaxe.id, null, 1, null)
     await sleep(500)
     await starterContainer.close()
     await sleep(350)
     await waitInv(bot, 'wheat', 2)
     await waitInv(bot, 'bricks', 4)
+    await waitInv(bot, 'diamond_pickaxe', 1)
+    await bot.equip(bot.inventory.items().find(item => item.name === 'diamond_pickaxe'), 'hand')
 
     const caravan = await waitCaravan(bot)
 

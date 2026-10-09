@@ -6,6 +6,8 @@ setworldspawn 0 70 10
 setblock -8 70 12 minecraft:barrel
 item replace block -8 70 12 container.0 with minecraft:wheat 2
 item replace block -8 70 12 container.1 with minecraft:bricks 4
+# Bounded vanilla mining-tool diagnostic; retains original marker blocks and server oracle.
+item replace block -8 70 12 container.2 with minecraft:diamond_pickaxe 1
 setblock -6 70 12 minecraft:barrel
 setblock -4 70 12 minecraft:barrel
 setblock 0 70 12 minecraft:barrel
