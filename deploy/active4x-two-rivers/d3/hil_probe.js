@@ -112,6 +112,15 @@ async function settleOnGround (bot, timeoutMs = 5000) {
   throw new Error('ground settlement timeout before dig')
 }
 
+async function waitGameMode (bot, expected, timeoutMs = 6000) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (bot.game.gameMode === expected) return
+    await sleep(100)
+  }
+  throw new Error('D3 creative-control game-mode timeout: expected=' + expected + ', observed=' + bot.game.gameMode)
+}
+
 function invCount (bot, name) {
   return bot.inventory.items()
     .filter(item => item.name === name)
@@ -327,6 +336,7 @@ async function main () {
     const fastBreakPos = new Vec3(3, 70, 16)
     movement.total += await walkNear(bot, fastBreakPos.offset(0, 0, -1))
     const fastBreak = await waitForBlock(bot, fastBreakPos, 'glass')
+    await waitGameMode(bot, 'creative')
     await settleOnGround(bot)
     console.log('D3_FASTBREAK_ATTEMPT ' + JSON.stringify({
       wall_ms: Date.now(),
@@ -336,6 +346,7 @@ async function main () {
     }))
     await bot.dig(fastBreak, true, 'raycast')
     await waitForBlockName(bot, fastBreakPos, 'air', 5000)
+    await waitGameMode(bot, 'survival')
     movement.total += await walkNear(bot, obstructPos.offset(0, 0, -1))
     const obstruction = await waitForBlock(bot, obstructPos, 'red_concrete')
     await settleOnGround(bot)

@@ -14,6 +14,12 @@ execute if score diagnostic_clock supracraft_hil matches 400.. unless data stora
 execute if score diagnostic_clock supracraft_hil matches 400.. unless data storage supracraft:active4x hil{diagnostic_clock_400:1} run data modify storage supracraft:active4x hil.diagnostic_clock_400 set value 1
 execute if entity @a[name=TwoRiversHIL,gamemode=survival] unless data storage supracraft:active4x hil{diagnostic_server_survival:1} run say SUPRACRAFT_D3_DIAG_SERVER_SURVIVAL
 execute if entity @a[name=TwoRiversHIL,gamemode=survival] unless data storage supracraft:active4x hil{diagnostic_server_survival:1} run data modify storage supracraft:active4x hil.diagnostic_server_survival set value 1
+# Rehearsal-only diagnostic control for fixed fake player and glass; never
+# accept creative-mode block breaking as survival/HIL qualification.
+execute positioned 3 70 15 if entity @a[name=TwoRiversHIL,distance=..2,gamemode=survival] if block 3 70 16 minecraft:glass unless data storage supracraft:active4x hil{diagnostic_creative_started:1} run gamemode creative @a[name=TwoRiversHIL]
+execute positioned 3 70 15 if entity @a[name=TwoRiversHIL,distance=..2,gamemode=creative] if block 3 70 16 minecraft:glass unless data storage supracraft:active4x hil{diagnostic_creative_started:1} run data modify storage supracraft:active4x hil.diagnostic_creative_started set value 1
+execute if block 3 70 16 minecraft:air if data storage supracraft:active4x hil{diagnostic_creative_started:1} unless data storage supracraft:active4x hil{diagnostic_survival_restored:1} run gamemode survival @a[name=TwoRiversHIL]
+execute if block 3 70 16 minecraft:air if data storage supracraft:active4x hil{diagnostic_creative_started:1} unless data storage supracraft:active4x hil{diagnostic_survival_restored:1} run data modify storage supracraft:active4x hil.diagnostic_survival_restored set value 1
 scoreboard players set trade_count supracraft_hil 0
 scoreboard players set build_count supracraft_hil 0
 execute store result score trade_count supracraft_hil run data get block -6 70 12 Items[{Slot:0b}].count 1
