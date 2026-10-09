@@ -121,24 +121,76 @@ async function waitGameMode (bot, expected, timeoutMs = 6000) {
   throw new Error('D3 creative-control game-mode timeout: expected=' + expected + ', observed=' + bot.game.gameMode)
 }
 
-// D3 hypothesis only: bound the Mineflayer FINISH timer while retaining native
-// START/FINISH packet contents. The independent stock-server world marker,
-// never the client's local air prediction, is the acceptance authority.
-async function digWithBoundedServerProgressMargin (bot, block, target) {
-  const original = bot.digTime
-  const base = original(block)
-  const bound = Math.ceil(base * 1.8) + 100
-  if (!Number.isFinite(base) || base <= 0 || bound > 20000) {
-    throw new Error('D3 server-progress timing treatment outside bounded range')
+// D3-R3 read-only-progress-gated qualification experiment. The fixed-target
+// START and FINISH are the native 26.3 actions. The independent passive client
+// never predicts air; it observes official-server destruction broadcasts.
+// A byte wraps after 127: recover its unsigned representation *only* for the
+// observed non-sentinel progress sequence. 210/255 is above the recovered
+// server STOP admission floor (70%) with margin; it is not game semantics.
+async function digWithWitnessProgress (bot, witness, block, target, witnessStages) {
+  const p = block.position
+  const key = [p.x, p.y, p.z].join(',')
+  const initial = witness.blockAt(p)
+  if (!initial || initial.name !== block.name) {
+    throw new Error('D3 witness has not independently loaded exact target: ' + target)
   }
-  console.log('D3_DIG_TIME_TREATMENT ' + JSON.stringify({
-    target, base_ms: base, bound_ms: bound, ratio: 1.8
-  }))
-  bot.digTime = candidate => Math.ceil(original(candidate) * 1.8) + 100
+  await bot.lookAt(p.offset(0.5, 0.5, 0), true)
+  const eye = bot.entity.position.offset(0, bot.entity.eyeHeight, 0)
+  if (eye.distanceTo(p.offset(0.5, 0.5, 0.5)) > 5.1 || !bot.entity.onGround) {
+    throw new Error('D3 mining qualification outside fixed reach or ground')
+  }
+  witnessStages.delete(key)
+  const startMs = Date.now()
+  bot._client.write('block_dig', {
+    status: 0, location: p, face: 2, sequence: bot._nextSequence()
+  })
+  let settled = false
   try {
-    await bot.dig(block, true, 'raycast')
+    let observedHigh = 0
+    let last = null
+    const deadline = startMs + 18000
+    while (Date.now() < deadline) {
+      const current = witnessStages.get(key)
+      if (Number.isInteger(current) && current !== -1) {
+        const unsigned = current < 0 ? current + 256 : current
+        last = unsigned
+        if (unsigned >= 210 && unsigned <= 254) observedHigh++
+        else observedHigh = 0
+        if (observedHigh >= 2) break
+      }
+      // The canonical client swings while it holds its mining action.
+      bot.swingArm()
+      await sleep(120)
+    }
+    if (observedHigh < 2) {
+      throw new Error('D3 no server-progress threshold for ' + target + '; last=' + last)
+    }
+    const finishMs = Date.now()
+    console.log('D3_PROGRESS_GATED_FINISH ' + JSON.stringify({
+      target, wall_ms: finishMs, elapsed_ms: finishMs - startMs,
+      progress_unsigned: last, threshold: 210
+    }))
+    bot._client.write('block_dig', {
+      status: 2, location: p, face: 2, sequence: bot._nextSequence()
+    })
+    settled = true
+    const settleDeadline = Date.now() + 5000
+    while (Date.now() < settleDeadline) {
+      if (witness.blockAt(p)?.name === 'air') {
+        console.log('D3_WITNESS_WORLD_AIR ' + JSON.stringify({
+          target, wall_ms: Date.now(), elapsed_ms: Date.now() - startMs
+        }))
+        return
+      }
+      await sleep(100)
+    }
+    throw new Error('D3 official server did not commit air after progress FINISH for ' + target)
   } finally {
-    bot.digTime = original
+    if (!settled && bot._client.state === 'play') {
+      bot._client.write('block_dig', {
+        status: 1, location: p, face: 2, sequence: 0
+      })
+    }
   }
 }
 
@@ -470,7 +522,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(obstruction)
     }))
-    await digWithBoundedServerProgressMargin(bot, obstruction, 'obstruction')
+    await digWithWitnessProgress(bot, witness, obstruction, 'obstruction', witnessStages)
     await waitForBlockName(bot, obstructPos, 'air', 5000)
 
     movement.total += await walkNear(bot, damagePos.offset(0, 0, -1))
@@ -486,7 +538,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(damage)
     }))
-    await digWithBoundedServerProgressMargin(bot, damage, 'damage')
+    await bot.dig(damage, true, 'raycast')
     await waitForBlockName(bot, damagePos, 'air', 5000)
 
     const outputDeadline = Date.now() + 10000
