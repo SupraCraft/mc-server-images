@@ -3,6 +3,12 @@ execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data s
 execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_obstruction_near:1} run data modify storage supracraft:active4x hil.diagnostic_obstruction_near set value 1
 execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_damage_near:1} run say SUPRACRAFT_D3_DIAG_DAMAGE_NEAR
 execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_damage_near:1} run data modify storage supracraft:active4x hil.diagnostic_damage_near set value 1
+# Fixed-target official-server held-tool witnesses, only while in survival and
+# within 2 blocks of the obstruction. Never change any equipment or game rules.
+execute positioned 2 70 15 as @a[name=TwoRiversHIL,distance=..2,gamemode=survival] if items entity @s weapon.mainhand minecraft:diamond_pickaxe unless data storage supracraft:active4x hil{diagnostic_tool_present:1} run say SUPRACRAFT_D3_DIAG_SERVER_TOOL_PRESENT
+execute positioned 2 70 15 as @a[name=TwoRiversHIL,distance=..2,gamemode=survival] if items entity @s weapon.mainhand minecraft:diamond_pickaxe unless data storage supracraft:active4x hil{diagnostic_tool_present:1} run data modify storage supracraft:active4x hil.diagnostic_tool_present set value 1
+execute positioned 2 70 15 as @a[name=TwoRiversHIL,distance=..2,gamemode=survival] unless items entity @s weapon.mainhand minecraft:diamond_pickaxe unless data storage supracraft:active4x hil{diagnostic_tool_absent:1} run say SUPRACRAFT_D3_DIAG_SERVER_TOOL_ABSENT
+execute positioned 2 70 15 as @a[name=TwoRiversHIL,distance=..2,gamemode=survival] unless items entity @s weapon.mainhand minecraft:diamond_pickaxe unless data storage supracraft:active4x hil{diagnostic_tool_absent:1} run data modify storage supracraft:active4x hil.diagnostic_tool_absent set value 1
 # Independent server-world placement control; never substitutes for mining gates.
 execute if block 4 70 13 minecraft:stone unless data storage supracraft:active4x hil{diagnostic_place_done:1} run say SUPRACRAFT_D3_DIAG_PLACE_COMPLETE
 execute if block 4 70 13 minecraft:stone unless data storage supracraft:active4x hil{diagnostic_place_done:1} run data modify storage supracraft:active4x hil.diagnostic_place_done set value 1

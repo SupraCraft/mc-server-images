@@ -324,7 +324,7 @@ async function main () {
           on_ground: bot.entity.onGround
         }))
       }
-      if (name === 'block_place' && observedPlacePackets++ < 3) {
+      if (name === 'block_place' && observedPlacePackets++ < 5) {
         const loc = data.location || {}
         console.log('D3_PLACE_OUTBOUND ' + JSON.stringify({
           wall_ms: Date.now(), sequence: data.sequence, face: data.direction,
@@ -462,6 +462,8 @@ async function main () {
     await settleOnGround(bot)
     console.log('D3_DIG_ATTEMPT ' + JSON.stringify({
       target: 'obstruction',
+      held_item: bot.heldItem?.name || 'none',
+      selected_slot: bot.quickBarSlot,
       player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
       target_position: [obstructPos.x, obstructPos.y, obstructPos.z],
       on_ground: bot.entity.onGround,
@@ -476,6 +478,8 @@ async function main () {
     await settleOnGround(bot)
     console.log('D3_DIG_ATTEMPT ' + JSON.stringify({
       target: 'damage',
+      held_item: bot.heldItem?.name || 'none',
+      selected_slot: bot.quickBarSlot,
       player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
       target_position: [damagePos.x, damagePos.y, damagePos.z],
       on_ground: bot.entity.onGround,

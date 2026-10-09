@@ -73,6 +73,8 @@ names = (
     "SUPRACRAFT_D3_DIAG_SERVER_SURVIVAL",
     "SUPRACRAFT_D3_DIAG_CLOCK_200",
     "SUPRACRAFT_D3_DIAG_CLOCK_400",
+    "SUPRACRAFT_D3_DIAG_SERVER_TOOL_PRESENT",
+    "SUPRACRAFT_D3_DIAG_SERVER_TOOL_ABSENT",
 )
 markers = {name: name in log for name in names}
 # Fixed fixture fields only: no credentials, environment, or arbitrary logs.
@@ -108,7 +110,7 @@ for line in client_log.splitlines():
             continue
         if not isinstance(obj, dict):
             continue
-        allowed = ("wall_ms", "sequence", "sequenceId", "status", "face", "estimated_ms", "game_mode", "on_ground", "location", "target", "held", "stage", "type", "witness_stage", "base_ms", "bound_ms", "ratio")
+        allowed = ("wall_ms", "sequence", "sequenceId", "status", "face", "estimated_ms", "game_mode", "on_ground", "location", "target", "held", "stage", "type", "witness_stage", "base_ms", "bound_ms", "ratio", "held_item", "selected_slot")
         clean = {key: obj[key] for key in allowed if key in obj}
         kind = line.split("D3_",1)[-1].split(" ",1)[0]
         events.append({"kind": kind, "data": clean})
