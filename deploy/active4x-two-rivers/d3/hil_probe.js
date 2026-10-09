@@ -235,7 +235,7 @@ async function main () {
     // progress animation, so self-observation is not a valid negative oracle.
     // This observer never sends gameplay actions.
     witness = mineflayer.createBot({
-      host, port, username: 'TwoRiversD3Witness', version, auth: 'offline'
+      host, port, username: 'TwoRiversWit', version, auth: 'offline'
     })
     witness.on('error', err => console.log('D3_WITNESS_ERROR ' + String(err?.message || err).slice(0, 120)))
     witness.on('kicked', () => console.log('D3_WITNESS_ERROR kicked'))
