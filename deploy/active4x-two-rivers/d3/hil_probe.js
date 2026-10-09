@@ -244,8 +244,27 @@ async function main () {
       }
       return originalClientWrite(name, data, ...args)
     }
-    bot._client.on('block_changed_ack', packet => {
-      console.log('D3_DIG_SERVER_ACK ' + JSON.stringify(packet).slice(0, 400))
+    // Exact 26.3 packet schema: packet_acknowledge_player_digging, sequenceId.
+    // Bound diagnostics; acknowledgments do not imply successful block mutation.
+    let serverDigAcks = 0
+    bot._client.on('acknowledge_player_digging', packet => {
+      if (serverDigAcks++ < 12) {
+        console.log('D3_DIG_SERVER_ACK ' + JSON.stringify({
+          sequenceId: packet.sequenceId
+        }))
+      }
+    })
+    let serverDigProgress = 0
+    bot._client.on('block_break_animation', packet => {
+      const loc = packet.location || {}
+      if (((loc.x === obstructPos.x && loc.y === obstructPos.y && loc.z === obstructPos.z) ||
+           (loc.x === damagePos.x && loc.y === damagePos.y && loc.z === damagePos.z)) &&
+          serverDigProgress++ < 24) {
+        console.log('D3_DIG_SERVER_PROGRESS ' + JSON.stringify({
+          location: [loc.x, loc.y, loc.z],
+          stage: packet.destroyStage
+        }))
+      }
     })
     bot._client.on('block_change', packet => {
       const loc = packet.location || {}
