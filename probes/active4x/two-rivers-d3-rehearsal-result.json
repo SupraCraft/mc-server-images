@@ -1,8 +1,11 @@
 {
   "caravan_rendezvous": {
     "client_seen": false,
+    "match_kind": "player_entity",
     "minimum_distance": null,
-    "signal_expected": true
+    "server_copresent": true,
+    "signal_expected": true,
+    "tab_observed": true
   },
   "client_interaction": {
     "actions": {
@@ -22,7 +25,7 @@
   "client_packet_events": [
     {
       "data": {
-        "wall_ms": 1791579841836
+        "wall_ms": 1791580132327
       },
       "kind": "WITNESS_READY"
     },
@@ -36,7 +39,7 @@
           12
         ],
         "sequence": 1,
-        "wall_ms": 1791579844882
+        "wall_ms": 1791580135339
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -56,7 +59,7 @@
           12
         ],
         "sequence": 2,
-        "wall_ms": 1791579876598
+        "wall_ms": 1791580166952
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -76,7 +79,7 @@
           12
         ],
         "sequence": 3,
-        "wall_ms": 1791579879626
+        "wall_ms": 1791580170075
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -95,7 +98,7 @@
           70,
           13
         ],
-        "wall_ms": 1791579881090
+        "wall_ms": 1791580171529
       },
       "kind": "PLACE_ATTEMPT"
     },
@@ -109,7 +112,7 @@
           13
         ],
         "sequence": 4,
-        "wall_ms": 1791579881448
+        "wall_ms": 1791580171927
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -119,27 +122,27 @@
     },
     {
       "data": {
-        "sequenceId": 4
-      },
-      "kind": "DIG_SERVER_ACK"
-    },
-    {
-      "data": {
         "location": [
           4,
           70,
           13
         ],
         "type": 1,
-        "wall_ms": 1791579881484
+        "wall_ms": 1791580171980
       },
       "kind": "WITNESS_BLOCK_UPDATE"
     },
     {
       "data": {
+        "sequenceId": 4
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
         "estimated_ms": 0,
         "game_mode": "creative",
-        "wall_ms": 1791579882789
+        "wall_ms": 1791580172982
       },
       "kind": "FASTBREAK_ATTEMPT"
     },
@@ -154,7 +157,7 @@
         "on_ground": true,
         "sequence": 5,
         "status": 0,
-        "wall_ms": 1791579882791,
+        "wall_ms": 1791580172983,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -170,16 +173,10 @@
         "on_ground": true,
         "sequence": 6,
         "status": 3,
-        "wall_ms": 1791579882793,
+        "wall_ms": 1791580172985,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
-    },
-    {
-      "data": {
-        "sequenceId": 6
-      },
-      "kind": "DIG_SERVER_ACK"
     },
     {
       "data": {
@@ -189,9 +186,15 @@
           16
         ],
         "type": 0,
-        "wall_ms": 1791579882833
+        "wall_ms": 1791580173029
       },
       "kind": "WITNESS_BLOCK_UPDATE"
+    },
+    {
+      "data": {
+        "sequenceId": 6
+      },
+      "kind": "DIG_SERVER_ACK"
     },
     {
       "data": {
@@ -215,7 +218,7 @@
         "on_ground": true,
         "sequence": 7,
         "status": 0,
-        "wall_ms": 1791579883297,
+        "wall_ms": 1791580173488,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -228,7 +231,7 @@
           16
         ],
         "stage": 1,
-        "wall_ms": 1791579883332
+        "wall_ms": 1791580173528
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -246,7 +249,7 @@
           16
         ],
         "stage": 10,
-        "wall_ms": 1791579883581
+        "wall_ms": 1791580173778
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -261,7 +264,7 @@
         "on_ground": true,
         "sequence": 8,
         "status": 3,
-        "wall_ms": 1791579883648,
+        "wall_ms": 1791580173838,
         "witness_stage": 11
       },
       "kind": "DIG_OUTBOUND"
@@ -274,7 +277,7 @@
           16
         ],
         "stage": -1,
-        "wall_ms": 1791579883680
+        "wall_ms": 1791580173877
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -303,7 +306,7 @@
           16
         ],
         "type": 0,
-        "wall_ms": 1791579883694
+        "wall_ms": 1791580173888
       },
       "kind": "WITNESS_BLOCK_UPDATE"
     },
@@ -329,7 +332,7 @@
         "on_ground": true,
         "sequence": 9,
         "status": 0,
-        "wall_ms": 1791579884457,
+        "wall_ms": 1791580174643,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -342,7 +345,7 @@
           16
         ],
         "stage": 1,
-        "wall_ms": 1791579884480
+        "wall_ms": 1791580174677
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -360,7 +363,7 @@
           16
         ],
         "stage": 10,
-        "wall_ms": 1791579884782
+        "wall_ms": 1791580174978
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -375,7 +378,7 @@
         "on_ground": true,
         "sequence": 10,
         "status": 3,
-        "wall_ms": 1791579884857,
+        "wall_ms": 1791580175044,
         "witness_stage": 12
       },
       "kind": "DIG_OUTBOUND"
@@ -388,7 +391,7 @@
           16
         ],
         "stage": -1,
-        "wall_ms": 1791579884880
+        "wall_ms": 1791580175077
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -417,7 +420,7 @@
           16
         ],
         "type": 0,
-        "wall_ms": 1791579884883
+        "wall_ms": 1791580175080
       },
       "kind": "WITNESS_BLOCK_UPDATE"
     },
@@ -431,7 +434,7 @@
           12
         ],
         "sequence": 11,
-        "wall_ms": 1791579886804
+        "wall_ms": 1791580176989
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -473,6 +476,7 @@
   "server_markers": {
     "SUPRACRAFT_D3_BUILD_HELP_COMPLETE": true,
     "SUPRACRAFT_D3_DAMAGE_COMPLETE": true,
+    "SUPRACRAFT_D3_DIAG_CARAVAN_COPRESENT": true,
     "SUPRACRAFT_D3_DIAG_CLOCK_200": true,
     "SUPRACRAFT_D3_DIAG_CLOCK_400": true,
     "SUPRACRAFT_D3_DIAG_DAMAGE_PICKAXE_TAG_PRESENT": true,
