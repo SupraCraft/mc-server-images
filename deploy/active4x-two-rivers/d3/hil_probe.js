@@ -92,6 +92,26 @@ async function walkNear (bot, target, stopDistance = 1.35, timeoutMs = 30000) {
   throw new Error('walk timeout to ' + target.toString())
 }
 
+// Keep the no-pathfinder HIL actor physically grounded before a mining
+// action. Upstream Mineflayer measures dig time before its internal lookAt;
+// the official server measures at packet receipt. Movement/airborne transitions
+// can therefore make Mineflayer's local predicted air premature.
+async function settleOnGround (bot, timeoutMs = 5000) {
+  bot.setControlState('forward', false)
+  let stable = 0
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (bot.entity?.onGround === true) {
+      stable++
+      if (stable >= 5) return
+    } else {
+      stable = 0
+    }
+    await sleep(50)
+  }
+  throw new Error('ground settlement timeout before dig')
+}
+
 function invCount (bot, name) {
   return bot.inventory.items()
     .filter(item => item.name === name)
@@ -251,11 +271,29 @@ async function main () {
 
     movement.total += await walkNear(bot, obstructPos.offset(0, 0, -1))
     const obstruction = await waitForBlock(bot, obstructPos, 'red_concrete')
+    await settleOnGround(bot)
+    console.log('D3_DIG_ATTEMPT ' + JSON.stringify({
+      target: 'obstruction',
+      player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
+      target_position: [obstructPos.x, obstructPos.y, obstructPos.z],
+      on_ground: bot.entity.onGround,
+      game_mode: bot.game.gameMode,
+      estimated_ms: bot.digTime(obstruction)
+    }))
     await bot.dig(obstruction, true, 'raycast')
     await waitForBlockName(bot, obstructPos, 'air', 5000)
 
     movement.total += await walkNear(bot, damagePos.offset(0, 0, -1))
     const damage = await waitForBlock(bot, damagePos, 'cobblestone')
+    await settleOnGround(bot)
+    console.log('D3_DIG_ATTEMPT ' + JSON.stringify({
+      target: 'damage',
+      player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
+      target_position: [damagePos.x, damagePos.y, damagePos.z],
+      on_ground: bot.entity.onGround,
+      game_mode: bot.game.gameMode,
+      estimated_ms: bot.digTime(damage)
+    }))
     await bot.dig(damage, true, 'raycast')
     await waitForBlockName(bot, damagePos, 'air', 5000)
 
