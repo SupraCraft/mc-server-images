@@ -112,6 +112,28 @@ async function settleOnGround (bot, timeoutMs = 5000) {
   throw new Error('ground settlement timeout before dig')
 }
 
+// One bounded CI-only timing hypothesis: Mineflayer locally predicts block air
+// when its timer elapses, while vanilla server break progress is tick-driven.
+// Retain Mineflayer's native packet sequence; delay only its FINISH timer by
+// 25 percent. Never infer server acceptance from this client-side promise.
+async function digWithBoundedMargin (bot, block, target) {
+  const original = bot.digTime
+  const estimated = original(block)
+  const buffered = Math.ceil(estimated * 1.25)
+  if (!Number.isFinite(estimated) || estimated <= 0 || buffered > 20000) {
+    throw new Error('D3 bounded dig-time admission rejected')
+  }
+  bot.digTime = candidate => Math.ceil(original(candidate) * 1.25)
+  try {
+    console.log('D3_DIG_TIME_TREATMENT ' + JSON.stringify({
+      target, base_ms: estimated, margin_ms: buffered
+    }))
+    await bot.dig(block, true, 'raycast')
+  } finally {
+    bot.digTime = original
+  }
+}
+
 function invCount (bot, name) {
   return bot.inventory.items()
     .filter(item => item.name === name)
@@ -280,7 +302,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(obstruction)
     }))
-    await bot.dig(obstruction, true, 'raycast')
+    await digWithBoundedMargin(bot, obstruction, 'obstruction')
     await waitForBlockName(bot, obstructPos, 'air', 5000)
 
     movement.total += await walkNear(bot, damagePos.offset(0, 0, -1))
@@ -294,7 +316,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(damage)
     }))
-    await bot.dig(damage, true, 'raycast')
+    await digWithBoundedMargin(bot, damage, 'damage')
     await waitForBlockName(bot, damagePos, 'air', 5000)
 
     const outputDeadline = Date.now() + 10000
