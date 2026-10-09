@@ -40,11 +40,11 @@
   },
   "traversal": {
     "authority": "grounded_traversal_evidence",
-    "distance": 11.435,
+    "distance": 11.651,
     "end": [
-      0.391,
+      0.389,
       69.938,
-      13.066
+      12.85
     ],
     "passed": true,
     "proof_walk_fps": 12,
@@ -74,24 +74,24 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 129091,
+      "bytes": 130411,
       "camera_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
       "bytes": 81553,
       "camera_position": [
@@ -104,9 +104,9 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
       "bytes": 99361,
       "camera_position": [
@@ -119,11 +119,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 107042,
+      "bytes": 107018,
       "camera_position": [
         0,
         70.5,
@@ -134,11 +134,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 69336,
+      "bytes": 69338,
       "camera_position": [
         0,
         84,
@@ -149,11 +149,11 @@
     },
     {
       "bot_position": [
-        0.391,
+        0.389,
         69.938,
-        13.066
+        12.85
       ],
-      "bytes": 122271,
+      "bytes": 122288,
       "camera_position": [
         0,
         96,
