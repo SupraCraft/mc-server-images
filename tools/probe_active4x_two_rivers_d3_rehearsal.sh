@@ -129,6 +129,19 @@ receipt = {
     "fresh_client_observation_status": fresh.get("result") if isinstance(fresh, dict) else "UNKNOWN",
     "server_markers": markers,
     "client_packet_events": events,
+    "caravan_rendezvous": {
+        "signal_expected": True,
+        "client_seen": (
+            bool(original.get("caravan", {}).get("seen"))
+            if isinstance(original, dict) and isinstance(original.get("caravan"), dict)
+            else False
+        ),
+        "minimum_distance": (
+            original["caravan"].get("min_distance")
+            if isinstance(original, dict) and isinstance(original.get("caravan"), dict)
+            else None
+        ),
+    },
     "server_authoritative_block_state": "UNKNOWN",
     "stock_client_hil_required": True,
     "world_scan": False,
@@ -265,8 +278,13 @@ task_json='{
   "username":"TwoRiversD2B",
   "minecraft_version":"26.3"
 }'
-printf '%s\n' "$task_json" | compose exec -T actor-adapter sh -c 'cat > /actor-state/task.json.tmp && mv /actor-state/task.json.tmp /actor-state/task.json'
+# The player's initial movement and inventory work take longer than the
+# caravan's trip. Admit the actor only after the player signals readiness,
+# rather than silently finishing the encounter off-camera.
 compose exec -T hil-probe sh -c 'touch /hil-state/go'
+stage="await_caravan_rendezvous"
+wait_exec_file hil-probe /hil-state/caravan-ready.json 105
+printf '%s\n' "$task_json" | compose exec -T actor-adapter sh -c 'cat > /actor-state/task.json.tmp && mv /actor-state/task.json.tmp /actor-state/task.json'
 
 hil_cid="$(compose ps -q hil-probe)"
 stage="hil_probe_exit"

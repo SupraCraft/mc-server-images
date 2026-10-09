@@ -171,6 +171,12 @@ async function main () {
   })
   bot.on('kicked', reason => console.log('D3_REHEARSAL_KICKED ' + JSON.stringify(reason)))
   bot.on('error', err => console.log('D3_REHEARSAL_ERROR ' + String(err && err.stack ? err.stack : err)))
+  bot.on('playerJoined', player => {
+    if (player?.username === caravanUser) console.log('D3_CARAVAN_PLAYER_JOINED')
+  })
+  bot.on('playerLeft', player => {
+    if (player?.username === caravanUser) console.log('D3_CARAVAN_PLAYER_LEFT')
+  })
 
   try {
     await waitSpawn(bot)
@@ -370,7 +376,22 @@ async function main () {
     await waitInv(bot, 'stone', 1)
     await bot.equip(bot.inventory.items().find(item => item.name === 'diamond_pickaxe'), 'hand')
 
-    const caravan = await waitCaravan(bot)
+    // Dispatch the 4X caravan only once the HIL player is positioned and
+    // ready to see it. Earlier the actor completed its entire task before
+    // the player reached this observation step: a harness race, not gameplay.
+    const caravanReady = path.join(stateDir, 'caravan-ready.json')
+    atomicWrite(caravanReady, {
+      schema: 'supracraft.active4x-d3-caravan-rendezvous/v0.1',
+      ready: true,
+      player_position: [
+        Number(bot.entity.position.x.toFixed(3)),
+        Number(bot.entity.position.y.toFixed(3)),
+        Number(bot.entity.position.z.toFixed(3))
+      ]
+    })
+    console.log('D3_CARAVAN_RENDEZVOUS_READY')
+    const caravan = await waitCaravan(bot, 30000)
+    console.log('D3_CARAVAN_OBSERVED ' + JSON.stringify(caravan))
 
     movement.total += await walkNear(bot, tradeInputPos.offset(1, 0, 0))
     const tradeInput = await waitForBlock(bot, tradeInputPos, 'barrel')
