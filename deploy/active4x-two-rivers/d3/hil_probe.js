@@ -121,93 +121,6 @@ async function waitGameMode (bot, expected, timeoutMs = 6000) {
   throw new Error('D3 creative-control game-mode timeout: expected=' + expected + ', observed=' + bot.game.gameMode)
 }
 
-// D3-R3 read-only-progress-gated qualification experiment. The fixed-target
-// START and FINISH are the native 26.3 actions. The independent passive client
-// never predicts air; it observes official-server destruction broadcasts.
-// A byte wraps after 127: recover its unsigned representation *only* for the
-// observed non-sentinel sequence. The near-terminal 235/255 threshold probes
-// whether FINISH acceptance is blocked even with high observed progress.
-// It is diagnostic, not a production completion rule.
-async function digWithWitnessProgress (bot, witness, block, target, witnessStages) {
-  const p = block.position
-  const key = [p.x, p.y, p.z].join(',')
-  const initial = witness.blockAt(p)
-  if (!initial || initial.name !== block.name) {
-    throw new Error('D3 witness has not independently loaded exact target: ' + target)
-  }
-  await bot.lookAt(p.offset(0.5, 0.5, 0), true)
-  const eye = bot.entity.position.offset(0, bot.entity.eyeHeight, 0)
-  if (eye.distanceTo(p.offset(0.5, 0.5, 0.5)) > 5.1 || !bot.entity.onGround) {
-    throw new Error('D3 mining qualification outside fixed reach or ground')
-  }
-  witnessStages.delete(key)
-  const startMs = Date.now()
-  bot._client.write('block_dig', {
-    status: 0, location: p, face: 2, sequence: bot._nextSequence()
-  })
-  let settled = false
-  try {
-    let observedHigh = 0
-    let last = null
-    let punches = 0
-    let lastSwingMs = 0
-    const deadline = startMs + 18000
-    while (Date.now() < deadline) {
-      const current = witnessStages.get(key)
-      if (Number.isInteger(current) && current !== -1) {
-        const unsigned = current < 0 ? current + 256 : current
-        last = unsigned
-        if (unsigned >= 235 && unsigned <= 254) observedHigh++
-        else observedHigh = 0
-        if (observedHigh >= 2) break
-      }
-      // Java 26.3 sends ServerboundPunchPacket while the attack button is
-      // held. It is a distinct empty packet from arm_animation. The existing
-      // Mineflayer stack sends arm_animation but omitted punch entirely.
-      // Send one bounded vanilla punch per ~50ms client tick. Keep arm swings
-      // at their separate prior cadence; no added world-edit authority.
-      bot._client.write('punch', {})
-      punches++
-      if (Date.now() - lastSwingMs >= 120) {
-        bot.swingArm()
-        lastSwingMs = Date.now()
-      }
-      await sleep(50)
-    }
-    console.log('D3_PUNCH_SUMMARY ' + JSON.stringify({
-      target, wall_ms: Date.now(), punches, last_progress: last
-    }))
-    if (observedHigh < 2) {
-      throw new Error('D3 no server-progress threshold for ' + target + '; last=' + last)
-    }
-    const finishMs = Date.now()
-    console.log('D3_PROGRESS_GATED_FINISH ' + JSON.stringify({
-      target, wall_ms: finishMs, elapsed_ms: finishMs - startMs,
-      progress_unsigned: last, threshold: 235
-    }))
-    bot._client.write('block_dig', {
-      status: 2, location: p, face: 2, sequence: bot._nextSequence()
-    })
-    settled = true
-    const settleDeadline = Date.now() + 5000
-    while (Date.now() < settleDeadline) {
-      if (witness.blockAt(p)?.name === 'air') {
-        console.log('D3_WITNESS_WORLD_AIR ' + JSON.stringify({
-          target, wall_ms: Date.now(), elapsed_ms: Date.now() - startMs
-        }))
-        return
-      }
-      await sleep(100)
-    }
-    throw new Error('D3 official server did not commit air after progress FINISH for ' + target)
-  } finally {
-    if (!settled && bot._client.state === 'play') {
-      bot._client.write('block_dig', {
-        status: 1, location: p, face: 2, sequence: 0
-      })
-    }
-  }
-}
 
 function invCount (bot, name) {
   return bot.inventory.items()
@@ -539,7 +452,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(obstruction)
     }))
-    await digWithWitnessProgress(bot, witness, obstruction, 'obstruction', witnessStages)
+    await bot.dig(obstruction, true, 'raycast')
     await waitForBlockName(bot, obstructPos, 'air', 5000)
 
     movement.total += await walkNear(bot, damagePos.offset(0, 0, -1))
