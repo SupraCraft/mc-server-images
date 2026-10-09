@@ -235,6 +235,11 @@ async function main () {
     await sleep(350)
     await waitInv(bot, 'wheat', 0)
 
+    // The trade-output barrel lies directly between the trade and build bays.
+    // Take the authored clear aisle, rather than driving the forward-only
+    // actor through a solid container or scanning the world for a path.
+    movement.total += await walkNear(bot, new Vec3(-5, 70, 10), 0.65)
+    movement.total += await walkNear(bot, new Vec3(1, 70, 10), 0.65)
     movement.total += await walkNear(bot, buildInputPos.offset(1, 0, 0))
     const buildInput = await waitForBlock(bot, buildInputPos, 'barrel')
     const buildContainer = await bot.openContainer(buildInput)
