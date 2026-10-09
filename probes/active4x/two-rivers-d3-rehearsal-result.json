@@ -1,7 +1,7 @@
 {
   "client_interaction": {
     "actions": null,
-    "error": "Error: D3 official server did not commit air after progress FINISH for obstruction\n    at digWithWitnessProgress (/hil/hil_probe.js:187:11)\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processTimers (node:internal/timers:615:9)\n    at async main (/hil/hil_probe.js:525:5)",
+    "error": "Error: D3 official server did not commit air after progress FINISH for obstruction\n    at digWithWitnessProgress (/hil/hil_probe.js:188:11)\n    at async main (/hil/hil_probe.js:528:5)",
     "minecraft": null,
     "mode": "interact",
     "result": "ERROR"
@@ -9,7 +9,7 @@
   "client_packet_events": [
     {
       "data": {
-        "wall_ms": 1791573167179
+        "wall_ms": 1791573392357
       },
       "kind": "WITNESS_READY"
     },
@@ -23,7 +23,7 @@
           12
         ],
         "sequence": 1,
-        "wall_ms": 1791573170214
+        "wall_ms": 1791573395374
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -43,7 +43,7 @@
           12
         ],
         "sequence": 2,
-        "wall_ms": 1791573191923
+        "wall_ms": 1791573417061
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -63,7 +63,7 @@
           12
         ],
         "sequence": 3,
-        "wall_ms": 1791573195033
+        "wall_ms": 1791573420175
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -82,7 +82,7 @@
           70,
           13
         ],
-        "wall_ms": 1791573196590
+        "wall_ms": 1791573421636
       },
       "kind": "PLACE_ATTEMPT"
     },
@@ -96,7 +96,7 @@
           13
         ],
         "sequence": 4,
-        "wall_ms": 1791573196942
+        "wall_ms": 1791573422033
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -118,7 +118,7 @@
           13
         ],
         "type": 1,
-        "wall_ms": 1791573196987
+        "wall_ms": 1791573422086
       },
       "kind": "WITNESS_BLOCK_UPDATE"
     },
@@ -126,7 +126,7 @@
       "data": {
         "estimated_ms": 0,
         "game_mode": "creative",
-        "wall_ms": 1791573197988
+        "wall_ms": 1791573423188
       },
       "kind": "FASTBREAK_ATTEMPT"
     },
@@ -141,7 +141,7 @@
         "on_ground": true,
         "sequence": 5,
         "status": 0,
-        "wall_ms": 1791573197989,
+        "wall_ms": 1791573423190,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -157,7 +157,7 @@
         "on_ground": true,
         "sequence": 6,
         "status": 2,
-        "wall_ms": 1791573197991,
+        "wall_ms": 1791573423191,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -170,7 +170,7 @@
           16
         ],
         "stage": -1,
-        "wall_ms": 1791573198036
+        "wall_ms": 1791573423235
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -188,7 +188,7 @@
           16
         ],
         "type": 0,
-        "wall_ms": 1791573198037
+        "wall_ms": 1791573423236
       },
       "kind": "WITNESS_BLOCK_UPDATE"
     },
@@ -214,7 +214,7 @@
         "on_ground": true,
         "sequence": 7,
         "status": 0,
-        "wall_ms": 1791573198592,
+        "wall_ms": 1791573423593,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -227,7 +227,7 @@
           16
         ],
         "stage": 1,
-        "wall_ms": 1791573198635
+        "wall_ms": 1791573423634
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -245,7 +245,7 @@
           16
         ],
         "stage": 10,
-        "wall_ms": 1791573198885
+        "wall_ms": 1791573423885
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -257,7 +257,7 @@
           16
         ],
         "stage": 20,
-        "wall_ms": 1791573199235
+        "wall_ms": 1791573424234
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -269,7 +269,7 @@
           16
         ],
         "stage": 31,
-        "wall_ms": 1791573199584
+        "wall_ms": 1791573424584
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -281,7 +281,7 @@
           16
         ],
         "stage": 40,
-        "wall_ms": 1791573199885
+        "wall_ms": 1791573424884
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -293,7 +293,7 @@
           16
         ],
         "stage": 50,
-        "wall_ms": 1791573200235
+        "wall_ms": 1791573425234
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -305,7 +305,7 @@
           16
         ],
         "stage": 60,
-        "wall_ms": 1791573200585
+        "wall_ms": 1791573425584
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -317,7 +317,7 @@
           16
         ],
         "stage": 71,
-        "wall_ms": 1791573200934
+        "wall_ms": 1791573425933
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -329,7 +329,7 @@
           16
         ],
         "stage": 80,
-        "wall_ms": 1791573201235
+        "wall_ms": 1791573426233
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -341,7 +341,7 @@
           16
         ],
         "stage": 90,
-        "wall_ms": 1791573201585
+        "wall_ms": 1791573426583
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -353,7 +353,7 @@
           16
         ],
         "stage": 100,
-        "wall_ms": 1791573201935
+        "wall_ms": 1791573426934
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -365,7 +365,7 @@
           16
         ],
         "stage": 111,
-        "wall_ms": 1791573202285
+        "wall_ms": 1791573427284
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -377,7 +377,7 @@
           16
         ],
         "stage": 120,
-        "wall_ms": 1791573202584
+        "wall_ms": 1791573427583
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -388,8 +388,140 @@
           70,
           16
         ],
-        "stage": -128,
-        "wall_ms": 1791573202884
+        "stage": -126,
+        "wall_ms": 1791573427933
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -116,
+        "wall_ms": 1791573428284
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -105,
+        "wall_ms": 1791573428633
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -96,
+        "wall_ms": 1791573428934
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -86,
+        "wall_ms": 1791573429284
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -76,
+        "wall_ms": 1791573429634
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -65,
+        "wall_ms": 1791573429984
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -56,
+        "wall_ms": 1791573430284
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -46,
+        "wall_ms": 1791573430634
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -36,
+        "wall_ms": 1791573430984
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -25,
+        "wall_ms": 1791573431334
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -16,
+        "wall_ms": 1791573431634
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -404,10 +536,22 @@
         "on_ground": true,
         "sequence": 8,
         "status": 2,
-        "wall_ms": 1791573205806,
-        "witness_stage": -42
+        "wall_ms": 1791573431659,
+        "witness_stage": -16
       },
       "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": -1,
+        "wall_ms": 1791573431683
+      },
+      "kind": "WITNESS_PROGRESS"
     },
     {
       "data": {
