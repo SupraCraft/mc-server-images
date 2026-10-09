@@ -2,16 +2,16 @@
   "class": "ServerPlayerGameMode",
   "method_decisions": {
     "destroyAndAck": {
-      "conditional_branches": 0,
+      "conditional_branches": 1,
       "found": true,
       "references": {
-        "blockActionRestricted": true,
-        "canDestroyBlock": true,
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
         "destroyAndAck": true,
         "destroyBlock": true,
         "getDestroyProgress": false,
         "getDestroySpeed": false,
-        "getMainHandItem": true,
+        "getMainHandItem": false,
         "hasDelayedDestroy": false,
         "incrementDestroyProgress": false,
         "isCreative": false,
@@ -23,7 +23,7 @@
       "uses_0_7_float": false
     },
     "destroyBlock": {
-      "conditional_branches": 0,
+      "conditional_branches": 9,
       "found": true,
       "references": {
         "blockActionRestricted": true,
@@ -44,11 +44,11 @@
       "uses_0_7_float": false
     },
     "handleBlockBreakAction": {
-      "conditional_branches": 0,
+      "conditional_branches": 20,
       "found": true,
       "references": {
         "blockActionRestricted": true,
-        "canDestroyBlock": true,
+        "canDestroyBlock": false,
         "destroyAndAck": true,
         "destroyBlock": true,
         "getDestroyProgress": true,
@@ -65,46 +65,46 @@
       "uses_0_7_float": true
     },
     "incrementDestroyProgress": {
-      "conditional_branches": 0,
+      "conditional_branches": 1,
       "found": true,
       "references": {
-        "blockActionRestricted": true,
-        "canDestroyBlock": true,
-        "destroyAndAck": true,
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
+        "destroyAndAck": false,
         "destroyBlock": true,
         "getDestroyProgress": true,
         "getDestroySpeed": false,
-        "getMainHandItem": true,
-        "hasDelayedDestroy": true,
+        "getMainHandItem": false,
+        "hasDelayedDestroy": false,
         "incrementDestroyProgress": true,
         "isCreative": false,
-        "isDestroyingBlock": true,
-        "isUnderSpawnProtection": true,
-        "isWithinBlockInteractionRange": true,
-        "mayInteract": true
+        "isDestroyingBlock": false,
+        "isUnderSpawnProtection": false,
+        "isWithinBlockInteractionRange": false,
+        "mayInteract": false
       },
-      "uses_0_7_float": true
+      "uses_0_7_float": false
     },
     "tick": {
-      "conditional_branches": 0,
+      "conditional_branches": 6,
       "found": true,
       "references": {
-        "blockActionRestricted": true,
-        "canDestroyBlock": true,
-        "destroyAndAck": true,
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
+        "destroyAndAck": false,
         "destroyBlock": true,
-        "getDestroyProgress": true,
+        "getDestroyProgress": false,
         "getDestroySpeed": false,
-        "getMainHandItem": true,
+        "getMainHandItem": false,
         "hasDelayedDestroy": true,
         "incrementDestroyProgress": true,
         "isCreative": false,
         "isDestroyingBlock": true,
-        "isUnderSpawnProtection": true,
-        "isWithinBlockInteractionRange": true,
-        "mayInteract": true
+        "isUnderSpawnProtection": false,
+        "isWithinBlockInteractionRange": false,
+        "mayInteract": false
       },
-      "uses_0_7_float": true
+      "uses_0_7_float": false
     }
   },
   "methods": {
