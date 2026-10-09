@@ -75,6 +75,10 @@ names = (
     "SUPRACRAFT_D3_DIAG_CLOCK_400",
     "SUPRACRAFT_D3_DIAG_SERVER_TOOL_PRESENT",
     "SUPRACRAFT_D3_DIAG_SERVER_TOOL_ABSENT",
+    "SUPRACRAFT_D3_DIAG_TOOL_COMPONENT_PRESENT",
+    "SUPRACRAFT_D3_DIAG_TOOL_COMPONENT_ABSENT",
+    "SUPRACRAFT_D3_DIAG_OBSTRUCT_PICKAXE_TAG_PRESENT",
+    "SUPRACRAFT_D3_DIAG_DAMAGE_PICKAXE_TAG_PRESENT",
 )
 markers = {name: name in log for name in names}
 # Fixed fixture fields only: no credentials, environment, or arbitrary logs.
