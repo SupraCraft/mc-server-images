@@ -1,22 +1,14 @@
 {
   "client_interaction": {
-    "actions": {
-      "build_supply": true,
-      "damage_break": true,
-      "obstruction_break": true,
-      "trade_deposit": true
-    },
-    "error": null,
-    "minecraft": {
-      "edition": "java",
-      "version": "26.3"
-    },
+    "actions": null,
+    "error": "Error: walk timeout to (0, 70, 15)\n    at walkNear (/hil/hil_probe.js:92:9)\n    at async main (/hil/hil_probe.js:327:23)",
+    "minecraft": null,
     "mode": "interact",
-    "result": "FAIL"
+    "result": "ERROR"
   },
   "deployment_stage": "D3_automated_rehearsal",
   "diagnostic_only": true,
-  "failed_stage": "await_SUPRACRAFT_D3_OBSTRUCT_COMPLETE",
+  "failed_stage": "hil_probe_exit",
   "fresh_client_block_observation": {
     "damage": {
       "name": "cobblestone",
