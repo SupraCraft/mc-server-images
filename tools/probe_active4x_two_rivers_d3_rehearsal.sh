@@ -92,7 +92,7 @@ except OSError:
 import re
 events = []
 for line in client_log.splitlines():
-    match = re.search(r"D3_(?:PLACE|FASTBREAK|DIG)_(?:OUTBOUND|ATTEMPT|CONTROL_RESULT|CONTROL_FAIL|SERVER_ACK|SERVER_BLOCK_UPDATE|SERVER_PROGRESS)\\s+(.+)$", line)
+    match = re.search(r"D3_(?:PLACE|FASTBREAK|DIG)_(?:OUTBOUND|ATTEMPT|CONTROL_RESULT|CONTROL_FAIL|SERVER_ACK|SERVER_BLOCK_UPDATE|SERVER_PROGRESS)\s+(.+)$", line)
     if not match or len(events) >= 32:
         continue
     payload = match.group(1)
