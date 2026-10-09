@@ -31,6 +31,7 @@ clone_exact() {
 clone_exact node-minecraft-data "$ROOT/src/node-minecraft-data"
 rm -rf "$ROOT/src/node-minecraft-data/minecraft-data"
 clone_exact minecraft-data-source "$ROOT/src/node-minecraft-data/minecraft-data"
+python3 "$REPO_ROOT/tools/remap_prismarine_materials_26_3.py" "$ROOT/src/node-minecraft-data/minecraft-data"
 
 pushd "$ROOT/src/node-minecraft-data" >/dev/null
 npm install --ignore-scripts
@@ -41,6 +42,11 @@ const mcData=require('./')
 const d=mcData('26.3')
 if (!d) throw new Error('generated node-minecraft-data does not resolve 26.3')
 if (d.version.minecraftVersion !== '26.3') throw new Error('wrong minecraft-data version: '+JSON.stringify(d.version))
+const diamond=d.itemsByName.diamond_pickaxe?.id
+const multipliers=d.materials?.['mineable/pickaxe']
+if (diamond !== 1052 || multipliers?.[diamond] !== 8) {
+  throw new Error('exact-26.3 material multipliers unresolved: '+JSON.stringify({diamond,multiplier:multipliers?.[diamond]}))
+}
 console.log(JSON.stringify({
   minecraftVersion:d.version.minecraftVersion,
   majorVersion:d.version.majorVersion,
