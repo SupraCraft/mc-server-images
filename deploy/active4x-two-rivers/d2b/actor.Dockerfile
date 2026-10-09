@@ -7,6 +7,7 @@ RUN apt-get update \
 WORKDIR /src
 COPY tools/install_experimental_prismarine_26_3.sh /src/tools/install_experimental_prismarine_26_3.sh
 COPY tools/apply_mineflayer_tick_end_26_3.py /src/tools/apply_mineflayer_tick_end_26_3.py
+COPY tools/remap_prismarine_materials_26_3.py /src/tools/remap_prismarine_materials_26_3.py
 COPY probes/mineflayer-runtime /src/probes/mineflayer-runtime
 
 RUN chmod +x /src/tools/install_experimental_prismarine_26_3.sh \
