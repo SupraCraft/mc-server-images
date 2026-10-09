@@ -164,6 +164,40 @@ async function main () {
       return
     }
 
+    // D3-R1 read-only post-failure diagnostic: a fresh client observes streamed
+    // world blocks, independent of the original client's optimistic dig state.
+    // These observations are advisory; the stock server markers remain authority.
+    if (mode === 'diagnose') {
+      const targets = {
+        obstruction: new Vec3(2, 70, 16),
+        damage: new Vec3(6, 70, 16)
+      }
+      const blocks = {}
+      for (const [name, pos] of Object.entries(targets)) {
+        const deadline = Date.now() + 10000
+        let block = null
+        while (Date.now() < deadline) {
+          block = bot.blockAt(pos)
+          if (block) break
+          await sleep(100)
+        }
+        blocks[name] = {
+          position: [pos.x, pos.y, pos.z],
+          name: block ? block.name : null,
+          observed: Boolean(block)
+        }
+      }
+      atomicWrite(resultFile, {
+        schema: 'supracraft.active4x-d3-fresh-client-diagnostic/v0.1',
+        mode,
+        minecraft: { edition: 'java', version },
+        blocks,
+        note: 'Fresh chunk/block observation only; not stock-client acceptance',
+        result: Object.values(blocks).every(x => x.observed) ? 'OBSERVED' : 'INCOMPLETE'
+      })
+      return
+    }
+
     await waitFile(goFile, 60000)
 
     const starterPos = new Vec3(-8, 70, 12)
