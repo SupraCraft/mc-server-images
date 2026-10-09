@@ -241,6 +241,7 @@ async function main () {
     // This wrapper forwards every packet through the original client writer.
     const originalClientWrite = bot._client.write.bind(bot._client)
     let observedDigPackets = 0
+    let observedPlacePackets = 0
     bot._client.write = (name, data, ...args) => {
       if (name === 'block_dig' && observedDigPackets++ < 8) {
         const loc = data.location || {}
@@ -250,6 +251,14 @@ async function main () {
           location: [loc.x, loc.y, loc.z],
           player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
           on_ground: bot.entity.onGround
+        }))
+      }
+      if (name === 'block_place' && observedPlacePackets++ < 3) {
+        const loc = data.location || {}
+        console.log('D3_PLACE_OUTBOUND ' + JSON.stringify({
+          wall_ms: Date.now(), sequence: data.sequence, face: data.direction,
+          location: [loc.x, loc.y, loc.z],
+          held: bot.heldItem?.name === 'stone' ? 'stone' : 'other'
         }))
       }
       return originalClientWrite(name, data, ...args)
@@ -287,7 +296,8 @@ async function main () {
     const wheat = bot.registry.itemsByName.wheat
     const bricks = bot.registry.itemsByName.bricks
     const pickaxe = bot.registry.itemsByName.diamond_pickaxe
-    if (!wheat || !bricks || !pickaxe) throw new Error('exact-26.3 registry missing HIL items')
+    const stone = bot.registry.itemsByName.stone
+    if (!wheat || !bricks || !pickaxe || !stone) throw new Error('exact-26.3 registry missing HIL items')
 
     const movement = { total: 0 }
     movement.total += await walkNear(bot, starterPos.offset(1, 0, 0))
@@ -297,12 +307,14 @@ async function main () {
     await sleep(300)
     await starterContainer.withdraw(bricks.id, null, 4, null)
     await starterContainer.withdraw(pickaxe.id, null, 1, null)
+    await starterContainer.withdraw(stone.id, null, 1, null)
     await sleep(500)
     await starterContainer.close()
     await sleep(350)
     await waitInv(bot, 'wheat', 2)
     await waitInv(bot, 'bricks', 4)
     await waitInv(bot, 'diamond_pickaxe', 1)
+    await waitInv(bot, 'stone', 1)
     await bot.equip(bot.inventory.items().find(item => item.name === 'diamond_pickaxe'), 'hand')
 
     const caravan = await waitCaravan(bot)
@@ -329,6 +341,33 @@ async function main () {
     await buildContainer.close()
     await sleep(350)
     await waitInv(bot, 'bricks', 0)
+
+    // Independent world-edit A/B control: test real survival block placement
+    // before the digging experiment. Place with vanilla interaction packets,
+    // not operator commands or datapack mutation. The server marker is the oracle.
+    const placeBasePos = new Vec3(4, 69, 13)
+    movement.total += await walkNear(bot, new Vec3(3, 70, 11), 0.7)
+    const placeBase = await waitForBlock(bot, placeBasePos, 'stone')
+    let placeOutcome = 'UNKNOWN'
+    try {
+      await settleOnGround(bot)
+      const inventoryStone = bot.inventory.items().find(item => item.name === 'stone')
+      if (!inventoryStone) throw new Error('stone control item absent')
+      await bot.equip(inventoryStone, 'hand')
+      console.log('D3_PLACE_ATTEMPT ' + JSON.stringify({
+        wall_ms: Date.now(), target: [4, 70, 13],
+        game_mode: bot.game.gameMode, on_ground: bot.entity.onGround
+      }))
+      await bot.placeBlock(placeBase, new Vec3(0, 1, 0))
+      placeOutcome = 'CLIENT_SERVER_UPDATE'
+    } catch (err) {
+      placeOutcome = 'CLIENT_ERROR'
+      // Fixed, bounded exception text only; no raw packets or environment.
+      console.log('D3_PLACE_CONTROL_FAIL ' + String(err?.message || err).slice(0, 250))
+    } finally {
+      await bot.equip(bot.inventory.items().find(item => item.name === 'diamond_pickaxe'), 'hand')
+    }
+    console.log('D3_PLACE_CONTROL_RESULT ' + placeOutcome)
 
     // Independent positive control: fast ordinary glass break with the same
     // unmodified 26.3 player-action packet path. Success/failure is decided

@@ -3,6 +3,9 @@ execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data s
 execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_obstruction_near:1} run data modify storage supracraft:active4x hil.diagnostic_obstruction_near set value 1
 execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_damage_near:1} run say SUPRACRAFT_D3_DIAG_DAMAGE_NEAR
 execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_damage_near:1} run data modify storage supracraft:active4x hil.diagnostic_damage_near set value 1
+# Independent server-world placement control; never substitutes for mining gates.
+execute if block 4 70 13 minecraft:stone unless data storage supracraft:active4x hil{diagnostic_place_done:1} run say SUPRACRAFT_D3_DIAG_PLACE_COMPLETE
+execute if block 4 70 13 minecraft:stone unless data storage supracraft:active4x hil{diagnostic_place_done:1} run data modify storage supracraft:active4x hil.diagnostic_place_done set value 1
 # Read-only acceptance marker for the diagnostic fast-break control.
 execute if block 3 70 16 minecraft:air unless data storage supracraft:active4x hil{diagnostic_fastbreak_done:1} run say SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE
 execute if block 3 70 16 minecraft:air unless data storage supracraft:active4x hil{diagnostic_fastbreak_done:1} run data modify storage supracraft:active4x hil.diagnostic_fastbreak_done set value 1

@@ -41,6 +41,7 @@ diagnose() {
     fi
 
     compose logs --no-color --tail=250 minecraft >"$scratch/server.log" 2>/dev/null || true
+    compose logs --no-color --tail=160 hil-probe >"$scratch/client.log" 2>/dev/null || true
     # Produce a compact, fail-closed, public-safe receipt even when the client
     # or the diagnostic itself failed. Do not promote client prediction to a
     # stock-server event or convert a red run to green.
@@ -67,6 +68,11 @@ names = (
     "SUPRACRAFT_D3_OBSTRUCT_COMPLETE",
     "SUPRACRAFT_D3_DAMAGE_COMPLETE",
     "SUPRACRAFT_D3_PHASE1_COMPLETE",
+    "SUPRACRAFT_D3_DIAG_PLACE_COMPLETE",
+    "SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE",
+    "SUPRACRAFT_D3_DIAG_SERVER_SURVIVAL",
+    "SUPRACRAFT_D3_DIAG_CLOCK_200",
+    "SUPRACRAFT_D3_DIAG_CLOCK_400",
 )
 markers = {name: name in log for name in names}
 # Fixed fixture fields only: no credentials, environment, or arbitrary logs.
@@ -78,6 +84,34 @@ client = None if original is None else {
     "error": str(original.get("error", ""))[:1500] or None,
 }
 fresh_blocks = (fresh.get("blocks") if isinstance(fresh, dict) else None)
+try:
+    client_log = (directory / "client.log").read_text(encoding="utf-8")
+except OSError:
+    client_log = ""
+# Bounded, purpose-scoped telemetry. No unfiltered client logs or raw packets.
+import re
+events = []
+for line in client_log.splitlines():
+    match = re.search(r"D3_(?:PLACE|FASTBREAK|DIG)_(?:OUTBOUND|ATTEMPT|CONTROL_RESULT|CONTROL_FAIL|SERVER_ACK|SERVER_BLOCK_UPDATE|SERVER_PROGRESS)\\s+(.+)$", line)
+    if not match or len(events) >= 32:
+        continue
+    payload = match.group(1)
+    # Parse and select only safe literals/numbers from fixed observer fields.
+    if "D3_PLACE_CONTROL_FAIL" in line:
+        events.append({"kind": "place_error", "detail": payload[:120]})
+    elif "D3_PLACE_CONTROL_RESULT" in line:
+        events.append({"kind": "place_result", "outcome": payload[:40]})
+    else:
+        try:
+            obj = json.loads(payload)
+        except ValueError:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        allowed = ("wall_ms", "sequence", "sequenceId", "status", "face", "estimated_ms", "game_mode", "on_ground", "location", "target", "held")
+        clean = {key: obj[key] for key in allowed if key in obj}
+        kind = line.split("D3_",1)[-1].split(" ",1)[0]
+        events.append({"kind": kind, "data": clean})
 receipt = {
     "schema": "supracraft.active4x-two-rivers-d3-rehearsal/v0.1",
     "deployment_stage": "D3_automated_rehearsal",
@@ -88,6 +122,7 @@ receipt = {
     "fresh_client_block_observation": fresh_blocks,
     "fresh_client_observation_status": fresh.get("result") if isinstance(fresh, dict) else "UNKNOWN",
     "server_markers": markers,
+    "client_packet_events": events,
     "server_authoritative_block_state": "UNKNOWN",
     "stock_client_hil_required": True,
     "world_scan": False,
