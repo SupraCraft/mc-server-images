@@ -47,11 +47,11 @@
     },
     "traversal": {
       "authority": "grounded_traversal_evidence",
-      "distance": 11.651,
+      "distance": 11.426,
       "end": [
-        0.389,
+        0.391,
         69.938,
-        12.85
+        13.075
       ],
       "passed": true,
       "proof_walk_fps": 12,
@@ -60,7 +60,7 @@
         69.938,
         24.5
       ],
-      "walkthrough_frames": 31,
+      "walkthrough_frames": 30,
       "walkthrough_target_duration_ms": 2500
     },
     "views": [
@@ -81,24 +81,24 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 130411,
+        "bytes": 128990,
         "camera_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.075
         ],
         "name": "02_after_walk",
         "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 81553,
         "camera_position": [
@@ -111,9 +111,9 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 99361,
         "camera_position": [
@@ -126,9 +126,9 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
         "bytes": 107018,
         "camera_position": [
@@ -141,11 +141,11 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 69338,
+        "bytes": 69358,
         "camera_position": [
           0,
           84,
@@ -156,11 +156,11 @@
       },
       {
         "bot_position": [
-          0.389,
+          0.391,
           69.938,
-          12.85
+          13.066
         ],
-        "bytes": 122288,
+        "bytes": 122293,
         "camera_position": [
           0,
           96,
@@ -485,8 +485,8 @@
   "schema": "supracraft.named-place-stock-client-hil/v0.1",
   "semantic_authority": false,
   "world_zip": {
-    "bytes": 568501,
+    "bytes": 569295,
     "name": "redroof-husbandry-hall-vanilla-26.3-world.zip",
-    "sha256": "5a7f7ebd56bf07cff104f279c74c6433a05ca9c835e1feb1aabcc08a284270b9"
+    "sha256": "c06aa4b6f17d075835f0bb25756c3f38ead1db0a2e9c722a90ccace50a2fd718"
   }
 }
