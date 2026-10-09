@@ -149,6 +149,8 @@ async function digWithWitnessProgress (bot, witness, block, target, witnessStage
   try {
     let observedHigh = 0
     let last = null
+    let punches = 0
+    let lastSwingMs = 0
     const deadline = startMs + 18000
     while (Date.now() < deadline) {
       const current = witnessStages.get(key)
@@ -159,10 +161,22 @@ async function digWithWitnessProgress (bot, witness, block, target, witnessStage
         else observedHigh = 0
         if (observedHigh >= 2) break
       }
-      // The canonical client swings while it holds its mining action.
-      bot.swingArm()
-      await sleep(120)
+      // Java 26.3 sends ServerboundPunchPacket while the attack button is
+      // held. It is a distinct empty packet from arm_animation. The existing
+      // Mineflayer stack sends arm_animation but omitted punch entirely.
+      // Send one bounded vanilla punch per ~50ms client tick. Keep arm swings
+      // at their separate prior cadence; no added world-edit authority.
+      bot._client.write('punch', {})
+      punches++
+      if (Date.now() - lastSwingMs >= 120) {
+        bot.swingArm()
+        lastSwingMs = Date.now()
+      }
+      await sleep(50)
     }
+    console.log('D3_PUNCH_SUMMARY ' + JSON.stringify({
+      target, wall_ms: Date.now(), punches, last_progress: last
+    }))
     if (observedHigh < 2) {
       throw new Error('D3 no server-progress threshold for ' + target + '; last=' + last)
     }
