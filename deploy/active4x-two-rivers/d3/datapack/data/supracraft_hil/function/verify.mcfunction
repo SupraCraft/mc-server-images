@@ -6,6 +6,14 @@ execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data s
 # Read-only acceptance marker for the diagnostic fast-break control.
 execute if block 3 70 16 minecraft:air unless data storage supracraft:active4x hil{diagnostic_fastbreak_done:1} run say SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE
 execute if block 3 70 16 minecraft:air unless data storage supracraft:active4x hil{diagnostic_fastbreak_done:1} run data modify storage supracraft:active4x hil.diagnostic_fastbreak_done set value 1
+# D3 read-only TPS witness: scheduled every ten official server ticks.
+scoreboard players add diagnostic_clock supracraft_hil 10
+execute if score diagnostic_clock supracraft_hil matches 200.. unless data storage supracraft:active4x hil{diagnostic_clock_200:1} run say SUPRACRAFT_D3_DIAG_CLOCK_200
+execute if score diagnostic_clock supracraft_hil matches 200.. unless data storage supracraft:active4x hil{diagnostic_clock_200:1} run data modify storage supracraft:active4x hil.diagnostic_clock_200 set value 1
+execute if score diagnostic_clock supracraft_hil matches 400.. unless data storage supracraft:active4x hil{diagnostic_clock_400:1} run say SUPRACRAFT_D3_DIAG_CLOCK_400
+execute if score diagnostic_clock supracraft_hil matches 400.. unless data storage supracraft:active4x hil{diagnostic_clock_400:1} run data modify storage supracraft:active4x hil.diagnostic_clock_400 set value 1
+execute if entity @a[name=TwoRiversHIL,gamemode=survival] unless data storage supracraft:active4x hil{diagnostic_server_survival:1} run say SUPRACRAFT_D3_DIAG_SERVER_SURVIVAL
+execute if entity @a[name=TwoRiversHIL,gamemode=survival] unless data storage supracraft:active4x hil{diagnostic_server_survival:1} run data modify storage supracraft:active4x hil.diagnostic_server_survival set value 1
 scoreboard players set trade_count supracraft_hil 0
 scoreboard players set build_count supracraft_hil 0
 execute store result score trade_count supracraft_hil run data get block -6 70 12 Items[{Slot:0b}].count 1

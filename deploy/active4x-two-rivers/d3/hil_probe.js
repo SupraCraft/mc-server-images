@@ -236,6 +236,7 @@ async function main () {
       if (name === 'block_dig' && observedDigPackets++ < 8) {
         const loc = data.location || {}
         console.log('D3_DIG_OUTBOUND ' + JSON.stringify({
+          wall_ms: Date.now(),
           status: data.status, sequence: data.sequence, face: data.face,
           location: [loc.x, loc.y, loc.z],
           player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
@@ -328,6 +329,7 @@ async function main () {
     const fastBreak = await waitForBlock(bot, fastBreakPos, 'glass')
     await settleOnGround(bot)
     console.log('D3_FASTBREAK_ATTEMPT ' + JSON.stringify({
+      wall_ms: Date.now(),
       estimated_ms: bot.digTime(fastBreak),
       position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
       game_mode: bot.game.gameMode
