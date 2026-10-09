@@ -1,0 +1,46 @@
+{
+  "client_interaction": {
+    "actions": null,
+    "error": "Error: walk timeout to (1, 70, 12)\n    at walkNear (/hil/hil_probe.js:92:9)\n    at async main (/hil/hil_probe.js:238:23)",
+    "minecraft": null,
+    "mode": "interact",
+    "result": "ERROR"
+  },
+  "deployment_stage": "D3_automated_rehearsal",
+  "diagnostic_only": true,
+  "failed_stage": "hil_probe_exit",
+  "fresh_client_block_observation": {
+    "damage": {
+      "name": "cobblestone",
+      "observed": true,
+      "position": [
+        6,
+        70,
+        16
+      ]
+    },
+    "obstruction": {
+      "name": "red_concrete",
+      "observed": true,
+      "position": [
+        2,
+        70,
+        16
+      ]
+    }
+  },
+  "fresh_client_observation_status": "OBSERVED",
+  "harness_exit_code": 1,
+  "result": "FAIL",
+  "schema": "supracraft.active4x-two-rivers-d3-rehearsal/v0.1",
+  "server_authoritative_block_state": "UNKNOWN",
+  "server_markers": {
+    "SUPRACRAFT_D3_BUILD_HELP_COMPLETE": false,
+    "SUPRACRAFT_D3_DAMAGE_COMPLETE": false,
+    "SUPRACRAFT_D3_OBSTRUCT_COMPLETE": false,
+    "SUPRACRAFT_D3_PHASE1_COMPLETE": false,
+    "SUPRACRAFT_D3_TRADE_COMPLETE": true
+  },
+  "stock_client_hil_required": true,
+  "world_scan": false
+}
