@@ -125,8 +125,9 @@ async function waitGameMode (bot, expected, timeoutMs = 6000) {
 // START and FINISH are the native 26.3 actions. The independent passive client
 // never predicts air; it observes official-server destruction broadcasts.
 // A byte wraps after 127: recover its unsigned representation *only* for the
-// observed non-sentinel progress sequence. 210/255 is above the recovered
-// server STOP admission floor (70%) with margin; it is not game semantics.
+// observed non-sentinel sequence. The near-terminal 235/255 threshold probes
+// whether FINISH acceptance is blocked even with high observed progress.
+// It is diagnostic, not a production completion rule.
 async function digWithWitnessProgress (bot, witness, block, target, witnessStages) {
   const p = block.position
   const key = [p.x, p.y, p.z].join(',')
@@ -154,7 +155,7 @@ async function digWithWitnessProgress (bot, witness, block, target, witnessStage
       if (Number.isInteger(current) && current !== -1) {
         const unsigned = current < 0 ? current + 256 : current
         last = unsigned
-        if (unsigned >= 210 && unsigned <= 254) observedHigh++
+        if (unsigned >= 235 && unsigned <= 254) observedHigh++
         else observedHigh = 0
         if (observedHigh >= 2) break
       }
@@ -168,7 +169,7 @@ async function digWithWitnessProgress (bot, witness, block, target, witnessStage
     const finishMs = Date.now()
     console.log('D3_PROGRESS_GATED_FINISH ' + JSON.stringify({
       target, wall_ms: finishMs, elapsed_ms: finishMs - startMs,
-      progress_unsigned: last, threshold: 210
+      progress_unsigned: last, threshold: 235
     }))
     bot._client.write('block_dig', {
       status: 2, location: p, face: 2, sequence: bot._nextSequence()
@@ -330,7 +331,9 @@ async function main () {
       witnessStages.set(key, stage)
       // Keep a compact trace: first sample, each stage decade, and reset.
       // This does not assume what 26.3's stage units represent.
-      const bucket = stage < 0 ? -1 : Math.floor(stage / 10)
+      // The 26.3 wire field is signed i8; keep separate buckets after wrap.
+      // -1 is also used for reset. Preserve raw stage; unsigned is diagnostic.
+      const bucket = stage === -1 ? -1 : Math.floor((stage < 0 ? stage + 256 : stage) / 10)
       const changed = recordedProgressBuckets.get(key) !== bucket
       if (changed && progressEvents++ < 48) {
         recordedProgressBuckets.set(key, bucket)
