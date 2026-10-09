@@ -17,9 +17,9 @@ import json, re, sys
 from pathlib import Path
 t=Path(sys.argv[1]).read_text()
 methods=['tick','handleBlockBreakAction','incrementDestroyProgress','destroyAndAck','destroyBlock','abortDestroyBlock']
-found={m:bool(re.search(r'\\b'+m+r'\\s*\\(',t)) for m in methods}
+found={m:bool(re.search(r'\b'+m+r'\s*\(',t)) for m in methods}
 report={'schema':'supracraft.d3-handler-shape/v0.1','minecraft':'26.3','class':'ServerPlayerGameMode','methods':found,'proprietary_code_exported':False}
-Path('probes/active4x/two-rivers-d3-handler-shape.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\\n')
+Path('probes/active4x/two-rivers-d3-handler-shape.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
 print(json.dumps(report))
 if not all(found.values()): raise SystemExit(2)
 PY
