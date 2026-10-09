@@ -121,6 +121,27 @@ async function waitGameMode (bot, expected, timeoutMs = 6000) {
   throw new Error('D3 creative-control game-mode timeout: expected=' + expected + ', observed=' + bot.game.gameMode)
 }
 
+// D3 hypothesis only: bound the Mineflayer FINISH timer while retaining native
+// START/FINISH packet contents. The independent stock-server world marker,
+// never the client's local air prediction, is the acceptance authority.
+async function digWithBoundedServerProgressMargin (bot, block, target) {
+  const original = bot.digTime
+  const base = original(block)
+  const bound = Math.ceil(base * 1.8) + 100
+  if (!Number.isFinite(base) || base <= 0 || bound > 20000) {
+    throw new Error('D3 server-progress timing treatment outside bounded range')
+  }
+  console.log('D3_DIG_TIME_TREATMENT ' + JSON.stringify({
+    target, base_ms: base, bound_ms: bound, ratio: 1.8
+  }))
+  bot.digTime = candidate => Math.ceil(original(candidate) * 1.8) + 100
+  try {
+    await bot.dig(block, true, 'raycast')
+  } finally {
+    bot.digTime = original
+  }
+}
+
 function invCount (bot, name) {
   return bot.inventory.items()
     .filter(item => item.name === name)
@@ -244,14 +265,25 @@ async function main () {
     witness.on('error', err => console.log('D3_WITNESS_ERROR ' + String(err?.message || err).slice(0, 120)))
     witness.on('kicked', () => console.log('D3_WITNESS_ERROR kicked'))
     const watched = new Set(['2,70,16', '6,70,16', '3,70,16', '4,70,13'])
+    const witnessStages = new Map()
+    const recordedProgressBuckets = new Map()
     let progressEvents = 0
     let stateEvents = 0
     witness._client.on('block_break_animation', packet => {
       const p = packet.location || {}
       const loc = [p.x, p.y, p.z]
-      if (watched.has(loc.join(',')) && progressEvents++ < 48) {
+      const key = loc.join(',')
+      if (!watched.has(key)) return
+      const stage = packet.destroyStage
+      witnessStages.set(key, stage)
+      // Keep a compact trace: first sample, each stage decade, and reset.
+      // This does not assume what 26.3's stage units represent.
+      const bucket = stage < 0 ? -1 : Math.floor(stage / 10)
+      const changed = recordedProgressBuckets.get(key) !== bucket
+      if (changed && progressEvents++ < 48) {
+        recordedProgressBuckets.set(key, bucket)
         console.log('D3_WITNESS_PROGRESS ' + JSON.stringify({
-          wall_ms: Date.now(), location: loc, stage: packet.destroyStage
+          wall_ms: Date.now(), location: loc, stage
         }))
       }
     })
@@ -286,6 +318,7 @@ async function main () {
         console.log('D3_DIG_OUTBOUND ' + JSON.stringify({
           wall_ms: Date.now(),
           status: data.status, sequence: data.sequence, face: data.face,
+          witness_stage: witnessStages.get([loc.x, loc.y, loc.z].join(',')) ?? null,
           location: [loc.x, loc.y, loc.z],
           player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
           on_ground: bot.entity.onGround
@@ -435,7 +468,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(obstruction)
     }))
-    await bot.dig(obstruction, true, 'raycast')
+    await digWithBoundedServerProgressMargin(bot, obstruction, 'obstruction')
     await waitForBlockName(bot, obstructPos, 'air', 5000)
 
     movement.total += await walkNear(bot, damagePos.offset(0, 0, -1))
@@ -449,7 +482,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(damage)
     }))
-    await bot.dig(damage, true, 'raycast')
+    await digWithBoundedServerProgressMargin(bot, damage, 'damage')
     await waitForBlockName(bot, damagePos, 'air', 5000)
 
     const outputDeadline = Date.now() + 10000

@@ -92,7 +92,7 @@ except OSError:
 import re
 events = []
 for line in client_log.splitlines():
-    match = re.search(r"D3_(?:PLACE|FASTBREAK|DIG|WITNESS)_(?:OUTBOUND|ATTEMPT|CONTROL_RESULT|CONTROL_FAIL|SERVER_ACK|SERVER_BLOCK_UPDATE|SERVER_PROGRESS|PROGRESS|BLOCK_UPDATE|READY|ERROR)\s+(.+)$", line)
+    match = re.search(r"D3_(?:PLACE|FASTBREAK|DIG|WITNESS)_(?:OUTBOUND|ATTEMPT|CONTROL_RESULT|CONTROL_FAIL|SERVER_ACK|SERVER_BLOCK_UPDATE|SERVER_PROGRESS|PROGRESS|BLOCK_UPDATE|READY|ERROR|TIME_TREATMENT)\s+(.+)$", line)
     if not match or len(events) >= 64:
         continue
     payload = match.group(1)
@@ -108,7 +108,7 @@ for line in client_log.splitlines():
             continue
         if not isinstance(obj, dict):
             continue
-        allowed = ("wall_ms", "sequence", "sequenceId", "status", "face", "estimated_ms", "game_mode", "on_ground", "location", "target", "held", "stage", "type")
+        allowed = ("wall_ms", "sequence", "sequenceId", "status", "face", "estimated_ms", "game_mode", "on_ground", "location", "target", "held", "stage", "type", "witness_stage", "base_ms", "bound_ms", "ratio")
         clean = {key: obj[key] for key in allowed if key in obj}
         kind = line.split("D3_",1)[-1].split(" ",1)[0]
         events.append({"kind": kind, "data": clean})
