@@ -16,14 +16,92 @@ compose() {
 cleanup() {
   compose down -v --remove-orphans >/dev/null 2>&1 || true
 }
+stage="startup"
 diagnose() {
   local rc=$?
+  trap - EXIT
   if (( rc != 0 )); then
-    echo "D3_REHEARSAL_DIAGNOSTIC_BEGIN rc=$rc" >&2
+    echo "D3_REHEARSAL_DIAGNOSTIC_BEGIN rc=$rc stage=$stage" >&2
+    local evidence_dir scratch hil_cid
+    evidence_dir="$(dirname "$output")"
+    mkdir -p "$evidence_dir"
+    scratch="$(mktemp -d)"
+    hil_cid="$(compose ps -aq hil-probe 2>/dev/null | head -n 1 || true)"
+
+    # Capture the original client's success/error receipt BEFORE deleting volumes.
+    if [[ -n "$hil_cid" ]]; then
+      docker cp "$hil_cid:/hil-state/result-interact.json" "$scratch/original.json" >/dev/null 2>&1 || true
+    fi
+
+    # One bounded, observational fresh client: its chunk data can falsify the
+    # original client's predicted dig success. No blocks are modified.
+    if [[ -n "$hil_cid" ]] && compose ps -q minecraft >/dev/null 2>&1; then
+      compose run --rm --no-deps -T -e HIL_MODE=diagnose hil-probe >"$scratch/fresh-client.log" 2>&1 || true
+      docker cp "$hil_cid:/hil-state/result-diagnose.json" "$scratch/fresh.json" >/dev/null 2>&1 || true
+    fi
+
+    compose logs --no-color --tail=250 minecraft >"$scratch/server.log" 2>/dev/null || true
+    # Produce a compact, fail-closed, public-safe receipt even when the client
+    # or the diagnostic itself failed. Do not promote client prediction to a
+    # stock-server event or convert a red run to green.
+    python3 - "$output" "$scratch" "$stage" "$rc" <<'PY'
+import json, sys
+from pathlib import Path
+
+out, directory, stage, rc = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], int(sys.argv[4])
+
+def get_json(name):
+    try:
+        return json.loads((directory / name).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+original, fresh = get_json("original.json"), get_json("fresh.json")
+try:
+    log = (directory / "server.log").read_text(encoding="utf-8")
+except OSError:
+    log = ""
+names = (
+    "SUPRACRAFT_D3_TRADE_COMPLETE",
+    "SUPRACRAFT_D3_BUILD_HELP_COMPLETE",
+    "SUPRACRAFT_D3_OBSTRUCT_COMPLETE",
+    "SUPRACRAFT_D3_DAMAGE_COMPLETE",
+    "SUPRACRAFT_D3_PHASE1_COMPLETE",
+)
+markers = {name: name in log for name in names}
+# Fixed fixture fields only: no credentials, environment, or arbitrary logs.
+client = None if original is None else {
+    "mode": original.get("mode"),
+    "result": original.get("result"),
+    "actions": original.get("actions"),
+    "minecraft": original.get("minecraft"),
+    "error": str(original.get("error", ""))[:1500] or None,
+}
+fresh_blocks = (fresh.get("blocks") if isinstance(fresh, dict) else None)
+receipt = {
+    "schema": "supracraft.active4x-two-rivers-d3-rehearsal/v0.1",
+    "deployment_stage": "D3_automated_rehearsal",
+    "result": "FAIL",
+    "failed_stage": stage,
+    "harness_exit_code": rc,
+    "client_interaction": client,
+    "fresh_client_block_observation": fresh_blocks,
+    "fresh_client_observation_status": fresh.get("result") if isinstance(fresh, dict) else "UNKNOWN",
+    "server_markers": markers,
+    "server_authoritative_block_state": "UNKNOWN",
+    "stock_client_hil_required": True,
+    "world_scan": False,
+    "diagnostic_only": True,
+}
+out.parent.mkdir(parents=True, exist_ok=True)
+out.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+print(json.dumps(receipt, sort_keys=True))
+PY
+    rm -rf "$scratch"
     compose ps -a >&2 || true
     for service in minecraft director actor-adapter hil-probe; do
       echo "D3_REHEARSAL_DIAGNOSTIC_SERVICE=$service" >&2
-      compose logs --tail=160 "$service" >&2 || true
+      compose logs --tail=60 "$service" >&2 || true
     done
     echo "D3_REHEARSAL_DIAGNOSTIC_END" >&2
   fi
@@ -150,13 +228,14 @@ printf '%s\n' "$task_json" | compose exec -T actor-adapter sh -c 'cat > /actor-s
 compose exec -T hil-probe sh -c 'touch /hil-state/go'
 
 hil_cid="$(compose ps -q hil-probe)"
+stage="hil_probe_exit"
 wait_hil_probe_exit "$hil_cid" 150
+stage="actor_delivery"
 wait_actor_delivered
-wait_marker SUPRACRAFT_D3_TRADE_COMPLETE 60
-wait_marker SUPRACRAFT_D3_BUILD_HELP_COMPLETE 60
-wait_marker SUPRACRAFT_D3_OBSTRUCT_COMPLETE 60
-wait_marker SUPRACRAFT_D3_DAMAGE_COMPLETE 60
-wait_marker SUPRACRAFT_D3_PHASE1_COMPLETE 60
+for marker in SUPRACRAFT_D3_TRADE_COMPLETE SUPRACRAFT_D3_BUILD_HELP_COMPLETE SUPRACRAFT_D3_OBSTRUCT_COMPLETE SUPRACRAFT_D3_DAMAGE_COMPLETE SUPRACRAFT_D3_PHASE1_COMPLETE; do
+  stage="await_$marker"
+  wait_marker "$marker" 60
+done
 
 tmp_interact="$(mktemp)"
 docker cp "$hil_cid:/hil-state/result-interact.json" "$tmp_interact"
