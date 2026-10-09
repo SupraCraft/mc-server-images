@@ -1,0 +1,14 @@
+{
+  "class": "ServerPlayerGameMode",
+  "methods": {
+    "abortDestroyBlock": true,
+    "destroyAndAck": true,
+    "destroyBlock": true,
+    "handleBlockBreakAction": true,
+    "incrementDestroyProgress": true,
+    "tick": true
+  },
+  "minecraft": "26.3",
+  "proprietary_code_exported": false,
+  "schema": "supracraft.d3-handler-shape/v0.1"
+}
