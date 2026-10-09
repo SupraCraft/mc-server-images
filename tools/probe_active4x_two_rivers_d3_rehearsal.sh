@@ -41,7 +41,7 @@ diagnose() {
     fi
 
     compose logs --no-color --tail=250 minecraft >"$scratch/server.log" 2>/dev/null || true
-    compose logs --no-color --tail=160 hil-probe >"$scratch/client.log" 2>/dev/null || true
+    compose logs --no-color --tail=230 hil-probe >"$scratch/client.log" 2>/dev/null || true
     # Produce a compact, fail-closed, public-safe receipt even when the client
     # or the diagnostic itself failed. Do not promote client prediction to a
     # stock-server event or convert a red run to green.
@@ -92,8 +92,8 @@ except OSError:
 import re
 events = []
 for line in client_log.splitlines():
-    match = re.search(r"D3_(?:PLACE|FASTBREAK|DIG)_(?:OUTBOUND|ATTEMPT|CONTROL_RESULT|CONTROL_FAIL|SERVER_ACK|SERVER_BLOCK_UPDATE|SERVER_PROGRESS)\s+(.+)$", line)
-    if not match or len(events) >= 32:
+    match = re.search(r"D3_(?:PLACE|FASTBREAK|DIG|WITNESS)_(?:OUTBOUND|ATTEMPT|CONTROL_RESULT|CONTROL_FAIL|SERVER_ACK|SERVER_BLOCK_UPDATE|SERVER_PROGRESS|PROGRESS|BLOCK_UPDATE|READY|ERROR)\s+(.+)$", line)
+    if not match or len(events) >= 64:
         continue
     payload = match.group(1)
     # Parse and select only safe literals/numbers from fixed observer fields.
@@ -108,7 +108,7 @@ for line in client_log.splitlines():
             continue
         if not isinstance(obj, dict):
             continue
-        allowed = ("wall_ms", "sequence", "sequenceId", "status", "face", "estimated_ms", "game_mode", "on_ground", "location", "target", "held")
+        allowed = ("wall_ms", "sequence", "sequenceId", "status", "face", "estimated_ms", "game_mode", "on_ground", "location", "target", "held", "stage", "type")
         clean = {key: obj[key] for key in allowed if key in obj}
         kind = line.split("D3_",1)[-1].split(" ",1)[0]
         events.append({"kind": kind, "data": clean})

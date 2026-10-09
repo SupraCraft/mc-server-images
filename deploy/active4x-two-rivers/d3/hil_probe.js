@@ -160,6 +160,7 @@ async function waitCaravan (bot, timeoutMs = 20000) {
 }
 
 async function main () {
+  let witness = null
   const bot = mineflayer.createBot({
     host,
     port,
@@ -228,6 +229,39 @@ async function main () {
     }
 
     await waitFile(goFile, 60000)
+
+    // A second passive client receives vanilla block destruction progress
+    // broadcast to other players. The mining bot is not always sent its own
+    // progress animation, so self-observation is not a valid negative oracle.
+    // This observer never sends gameplay actions.
+    witness = mineflayer.createBot({
+      host, port, username: 'TwoRiversD3Witness', version, auth: 'offline'
+    })
+    witness.on('error', err => console.log('D3_WITNESS_ERROR ' + String(err?.message || err).slice(0, 120)))
+    witness.on('kicked', () => console.log('D3_WITNESS_ERROR kicked'))
+    const watched = new Set(['2,70,16', '6,70,16', '3,70,16', '4,70,13'])
+    let progressEvents = 0
+    let stateEvents = 0
+    witness._client.on('block_break_animation', packet => {
+      const p = packet.location || {}
+      const loc = [p.x, p.y, p.z]
+      if (watched.has(loc.join(',')) && progressEvents++ < 48) {
+        console.log('D3_WITNESS_PROGRESS ' + JSON.stringify({
+          wall_ms: Date.now(), location: loc, stage: packet.destroyStage
+        }))
+      }
+    })
+    witness._client.on('block_change', packet => {
+      const p = packet.location || {}
+      const loc = [p.x, p.y, p.z]
+      if (watched.has(loc.join(',')) && stateEvents++ < 16) {
+        console.log('D3_WITNESS_BLOCK_UPDATE ' + JSON.stringify({
+          wall_ms: Date.now(), location: loc, type: packet.type
+        }))
+      }
+    })
+    await waitSpawn(witness)
+    console.log('D3_WITNESS_READY ' + JSON.stringify({wall_ms: Date.now()}))
 
     const starterPos = new Vec3(-8, 70, 12)
     const tradeInputPos = new Vec3(-6, 70, 12)
@@ -451,6 +485,7 @@ async function main () {
       result: caravan.seen ? 'PASS' : 'FAIL'
     })
   } finally {
+    if (witness) witness.quit('done')
     bot.quit('done')
   }
 }
