@@ -112,28 +112,6 @@ async function settleOnGround (bot, timeoutMs = 5000) {
   throw new Error('ground settlement timeout before dig')
 }
 
-// One bounded CI-only timing hypothesis: Mineflayer locally predicts block air
-// when its timer elapses, while vanilla server break progress is tick-driven.
-// Retain Mineflayer's native packet sequence; delay only its FINISH timer by
-// 25 percent. Never infer server acceptance from this client-side promise.
-async function digWithBoundedMargin (bot, block, target) {
-  const original = bot.digTime
-  const estimated = original(block)
-  const buffered = Math.ceil(estimated * 1.25)
-  if (!Number.isFinite(estimated) || estimated <= 0 || buffered > 20000) {
-    throw new Error('D3 bounded dig-time admission rejected')
-  }
-  bot.digTime = candidate => Math.ceil(original(candidate) * 1.25)
-  try {
-    console.log('D3_DIG_TIME_TREATMENT ' + JSON.stringify({
-      target, base_ms: estimated, margin_ms: buffered
-    }))
-    await bot.dig(block, true, 'raycast')
-  } finally {
-    bot.digTime = original
-  }
-}
-
 function invCount (bot, name) {
   return bot.inventory.items()
     .filter(item => item.name === name)
@@ -249,6 +227,34 @@ async function main () {
     const obstructPos = new Vec3(2, 70, 16)
     const damagePos = new Vec3(6, 70, 16)
 
+    // D3 packet-admission falsification: observe the native Mineflayer packet
+    // shape unchanged, plus the server's bounded acknowledgments/updates.
+    // This wrapper forwards every packet through the original client writer.
+    const originalClientWrite = bot._client.write.bind(bot._client)
+    let observedDigPackets = 0
+    bot._client.write = (name, data, ...args) => {
+      if (name === 'block_dig' && observedDigPackets++ < 8) {
+        const loc = data.location || {}
+        console.log('D3_DIG_OUTBOUND ' + JSON.stringify({
+          status: data.status, sequence: data.sequence, face: data.face,
+          location: [loc.x, loc.y, loc.z],
+          player_position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
+          on_ground: bot.entity.onGround
+        }))
+      }
+      return originalClientWrite(name, data, ...args)
+    }
+    bot._client.on('block_changed_ack', packet => {
+      console.log('D3_DIG_SERVER_ACK ' + JSON.stringify(packet).slice(0, 400))
+    })
+    bot._client.on('block_change', packet => {
+      const loc = packet.location || {}
+      if ((loc.x === obstructPos.x && loc.y === obstructPos.y && loc.z === obstructPos.z) ||
+          (loc.x === damagePos.x && loc.y === damagePos.y && loc.z === damagePos.z)) {
+        console.log('D3_DIG_SERVER_BLOCK_UPDATE ' + JSON.stringify(packet).slice(0, 400))
+      }
+    })
+
     const wheat = bot.registry.itemsByName.wheat
     const bricks = bot.registry.itemsByName.bricks
     if (!wheat || !bricks) throw new Error('exact-26.3 registry missing HIL items')
@@ -302,7 +308,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(obstruction)
     }))
-    await digWithBoundedMargin(bot, obstruction, 'obstruction')
+    await bot.dig(obstruction, true, 'raycast')
     await waitForBlockName(bot, obstructPos, 'air', 5000)
 
     movement.total += await walkNear(bot, damagePos.offset(0, 0, -1))
@@ -316,7 +322,7 @@ async function main () {
       game_mode: bot.game.gameMode,
       estimated_ms: bot.digTime(damage)
     }))
-    await digWithBoundedMargin(bot, damage, 'damage')
+    await bot.dig(damage, true, 'raycast')
     await waitForBlockName(bot, damagePos, 'air', 5000)
 
     const outputDeadline = Date.now() + 10000
