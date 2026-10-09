@@ -323,7 +323,7 @@ async function main () {
     // Independent positive control: fast ordinary glass break with the same
     // unmodified 26.3 player-action packet path. Success/failure is decided
     // by the official server's named marker, not Mineflayer's local air state.
-    const fastBreakPos = new Vec3(0, 70, 16)
+    const fastBreakPos = new Vec3(3, 70, 16)
     movement.total += await walkNear(bot, fastBreakPos.offset(0, 0, -1))
     const fastBreak = await waitForBlock(bot, fastBreakPos, 'glass')
     await settleOnGround(bot)
