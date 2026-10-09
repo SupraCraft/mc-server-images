@@ -71,6 +71,7 @@ names = (
     "SUPRACRAFT_D3_DIAG_PLACE_COMPLETE",
     "SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE",
     "SUPRACRAFT_D3_DIAG_SERVER_SURVIVAL",
+    "SUPRACRAFT_D3_DIAG_CARAVAN_COPRESENT",
     "SUPRACRAFT_D3_DIAG_CLOCK_200",
     "SUPRACRAFT_D3_DIAG_CLOCK_400",
     "SUPRACRAFT_D3_DIAG_SERVER_TOOL_PRESENT",
@@ -141,6 +142,17 @@ receipt = {
             if isinstance(original, dict) and isinstance(original.get("caravan"), dict)
             else None
         ),
+        "match_kind": (
+            original["caravan"].get("match_kind")
+            if isinstance(original, dict) and isinstance(original.get("caravan"), dict)
+            else None
+        ),
+        "tab_observed": (
+            original["caravan"].get("player_tab_observed")
+            if isinstance(original, dict) and isinstance(original.get("caravan"), dict)
+            else None
+        ),
+        "server_copresent": "SUPRACRAFT_D3_DIAG_CARAVAN_COPRESENT" in log,
     },
     "server_authoritative_block_state": "UNKNOWN",
     "stock_client_hil_required": True,

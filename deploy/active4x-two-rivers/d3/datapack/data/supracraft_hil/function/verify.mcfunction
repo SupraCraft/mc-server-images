@@ -1,4 +1,8 @@
 # D3 read-only fixed-coordinate reach probes: one marker each, no semantic changes.
+# Read-only server proximity proof for the exact, bounded fake player pair.
+# This does NOT substitute for the client's independently observed avatar.
+execute as @a[name=TwoRiversHIL] at @s if entity @a[name=TwoRiversD2B,distance=..32] unless data storage supracraft:active4x hil{diagnostic_caravan_copresent:1} run say SUPRACRAFT_D3_DIAG_CARAVAN_COPRESENT
+execute as @a[name=TwoRiversHIL] at @s if entity @a[name=TwoRiversD2B,distance=..32] unless data storage supracraft:active4x hil{diagnostic_caravan_copresent:1} run data modify storage supracraft:active4x hil.diagnostic_caravan_copresent set value 1
 execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_obstruction_near:1} run say SUPRACRAFT_D3_DIAG_OBSTRUCT_NEAR
 execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_obstruction_near:1} run data modify storage supracraft:active4x hil.diagnostic_obstruction_near set value 1
 execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_damage_near:1} run say SUPRACRAFT_D3_DIAG_DAMAGE_NEAR

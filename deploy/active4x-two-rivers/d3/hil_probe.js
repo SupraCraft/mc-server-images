@@ -148,16 +148,29 @@ async function waitInv (bot, name, expected, timeoutMs = 5000) {
 async function waitCaravan (bot, timeoutMs = 20000) {
   const deadline = Date.now() + timeoutMs
   let minDistance = null
+  let playerTabObserved = false
+  let matchKind = null
   while (Date.now() < deadline) {
-    const entity = bot.players[caravanUser] && bot.players[caravanUser].entity
-    if (entity) {
+    const player = bot.players[caravanUser]
+    if (player) playerTabObserved = true
+    // Exact identity reconciliation: the experimental 26.3 stack can receive
+    // player-info before it binds player.entity. Search only streamed local
+    // entity state for the matching UUID, never a global/world scan.
+    const uuid = String(player?.uuid || '').replace(/-/g, '').toLowerCase()
+    const fallback = uuid
+      ? Object.values(bot.entities).find(e =>
+          String(e.uuid || '').replace(/-/g, '').toLowerCase() === uuid)
+      : null
+    const entity = player?.entity || fallback
+    if (entity?.position) {
+      matchKind = player?.entity ? 'player_entity' : 'streamed_uuid'
       const d = bot.entity.position.distanceTo(entity.position)
       minDistance = minDistance === null ? d : Math.min(minDistance, d)
-      if (d <= 32) return { seen: true, min_distance: minDistance }
+      if (d <= 32) return { seen: true, min_distance: minDistance, match_kind: matchKind, player_tab_observed: true }
     }
     await sleep(100)
   }
-  return { seen: false, min_distance: minDistance }
+  return { seen: false, min_distance: minDistance, match_kind: matchKind, player_tab_observed: playerTabObserved }
 }
 
 async function main () {
@@ -172,10 +185,25 @@ async function main () {
   bot.on('kicked', reason => console.log('D3_REHEARSAL_KICKED ' + JSON.stringify(reason)))
   bot.on('error', err => console.log('D3_REHEARSAL_ERROR ' + String(err && err.stack ? err.stack : err)))
   bot.on('playerJoined', player => {
-    if (player?.username === caravanUser) console.log('D3_CARAVAN_PLAYER_JOINED')
+    if (player?.username === caravanUser) {
+      console.log('D3_CARAVAN_PLAYER_JOINED ' + JSON.stringify({
+        entity_linked: Boolean(player.entity)
+      }))
+    }
   })
   bot.on('playerLeft', player => {
     if (player?.username === caravanUser) console.log('D3_CARAVAN_PLAYER_LEFT')
+  })
+  // Fixed actor only: confirm whether a streamed entity spawn maps to the
+  // actual player UUID, independent of name/registry classification.
+  bot._client.on('spawn_entity', packet => {
+    const player = bot.players[caravanUser]
+    const normalize = x => String(x || '').replace(/-/g, '').toLowerCase()
+    if (player && normalize(player.uuid) === normalize(packet.objectUUID)) {
+      console.log('D3_CARAVAN_SPAWN_MATCH ' + JSON.stringify({
+        type: packet.type, entity_id: packet.entityId
+      }))
+    }
   })
 
   try {
