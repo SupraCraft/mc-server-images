@@ -1,5 +1,112 @@
 {
   "class": "ServerPlayerGameMode",
+  "method_decisions": {
+    "destroyAndAck": {
+      "conditional_branches": 0,
+      "found": true,
+      "references": {
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
+        "destroyAndAck": true,
+        "destroyBlock": true,
+        "getDestroyProgress": false,
+        "getDestroySpeed": false,
+        "getMainHandItem": false,
+        "hasDelayedDestroy": false,
+        "incrementDestroyProgress": false,
+        "isCreative": false,
+        "isDestroyingBlock": false,
+        "isUnderSpawnProtection": false,
+        "isWithinBlockInteractionRange": false,
+        "mayInteract": false
+      },
+      "uses_0_7_float": false
+    },
+    "destroyBlock": {
+      "conditional_branches": 0,
+      "found": true,
+      "references": {
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
+        "destroyAndAck": false,
+        "destroyBlock": true,
+        "getDestroyProgress": false,
+        "getDestroySpeed": false,
+        "getMainHandItem": false,
+        "hasDelayedDestroy": false,
+        "incrementDestroyProgress": false,
+        "isCreative": false,
+        "isDestroyingBlock": false,
+        "isUnderSpawnProtection": false,
+        "isWithinBlockInteractionRange": false,
+        "mayInteract": false
+      },
+      "uses_0_7_float": false
+    },
+    "handleBlockBreakAction": {
+      "conditional_branches": 0,
+      "found": true,
+      "references": {
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
+        "destroyAndAck": false,
+        "destroyBlock": false,
+        "getDestroyProgress": false,
+        "getDestroySpeed": false,
+        "getMainHandItem": false,
+        "hasDelayedDestroy": false,
+        "incrementDestroyProgress": false,
+        "isCreative": false,
+        "isDestroyingBlock": true,
+        "isUnderSpawnProtection": false,
+        "isWithinBlockInteractionRange": true,
+        "mayInteract": false
+      },
+      "uses_0_7_float": false
+    },
+    "incrementDestroyProgress": {
+      "conditional_branches": 0,
+      "found": true,
+      "references": {
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
+        "destroyAndAck": false,
+        "destroyBlock": false,
+        "getDestroyProgress": false,
+        "getDestroySpeed": false,
+        "getMainHandItem": false,
+        "hasDelayedDestroy": false,
+        "incrementDestroyProgress": true,
+        "isCreative": false,
+        "isDestroyingBlock": false,
+        "isUnderSpawnProtection": false,
+        "isWithinBlockInteractionRange": false,
+        "mayInteract": false
+      },
+      "uses_0_7_float": false
+    },
+    "tick": {
+      "conditional_branches": 0,
+      "found": true,
+      "references": {
+        "blockActionRestricted": false,
+        "canDestroyBlock": false,
+        "destroyAndAck": false,
+        "destroyBlock": false,
+        "getDestroyProgress": false,
+        "getDestroySpeed": false,
+        "getMainHandItem": false,
+        "hasDelayedDestroy": true,
+        "incrementDestroyProgress": false,
+        "isCreative": false,
+        "isDestroyingBlock": false,
+        "isUnderSpawnProtection": false,
+        "isWithinBlockInteractionRange": false,
+        "mayInteract": false
+      },
+      "uses_0_7_float": false
+    }
+  },
   "methods": {
     "abortDestroyBlock": true,
     "destroyAndAck": true,
@@ -10,5 +117,5 @@
   },
   "minecraft": "26.3",
   "proprietary_code_exported": false,
-  "schema": "supracraft.d3-handler-shape/v0.1"
+  "schema": "supracraft.d3-handler-shape/v0.2"
 }
