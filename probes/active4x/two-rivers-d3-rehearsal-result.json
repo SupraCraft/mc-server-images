@@ -1,14 +1,22 @@
 {
   "client_interaction": {
-    "actions": null,
-    "error": "Error: walk timeout to (1, 70, 12)\n    at walkNear (/hil/hil_probe.js:92:9)\n    at async main (/hil/hil_probe.js:238:23)",
-    "minecraft": null,
+    "actions": {
+      "build_supply": true,
+      "damage_break": true,
+      "obstruction_break": true,
+      "trade_deposit": true
+    },
+    "error": null,
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
     "mode": "interact",
-    "result": "ERROR"
+    "result": "FAIL"
   },
   "deployment_stage": "D3_automated_rehearsal",
   "diagnostic_only": true,
-  "failed_stage": "hil_probe_exit",
+  "failed_stage": "await_SUPRACRAFT_D3_OBSTRUCT_COMPLETE",
   "fresh_client_block_observation": {
     "damage": {
       "name": "cobblestone",
@@ -35,7 +43,7 @@
   "schema": "supracraft.active4x-two-rivers-d3-rehearsal/v0.1",
   "server_authoritative_block_state": "UNKNOWN",
   "server_markers": {
-    "SUPRACRAFT_D3_BUILD_HELP_COMPLETE": false,
+    "SUPRACRAFT_D3_BUILD_HELP_COMPLETE": true,
     "SUPRACRAFT_D3_DAMAGE_COMPLETE": false,
     "SUPRACRAFT_D3_OBSTRUCT_COMPLETE": false,
     "SUPRACRAFT_D3_PHASE1_COMPLETE": false,
