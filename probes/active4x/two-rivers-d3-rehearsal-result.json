@@ -14,6 +14,243 @@
     "mode": "interact",
     "result": "FAIL"
   },
+  "client_packet_events": [
+    {
+      "data": {
+        "face": 1,
+        "held": "other",
+        "location": [
+          -8,
+          70,
+          12
+        ],
+        "sequence": 1,
+        "wall_ms": 1791559125856
+      },
+      "kind": "PLACE_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 1
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "face": 1,
+        "held": "other",
+        "location": [
+          -6,
+          70,
+          12
+        ],
+        "sequence": 2,
+        "wall_ms": 1791559147531
+      },
+      "kind": "PLACE_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 2
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "face": 1,
+        "held": "other",
+        "location": [
+          0,
+          70,
+          12
+        ],
+        "sequence": 3,
+        "wall_ms": 1791559150658
+      },
+      "kind": "PLACE_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 3
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "game_mode": "survival",
+        "on_ground": true,
+        "target": [
+          4,
+          70,
+          13
+        ],
+        "wall_ms": 1791559152166
+      },
+      "kind": "PLACE_ATTEMPT"
+    },
+    {
+      "kind": "place_result",
+      "outcome": "CLIENT_SERVER_UPDATE"
+    },
+    {
+      "data": {
+        "sequenceId": 4
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "estimated_ms": 0,
+        "game_mode": "creative",
+        "wall_ms": 1791559153615
+      },
+      "kind": "FASTBREAK_ATTEMPT"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          3,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 5,
+        "status": 0,
+        "wall_ms": 1791559153617
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          3,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 6,
+        "status": 2,
+        "wall_ms": 1791559153618
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 6
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "estimated_ms": 2700,
+        "game_mode": "survival",
+        "on_ground": true,
+        "target": "obstruction"
+      },
+      "kind": "DIG_ATTEMPT"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 7,
+        "status": 0,
+        "wall_ms": 1791559154125
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 7
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 8,
+        "status": 2,
+        "wall_ms": 1791559156826
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 8
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "estimated_ms": 3000,
+        "game_mode": "survival",
+        "on_ground": true,
+        "target": "damage"
+      },
+      "kind": "DIG_ATTEMPT"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          6,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 9,
+        "status": 0,
+        "wall_ms": 1791559157632
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 9
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          6,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 10,
+        "status": 2,
+        "wall_ms": 1791559160632
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 10
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "sequenceId": 11
+      },
+      "kind": "DIG_SERVER_ACK"
+    }
+  ],
   "deployment_stage": "D3_automated_rehearsal",
   "diagnostic_only": true,
   "failed_stage": "await_SUPRACRAFT_D3_OBSTRUCT_COMPLETE",
@@ -45,6 +282,11 @@
   "server_markers": {
     "SUPRACRAFT_D3_BUILD_HELP_COMPLETE": true,
     "SUPRACRAFT_D3_DAMAGE_COMPLETE": false,
+    "SUPRACRAFT_D3_DIAG_CLOCK_200": true,
+    "SUPRACRAFT_D3_DIAG_CLOCK_400": true,
+    "SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE": true,
+    "SUPRACRAFT_D3_DIAG_PLACE_COMPLETE": true,
+    "SUPRACRAFT_D3_DIAG_SERVER_SURVIVAL": true,
     "SUPRACRAFT_D3_OBSTRUCT_COMPLETE": false,
     "SUPRACRAFT_D3_PHASE1_COMPLETE": false,
     "SUPRACRAFT_D3_TRADE_COMPLETE": true
