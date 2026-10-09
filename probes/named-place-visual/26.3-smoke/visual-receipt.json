@@ -40,11 +40,11 @@
   },
   "traversal": {
     "authority": "grounded_traversal_evidence",
-    "distance": 11.426,
+    "distance": 11.435,
     "end": [
       0.391,
       69.938,
-      13.075
+      13.066
     ],
     "passed": true,
     "proof_walk_fps": 12,
@@ -53,7 +53,7 @@
       69.938,
       24.5
     ],
-    "walkthrough_frames": 30,
+    "walkthrough_frames": 31,
     "walkthrough_target_duration_ms": 2500
   },
   "views": [
@@ -78,11 +78,11 @@
         69.938,
         13.066
       ],
-      "bytes": 128990,
+      "bytes": 129091,
       "camera_position": [
         0.391,
         69.938,
-        13.075
+        13.066
       ],
       "name": "02_after_walk",
       "path": "/home/runner/work/_temp/named-place-visual/02_after_walk.jpg"
@@ -138,7 +138,7 @@
         69.938,
         13.066
       ],
-      "bytes": 69358,
+      "bytes": 69290,
       "camera_position": [
         0,
         84,
@@ -153,7 +153,7 @@
         69.938,
         13.066
       ],
-      "bytes": 122293,
+      "bytes": 122243,
       "camera_position": [
         0,
         96,
