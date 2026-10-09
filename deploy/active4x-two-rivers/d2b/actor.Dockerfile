@@ -1,4 +1,5 @@
-FROM node:24-bookworm
+# Docker Official Images mirrored by Amazon Public ECR to avoid shared-runner Docker Hub 429.
+FROM public.ecr.aws/docker/library/node:24-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates git python3 python-is-python3 \

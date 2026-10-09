@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+# Docker Official Images mirrored by Amazon Public ECR to avoid shared-runner Docker Hub 429.
+FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /app
 COPY tools/active4x_persistence_w5.py /app/active4x_persistence_w5.py

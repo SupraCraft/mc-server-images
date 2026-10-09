@@ -1,4 +1,5 @@
-FROM eclipse-temurin:25-jre-jammy
+# Docker Official Images mirrored by Amazon Public ECR to avoid shared-runner Docker Hub 429.
+FROM public.ecr.aws/docker/library/eclipse-temurin:25-jre-jammy
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends bash ca-certificates curl \
