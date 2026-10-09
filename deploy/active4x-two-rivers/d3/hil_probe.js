@@ -234,8 +234,12 @@ async function main () {
     // broadcast to other players. The mining bot is not always sent its own
     // progress animation, so self-observation is not a valid negative oracle.
     // This observer never sends gameplay actions.
+    const witnessUsername = 'TwoRiversWit'
+    if (!/^[A-Za-z0-9_]{1,16}$/.test(witnessUsername)) {
+      throw new Error('D3 synthetic witness username violates vanilla login rules')
+    }
     witness = mineflayer.createBot({
-      host, port, username: 'TwoRiversWit', version, auth: 'offline'
+      host, port, username: witnessUsername, version, auth: 'offline'
     })
     witness.on('error', err => console.log('D3_WITNESS_ERROR ' + String(err?.message || err).slice(0, 120)))
     witness.on('kicked', () => console.log('D3_WITNESS_ERROR kicked'))
