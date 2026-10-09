@@ -320,6 +320,20 @@ async function main () {
     await sleep(350)
     await waitInv(bot, 'bricks', 0)
 
+    // Independent positive control: fast ordinary glass break with the same
+    // unmodified 26.3 player-action packet path. Success/failure is decided
+    // by the official server's named marker, not Mineflayer's local air state.
+    const fastBreakPos = new Vec3(0, 70, 16)
+    movement.total += await walkNear(bot, fastBreakPos.offset(0, 0, -1))
+    const fastBreak = await waitForBlock(bot, fastBreakPos, 'glass')
+    await settleOnGround(bot)
+    console.log('D3_FASTBREAK_ATTEMPT ' + JSON.stringify({
+      estimated_ms: bot.digTime(fastBreak),
+      position: [bot.entity.position.x, bot.entity.position.y, bot.entity.position.z],
+      game_mode: bot.game.gameMode
+    }))
+    await bot.dig(fastBreak, true, 'raycast')
+    await waitForBlockName(bot, fastBreakPos, 'air', 5000)
     movement.total += await walkNear(bot, obstructPos.offset(0, 0, -1))
     const obstruction = await waitForBlock(bot, obstructPos, 'red_concrete')
     await settleOnGround(bot)

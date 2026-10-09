@@ -3,6 +3,9 @@ execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data s
 execute if entity @a[name=TwoRiversHIL,x=2,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_obstruction_near:1} run data modify storage supracraft:active4x hil.diagnostic_obstruction_near set value 1
 execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_damage_near:1} run say SUPRACRAFT_D3_DIAG_DAMAGE_NEAR
 execute if entity @a[name=TwoRiversHIL,x=6,y=70,z=15,distance=..3] unless data storage supracraft:active4x hil{diagnostic_damage_near:1} run data modify storage supracraft:active4x hil.diagnostic_damage_near set value 1
+# Read-only acceptance marker for the diagnostic fast-break control.
+execute if block 0 70 16 minecraft:air unless data storage supracraft:active4x hil{diagnostic_fastbreak_done:1} run say SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE
+execute if block 0 70 16 minecraft:air unless data storage supracraft:active4x hil{diagnostic_fastbreak_done:1} run data modify storage supracraft:active4x hil.diagnostic_fastbreak_done set value 1
 scoreboard players set trade_count supracraft_hil 0
 scoreboard players set build_count supracraft_hil 0
 execute store result score trade_count supracraft_hil run data get block -6 70 12 Items[{Slot:0b}].count 1

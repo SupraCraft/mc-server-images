@@ -11,6 +11,7 @@ item replace block -8 70 12 container.2 with minecraft:diamond_pickaxe 1
 setblock -6 70 12 minecraft:barrel
 setblock -4 70 12 minecraft:barrel
 setblock 0 70 12 minecraft:barrel
+setblock 0 70 16 minecraft:glass
 setblock 2 70 16 minecraft:red_concrete
 setblock 6 70 16 minecraft:cobblestone
 fill -1 70 18 1 72 18 minecraft:air
