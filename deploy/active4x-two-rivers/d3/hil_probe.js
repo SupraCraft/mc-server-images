@@ -150,6 +150,7 @@ async function waitCaravan (bot, timeoutMs = 20000) {
   let minDistance = null
   let playerTabObserved = false
   let matchKind = null
+  let invalidPositionLogged = false
   while (Date.now() < deadline) {
     const player = bot.players[caravanUser]
     if (player) playerTabObserved = true
@@ -165,6 +166,18 @@ async function waitCaravan (bot, timeoutMs = 20000) {
     if (entity?.position) {
       matchKind = player?.entity ? 'player_entity' : 'streamed_uuid'
       const d = bot.entity.position.distanceTo(entity.position)
+      if (!Number.isFinite(d)) {
+        if (!invalidPositionLogged) {
+          invalidPositionLogged = true
+          console.log('D3_CARAVAN_POSITION_INVALID ' + JSON.stringify({
+            entity_xyz: [entity.position.x, entity.position.y, entity.position.z].map(
+              n => Number.isFinite(n) ? Number(n.toFixed(3)) : null
+            )
+          }))
+        }
+        await sleep(100)
+        continue
+      }
       minDistance = minDistance === null ? d : Math.min(minDistance, d)
       if (d <= 32) return { seen: true, min_distance: minDistance, match_kind: matchKind, player_tab_observed: true }
     }

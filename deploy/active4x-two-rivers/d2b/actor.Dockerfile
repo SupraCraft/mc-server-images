@@ -9,6 +9,7 @@ WORKDIR /src
 COPY tools/install_experimental_prismarine_26_3.sh /src/tools/install_experimental_prismarine_26_3.sh
 COPY tools/apply_mineflayer_tick_end_26_3.py /src/tools/apply_mineflayer_tick_end_26_3.py
 COPY tools/apply_mineflayer_dig_actions_26_3.py /src/tools/apply_mineflayer_dig_actions_26_3.py
+COPY tools/apply_mineflayer_entity_position_26_3.py /src/tools/apply_mineflayer_entity_position_26_3.py
 COPY tools/remap_prismarine_materials_26_3.py /src/tools/remap_prismarine_materials_26_3.py
 COPY probes/mineflayer-runtime /src/probes/mineflayer-runtime
 

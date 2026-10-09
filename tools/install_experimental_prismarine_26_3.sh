@@ -66,11 +66,14 @@ python "$REPO_ROOT/tools/apply_mineflayer_tick_end_26_3.py" \
   "$ROOT/src/mineflayer/lib/plugins/physics.js"
 python "$REPO_ROOT/tools/apply_mineflayer_dig_actions_26_3.py" \
   "$ROOT/src/mineflayer/lib/plugins/digging.js"
+python "$REPO_ROOT/tools/apply_mineflayer_entity_position_26_3.py" \
+  "$ROOT/src/mineflayer/lib/plugins/entities.js"
 git -C "$ROOT/src/mineflayer" diff --check
 grep -F "'26.1', '26.3'" "$ROOT/src/mineflayer/lib/version.js" >/dev/null
 grep -F "bot._client.write('tick_end', {})" "$ROOT/src/mineflayer/lib/plugins/physics.js" >/dev/null
 grep -F "status: 3, // finish digging" "$ROOT/src/mineflayer/lib/plugins/digging.js" >/dev/null
 grep -F "status: 2, // cancel digging" "$ROOT/src/mineflayer/lib/plugins/digging.js" >/dev/null
+grep -F "bot.version === '26.3'" "$ROOT/src/mineflayer/lib/plugins/entities.js" >/dev/null
 
 python - "$ROOT/runtime/package.json" <<'PY'
 import json, pathlib, sys
