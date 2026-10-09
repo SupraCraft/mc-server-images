@@ -1,15 +1,751 @@
 {
   "client_interaction": {
-    "actions": null,
-    "error": "Error: spawn timeout\n    at Timeout._onTimeout (/hil/hil_probe.js:38:43)\n    at listOnTimeout (node:internal/timers:685:17)\n    at process.processTimers (node:internal/timers:618:7)",
-    "minecraft": null,
+    "actions": {
+      "build_supply": true,
+      "damage_break": true,
+      "obstruction_break": true,
+      "trade_deposit": true
+    },
+    "error": null,
+    "minecraft": {
+      "edition": "java",
+      "version": "26.3"
+    },
     "mode": "interact",
-    "result": "ERROR"
+    "result": "FAIL"
   },
-  "client_packet_events": [],
+  "client_packet_events": [
+    {
+      "data": {
+        "wall_ms": 1791559773027
+      },
+      "kind": "WITNESS_READY"
+    },
+    {
+      "data": {
+        "face": 1,
+        "held": "other",
+        "location": [
+          -8,
+          70,
+          12
+        ],
+        "sequence": 1,
+        "wall_ms": 1791559776081
+      },
+      "kind": "PLACE_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 1
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "face": 1,
+        "held": "other",
+        "location": [
+          -6,
+          70,
+          12
+        ],
+        "sequence": 2,
+        "wall_ms": 1791559797781
+      },
+      "kind": "PLACE_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 2
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "face": 1,
+        "held": "other",
+        "location": [
+          0,
+          70,
+          12
+        ],
+        "sequence": 3,
+        "wall_ms": 1791559800805
+      },
+      "kind": "PLACE_OUTBOUND"
+    },
+    {
+      "data": {
+        "sequenceId": 3
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "game_mode": "survival",
+        "on_ground": true,
+        "target": [
+          4,
+          70,
+          13
+        ],
+        "wall_ms": 1791559802284
+      },
+      "kind": "PLACE_ATTEMPT"
+    },
+    {
+      "kind": "place_result",
+      "outcome": "CLIENT_SERVER_UPDATE"
+    },
+    {
+      "data": {
+        "sequenceId": 4
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "location": [
+          4,
+          70,
+          13
+        ],
+        "type": 1,
+        "wall_ms": 1791559802682
+      },
+      "kind": "WITNESS_BLOCK_UPDATE"
+    },
+    {
+      "data": {
+        "estimated_ms": 0,
+        "game_mode": "creative",
+        "wall_ms": 1791559803783
+      },
+      "kind": "FASTBREAK_ATTEMPT"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          3,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 5,
+        "status": 0,
+        "wall_ms": 1791559803784
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          3,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 6,
+        "status": 2,
+        "wall_ms": 1791559803786
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "location": [
+          3,
+          70,
+          16
+        ],
+        "stage": -1,
+        "wall_ms": 1791559803831
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "sequenceId": 6
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "location": [
+          3,
+          70,
+          16
+        ],
+        "type": 0,
+        "wall_ms": 1791559803832
+      },
+      "kind": "WITNESS_BLOCK_UPDATE"
+    },
+    {
+      "data": {
+        "estimated_ms": 2700,
+        "game_mode": "survival",
+        "on_ground": true,
+        "target": "obstruction"
+      },
+      "kind": "DIG_ATTEMPT"
+    },
+    {
+      "data": {
+        "face": 2,
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "on_ground": true,
+        "sequence": 7,
+        "status": 0,
+        "wall_ms": 1791559804288
+      },
+      "kind": "DIG_OUTBOUND"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 1,
+        "wall_ms": 1791559804330
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "sequenceId": 7
+      },
+      "kind": "DIG_SERVER_ACK"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 2,
+        "wall_ms": 1791559804331
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 4,
+        "wall_ms": 1791559804380
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 5,
+        "wall_ms": 1791559804430
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 7,
+        "wall_ms": 1791559804480
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 8,
+        "wall_ms": 1791559804531
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 10,
+        "wall_ms": 1791559804580
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 11,
+        "wall_ms": 1791559804630
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 13,
+        "wall_ms": 1791559804680
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 14,
+        "wall_ms": 1791559804730
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 16,
+        "wall_ms": 1791559804780
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 17,
+        "wall_ms": 1791559804830
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 19,
+        "wall_ms": 1791559804880
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 20,
+        "wall_ms": 1791559804930
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 22,
+        "wall_ms": 1791559804980
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 23,
+        "wall_ms": 1791559805030
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 25,
+        "wall_ms": 1791559805080
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 26,
+        "wall_ms": 1791559805130
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 28,
+        "wall_ms": 1791559805180
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 29,
+        "wall_ms": 1791559805230
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 31,
+        "wall_ms": 1791559805280
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 32,
+        "wall_ms": 1791559805330
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 34,
+        "wall_ms": 1791559805380
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 35,
+        "wall_ms": 1791559805430
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 37,
+        "wall_ms": 1791559805480
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 38,
+        "wall_ms": 1791559805530
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 40,
+        "wall_ms": 1791559805580
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 41,
+        "wall_ms": 1791559805630
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 42,
+        "wall_ms": 1791559805680
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 44,
+        "wall_ms": 1791559805730
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 45,
+        "wall_ms": 1791559805780
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 47,
+        "wall_ms": 1791559805830
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 48,
+        "wall_ms": 1791559805880
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 50,
+        "wall_ms": 1791559805930
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 51,
+        "wall_ms": 1791559805980
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 53,
+        "wall_ms": 1791559806030
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 54,
+        "wall_ms": 1791559806080
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 56,
+        "wall_ms": 1791559806132
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 57,
+        "wall_ms": 1791559806180
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 59,
+        "wall_ms": 1791559806230
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 60,
+        "wall_ms": 1791559806279
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 62,
+        "wall_ms": 1791559806330
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 63,
+        "wall_ms": 1791559806380
+      },
+      "kind": "WITNESS_PROGRESS"
+    },
+    {
+      "data": {
+        "location": [
+          2,
+          70,
+          16
+        ],
+        "stage": 65,
+        "wall_ms": 1791559806430
+      },
+      "kind": "WITNESS_PROGRESS"
+    }
+  ],
   "deployment_stage": "D3_automated_rehearsal",
   "diagnostic_only": true,
-  "failed_stage": "hil_probe_exit",
+  "failed_stage": "await_SUPRACRAFT_D3_OBSTRUCT_COMPLETE",
   "fresh_client_block_observation": {
     "damage": {
       "name": "cobblestone",
@@ -36,16 +772,16 @@
   "schema": "supracraft.active4x-two-rivers-d3-rehearsal/v0.1",
   "server_authoritative_block_state": "UNKNOWN",
   "server_markers": {
-    "SUPRACRAFT_D3_BUILD_HELP_COMPLETE": false,
+    "SUPRACRAFT_D3_BUILD_HELP_COMPLETE": true,
     "SUPRACRAFT_D3_DAMAGE_COMPLETE": false,
     "SUPRACRAFT_D3_DIAG_CLOCK_200": true,
     "SUPRACRAFT_D3_DIAG_CLOCK_400": true,
-    "SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE": false,
-    "SUPRACRAFT_D3_DIAG_PLACE_COMPLETE": false,
+    "SUPRACRAFT_D3_DIAG_FASTBREAK_COMPLETE": true,
+    "SUPRACRAFT_D3_DIAG_PLACE_COMPLETE": true,
     "SUPRACRAFT_D3_DIAG_SERVER_SURVIVAL": true,
     "SUPRACRAFT_D3_OBSTRUCT_COMPLETE": false,
     "SUPRACRAFT_D3_PHASE1_COMPLETE": false,
-    "SUPRACRAFT_D3_TRADE_COMPLETE": false
+    "SUPRACRAFT_D3_TRADE_COMPLETE": true
   },
   "stock_client_hil_required": true,
   "world_scan": false
