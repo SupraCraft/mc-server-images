@@ -1,23 +1,15 @@
 {
   "client_interaction": {
-    "actions": {
-      "build_supply": true,
-      "damage_break": true,
-      "obstruction_break": true,
-      "trade_deposit": true
-    },
-    "error": null,
-    "minecraft": {
-      "edition": "java",
-      "version": "26.3"
-    },
+    "actions": null,
+    "error": "Error: D3 official server did not commit air after progress FINISH for obstruction\n    at digWithWitnessProgress (/hil/hil_probe.js:187:11)\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processTimers (node:internal/timers:615:9)\n    at async main (/hil/hil_probe.js:525:5)",
+    "minecraft": null,
     "mode": "interact",
-    "result": "FAIL"
+    "result": "ERROR"
   },
   "client_packet_events": [
     {
       "data": {
-        "wall_ms": 1791560583372
+        "wall_ms": 1791573167179
       },
       "kind": "WITNESS_READY"
     },
@@ -31,7 +23,7 @@
           12
         ],
         "sequence": 1,
-        "wall_ms": 1791560586415
+        "wall_ms": 1791573170214
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -51,7 +43,7 @@
           12
         ],
         "sequence": 2,
-        "wall_ms": 1791560608040
+        "wall_ms": 1791573191923
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -71,7 +63,7 @@
           12
         ],
         "sequence": 3,
-        "wall_ms": 1791560611152
+        "wall_ms": 1791573195033
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -90,7 +82,7 @@
           70,
           13
         ],
-        "wall_ms": 1791560612613
+        "wall_ms": 1791573196590
       },
       "kind": "PLACE_ATTEMPT"
     },
@@ -104,7 +96,7 @@
           13
         ],
         "sequence": 4,
-        "wall_ms": 1791560613011
+        "wall_ms": 1791573196942
       },
       "kind": "PLACE_OUTBOUND"
     },
@@ -126,7 +118,7 @@
           13
         ],
         "type": 1,
-        "wall_ms": 1791560613065
+        "wall_ms": 1791573196987
       },
       "kind": "WITNESS_BLOCK_UPDATE"
     },
@@ -134,7 +126,7 @@
       "data": {
         "estimated_ms": 0,
         "game_mode": "creative",
-        "wall_ms": 1791560614469
+        "wall_ms": 1791573197988
       },
       "kind": "FASTBREAK_ATTEMPT"
     },
@@ -149,7 +141,7 @@
         "on_ground": true,
         "sequence": 5,
         "status": 0,
-        "wall_ms": 1791560614471,
+        "wall_ms": 1791573197989,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -165,7 +157,7 @@
         "on_ground": true,
         "sequence": 6,
         "status": 2,
-        "wall_ms": 1791560614472,
+        "wall_ms": 1791573197991,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -178,7 +170,7 @@
           16
         ],
         "stage": -1,
-        "wall_ms": 1791560614513
+        "wall_ms": 1791573198036
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -196,7 +188,7 @@
           16
         ],
         "type": 0,
-        "wall_ms": 1791560614515
+        "wall_ms": 1791573198037
       },
       "kind": "WITNESS_BLOCK_UPDATE"
     },
@@ -213,15 +205,6 @@
     },
     {
       "data": {
-        "base_ms": 2700,
-        "bound_ms": 4960,
-        "ratio": 1.8,
-        "target": "obstruction"
-      },
-      "kind": "DIG_TIME_TREATMENT"
-    },
-    {
-      "data": {
         "face": 2,
         "location": [
           2,
@@ -231,7 +214,7 @@
         "on_ground": true,
         "sequence": 7,
         "status": 0,
-        "wall_ms": 1791560614974,
+        "wall_ms": 1791573198592,
         "witness_stage": null
       },
       "kind": "DIG_OUTBOUND"
@@ -244,7 +227,7 @@
           16
         ],
         "stage": 1,
-        "wall_ms": 1791560615012
+        "wall_ms": 1791573198635
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -262,7 +245,7 @@
           16
         ],
         "stage": 10,
-        "wall_ms": 1791560615263
+        "wall_ms": 1791573198885
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -274,7 +257,7 @@
           16
         ],
         "stage": 20,
-        "wall_ms": 1791560615612
+        "wall_ms": 1791573199235
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -286,7 +269,7 @@
           16
         ],
         "stage": 31,
-        "wall_ms": 1791560615962
+        "wall_ms": 1791573199584
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -298,7 +281,7 @@
           16
         ],
         "stage": 40,
-        "wall_ms": 1791560616263
+        "wall_ms": 1791573199885
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -310,7 +293,7 @@
           16
         ],
         "stage": 50,
-        "wall_ms": 1791560616612
+        "wall_ms": 1791573200235
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -322,7 +305,7 @@
           16
         ],
         "stage": 60,
-        "wall_ms": 1791560616962
+        "wall_ms": 1791573200585
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -334,7 +317,7 @@
           16
         ],
         "stage": 71,
-        "wall_ms": 1791560617312
+        "wall_ms": 1791573200934
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -346,7 +329,7 @@
           16
         ],
         "stage": 80,
-        "wall_ms": 1791560617612
+        "wall_ms": 1791573201235
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -358,7 +341,7 @@
           16
         ],
         "stage": 90,
-        "wall_ms": 1791560617962
+        "wall_ms": 1791573201585
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -370,7 +353,7 @@
           16
         ],
         "stage": 100,
-        "wall_ms": 1791560618312
+        "wall_ms": 1791573201935
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -382,7 +365,7 @@
           16
         ],
         "stage": 111,
-        "wall_ms": 1791560618662
+        "wall_ms": 1791573202285
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -394,7 +377,7 @@
           16
         ],
         "stage": 120,
-        "wall_ms": 1791560618962
+        "wall_ms": 1791573202584
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -406,7 +389,7 @@
           16
         ],
         "stage": -128,
-        "wall_ms": 1791560619263
+        "wall_ms": 1791573202884
       },
       "kind": "WITNESS_PROGRESS"
     },
@@ -421,8 +404,8 @@
         "on_ground": true,
         "sequence": 8,
         "status": 2,
-        "wall_ms": 1791560619934,
-        "witness_stage": -108
+        "wall_ms": 1791573205806,
+        "witness_stage": -42
       },
       "kind": "DIG_OUTBOUND"
     },
@@ -431,263 +414,11 @@
         "sequenceId": 8
       },
       "kind": "DIG_SERVER_ACK"
-    },
-    {
-      "data": {
-        "estimated_ms": 3000,
-        "game_mode": "survival",
-        "held_item": "diamond_pickaxe",
-        "on_ground": true,
-        "selected_slot": 0,
-        "target": "damage"
-      },
-      "kind": "DIG_ATTEMPT"
-    },
-    {
-      "data": {
-        "base_ms": 3000,
-        "bound_ms": 5500,
-        "ratio": 1.8,
-        "target": "damage"
-      },
-      "kind": "DIG_TIME_TREATMENT"
-    },
-    {
-      "data": {
-        "face": 2,
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "on_ground": true,
-        "sequence": 9,
-        "status": 0,
-        "wall_ms": 1791560620740,
-        "witness_stage": null
-      },
-      "kind": "DIG_OUTBOUND"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 1,
-        "wall_ms": 1791560620761
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "sequenceId": 9
-      },
-      "kind": "DIG_SERVER_ACK"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 10,
-        "wall_ms": 1791560621062
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 20,
-        "wall_ms": 1791560621412
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 30,
-        "wall_ms": 1791560621813
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 40,
-        "wall_ms": 1791560622162
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 50,
-        "wall_ms": 1791560622562
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 60,
-        "wall_ms": 1791560622912
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 70,
-        "wall_ms": 1791560623313
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 80,
-        "wall_ms": 1791560623663
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 90,
-        "wall_ms": 1791560624062
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 100,
-        "wall_ms": 1791560624412
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 110,
-        "wall_ms": 1791560624812
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": 120,
-        "wall_ms": 1791560625162
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "stage": -128,
-        "wall_ms": 1791560625462
-      },
-      "kind": "WITNESS_PROGRESS"
-    },
-    {
-      "data": {
-        "face": 2,
-        "location": [
-          6,
-          70,
-          16
-        ],
-        "on_ground": true,
-        "sequence": 10,
-        "status": 2,
-        "wall_ms": 1791560626241,
-        "witness_stage": -108
-      },
-      "kind": "DIG_OUTBOUND"
-    },
-    {
-      "data": {
-        "sequenceId": 10
-      },
-      "kind": "DIG_SERVER_ACK"
-    },
-    {
-      "data": {
-        "face": 1,
-        "held": "other",
-        "location": [
-          -4,
-          70,
-          12
-        ],
-        "sequence": 11,
-        "wall_ms": 1791560628171
-      },
-      "kind": "PLACE_OUTBOUND"
-    },
-    {
-      "data": {
-        "sequenceId": 11
-      },
-      "kind": "DIG_SERVER_ACK"
     }
   ],
   "deployment_stage": "D3_automated_rehearsal",
   "diagnostic_only": true,
-  "failed_stage": "await_SUPRACRAFT_D3_OBSTRUCT_COMPLETE",
+  "failed_stage": "hil_probe_exit",
   "fresh_client_block_observation": {
     "damage": {
       "name": "cobblestone",
