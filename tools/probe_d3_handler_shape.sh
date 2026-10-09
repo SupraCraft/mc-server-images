@@ -29,12 +29,12 @@ def method_metadata(name):
     if start is None:
         return {'found':False}
     end=next((i for i in range(start+1,len(lines)) if
-        (re.match(r'^  (?:public|private|protected)\\b',lines[i]) and
+        (re.match(r'^  (?:public|private|protected)\b',lines[i]) and
          '(' in lines[i] and lines[i].strip().endswith(';'))),len(lines))
     block='\n'.join(lines[start:end])
     return {'found':True,'references':{v:v in block for v in refs},
             'uses_0_7_float':('0.7f' in block),
-            'conditional_branches':len(re.findall(r'(?m)^\\s*\\d+:\\s+if\\w+',block))}
+            'conditional_branches':len(re.findall(r'(?m)^\s*\d+:\s+if\w+',block))}
 methods=['tick','handleBlockBreakAction','incrementDestroyProgress','destroyAndAck','destroyBlock','abortDestroyBlock']
 found={m:bool(re.search(r'\b'+m+r'\s*\(',t)) for m in methods}
 report={'schema':'supracraft.d3-handler-shape/v0.2','minecraft':'26.3','class':'ServerPlayerGameMode','methods':found,'method_decisions':{v:method_metadata(v) for v in ('handleBlockBreakAction','tick','incrementDestroyProgress','destroyAndAck','destroyBlock')},'proprietary_code_exported':False}
