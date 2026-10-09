@@ -22,11 +22,11 @@
     "task_id": "task.trade.contract-001.grain",
     "username": "TwoRiversCaravan",
     "walk": {
-      "distance": 16.35156334941889,
+      "distance": 16.567031563156217,
       "end": [
-        7.845851369062455,
+        8.061129404359006,
         70,
-        0.06783453333453623
+        0.057814895445648246
       ],
       "start": [
         -8.5,
@@ -42,7 +42,7 @@
     "cargo_id": "contract-001.cargo01",
     "destination_settlement": "kilnreach",
     "physical_evidence": {
-      "grounded_distance": 16.35156334941889,
+      "grounded_distance": 16.567031563156217,
       "minecraft_item": "minecraft:wheat"
     },
     "schema": "supracraft.fidelity-demotion-receipt/v0.1",
