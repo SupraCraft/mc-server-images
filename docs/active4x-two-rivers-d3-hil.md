@@ -58,3 +58,11 @@ At the end, the harness asks one grouped yes/no HIL question confirming that
 the trade output, build change, obstruction/damage consequences, and caravan
 were actually visible/understandable. This is the only qualitative human
 attestation; automated receipts are not used as a substitute for legibility.
+
+If the source branch changes during gameplay (locally or on origin), `-Publish`
+refuses to rebase or rewrite the human evidence onto the new source revision.
+The original `two-rivers-d3-hil-result.local.json` remains available for
+independent reconciliation; do not force-push, reset the checkout, or claim
+publication succeeded. A normal clean, unchanged checkout still publishes
+with the same single command. This is a provenance hold, not a failed
+Minecraft gameplay check.
