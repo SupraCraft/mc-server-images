@@ -74,6 +74,8 @@ grep -F "bot._client.write('tick_end', {})" "$ROOT/src/mineflayer/lib/plugins/ph
 grep -F "status: 3, // finish digging" "$ROOT/src/mineflayer/lib/plugins/digging.js" >/dev/null
 grep -F "status: 2, // cancel digging" "$ROOT/src/mineflayer/lib/plugins/digging.js" >/dev/null
 grep -F "bot.version === '26.3'" "$ROOT/src/mineflayer/lib/plugins/entities.js" >/dev/null
+grep -F "applyEntityDelta26_3(entity, packet)" "$ROOT/src/mineflayer/lib/plugins/entities.js" >/dev/null
+node --check "$ROOT/src/mineflayer/lib/plugins/entities.js"
 
 python - "$ROOT/runtime/package.json" <<'PY'
 import json, pathlib, sys
