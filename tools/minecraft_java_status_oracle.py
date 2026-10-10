@@ -34,8 +34,9 @@ def encode_varint(value: int) -> bytes:
 
 def decode_varint(sock: socket.socket) -> int:
     value = 0
+    read_byte = getattr(sock, "recv", None) or sock.read
     for shift in range(0, 35, 7):
-        raw = sock.recv(1)
+        raw = read_byte(1)
         if len(raw) != 1:
             raise OracleFailure("truncated VarInt")
         value |= (raw[0] & 0x7F) << shift
