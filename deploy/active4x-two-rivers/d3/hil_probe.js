@@ -213,12 +213,37 @@ async function main () {
     const player = bot.players[caravanUser]
     const normalize = x => String(x || '').replace(/-/g, '').toLowerCase()
     if (player && normalize(player.uuid) === normalize(packet.objectUUID)) {
+      // Diagnostic only: inspect the exact protocol 777 spawn coordinates and
+      // feature admission without assuming Mineflayer's entity state is valid.
+      const xyz = [packet.x, packet.y, packet.z]
+      console.log('D3_CARAVAN_SPAWN_FIELDS ' + JSON.stringify({
+        type: packet.type,
+        protocol_version: bot.protocolVersion,
+        minecraft_version: bot.version,
+        fixed_point: Boolean(bot.supportFeature('fixedPointPosition')),
+        double_position: Boolean(bot.supportFeature('doublePosition')),
+        coordinate_fields: ['x','y','z'].map(k => Object.prototype.hasOwnProperty.call(packet,k)),
+        coordinate_types: xyz.map(v => typeof v),
+        packet_xyz: xyz.map(v => Number.isFinite(v) ? Number(v.toFixed(3)) : null)
+      }))
       console.log('D3_CARAVAN_SPAWN_MATCH ' + JSON.stringify({
         type: packet.type, entity_id: packet.entityId
       }))
     }
   })
 
+  bot.on('entitySpawn', entity => {
+    const player = bot.players[caravanUser]
+    const normalize = x => String(x || '').replace(/-/g, '').toLowerCase()
+    if (player && normalize(player.uuid) === normalize(entity.uuid)) {
+      const xyz = [entity.position?.x, entity.position?.y, entity.position?.z]
+      console.log('D3_CARAVAN_ENTITY_POSITION ' + JSON.stringify({
+        entity_xyz: xyz.map(v => Number.isFinite(v) ? Number(v.toFixed(3)) : null),
+        entity_types: xyz.map(v => typeof v)
+      }))
+    }
+  })
+  
   try {
     await waitSpawn(bot)
     await sleep(500)
