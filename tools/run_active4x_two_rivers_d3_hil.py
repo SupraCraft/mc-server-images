@@ -132,7 +132,7 @@ def player_left(logs: str, player: str) -> bool:
     )
 
 
-def publish_receipt(repo: Path, local_output: Path, result: dict) -> str:
+def publish_receipt(repo: Path, local_output: Path, result: dict, source_head: str) -> str:
     """Publish only the canonical HIL receipt from a clean feature-branch checkout."""
 
     branch = "feat/named-place-visual-qualification-v1"
@@ -141,6 +141,16 @@ def publish_receipt(repo: Path, local_output: Path, result: dict) -> str:
         raise HilError(
             f"--publish requires branch {branch}; current branch is {current!r}"
         )
+
+    # A human qualified the source checked out when the HIL session began.
+    # Do not rebase or silently attach that evidence to a different revision.
+    local_head = run(["git", "rev-parse", "HEAD"], cwd=repo).strip()
+    if local_head != source_head:
+        raise HilError("HIL source revision changed during play; preserve the local receipt for review.")
+    run(["git", "fetch", "origin", branch], cwd=repo)
+    remote_head = run(["git", "rev-parse", f"origin/{branch}"], cwd=repo).strip()
+    if remote_head != source_head:
+        raise HilError("Remote HIL branch advanced during play; refuse to rebase human evidence. Preserve the local receipt for review.")
 
     canonical = repo / "probes/active4x/two-rivers-d3-hil-result.json"
     canonical.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", "utf-8")
@@ -170,8 +180,7 @@ def publish_receipt(repo: Path, local_output: Path, result: dict) -> str:
             cwd=repo,
         )
 
-    run(["git", "fetch", "origin", branch], cwd=repo)
-    run(["git", "rebase", f"origin/{branch}"], cwd=repo)
+    # Non-force push: a concurrent remote update rejects publication, never rewrites ancestry.
     run(["git", "push", "origin", f"HEAD:{branch}"], cwd=repo)
     return run(["git", "rev-parse", "HEAD"], cwd=repo).strip()
 
@@ -197,6 +206,8 @@ def main() -> int:
 
     repo = Path(__file__).resolve().parents[1]
     compose = Compose(repo)
+    # Snapshot exactly the source used for a human HIL before building/starting it.
+    source_head = run(["git", "rev-parse", "HEAD"], cwd=repo).strip() if args.publish else ""
 
     # Fail early before deleting the dedicated test project.
     run(["docker", "version"], cwd=repo)
@@ -376,7 +387,7 @@ def main() -> int:
         print(f"Receipt written to: {output}")
 
         if result["result"] == "PASS" and args.publish:
-            published_head = publish_receipt(repo, output, result)
+            published_head = publish_receipt(repo, output, result, source_head)
             print(f"Published canonical HIL receipt at Git head {published_head}")
 
         return 0 if result["result"] == "PASS" else 2
