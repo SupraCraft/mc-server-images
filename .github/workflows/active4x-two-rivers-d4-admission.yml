@@ -41,5 +41,5 @@ jobs:
           assert int(sys.argv[1]) == expected_rc
           assert data.get('gate') == 'D4_preflight'
           # Readiness-for-review is not D4 execution authorization.
-          assert 'provenance review' in data.get('caveat', '')
+          assert 'evidence review' in data.get('caveat', '')
           PY
