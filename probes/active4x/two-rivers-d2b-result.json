@@ -12,9 +12,9 @@
     },
     "minecraft_item": "minecraft:wheat",
     "movement": {
-      "to_destination": 16.13599641994298,
-      "to_source": 4.4892956457712545,
-      "total_grounded_distance": 20.625292065714234
+      "to_destination": 16.13539764032833,
+      "to_source": 13.339511690285917,
+      "total_grounded_distance": 29.474909330614246
     },
     "operation_id": "actor-task:contract-001.cargo01",
     "remaining_inventory": 0,
