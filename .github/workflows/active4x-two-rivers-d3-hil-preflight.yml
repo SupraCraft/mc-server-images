@@ -8,6 +8,7 @@ on:
       - .github/workflows/active4x-two-rivers-d3-hil-preflight.yml
       - tools/Start-TwoRiversD3Hil.ps1
       - tools/run_active4x_two_rivers_d3_hil.py
+      - tests/test_active4x_two_rivers_d3_hil_publish.py
   workflow_dispatch:
 
 permissions:
@@ -44,3 +45,6 @@ jobs:
         run: |
           python -m py_compile tools/run_active4x_two_rivers_d3_hil.py
           python tools/run_active4x_two_rivers_d3_hil.py --help
+      - name: Real-Git offline HIL receipt publishing safety
+        shell: pwsh
+        run: python -m unittest discover -s tests -p 'test_active4x_two_rivers_d3_hil_publish.py' -v
