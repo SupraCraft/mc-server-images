@@ -1,0 +1,45 @@
+name: Two Rivers D4 Read-Only Admission Preflight
+
+on:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - '.github/workflows/active4x-two-rivers-d4-admission.yml'
+      - 'tools/check_active4x_two_rivers_d4_admission.py'
+      - 'tests/test_active4x_two_rivers_d4_admission.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: two-rivers-d4-admission-feature
+  cancel-in-progress: true
+
+jobs:
+  receipt-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline fail-closed admission unit cases
+        run: python3 -m unittest discover -s tests -p 'test_active4x_two_rivers_d4_admission.py' -v
+      - name: Observe current D4 gate without starting Minecraft
+        shell: bash
+        run: |
+          set +e
+          python3 tools/check_active4x_two_rivers_d4_admission.py > /tmp/d4-admission.json
+          rc=$?
+          set -e
+          cat /tmp/d4-admission.json
+          python3 - "$rc" <<'PY'
+          import json, sys
+          data = json.load(open('/tmp/d4-admission.json', encoding='utf-8'))
+          expected_rc = 0 if data.get('decision') == 'EVIDENCE_READY_FOR_REVIEW' else 2
+          assert data.get('decision') in ('HOLD', 'EVIDENCE_READY_FOR_REVIEW')
+          assert int(sys.argv[1]) == expected_rc
+          assert data.get('gate') == 'D4_preflight'
+          # Readiness-for-review is not D4 execution authorization.
+          assert 'provenance review' in data.get('caveat', '')
+          PY
