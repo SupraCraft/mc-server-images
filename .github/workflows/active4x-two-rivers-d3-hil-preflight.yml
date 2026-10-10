@@ -1,0 +1,46 @@
+name: Active 4X Two Rivers D3 HIL Source Preflight
+
+on:
+  push:
+    branches:
+      - feat/named-place-visual-qualification-v1
+    paths:
+      - .github/workflows/active4x-two-rivers-d3-hil-preflight.yml
+      - tools/Start-TwoRiversD3Hil.ps1
+      - tools/run_active4x_two_rivers_d3_hil.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: two-rivers-d3-hil-source-preflight
+  cancel-in-progress: true
+
+jobs:
+  syntax:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: PowerShell parser rejects syntax errors
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'tools/Start-TwoRiversD3Hil.ps1').Path,
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            throw ('HIL PowerShell syntax errors: ' + ($errors | Out-String))
+          }
+      - name: Python harness compile and imports
+        shell: pwsh
+        run: |
+          python -m py_compile tools/run_active4x_two_rivers_d3_hil.py
+          python tools/run_active4x_two_rivers_d3_hil.py --help
