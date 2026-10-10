@@ -11,7 +11,7 @@ python3 tools/check_active4x_two_rivers_d4_admission.py
 python3 -m unittest discover -s tests -p 'test_active4x_two_rivers_d4_admission.py'
 ```
 
-Expected at the current checkpoint: \`decision=HOLD\`, nonzero exit (2), because no stock-client HIL receipt exists. Valid-looking receipts produce \`EVIDENCE_READY_FOR_REVIEW\`, **not** automatic approval to execute D4.
+Expected at the current checkpoint: `decision=HOLD`, nonzero exit (2), because no stock-client HIL receipt exists. Valid-looking receipts produce `EVIDENCE_READY_FOR_REVIEW`, **not** automatic approval to execute D4.
 
 Owner verification must reconcile the actual stock-client HIL source, qualitative gameplay observation, unmodified exact Java 26.3 player and evidence chain before any D4 run. Do not fabricate this evidence or substitute an automated actor.
 
