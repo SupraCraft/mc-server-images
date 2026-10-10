@@ -160,7 +160,7 @@ def publish_receipt(repo: Path, local_output: Path, result: dict, source_head: s
         str(canonical.resolve().relative_to(repo.resolve())).replace("\\", "/"),
     }
     dirty = []
-    for line in run(["git", "status", "--porcelain"], cwd=repo).splitlines():
+    for line in run(["git", "status", "--porcelain", "--untracked-files=all"], cwd=repo).splitlines():
         path = line[3:].strip().replace("\\", "/")
         if " -> " in path:
             path = path.split(" -> ", 1)[1]
