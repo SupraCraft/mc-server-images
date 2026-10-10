@@ -96,9 +96,16 @@ def wait_health(compose: Compose, service: str, timeout: float = 150) -> None:
 
 
 def wait_file(compose: Compose, service: str, path: str, timeout: float = 90) -> None:
+    # 'test -f' prints nothing whether the file exists or not: use exit code.
     def exists():
-        out = compose.run("exec", "-T", service, "test", "-f", path, check=False)
-        return out == ""
+        cmd = compose.command("exec", "-T", service, "test", "-f", path)
+        p = subprocess.run(cmd, cwd=compose.repo, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, text=True, check=False)
+        if p.returncode == 0:
+            return True
+        if p.returncode == 1:
+            return False
+        raise HilError(f"readiness probe error for {service}:{path}: exit={p.returncode}")
     wait_until(exists, timeout, f"{service}:{path}")
 
 
