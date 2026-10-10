@@ -145,7 +145,7 @@
           69.938,
           13.066
         ],
-        "bytes": 69290,
+        "bytes": 69346,
         "camera_position": [
           0,
           84,
@@ -160,7 +160,7 @@
           69.938,
           13.066
         ],
-        "bytes": 122243,
+        "bytes": 122306,
         "camera_position": [
           0,
           96,
@@ -485,8 +485,8 @@
   "schema": "supracraft.named-place-stock-client-hil/v0.1",
   "semantic_authority": false,
   "world_zip": {
-    "bytes": 564703,
+    "bytes": 561559,
     "name": "redroof-husbandry-hall-vanilla-26.3-world.zip",
-    "sha256": "2f7442644a0bdeee763d8823517a6772c5e37310e764805076fb544fb3dbdaa0"
+    "sha256": "cd1122b70b21dd635bbfa375a6a0452b886ad5bc3480f0b8560c5b01625ebf4f"
   }
 }
