@@ -41,6 +41,13 @@ For the lowest-toil evidence path on a clean feature-branch checkout, use:
 .\tools\Start-TwoRiversD3Hil.ps1 -Publish
 ```
 
+The PowerShell launcher verifies the required clean feature branch, fetches and
+fast-forwards safely to the current remote revision, and refuses to reset or
+overwrite uncommitted work. The HIL harness checks actual command exit status
+for server/director/actor readiness before accepting gameplay. Docker and
+Python 3 must already be available, and the stock 26.3 client is still operated
+by a human.
+
 On PASS, `-Publish` commits and pushes only the canonical HIL receipt
 (`probes/active4x/two-rivers-d3-hil-result.json`). It refuses to publish if the
 checkout has unrelated changes, so it will not silently sweep other work into
