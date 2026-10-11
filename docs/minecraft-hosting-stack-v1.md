@@ -20,3 +20,6 @@ SupraCraft/Two Rivers: authored content and gameplay semantics.
 
 ## Promotion rule
 No layer inherits evidence from another. Paper cannot satisfy vanilla qualification. Proxy-path success cannot replace a direct-backend oracle. Nested TrueNAS RDTE cannot claim physical-HIL acceptance.
+
+## Deployment model
+The authoritative deployment topology, service/provider/world boundaries, independent acceptance gates and current readiness policy are in [deployment-model-v1.md](deployment-model-v1.md). The deployment model is a target contract; source-only and guest qualification are independently gated.
