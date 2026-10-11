@@ -8,7 +8,7 @@
 
 Deploy **portable, declarative, independently operable Minecraft applications**. Persistent worlds are independently owned assets, not container payloads or disposable App storage. Materialization, fleet composition, world release, and gameplay semantics are separate authorities. TrueNAS Apps/Foundry is the **first provider**, not a semantic dependency. Full-fleet design below is a target, not a claim that every component is currently running or qualified.
 
-**No mandatory COL(L)AGE controller.** COLLAGE (Composable Orchestration Layer for Lifecycle-Aware Game Environments) is an *optional* Minecraft-aware fleet reconciliation/API hypothesis. Independently deployed servers must remain operable when the manager stops or is removed. Before implementing a new controller, falsify adoption of existing CloudNet/Pterodactyl/Pelican/MCSManager/mc-operator primitives: prefer a thin upstream adapter if it preserves standalone parity, provider-neutral identity, and independently durable worlds. One manager owns a local fleet; future federation is optional and must not create a mandatory global coordinator.
+**No mandatory COLLAGE controller.** COLLAGE (Composable Orchestration Layer for Lifecycle-Aware Game Environments) is an *optional* Minecraft-aware fleet reconciliation/API hypothesis. Independently deployed servers must remain operable when the manager stops or is removed. Before implementing a new controller, falsify adoption of existing CloudNet/Pterodactyl/Pelican/MCSManager/mc-operator primitives: prefer a thin upstream adapter if it preserves standalone parity, provider-neutral identity, and independently durable worlds. One manager owns a local fleet; future federation is optional and must not create a mandatory global coordinator.
 
 ## Desired service topology
 
@@ -90,7 +90,7 @@ A successful `app.create`, container `RUNNING`, or source render alone is **not*
 
 - Current first native disposable target is **TrueNAS 25.04.1 + native community/minecraft catalog 1.15.29 + Paper Java 1.21.11**, with pinned Foundry control and image. This target is a **product/lifecycle proving case**, not the vanilla 26.3 gameplay target.
 - Real guest [rep 006](https://github.com/SemperSupra/agent-dispatch/actions/runs/38170800682) proved catalog and immutable image plus a native RUNNING App, but refused `app.config` ownership read-back and cleaned all owned objects; it did **not** prove server status or persistence. Current [rep 007](https://github.com/SemperSupra/agent-dispatch/actions/runs/38184480046) is independently testing sanitized read-back reasons; *no product PASS until exact receipt confirms it*.
-- The public hosting-stack [S0 contract](../spec/minecraft-hosting-stack-v1.json) is not a full multi-service runtime acceptance. COL(L)AGE H1-H9 adoption/federation and physical HIL are still unqualified.
+- The public hosting-stack [S0 contract](../spec/minecraft-hosting-stack-v1.json) is not a full multi-service runtime acceptance. COLLAGE H1-H9 adoption/federation and physical HIL are still unqualified.
 - **Physical/local TrueNAS mutation stays on HOLD** pending explicit admission and end-to-end product evidence. No direct site operations are authorized by this document.
 
 ## Operations and change discipline
