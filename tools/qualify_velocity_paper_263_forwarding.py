@@ -142,6 +142,7 @@ def execute(discovery: dict) -> dict:
         (paper / "server.properties").write_text(
             f"server-ip=127.0.0.1\nserver-port={BACKEND_PORT}\n"
             "online-mode=false\nenforce-secure-profile=false\n"
+            "white-list=false\nenforce-whitelist=false\n"
             "max-players=3\nview-distance=2\nsimulation-distance=2\n"
             "spawn-protection=0\nenable-rcon=false\nenable-query=false\n"
             "motd=SUPRACRAFT_OP1_PAPER\n"
