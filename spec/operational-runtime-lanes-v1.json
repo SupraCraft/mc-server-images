@@ -1,0 +1,64 @@
+{
+  "schema": "supracraft.operational-runtime-lanes/1",
+  "authority": "SupraCraft/mc-server-images#68",
+  "as_of": "2026-10-12",
+  "stable": {
+    "minecraft_java": {
+      "version": "26.3",
+      "protocol": 777,
+      "java_major": 25,
+      "server_sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64",
+      "source": "probes/26.3-release-identity.json",
+      "semantic_authority_for_two_rivers": true
+    },
+    "paper": {
+      "minecraft_version": "26.3",
+      "build_selection": "latest_stable_candidate_only",
+      "operationally_selected": false,
+      "qualify_separately": true,
+      "semantic_authority_for_two_rivers": false
+    },
+    "velocity": {
+      "version": "4.2.0",
+      "release_build": 30,
+      "operationally_selected": false,
+      "qualify_separately": true
+    },
+    "vanillacord": {
+      "backend": "vanilla",
+      "qualify_against_minecraft": "26.3",
+      "release_digest_required": true
+    }
+  },
+  "preview": {
+    "series": "26.4",
+    "enabled_for": "isolated_rdte_only",
+    "stable_release_required_for_operations": true,
+    "auto_promote": false,
+    "max_snapshot_claim": "snapshot-3",
+    "known_snapshot_datapack_format": 123,
+    "known_snapshot_resourcepack_format": 100,
+    "notes": [
+      "Minecraft 26.4 snapshot 1 modified login/intention host packet and added mod-list custom payload",
+      "Paper announces planned configuration merge in next major 26.4; never assume old config applies"
+    ]
+  },
+  "policy": {
+    "no_latest_runtime_tags": true,
+    "resolve_candidates_without_automatic_apply": true,
+    "mutable_world_never_baked_into_image": true,
+    "snapshot_and_backup_before_world_upgrade": true,
+    "no_world_downgrade": true,
+    "do_not_inherit_paper_1_21_11_qualification": true,
+    "physical_truenas_apply": "HOLD",
+    "required_stable_gates": [
+      "vanilla_26_3_real_runtime",
+      "vanillacord_exact_adapter_and_proxy_transparency",
+      "velocity_4_2_0_exact_artifact_and_live_proxy",
+      "paper_26_3_exact_stable_build_and_live_backend",
+      "independent_world_activation_and_rollback",
+      "two_rivers_gameplay_oracles",
+      "human_automation_agent_equivalent_deploy_intent"
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+name: SupraCraft 26.3 operational candidates and 26.4 canary
+
+on:
+  pull_request:
+    paths:
+      - 'spec/operational-runtime-lanes-v1.json'
+      - 'tools/resolve_operational_runtime_versions.py'
+      - 'tools/qualify_paper_263_runtime.py'
+      - 'tools/qualify_velocity_420_runtime.py'
+      - 'tests/test_resolve_operational_runtime_versions.py'
+      - '.github/workflows/operational-runtime-lanes.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'spec/operational-runtime-lanes-v1.json'
+      - 'tools/resolve_operational_runtime_versions.py'
+      - 'tools/qualify_paper_263_runtime.py'
+      - 'tools/qualify_velocity_420_runtime.py'
+      - 'tests/test_resolve_operational_runtime_versions.py'
+      - '.github/workflows/operational-runtime-lanes.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operational-runtime-lanes-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Source contract and negative tests
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/resolve_operational_runtime_versions.py \
+            tools/qualify_paper_263_runtime.py tools/qualify_velocity_420_runtime.py
+          python3 -m unittest discover -s tests -p 'test_resolve_operational_runtime_versions.py' -v
+          python3 -m json.tool spec/operational-runtime-lanes-v1.json >/dev/null
+      - name: Query official version providers, read-only
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/operational"
+          python3 tools/resolve_operational_runtime_versions.py \
+            --output "$RUNNER_TEMP/operational/candidate-discovery.json"
+      - name: Retain causal release observation
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: operational-26-3-release-candidates
+          path: ${{ runner.temp }}/operational/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Do not automatically promote newly discovered releases
+        run: |
+          echo 'READ ONLY: candidate discovery only. New 26.4 snapshots cannot be automatically promoted to operational worlds.' >> "$GITHUB_STEP_SUMMARY"
+
+  paper-26-3:
+    if: github.event_name != 'schedule'
+    needs: [discover]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: operational-26-3-release-candidates
+          path: ${{ runner.temp }}/operational
+      - name: Boot standalone Paper 26.3 from official stable candidate
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_paper_263_runtime.py \
+            --discovery "$RUNNER_TEMP/operational/candidate-discovery.json" \
+            --output "$RUNNER_TEMP/operational/paper-26.3-runtime.json"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: paper-26-3-runtime-receipt
+          path: ${{ runner.temp }}/operational/paper-26.3-runtime.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  velocity-4-2:
+    if: github.event_name != 'schedule'
+    needs: [discover]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: operational-26-3-release-candidates
+          path: ${{ runner.temp }}/operational
+      - name: Boot standalone Velocity 4.2.0 release build 30
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_velocity_420_runtime.py \
+            --discovery "$RUNNER_TEMP/operational/candidate-discovery.json" \
+            --output "$RUNNER_TEMP/operational/velocity-4.2.0-runtime.json"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: velocity-4-2-0-runtime-receipt
+          path: ${{ runner.temp }}/operational/velocity-4.2.0-runtime.json
+          if-no-files-found: warn
+          retention-days: 14
