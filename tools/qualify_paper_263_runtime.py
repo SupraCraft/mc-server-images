@@ -87,7 +87,7 @@ def run(candidate: dict, runtime_seconds: int = 180) -> dict:
                         if int(probe.get("version", {}).get("protocol", -1)) == PROTOCOL:
                             status = probe
                             break
-                    except (ConnectionError, OSError, ValueError, TimeoutError):
+                    except (ConnectionError, OSError, ValueError, TimeoutError, EOFError):
                         pass
                     time.sleep(1)
                 if status is None:
