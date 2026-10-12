@@ -1,0 +1,76 @@
+name: OP-1 real Velocity Paper 26.3 player forwarding (disposable)
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_velocity_paper_263_forwarding.py'
+      - 'tools/probe_velocity_forwarding_263.js'
+      - 'tests/test_qualify_velocity_paper_263_forwarding.py'
+      - '.github/workflows/qualify-velocity-paper-263-forwarding.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: op1-player-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  player-path:
+    # Public hosted runners only. Never use private minutes or any TrueNAS host.
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Static red/blue source gates
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
+          python3 -m py_compile tools/qualify_velocity_paper_263_forwarding.py
+          node --check tools/probe_velocity_forwarding_263.js
+          python3 -m unittest discover -s tests -p 'test_qualify_velocity_paper_263_forwarding.py' -v
+      - name: Prepare exact existing experimental 26.3 client stack
+        run: |
+          set -euo pipefail
+          bash tools/install_experimental_prismarine_26_3.sh "$RUNNER_TEMP/prismarine"
+          echo "NODE_PATH=$RUNNER_TEMP/prismarine/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Discover official pinned candidates, not latest execution
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/op1"
+          python3 tools/resolve_operational_runtime_versions.py --output "$RUNNER_TEMP/op1/discovery.json"
+      - name: Real login, direct backend bypass and wrong-secret negatives
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_velocity_paper_263_forwarding.py \
+            --discovery "$RUNNER_TEMP/op1/discovery.json" \
+            --out "$RUNNER_TEMP/op1/receipt.json"
+          python3 - "$RUNNER_TEMP/op1/receipt.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          assert r["classification"]=="REAL_LOOPBACK_OFFLINE_PLAYER_FORWARDING"
+          assert r["direct_backend_denied"] and r["wrong_secret_denied"]
+          assert r["proxy_player_spawned"] and r["backend_log_join_independently_observed"]
+          assert r["account_authentication_qualified"] is False
+          assert r["operational_selection"] is False
+          assert r["physical_truenas_apply"]=="HOLD"
+          PY
+      - name: Retain compact source-bound result (never jars, worlds or secrets)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: op1-velocity-paper263-player-path
+          path: ${{ runner.temp }}/op1/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Explicit non-promotion marker
+        if: always()
+        run: |
+          echo 'RDTE loopback offline-authentication protocol rep only. Does not authorize production account identity, VIP realm admission, VanillaCord, or physical TrueNAS APPLY.' >> "$GITHUB_STEP_SUMMARY"
