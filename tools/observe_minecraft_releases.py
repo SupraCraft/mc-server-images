@@ -56,7 +56,7 @@ def observe(manifest: dict, sha256: str) -> dict:
     latest = manifest["latest"]
     release, snapshot = latest.get("release"), latest.get("snapshot")
     require(type(release) is str and type(snapshot) is str and
-            re.fullmatch(r"[0-9]{2}\\.[0-9]+", release) and
+            re.fullmatch(r"[0-9]{2}\.[0-9]+", release) and
             re.fullmatch(r"[a-zA-Z0-9._-]{1,90}", snapshot),
             "INVALID_LATEST_RELEASE_PAIR")
     versions = manifest["versions"]
@@ -130,11 +130,11 @@ def publish_once(record: dict, token: str) -> str:
     body = (
         f"{marker}\n"
         "### Mojang release metadata observation (not deployment)\n\n"
-        f"- Stable release: \`{record['observed']['release']['id']}\`\n"
-        f"- Snapshot/pre-release: \`{record['observed']['snapshot']['id']}\`\n"
-        f"- Official manifest SHA-256: \`{record['manifest_sha256']}\`\n"
-        f"- Release metadata SHA-1: \`{record['observed']['release']['metadata_sha1']}\`\n"
-        f"- Snapshot metadata SHA-1: \`{record['observed']['snapshot']['metadata_sha1']}\`\n"
+        f"- Stable release: `{record['observed']['release']['id']}`\n"
+        f"- Snapshot/pre-release: `{record['observed']['snapshot']['id']}`\n"
+        f"- Official manifest SHA-256: `{record['manifest_sha256']}`\n"
+        f"- Release metadata SHA-1: `{record['observed']['release']['metadata_sha1']}`\n"
+        f"- Snapshot metadata SHA-1: `{record['observed']['snapshot']['metadata_sha1']}`\n"
         f"- Classification: **{record['operational_change']}**. "
         "No production promotion, game download, world mutation or physical TrueNAS APPLY.\n"
         f"- Source: {MANIFEST}\n"
