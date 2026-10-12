@@ -1,0 +1,62 @@
+name: Minecraft 26.3 stable / 26.4 frontier metadata watch
+on:
+  pull_request:
+    paths:
+      - 'tools/observe_minecraft_releases.py'
+      - 'tests/test_observe_minecraft_releases.py'
+      - '.github/workflows/minecraft-release-watch.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */12 * * *'
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: supracraft-minecraft-release-watch
+  cancel-in-progress: false
+jobs:
+  metadata-only:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Source red/blue and static checks
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/observe_minecraft_releases.py
+          python3 -m unittest discover -s tests -p 'test_observe_minecraft_releases.py' -v
+      - name: Observe official version pair only, optionally publish idempotent notice
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-watch"
+          args=(--out "$RUNNER_TEMP/release-watch/receipt.json")
+          if [[ "$GITHUB_REF" == "refs/heads/main" && \
+                ( "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ) ]]; then
+            args+=(--publish)
+          fi
+          python3 tools/observe_minecraft_releases.py "${args[@]}"
+          python3 - "$RUNNER_TEMP/release-watch/receipt.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          assert r["classification"]=="METADATA_ONLY_RELEASE_OBSERVATION"
+          assert r["operational_promotion_allowed"] is False
+          assert r["world_mutated"] is False
+          assert r["physical_truenas_apply"]=="HOLD"
+          PY
+      - name: Retain canonical discovery receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: minecraft-release-metadata-observation
+          path: ${{ runner.temp }}/release-watch/receipt.json
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Make nonpromotion explicit
+        if: always()
+        run: |
+          echo 'Discovery only. A newly observed 26.4 stable release is a qualification candidate, not an operations authorization. Physical TrueNAS APPLY HOLD.' >> "$GITHUB_STEP_SUMMARY"
