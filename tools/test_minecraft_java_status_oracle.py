@@ -82,6 +82,49 @@ class TestStatusOracle(unittest.TestCase):
         self.assertNotIn("description", result)
         self.assertNotIn("players", result)
 
+    def test_paper_exact_brand_and_exact_protocol_774_accepted(self):
+        # PaperMC/Paper PaperServerListPingEventImpl builds its ping version
+        # from getServerModName() + " " + getServerVersion().
+        with FakeServer(status_frame(version="Paper 1.21.11", protocol=774)) as server:
+            result = oracle.query_java_status(
+                server.port, "1.21.11", implementation="paper", expected_protocol=774)
+        self.assertTrue(result["oracleSatisfied"])
+        self.assertEqual(result["server_protocol"], 774)
+        self.assertEqual(result["server_implementation"], "paper")
+        self.assertEqual(result["status_name_contract"], "paper_brand_exact")
+
+    def test_paper_requires_explicit_protocol_pin(self):
+        with self.assertRaisesRegex(oracle.OracleFailure, "needs exact protocol pin"):
+            oracle.query_java_status(25565, "1.21.11", implementation="paper")
+        with self.assertRaisesRegex(oracle.OracleFailure, "unsupported status implementation"):
+            oracle.query_java_status(25565, "1.21.11", implementation="unknown")
+        with self.assertRaisesRegex(oracle.OracleFailure, "invalid expected protocol"):
+            oracle.query_java_status(25565, "1.21.11", implementation="paper",
+                                    expected_protocol=True)
+
+    def test_paper_refuses_brand_version_and_protocol_drift(self):
+        for name, protocol in [
+            ("1.21.11", 774),
+            ("Paper 1.21.10", 774),
+            ("Paper 1.21.11-dev", 774),
+            ("Paper 1.21.11 ", 774),
+            ("Purpur 1.21.11", 774),
+            ("NotPaper 1.21.11", 774),
+            ("Paper 1.21.11", 775),
+            ("Paper 1.21.11", 773),
+        ]:
+            with self.subTest(name=name, protocol=protocol):
+                with FakeServer(status_frame(version=name, protocol=protocol)) as server:
+                    with self.assertRaisesRegex(oracle.OracleFailure, "version mismatch|protocol mismatch"):
+                        oracle.query_java_status(
+                            server.port, "1.21.11",
+                            implementation="paper", expected_protocol=774)
+
+    def test_unbranded_default_rejects_paper_brand(self):
+        with FakeServer(status_frame(version="Paper 1.21.11", protocol=774)) as server:
+            with self.assertRaisesRegex(oracle.OracleFailure, "server version mismatch"):
+                oracle.query_java_status(server.port, "1.21.11")
+
     def test_wrong_version_refused(self):
         with FakeServer(status_frame(version="1.21.10")) as server:
             with self.assertRaisesRegex(oracle.OracleFailure, "version mismatch"):

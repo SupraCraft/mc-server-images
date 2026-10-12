@@ -65,12 +65,35 @@ def framed(payload: bytes) -> bytes:
     return encode_varint(len(payload)) + payload
 
 
-def query_java_status(port: int, expected_version: str, *, timeout: float = 8.0) -> dict:
+def expected_status_name(version: str, implementation: str) -> str:
+    """Construct one exact server-list ping name from known implementation semantics.
+
+    Paper's PaperServerListPingEventImpl uses getServerModName() + ' ' +
+    getServerVersion(), and ServerBuildInfoImpl uses the literal brand Paper.
+    No fuzzy matching, case-folding, suffixes, regex or user-supplied brands.
+    """
+    if implementation == "vanilla":
+        return version
+    if implementation == "paper":
+        return "Paper " + version
+    raise OracleFailure("unsupported status implementation")
+
+
+def query_java_status(port: int, expected_version: str, *, timeout: float = 8.0,
+                      implementation: str = "vanilla",
+                      expected_protocol: int | None = None) -> dict:
     """Status is a protocol oracle, not authentication or gameplay acceptance."""
     if not 1 <= port <= 65535 or not expected_version or len(expected_version) > MAX_TEXT:
         raise OracleFailure("invalid oracle input")
     if not 0.2 <= timeout <= 20.0:
         raise OracleFailure("invalid timeout")
+    expected_name = expected_status_name(expected_version, implementation)
+    if implementation == "paper" and expected_protocol is None:
+        raise OracleFailure("Paper status needs exact protocol pin")
+    if expected_protocol is not None and (
+        type(expected_protocol) is not int or not 1 <= expected_protocol <= 0x7FFFFFFF
+    ):
+        raise OracleFailure("invalid expected protocol")
     host = "127.0.0.1"
     with socket.create_connection((host, port), timeout=timeout) as conn:
         conn.settimeout(timeout)
@@ -99,11 +122,13 @@ def query_java_status(port: int, expected_version: str, *, timeout: float = 8.0)
     if not isinstance(response, dict):
         raise OracleFailure("status payload not an object")
     version = response.get("version")
-    if not isinstance(version, dict) or version.get("name") != expected_version:
+    if not isinstance(version, dict) or version.get("name") != expected_name:
         raise OracleFailure("server version mismatch")
     protocol = version.get("protocol")
     if not isinstance(protocol, int) or isinstance(protocol, bool) or protocol <= 0:
         raise OracleFailure("server protocol is absent or invalid")
+    if expected_protocol is not None and protocol != expected_protocol:
+        raise OracleFailure("server protocol mismatch")
     players = response.get("players")
     if not isinstance(players, dict):
         raise OracleFailure("players status absent")
@@ -119,6 +144,8 @@ def query_java_status(port: int, expected_version: str, *, timeout: float = 8.0)
         "classification": "SUPPORTED",
         "oracleSatisfied": True,
         "java_version": expected_version,
+        "server_implementation": implementation,
+        "status_name_contract": "paper_brand_exact" if implementation == "paper" else "vanilla_exact",
         "server_protocol": protocol,
         "status_packet_valid": True,
         "players_counter_valid": True,
@@ -129,11 +156,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, required=True, help="loopback-forwarded disposable server port")
     parser.add_argument("--expected-version", required=True)
+    parser.add_argument("--implementation", choices=("vanilla", "paper"), default="vanilla")
+    parser.add_argument("--expected-protocol", type=int)
     parser.add_argument("--timeout", type=float, default=8.0)
     parser.add_argument("--out", type=pathlib.Path, required=True)
     args = parser.parse_args(argv)
     try:
-        result = query_java_status(args.port, args.expected_version, timeout=args.timeout)
+        result = query_java_status(args.port, args.expected_version, timeout=args.timeout,
+                                   implementation=args.implementation,
+                                   expected_protocol=args.expected_protocol)
         exit_code = 0
     except (OSError, OracleFailure) as exc:
         result = {
