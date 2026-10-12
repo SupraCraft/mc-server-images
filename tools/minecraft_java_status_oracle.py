@@ -20,6 +20,30 @@ class OracleFailure(RuntimeError):
     pass
 
 
+class StatusVersionMismatch(OracleFailure):
+    """Public-safe diagnostic for a genuine status protocol version mismatch."""
+
+    def __init__(self, shape: str, protocol_valid: bool):
+        super().__init__("server version mismatch")
+        self.shape = shape
+        self.protocol_valid = protocol_valid
+
+
+def version_name_shape(name: object, expected: str) -> str:
+    """Never return the observed string, only an enumerated relation to pinned expected."""
+    if name is None:
+        return "missing"
+    if not isinstance(name, str):
+        return "non_string"
+    if name.strip() == expected:
+        return "whitespace_only"
+    if name.lower() == expected.lower():
+        return "case_only"
+    if len(name) <= 128 and expected in name:
+        return "decorated_expected"
+    return "other"
+
+
 def encode_varint(value: int) -> bytes:
     if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 0x7FFFFFFF:
         raise OracleFailure("invalid unsigned VarInt")
@@ -100,7 +124,13 @@ def query_java_status(port: int, expected_version: str, *, timeout: float = 8.0)
         raise OracleFailure("status payload not an object")
     version = response.get("version")
     if not isinstance(version, dict) or version.get("name") != expected_version:
-        raise OracleFailure("server version mismatch")
+        name = version.get("name") if isinstance(version, dict) else None
+        protocol_candidate = version.get("protocol") if isinstance(version, dict) else None
+        raise StatusVersionMismatch(
+            version_name_shape(name, expected_version),
+            isinstance(protocol_candidate, int) and not isinstance(protocol_candidate, bool)
+            and protocol_candidate > 0,
+        )
     protocol = version.get("protocol")
     if not isinstance(protocol, int) or isinstance(protocol, bool) or protocol <= 0:
         raise OracleFailure("server protocol is absent or invalid")
@@ -142,6 +172,9 @@ def main(argv: list[str] | None = None) -> int:
             "oracleSatisfied": False,
             "failure_type": type(exc).__name__,
             "failure_reason": str(exc) if isinstance(exc, OracleFailure) else "transport failure",
+            **({"version_name_shape": exc.shape,
+                "version_protocol_field_valid": exc.protocol_valid}
+               if isinstance(exc, StatusVersionMismatch) else {}),
         }
         exit_code = 2
     args.out.parent.mkdir(parents=True, exist_ok=True)
