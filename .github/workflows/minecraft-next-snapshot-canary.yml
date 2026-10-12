@@ -1,0 +1,59 @@
+name: Qualify isolated Minecraft 26.4 snapshot runtime
+
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_next_release_snapshot.py'
+      - 'tests/test_qualify_next_release_snapshot.py'
+      - '.github/workflows/minecraft-next-snapshot-canary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot-canary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact experimental source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Qualify fail-closed nonpromotable canary contract
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/qualify_next_release_snapshot.py
+          python3 -m unittest discover -s tests -p 'test_qualify_next_release_snapshot.py' -v
+      - name: Install exact snapshot-required Java 25
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Boot newest official 26.4 snapshot with verified SHA-1
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/next-release"
+          python3 tools/qualify_next_release_snapshot.py \
+            --out "$RUNNER_TEMP/next-release/26.4-disposable-runtime.json"
+          python3 - "$RUNNER_TEMP/next-release/26.4-disposable-runtime.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d['classification']=='NONPROMOTABLE_REAL_SNAPSHOT_RUNTIME'
+          assert d['minecraft_snapshot'].startswith('26.4-snapshot-')
+          assert d['observed_version'] and type(d['observed_protocol']) is int
+          assert d['operational_promotion_allowed'] is False
+          assert d['persistent_world_mutated'] is False
+          assert d['collage_deployed'] is False
+          PY
+      - name: Preserve nonpromotable runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: minecraft-26-4-snapshot-canary
+          path: ${{ runner.temp }}/next-release/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Declare explicit non-promotion boundary
+        run: |
+          echo 'This is only isolated 26.4 preview gameplay/runtime evidence, NOT operational support, server adapter/Velocity compatibility, player identities, or a production world upgrade.' >> "$GITHUB_STEP_SUMMARY"
