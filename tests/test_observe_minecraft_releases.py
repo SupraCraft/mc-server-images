@@ -65,6 +65,18 @@ class ReleaseWatchTests(unittest.TestCase):
             with self.assertRaisesRegex(WatchRefused, "ISSUE_WRITE_NOT_AUTHORIZED"):
                 publish_once(record, "fake-token")
 
+    def test_main_push_notice_is_guarded_and_writes_only_when_new(self):
+        record = observe(copy.deepcopy(BASE), "a"*64)
+        with patch.dict(os.environ, {
+            "GITHUB_REPOSITORY": "SupraCraft/mc-server-images",
+            "GITHUB_REF": "refs/heads/main",
+            "GITHUB_EVENT_NAME": "push"
+        }), patch("observe_minecraft_releases.github_api",
+                  side_effect=[[], {"id": 1234}]) as mock:
+            self.assertEqual(publish_once(record, "fake-token"), "PUBLISHED")
+            self.assertEqual(mock.call_count, 2)
+            self.assertEqual(mock.call_args.args[2], "POST")
+
     def test_repeat_observation_emits_no_second_comment(self):
         record = observe(copy.deepcopy(BASE), "0"*64)
         marker = "<!-- supracraft-mc-release-pair:" + record["pair_key"] + " -->"
