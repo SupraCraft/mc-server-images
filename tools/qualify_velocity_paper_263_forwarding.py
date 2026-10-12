@@ -91,6 +91,7 @@ def run_bot(port: int, expect_spawn: bool) -> dict:
     require(row.get("requested_version") == "26.3", "BOT_CLIENT_VERSION_DRIFT")
     require(row.get("spawned") is expect_spawn,
             "UNEXPECTED_BOT_SPAWN_OR_DENIAL")
+    require(row.get("timed_out") is False, "BOT_TIMED_OUT_NOT_DENIED")
     if expect_spawn:
         require(row.get("protocol") == 777, "PROXIED_BOT_PROTOCOL_DRIFT")
         require(not row.get("error") and not row.get("kicked"), "PROXY_BOT_ERROR")
@@ -166,12 +167,12 @@ def execute(discovery: dict) -> dict:
             good = run_bot(PROXY_PORT, True)
             time.sleep(1)
             require((paper / "world/level.dat").is_file(), "PAPER_WORLD_MISSING")
+            graceful_stop(v, "VELOCITY")
+            graceful_stop(p, "PAPER")
             backend_uuid = paper_usercache(paper)
             backend_log = (paper / "paper.log").read_text(errors="replace")
             require(BOT_NAME in backend_log and "joined the game" in backend_log,
                     "BACKEND_SPAWN_INDEPENDENT_LOG_MISSING")
-            graceful_stop(v, "VELOCITY")
-            graceful_stop(p, "PAPER")
             return {
                 "schema": "supracraft.velocity-paper-player-path/1",
                 "classification": "REAL_LOOPBACK_OFFLINE_PLAYER_FORWARDING",
