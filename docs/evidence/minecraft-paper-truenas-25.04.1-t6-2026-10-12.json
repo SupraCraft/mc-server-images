@@ -1,0 +1,93 @@
+{
+  "schema": "supracraft-minecraft-native-app-t6-evidence/v1",
+  "date_utc": "2026-10-12",
+  "classification": "SUPPORTED",
+  "oracle_satisfied": true,
+  "scope": {
+    "product": "native-truenas-minecraft-paper",
+    "target": "TrueNAS-25.04.1",
+    "rung": "T6",
+    "native_catalog": "community/minecraft",
+    "catalog_version": "1.15.29",
+    "implementation": "paper",
+    "minecraft_version": "1.21.11",
+    "minecraft_protocol": 774,
+    "gameplay_semantic_target": false,
+    "physical_host_qualified": false
+  },
+  "source": {
+    "truenas_apps_commit": "bb96ef6fd8c2708765012a4a3ca3739370a4f92c",
+    "foundry_producer_commit": "2cc7e1fe3772f8c532e933b3d7832e6cf985db4e",
+    "product_status_oracle_commit": "1b2227847d56007cdf8b668c00845326827e5fd5",
+    "agent_dispatch_run_commit": "50d6aa75835727997395156d4b44c3ce668b38f4",
+    "expected_image": "ghcr.io/itzg/minecraft-server:2026.9.2-java21@sha256:edf50d431ddc6f73929368e82f4334a405796874f7b0ae11f1edcbb267d670aa",
+    "foundry_control_json_sha256": "89cfb74bed600c7c282b12f7a887b47da890e5373a0123931fcf9b5f50e77f07",
+    "capsule_manifest_sha256": "85a740366843255ff2cee80ee0da3550429c911614b91d27325badf58a9d3152"
+  },
+  "evidence": {
+    "github_run_url": "https://github.com/SemperSupra/agent-dispatch/actions/runs/38200675099",
+    "github_run_id": 38200675099,
+    "github_run_conclusion": "success",
+    "guest_job_id": 114653615051,
+    "guest_job_conclusion": "success",
+    "guest_receipt_artifact": {
+      "id": 11726177363,
+      "name": "gha-kvm-truenas-25.04.1-1",
+      "zip_sha256": "22fba44f416871585af42c4361b090ee42438c48a589a54e1c02841f5ad00c08"
+    },
+    "source_control_artifact": {
+      "id": 11725850775,
+      "name": "minecraft-paper-truenas-t6-control",
+      "zip_sha256": "228fc197093c405e9d66480c26b31582beed9d8226aa19fc4fd069526df3666f"
+    },
+    "immutable_container_image_matched": true,
+    "native_app_created_and_running": true,
+    "owner_readback_matched": true,
+    "readiness": {
+      "first": {
+        "java_version": "1.21.11",
+        "protocol": 774,
+        "level_dat_size": 1534,
+        "status_packet_valid": true
+      },
+      "restart": {
+        "java_version": "1.21.11",
+        "protocol": 774,
+        "level_dat_size": 1537,
+        "status_packet_valid": true
+      },
+      "redeploy": {
+        "java_version": "1.21.11",
+        "protocol": 774,
+        "level_dat_size": 1533,
+        "status_packet_valid": true
+      },
+      "reinstall": {
+        "java_version": "1.21.11",
+        "protocol": 774,
+        "level_dat_size": 1534,
+        "status_packet_valid": true
+      }
+    },
+    "independent_world_sentinel_sha256": "62d3bef52a11134f83249f6fd8db0e077efd2c849b7d8b4e9f263182000d3f05",
+    "world_retained_on_app_delete": true,
+    "world_rebound_after_reinstall": true,
+    "final_cleanup": {
+      "attempted": true,
+      "app_absent": true,
+      "owned_world_dataset_absent": true,
+      "zero_residue": true,
+      "session_clean": true
+    }
+  },
+  "exclusions": {
+    "vanilla_java_26_3_qualified": false,
+    "two_rivers_game_semantics_qualified": false,
+    "velocity_vip_end_to_end_qualified": false,
+    "collage_manager_lifecycle_qualified": false,
+    "physical_truenas_hil_qualified": false,
+    "all_truenas_versions_qualified": false
+  },
+  "deployment_policy": "PHYSICAL_MUTATION_HOLD",
+  "interpretation": "Source-linked projection of one completed real disposable nested TrueNAS guest receipt. It is not an independent re-execution, does not grant physical APPLY and does not qualify other backend/target/topology combinations."
+}
