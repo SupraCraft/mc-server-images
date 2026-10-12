@@ -5,6 +5,12 @@ on:
       - 'tools/observe_minecraft_releases.py'
       - 'tests/test_observe_minecraft_releases.py'
       - '.github/workflows/minecraft-release-watch.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/observe_minecraft_releases.py'
+      - 'tests/test_observe_minecraft_releases.py'
+      - '.github/workflows/minecraft-release-watch.yml'
   workflow_dispatch:
   schedule:
     - cron: '17 */12 * * *'
@@ -59,7 +65,7 @@ jobs:
     if: >-
       github.event.repository.private == false &&
       github.ref == 'refs/heads/main' &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     needs: [metadata-only]
     runs-on: ubuntu-24.04
     timeout-minutes: 4
