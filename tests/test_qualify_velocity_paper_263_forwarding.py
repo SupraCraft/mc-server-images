@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from qualify_velocity_paper_263_forwarding import (
-    Refused, patch_paper_global, paper_usercache, run_bot, velocity_config
+    Refused, patch_paper_global, paper_usercache, expected_offline_uuid, run_bot, velocity_config
 )
 from test_qualify_velocity_paper_263_link import DEFAULT
 
@@ -81,6 +81,12 @@ class PlayerForwardingTests(unittest.TestCase):
                    return_value=self.fake_bot(spawn=True, protocol=776)):
             with self.assertRaisesRegex(Refused, "PROXIED_BOT_PROTOCOL_DRIFT"):
                 run_bot(25577, True)
+
+    def test_offline_uuid_independent_known_mojang_java_vector(self):
+        self.assertEqual(expected_offline_uuid("Notch"),
+                         "b50ad385-829d-3141-a216-7e7d7539ba7f")
+        self.assertEqual(expected_offline_uuid("SupraProbe263"),
+                         "d56607cf-5c22-3b53-98c3-2c51782b5f91")
 
     def test_backend_identity_requires_unique_usercache_entry(self):
         with tempfile.TemporaryDirectory() as td:
