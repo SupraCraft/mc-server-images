@@ -1,0 +1,66 @@
+name: Export bounded vanilla 26.3 restoration datapack candidate
+
+on:
+  pull_request:
+    paths:
+      - 'tools/export_core_restoration_datapack_26_3.py'
+      - 'tools/probe_core_restoration_datapack_26_3.py'
+      - 'tests/test_export_core_restoration_datapack_26_3.py'
+      - '.github/workflows/export-core-restoration-artifact-26-3.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/export_core_restoration_datapack_26_3.py'
+      - 'tools/probe_core_restoration_datapack_26_3.py'
+      - 'tests/test_export_core_restoration_datapack_26_3.py'
+      - '.github/workflows/export-core-restoration-artifact-26-3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Validate source-only immutable artifact producer
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/export_core_restoration_datapack_26_3.py
+          python3 -m unittest discover -s tests -p 'test_export_core_restoration_datapack_26_3.py' -v
+      - name: Produce real vanilla datapack candidate and binding manifest
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/supracraft-world-artifacts"
+          python3 tools/export_core_restoration_datapack_26_3.py \
+            --out "$RUNNER_TEMP/supracraft-world-artifacts/lantern-restoration-26.3.zip" \
+            --manifest "$RUNNER_TEMP/supracraft-world-artifacts/lantern-restoration-26.3.json" \
+            --world-id lantern-rdte --release-id lantern-core-restore-26-3 \
+            > "$RUNNER_TEMP/artifact-producer-receipt.json"
+          python3 - "$RUNNER_TEMP/supracraft-world-artifacts" <<'PY'
+          import hashlib, json, pathlib, sys
+          root=pathlib.Path(sys.argv[1])
+          record=json.loads((root/"lantern-restoration-26.3.json").read_text())
+          assert record["schema"]=="supracraft-vanilla-datapack-candidate/1"
+          assert record["classification"]=="SOURCE_ARTIFACT_EXPORTED"
+          assert record["sha256"] == hashlib.sha256(
+              (root/"lantern-restoration-26.3.zip").read_bytes()).hexdigest()
+          assert record["collage_deployed"] is False
+          assert record["world_save_included"] is False
+          PY
+      - name: Publish public-safe reproducible datapack candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: vanilla-26-3-restoration-datapack-candidate
+          path: ${{ runner.temp }}/supracraft-world-artifacts/
+          if-no-files-found: error
+          retention-days: 7
+      - name: State exact proof limits
+        run: |
+          echo 'SOURCE_ARTIFACT_EXPORTED: actual datapack ZIP and SHA256/provenance manifest created. This CI job did NOT boot Minecraft, deploy through COLLAGE, prove Two Rivers, or mutate TrueNAS.' >> "$GITHUB_STEP_SUMMARY"
