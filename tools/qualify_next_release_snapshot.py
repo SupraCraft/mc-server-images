@@ -89,6 +89,10 @@ def choose_server(version: dict, selection: dict) -> dict:
     return jar
 
 
+def normalized_snapshot_name(name: str) -> str:
+    return re.sub(r"\\s+", "-", name.strip().lower())
+
+
 def run_canary(version: str, server: dict, timeout: int = 180) -> dict:
     with tempfile.TemporaryDirectory(prefix="supracraft-next-release-") as td:
         root = pathlib.Path(td)
@@ -137,8 +141,9 @@ def run_canary(version: str, server: dict, timeout: int = 180) -> dict:
                         # actual version to the bounded inspection client.
                         report = status_query("127.0.0.1", PORT, 777)
                         details = report.get("version", {})
-                        if details.get("name") == version and (
-                            type(details.get("protocol")) is int
+                        if (isinstance(details.get("name"), str) and
+                            normalized_snapshot_name(details["name"]) == version and (
+                            type(details.get("protocol")) is int)
                         ):
                             observed = details
                             break
