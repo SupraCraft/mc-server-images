@@ -19,7 +19,7 @@ import zipfile
 
 from resolve_operational_runtime_versions import Refused, UA, official_url
 
-PORT = 25577
+PORT = 25565
 MAX_JAR = 80 * 1024 * 1024
 
 
