@@ -115,7 +115,7 @@ def github_api(url: str, token: str, method: str = "GET", payload: bytes | None 
 def publish_once(record: dict, token: str) -> str:
     require(os.environ.get("GITHUB_REPOSITORY") == "SupraCraft/mc-server-images"
             and os.environ.get("GITHUB_REF") == "refs/heads/main"
-            and os.environ.get("GITHUB_EVENT_NAME") in ("schedule", "workflow_dispatch")
+            and os.environ.get("GITHUB_EVENT_NAME") in ("schedule", "workflow_dispatch", "push")
             and bool(token), "ISSUE_WRITE_NOT_AUTHORIZED")
     marker = "<!-- supracraft-mc-release-pair:" + record["pair_key"] + " -->"
     for page in range(1, MAX_COMMENTS_PAGES + 1):
