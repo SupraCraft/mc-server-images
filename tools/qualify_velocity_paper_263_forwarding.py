@@ -109,6 +109,12 @@ def run_bot(port: int, expect_spawn: bool, stage: str = 'UNNAMED') -> dict:
              "kicked", "ended", "error")}
 
 
+def expected_offline_uuid(name: str) -> str:
+    """Independent Mojang offline UUID oracle for explicitly offline-mode RDTE."""
+    raw = hashlib.md5(("OfflinePlayer:" + name).encode("utf-8")).digest()
+    return str(uuid.UUID(bytes=raw, version=3))
+
+
 def paper_usercache(home: pathlib.Path) -> str:
     path = home / "usercache.json"
     require(path.is_file(), "PAPER_USERCACHE_MISSING_AFTER_PROXY_LOGIN")
@@ -177,6 +183,9 @@ def execute(discovery: dict) -> dict:
             graceful_stop(v, "VELOCITY")
             graceful_stop(p, "PAPER")
             backend_uuid = paper_usercache(paper)
+            expected_uuid = expected_offline_uuid(BOT_NAME)
+            require(backend_uuid == expected_uuid,
+                    "FORWARDED_OFFLINE_UUID_MISMATCH")
             backend_log = (paper / "paper.log").read_text(errors="replace")
             require(BOT_NAME in backend_log and "joined the game" in backend_log,
                     "BACKEND_SPAWN_INDEPENDENT_LOG_MISSING")
@@ -191,6 +200,8 @@ def execute(discovery: dict) -> dict:
                 "wrong_secret_denied": not mismatch["spawned"],
                 "proxy_player_spawned": good["spawned"],
                 "backend_usercache_uuid": backend_uuid,
+                "expected_proxy_offline_uuid": expected_uuid,
+                "forwarded_uuid_matches_independent_oracle": True,
                 "backend_log_join_independently_observed": True,
                 "test_network": "127.0.0.1_only",
                 "account_authentication_qualified": False,
