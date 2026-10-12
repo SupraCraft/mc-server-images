@@ -1,0 +1,43 @@
+name: Qualify live Velocity Paper 26.3 status link
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_velocity_paper_263_link.py'
+      - 'spec/rdte-current-artifact-pins-v1.json'
+      - 'tests/test_qualify_velocity_paper_263_link.py'
+      - '.github/workflows/qualify-velocity-paper-263-link.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  loopback-link:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Source tests
+        run: |
+          python3 -m unittest discover -s tests -p 'test_qualify_velocity_paper_263_link.py' -v
+          python3 -m py_compile tools/qualify_velocity_paper_263_link.py
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Discover official candidates
+        run: |
+          mkdir -p "$RUNNER_TEMP/proxy-link"
+          python3 tools/resolve_operational_runtime_versions.py --output "$RUNNER_TEMP/proxy-link/discovery.json"
+      - name: Real pinned status pass-through and backend stop-rejoin
+        run: |
+          python3 tools/qualify_velocity_paper_263_link.py \
+            --discovery "$RUNNER_TEMP/proxy-link/discovery.json" \
+            --out "$RUNNER_TEMP/proxy-link/receipt.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: velocity-paper263-loopback-status
+          path: ${{ runner.temp }}/proxy-link/
+          if-no-files-found: warn
+          retention-days: 14
