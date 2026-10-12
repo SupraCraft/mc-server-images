@@ -90,7 +90,7 @@ def choose_server(version: dict, selection: dict) -> dict:
 
 
 def normalized_snapshot_name(name: str) -> str:
-    return re.sub(r"\\s+", "-", name.strip().lower())
+    return "-".join(name.strip().lower().split())
 
 
 def run_canary(version: str, server: dict, timeout: int = 180) -> dict:
