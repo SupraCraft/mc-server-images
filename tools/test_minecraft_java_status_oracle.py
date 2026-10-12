@@ -87,6 +87,43 @@ class TestStatusOracle(unittest.TestCase):
             with self.assertRaisesRegex(oracle.OracleFailure, "version mismatch"):
                 oracle.query_java_status(server.port, "1.21.11")
 
+    def test_version_name_shape_is_bounded_and_does_not_reveal_server_description(self):
+        cases = [
+            ("1.21.11", "whitespace_only"),  # exact relation helper is only used on mismatches
+            (" Paper 1.21.11 ", "decorated_expected"),
+            ("1.21.11 ", "whitespace_only"),
+            ("1.21.10", "other"),
+            (None, "missing"),
+            (123, "non_string"),
+        ]
+        for observed, category in cases:
+            shape = oracle.version_name_shape(observed, "1.21.11")
+            self.assertEqual(shape, category)
+            self.assertNotIn("Paper", shape)
+            self.assertNotIn("1.21.10", shape)
+        with FakeServer(status_frame(version="Paper 1.21.11")) as server:
+            with self.assertRaises(oracle.StatusVersionMismatch) as ctx:
+                oracle.query_java_status(server.port, "1.21.11")
+        self.assertEqual(ctx.exception.shape, "decorated_expected")
+        self.assertTrue(ctx.exception.protocol_valid)
+
+    def test_version_mismatch_cli_preserves_strict_failure_with_bounded_shape(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            out = pathlib.Path(d) / "status.json"
+            with FakeServer(status_frame(version="Paper 1.21.11")) as server:
+                rc = oracle.main(["--port", str(server.port), "--expected-version", "1.21.11",
+                                  "--out", str(out), "--timeout", "3"])
+            payload = json.loads(out.read_text())
+            self.assertEqual(rc, 2)
+            self.assertEqual(payload["classification"], "ORACLE_FAILURE")
+            self.assertFalse(payload["oracleSatisfied"])
+            self.assertEqual(payload["failure_reason"], "server version mismatch")
+            self.assertEqual(payload["version_name_shape"], "decorated_expected")
+            self.assertTrue(payload["version_protocol_field_valid"])
+            self.assertNotIn("Paper", json.dumps(payload))
+            self.assertNotIn("description", payload)
+
     def test_invalid_player_counts_refused(self):
         with FakeServer(status_frame(online=11, maximum=10)) as server:
             with self.assertRaisesRegex(oracle.OracleFailure, "counter bounds"):
