@@ -1,5 +1,7 @@
 import unittest
-from tools.qualify_next_release_snapshot import CanaryRefused, choose_snapshot, normalized_snapshot_name
+import sys, pathlib
+sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1] / 'tools'))
+from qualify_next_release_snapshot import CanaryRefused, choose_snapshot, normalized_snapshot_name
 
 class CanaryTests(unittest.TestCase):
     def test_normalized_snapshot_identity(self):
