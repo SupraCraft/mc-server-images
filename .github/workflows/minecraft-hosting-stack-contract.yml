@@ -5,11 +5,15 @@ on:
     paths:
       - 'spec/minecraft-hosting-stack-v1.json'
       - 'tools/validate_minecraft_hosting_stack.py'
+      - 'tools/minecraft_java_status_oracle.py'
+      - 'tools/test_minecraft_java_status_oracle.py'
       - '.github/workflows/minecraft-hosting-stack-contract.yml'
   pull_request:
     paths:
       - 'spec/minecraft-hosting-stack-v1.json'
       - 'tools/validate_minecraft_hosting_stack.py'
+      - 'tools/minecraft_java_status_oracle.py'
+      - 'tools/test_minecraft_java_status_oracle.py'
       - '.github/workflows/minecraft-hosting-stack-contract.yml'
   workflow_dispatch:
 
@@ -26,3 +30,4 @@ jobs:
         with:
           python-version: '3.13'
       - run: python tools/validate_minecraft_hosting_stack.py
+      - run: python -m unittest -v tools/test_minecraft_java_status_oracle.py
