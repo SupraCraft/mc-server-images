@@ -77,7 +77,7 @@ def start_java(jar: pathlib.Path, home: pathlib.Path, handles: list) -> subproce
     return proc
 
 
-def run_bot(port: int, expect_spawn: bool) -> dict:
+def run_bot(port: int, expect_spawn: bool, stage: str = 'UNNAMED') -> dict:
     env = os.environ.copy()
     env.update({"MC_FORWARD_PORT": str(port), "MC_FORWARD_USERNAME": BOT_NAME})
     done = subprocess.run(["node", str(BOT)], cwd=ROOT, env=env,
@@ -89,9 +89,15 @@ def run_bot(port: int, expect_spawn: bool) -> dict:
     require(done.returncode == 0 and row.get("schema") == "supracraft.forwarding-client/1",
             "BOT_RUNTIME_FAILED")
     require(row.get("requested_version") == "26.3", "BOT_CLIENT_VERSION_DRIFT")
+    diagnostic = json.dumps({
+        "stage": stage, "spawned": row.get("spawned"),
+        "protocol": row.get("protocol"), "kicked": str(row.get("kicked"))[:160],
+        "ended": row.get("ended"), "error": str(row.get("error"))[:160],
+        "timed_out": row.get("timed_out")
+    }, sort_keys=True)
+    require(row.get("timed_out") is False, "BOT_TIMED_OUT_" + diagnostic)
     require(row.get("spawned") is expect_spawn,
-            "UNEXPECTED_BOT_SPAWN_OR_DENIAL")
-    require(row.get("timed_out") is False, "BOT_TIMED_OUT_NOT_DENIED")
+            "UNEXPECTED_BOT_SPAWN_OR_DENIAL_" + diagnostic)
     if expect_spawn:
         require(row.get("protocol") == 777, "PROXIED_BOT_PROTOCOL_DRIFT")
         require(not row.get("error") and not row.get("kicked"), "PROXY_BOT_ERROR")
@@ -151,20 +157,20 @@ def execute(discovery: dict) -> dict:
             p = start_java(pjar, paper, handles)
             wait_status(p, BACKEND_PORT, "PAPER_FORWARDING")
             # First, an unauthorized client goes directly to the loopback backend.
-            bypass = run_bot(BACKEND_PORT, False)
+            bypass = run_bot(BACKEND_PORT, False, "DIRECT_BACKEND")
             # Second, an actual proxy with the wrong forwarding credential is denied.
             (velocity / "velocity.toml").write_text(vconfig)
             (velocity / "forwarding.secret").write_text(wrong + "\n")
             (velocity / "forwarding.secret").chmod(0o600)
             v = start_java(vjar, velocity, handles)
             wait_status(v, PROXY_PORT, "VELOCITY_BAD_SECRET")
-            mismatch = run_bot(PROXY_PORT, False)
+            mismatch = run_bot(PROXY_PORT, False, "WRONG_SECRET_PROXY")
             graceful_stop(v, "VELOCITY")
             # Finally, the matching ephemeral secret allows a genuine client spawn.
             (velocity / "forwarding.secret").write_text(secret + "\n")
             v = start_java(vjar, velocity, handles)
             wait_status(v, PROXY_PORT, "VELOCITY_CORRECT_SECRET")
-            good = run_bot(PROXY_PORT, True)
+            good = run_bot(PROXY_PORT, True, "CORRECT_SECRET_PROXY")
             time.sleep(1)
             require((paper / "world/level.dat").is_file(), "PAPER_WORLD_MISSING")
             graceful_stop(v, "VELOCITY")
@@ -214,7 +220,7 @@ def main() -> int:
         result = {"schema": "supracraft.velocity-paper-player-path/1",
                   "classification": "FAIL",
                   "failure_type": type(exc).__name__,
-                  "failure": str(exc)[:220],
+                  "failure": str(exc)[:650],
                   "operational_selection": False,
                   "physical_truenas_apply": "HOLD"}
     args.out.parent.mkdir(parents=True, exist_ok=True)
