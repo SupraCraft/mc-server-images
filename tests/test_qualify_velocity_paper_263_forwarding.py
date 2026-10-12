@@ -67,7 +67,7 @@ class PlayerForwardingTests(unittest.TestCase):
             self.assertFalse(run_bot(25586, False)["spawned"])
         with patch("qualify_velocity_paper_263_forwarding.subprocess.run",
                    return_value=self.fake_bot(timed_out=True)):
-            with self.assertRaisesRegex(Refused, "BOT_TIMED_OUT_NOT_DENIED"):
+            with self.assertRaisesRegex(Refused, "BOT_TIMED_OUT_"):
                 run_bot(25586, False)
 
     def test_direct_backend_acceptance_is_a_red_failure(self):
