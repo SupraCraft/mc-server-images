@@ -199,17 +199,23 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
             require(live_candidate_hash != candidate_sha,
                     "S5_CANDIDATE_WORLD_NOT_PERSISTED")
             stages.append("candidate_world_persisted")
-            # Deliberate health regression in the otherwise passing world:
-            # independent expected world snapshot hash no longer matches the
-            # post-player mutated world. Fail closed then restore prior snapshot.
+            # Inject a real *integrity* failure while stopped, not a false
+            # health claim based on ordinary gameplay-induced world writes.
+            # Candidate content is deliberately corrupted after positive live
+            # proof; stage digest re-check must refuse before any promotion.
+            injected = agent / "releases/candidate/datapacks/candidate.zip"
+            require(hashlib.sha256(injected.read_bytes()).hexdigest() == PACK_SHA,
+                    "S5_CANDIDATE_PACK_CHANGED_BEFORE_INJECTION")
+            injected.write_bytes(b"SU PRACRAFT S5 INJECTED CONTENT INTEGRITY FAULT\n")
+            observed_bad = hashlib.sha256(injected.read_bytes()).hexdigest()
             try:
-                verify_fault_is_not_promotable(candidate_sha, live_candidate_hash)
+                verify_fault_is_not_promotable(PACK_SHA, observed_bad)
             except Refused as exc:
                 require(str(exc) == "S5_INJECTED_HEALTH_ORACLE_MISMATCH",
                         "S5_WRONG_FAILURE_DETECTED")
             else:
                 raise Refused("S5_INJECTED_HEALTH_FAULT_ACCEPTED")
-            stages.append("injected_health_hash_mismatch_detected")
+            stages.append("injected_candidate_artifact_integrity_fault_detected")
             restored = safe_switch(agent, "restore", "snapshot", running)
             assert_agent_receipt("restore", restored, "snapshot", prior_sha)
             stages.append("restore_snapshot_after_health_fault")
@@ -241,7 +247,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
                 "server_quiesced_for_each_switch": True,
                 "active_server_switch_denied": True,
                 "candidate_positive_health_observed": True,
-                "injected_health_mismatch_caused_restore": True,
+                "injected_candidate_integrity_fault_caused_restore": True,
                 "rollback_world_semantics_independently_observed": True,
                 "native_truenas_guest_qualified": False,
                 "zfs_snapshot_qualified": False,
