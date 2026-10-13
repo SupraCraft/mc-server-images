@@ -1,0 +1,86 @@
+name: S5 live vanilla26.3 world-agent activation and fault rollback
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_world_agent_263_lifecycle.py'
+      - 'tests/test_qualify_world_agent_263_lifecycle.py'
+      - '.github/workflows/qualify-world-agent-263-lifecycle.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: s5-world-agent-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  world-lifecycle:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: SupraCraft/mc-server-images
+          ref: 7f888b5829f4e5576d5ce512d86327348c43f01e
+          path: .deps/accepted-producer
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Source and adversarial authority gates before Java
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/qualify_world_agent_263_lifecycle.py tools/minecraft_world_agent.py
+          python3 -m unittest discover -s tests -p 'test_qualify_world_agent_263_lifecycle.py' -v
+          python3 -m unittest discover -s tests -p 'test_qualify_vanilla_world_artifact_activation_263.py' -v
+          python3 tools/validate_world_activation_transaction.py
+          test "$(git -C .deps/accepted-producer rev-parse HEAD)" = 7f888b5829f4e5576d5ce512d86327348c43f01e
+      - name: Export immutable source datapack from exact accepted producer
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/s5"
+          python3 .deps/accepted-producer/tools/export_core_restoration_datapack_26_3.py \
+            --out "$RUNNER_TEMP/s5/lantern.zip" \
+            --manifest "$RUNNER_TEMP/s5/lantern.json" \
+            --world-id lantern-rdte --release-id lantern-core-restore-26-3
+      - name: Real vanilla agent stage, activation, live positive, fault and rollback
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_world_agent_263_lifecycle.py \
+            --candidate "$RUNNER_TEMP/s5/lantern.zip" \
+            --manifest "$RUNNER_TEMP/s5/lantern.json" \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/s5/receipt.json"
+          python3 - "$RUNNER_TEMP/s5/receipt.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          assert r["classification"]=="REAL_WORLD_AGENT_STAGE_ACTIVATE_HEALTH_ROLLBACK"
+          for k in ("world_agent_stage_actuate_restore_real",
+                    "server_quiesced_for_each_switch",
+                    "active_server_switch_denied",
+                    "candidate_positive_health_observed",
+                    "injected_candidate_integrity_fault_caused_restore",
+                    "rollback_world_semantics_independently_observed",
+                    "temporary_worlds_processes_cleaned"):
+              assert r[k] is True,k
+          assert r["datapack_sha256"]=="da25005e8729e6f013f7108ac5b8869dd46323befc78efdae18221b26cafe5f8"
+          assert r["snapshot_restore_sha256"]==r["prior_world_sha256"]
+          assert r["native_truenas_guest_qualified"] is False
+          assert r["zfs_snapshot_qualified"] is False
+          assert r["operational_selection"] is False
+          assert r["physical_truenas_apply"]=="HOLD"
+          PY
+      - name: Sanitize artifact boundary; never upload jars or worlds
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s5-vanilla263-world-agent-lifecycle
+          path: ${{ runner.temp }}/s5/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Explicit non-promotion
+        if: always()
+        run: echo 'Disposable POSIX world-agent + real Mojang vanilla 26.3 only. Not ZFS snapshot, COLLAGE, native TrueNAS or physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
