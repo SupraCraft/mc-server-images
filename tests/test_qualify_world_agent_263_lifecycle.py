@@ -10,11 +10,25 @@ sys.path.insert(0,str(ROOT/"tools"))
 from qualify_world_agent_263_lifecycle import (
     Refused, assert_agent_receipt, owned_active, safe_switch,
     verify_fault_is_not_promotable, world_agent, admit_owned_world_symlink,
+    classify_vanilla_startup,
 )
 from minecraft_world_agent import tree_hash
 
 
 class WorldAgentS5Tests(unittest.TestCase):
+    def test_startup_failure_classification_is_bounded_and_non_secret(self):
+        with tempfile.TemporaryDirectory() as d:
+            log=pathlib.Path(d)/"server.log"
+            self.assertEqual(classify_vanilla_startup(log),"NO_LOG")
+            log.write_text("Could not load symbolic link to world directory /secret/path\n")
+            classification=classify_vanilla_startup(log)
+            self.assertIn("SYMLINK",classification)
+            self.assertNotIn("/secret/path",classification)
+            log.write_text("java.nio.file.AccessDeniedException: /home/user/secrets\n")
+            classification=classify_vanilla_startup(log)
+            self.assertIn("PERMISSION",classification)
+            self.assertNotIn("/home",classification)
+
     def test_real_stage_activate_hash_restore_identity(self):
         with tempfile.TemporaryDirectory() as d:
             root=pathlib.Path(d)
