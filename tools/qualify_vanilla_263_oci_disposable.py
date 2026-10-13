@@ -24,8 +24,10 @@ import time
 from minecraft_world_agent import tree_hash
 from smoke_vanilla_runtime import status_query
 
-CANDIDATE_TAG = "docker.io/itzg/minecraft-server:2026.9.1-java25"
-BASE = "docker.io/itzg/minecraft-server"
+CANDIDATE_TAG = "ghcr.io/itzg/minecraft-server:2026.10.0-java25"
+BASE = "ghcr.io/itzg/minecraft-server"
+CATALOG_IMAGE_SHA = "sha256:5a2ab74ae179c11e2dbbce67f307cdcf2c1257b3abb0f654d3a310b3d8ea57da"
+CATALOG_SOURCE = "truenas/apps@559b9fe85212c800bc6770f152a65211df137a44"
 PORT = 25594
 VERSION = "26.3"
 PROTOCOL = 777
@@ -58,6 +60,7 @@ def observed_immutable_image() -> tuple[str, str]:
              if (m := re.fullmatch(r"Digest:\s+(sha256:[0-9a-f]{64})", line.strip()))]
     require(len(found) == 1, "OCI_DISCOVERY_DIGEST_UNAVAILABLE")
     digest = found[0]
+    require(digest == CATALOG_IMAGE_SHA, "UPSTREAM_TRUE_NAS_J25_IMAGE_DIGEST_DRIFT")
     immutable = BASE + "@" + digest
     # Independently resolve manifest via immutable address. It must still
     # match the resolved index digest before invoking any container.
@@ -89,7 +92,10 @@ def docker_running(name: str) -> bool:
 def await_vanilla(name: str, timeout: int = 180) -> dict:
     started = time.monotonic()
     while time.monotonic() - started < timeout:
-        require(docker_running(name), "CONTAINER_EARLY_EXIT")
+        if not docker_running(name):
+            logs = run(["docker","logs","--tail","25",name], 10, check=False)
+            tail = (logs.stdout + logs.stderr)[-1800:].replace("\\n", " ")
+            raise Refused("CONTAINER_EARLY_EXIT:" + tail)
         try:
             report = status_query("127.0.0.1", PORT, PROTOCOL)
             if (report.get("version", {}).get("protocol") == PROTOCOL and
@@ -176,6 +182,7 @@ def execute() -> dict:
                 "classification": "REAL_DISPOSABLE_VANILLA_263_JAVA25_OCI_WORLD_RETENTION",
                 "image_candidate_tag_observed": CANDIDATE_TAG,
                 "image_manifest_sha256": digest,
+                "truenas_catalog_source": CATALOG_SOURCE,
                 "executed_immutable_image_ref": immutable,
                 "java_version_in_container": 25,
                 "minecraft_version": VERSION,
