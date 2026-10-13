@@ -1,0 +1,88 @@
+name: S2B real Velocity VanillaCord 26.3 player forwarding (disposable)
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_velocity_vanillacord_263_forwarding.py'
+      - 'tests/test_qualify_velocity_vanillacord_263_forwarding.py'
+      - '.github/workflows/qualify-velocity-vanillacord-263-forwarding.yml'
+      - 'tools/qualify_velocity_paper_263_forwarding.py'
+      - 'tools/probe_velocity_forwarding_263.js'
+      - 'tools/qualify_velocity_paper_263_link.py'
+      - 'tools/resolve_operational_runtime_versions.py'
+      - 'spec/operational-runtime-lanes-v1.json'
+      - 'spec/rdte-current-artifact-pins-v1.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: s2b-vanillacord-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  s2b-offline-player:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Cheap source gates and adversarial fixtures
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
+          python3 -m py_compile tools/qualify_velocity_vanillacord_263_forwarding.py
+          node --check tools/probe_velocity_forwarding_263.js
+          python3 -m unittest discover -s tests -p 'test_qualify_velocity_vanillacord_263_forwarding.py' -v
+          python3 -m unittest discover -s tests -p 'test_qualify_velocity_paper_263_forwarding.py' -v
+      - name: Install exact inherited protocol-777 Mineflayer oracle
+        run: |
+          set -euo pipefail
+          bash tools/install_experimental_prismarine_26_3.sh "$RUNNER_TEMP/prismarine"
+          echo "NODE_PATH=$RUNNER_TEMP/prismarine/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Discover but never auto-select current official candidates
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/s2b"
+          python3 tools/resolve_operational_runtime_versions.py --output "$RUNNER_TEMP/s2b/discovery.json"
+      - name: Real vanilla login and two denied attack paths
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_velocity_vanillacord_263_forwarding.py \
+            --discovery "$RUNNER_TEMP/s2b/discovery.json" \
+            --out "$RUNNER_TEMP/s2b/receipt.json"
+          python3 - "$RUNNER_TEMP/s2b/receipt.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          assert r["schema"]=="supracraft.velocity-vanillacord-player-path/1"
+          assert r["classification"]=="REAL_LOOPBACK_OFFLINE_VANILLACORD_FORWARDING"
+          for key in ("direct_backend_denied", "wrong_secret_denied",
+              "proxy_player_spawned", "backend_log_join_independently_observed",
+              "forwarded_username_matches_expected", "forwarded_uuid_matches_expected",
+              "backend_log_uuid_matches_expected", "world_level_dat_observed",
+              "temporary_runtime_disposed", "temporary_secrets_disposed"):
+              assert r.get(key) is True, key
+          assert r["source"]["minecraft_protocol"]==777
+          assert r["account_authentication_qualified"] is False
+          assert r["vip_admission_qualified"] is False
+          assert r["operational_selection"] is False
+          assert r["physical_truenas_apply"]=="HOLD"
+          PY
+      - name: Upload sanitized result only, never jars worlds credentials or logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s2b-velocity-vanillacord263-player-path
+          path: ${{ runner.temp }}/s2b/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Explicit scope exclusion
+        if: always()
+        run: |
+          echo 'S2B only: offline loopback protocol forwarding and vanilla backend identity. Not Microsoft auth, VIP realm admission, Paper semantic parity, native TrueNAS, or physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
