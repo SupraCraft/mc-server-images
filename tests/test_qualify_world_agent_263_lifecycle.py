@@ -9,7 +9,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"tools"))
 from qualify_world_agent_263_lifecycle import (
     Refused, assert_agent_receipt, owned_active, safe_switch,
-    verify_fault_is_not_promotable, world_agent,
+    verify_fault_is_not_promotable, world_agent, admit_owned_world_symlink,
 )
 from minecraft_world_agent import tree_hash
 
@@ -36,6 +36,24 @@ class WorldAgentS5Tests(unittest.TestCase):
             world_agent(agent,"stage","snapshot",original)
             world_agent(agent,"restore","snapshot")
             self.assertTrue(owned_active(agent,"snapshot"))
+
+    def test_symlink_allowlist_is_only_owned_world_agent_descendants(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=pathlib.Path(d)
+            home=root/"server"
+            agent=root/"owned-world"
+            home.mkdir()
+            agent.mkdir()
+            prefix=admit_owned_world_symlink(home,root,agent)
+            content=(home/"allowed_symlinks.txt").read_text()
+            self.assertEqual(content.splitlines()[-1],"[prefix]"+prefix)
+            self.assertTrue(prefix.endswith("/owned-world/"))
+            self.assertNotIn("[regex].*",content)
+            self.assertNotIn("[prefix]/tmp/",content)
+            outside=root/"outside"
+            outside.mkdir()
+            with self.assertRaisesRegex(Refused,"S5_SYMLINK_OWNER_ROOT_REFUSED"):
+                admit_owned_world_symlink(outside,home,agent)
 
     def test_active_server_blocks_world_pointer_mutation(self):
         with tempfile.TemporaryDirectory() as d:
