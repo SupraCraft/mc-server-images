@@ -17,6 +17,7 @@ import tempfile
 import zipfile
 import yaml
 
+from resolve_operational_runtime_versions import fetch as fetch_official_builds, velocity_build as select_exact_stable_build
 from minecraft_world_agent import tree_hash
 from probe_core_restoration_datapack_26_3 import (
     BOT_NAME, initial_predicate, restored_predicate, stop_server,
@@ -152,7 +153,14 @@ def execute(candidate: Path, manifest: dict, discovery: dict) -> dict:
         proxy = root / "velocity"
         proxy.mkdir()
         vjar = proxy / "velocity.jar"
-        psha = pinned_artifact(discovery["stable"]["paper"], pins["paper"], jar)
+        # Discovery reports the newest candidate, NOT the approved immutable build.
+        # Resolve Paper's pinned build directly from the same official build list;
+        # reject missing, changed, nonstable or checksum-mismatched versions.
+        pinned_paper = select_exact_stable_build(
+            fetch_official_builds(
+                "https://fill.papermc.io/v3/projects/paper/versions/26.3/builds"
+            ), "26.3", pins["paper"]["build"])
+        psha = pinned_artifact(pinned_paper, pins["paper"], jar)
         vsha = pinned_artifact(discovery["stable"]["velocity"], pins["velocity"], vjar)
         with zipfile.ZipFile(vjar) as archive:
             vconf = velocity_config(archive.read("default-velocity.toml").decode("utf-8"))
