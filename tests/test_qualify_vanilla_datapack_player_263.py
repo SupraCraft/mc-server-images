@@ -1,5 +1,9 @@
+import pathlib
+import sys
 import unittest
-from tools.qualify_vanilla_datapack_player_263 import validate_client_result, Refused
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'tools'))
+from qualify_vanilla_datapack_player_263 import validate_client_result, Refused
 
 JOIN = "SupraCraftProbe joined the game"
 BASE = {"schema":"supracraft.mineflayer-core-placement/v0.1",
