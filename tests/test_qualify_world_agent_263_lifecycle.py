@@ -10,7 +10,7 @@ sys.path.insert(0,str(ROOT/"tools"))
 from qualify_world_agent_263_lifecycle import (
     Refused, assert_agent_receipt, owned_active, safe_switch,
     verify_fault_is_not_promotable, world_agent, admit_owned_world_symlink,
-    classify_vanilla_startup,
+    classify_vanilla_startup, bind_owned_release,
 )
 from minecraft_world_agent import tree_hash
 
@@ -42,6 +42,13 @@ class WorldAgentS5Tests(unittest.TestCase):
             assert_agent_receipt("stage",r,"prior",sha)
             world_agent(agent,"activate","prior")
             self.assertTrue(owned_active(agent,"prior"))
+            home=root/"server"
+            home.mkdir()
+            bind_owned_release(home,agent,"prior")
+            self.assertTrue((home/"world").is_symlink())
+            self.assertEqual((home/"world").resolve(),
+                             (agent/"releases/prior").resolve())
+            self.assertNotEqual((home/"world").readlink(),agent/"active")
             state=world_agent(agent,"status")
             assert_agent_receipt("status",state)
             self.assertEqual(state["active"],"releases/prior")
@@ -50,6 +57,9 @@ class WorldAgentS5Tests(unittest.TestCase):
             world_agent(agent,"stage","snapshot",original)
             world_agent(agent,"restore","snapshot")
             self.assertTrue(owned_active(agent,"snapshot"))
+            bind_owned_release(home,agent,"snapshot")
+            self.assertEqual((home/"world").resolve(),
+                             (agent/"releases/snapshot").resolve())
 
     def test_symlink_allowlist_is_only_owned_world_agent_descendants(self):
         with tempfile.TemporaryDirectory() as d:
@@ -68,6 +78,25 @@ class WorldAgentS5Tests(unittest.TestCase):
             outside.mkdir()
             with self.assertRaisesRegex(Refused,"S5_SYMLINK_OWNER_ROOT_REFUSED"):
                 admit_owned_world_symlink(outside,home,agent)
+
+    def test_binding_never_replaces_real_world_or_foreign_active(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=pathlib.Path(d)
+            home=root/"home"
+            home.mkdir()
+            agent=root/"agent"
+            agent.mkdir()
+            prior=root/"prior"
+            prior.mkdir()
+            (prior/"level.dat").write_bytes(b"source fixture")
+            world_agent(agent,"stage","prior",prior)
+            world_agent(agent,"activate","prior")
+            (home/"world").mkdir()
+            with self.assertRaisesRegex(Refused,"S5_EXISTING_REAL_WORLD_BIND_REFUSED"):
+                bind_owned_release(home,agent,"prior")
+            (home/"world").rmdir()
+            with self.assertRaisesRegex(Refused,"S5_WORLD_AGENT_NOT_ACTIVE"):
+                bind_owned_release(home,agent,"candidate")
 
     def test_active_server_blocks_world_pointer_mutation(self):
         with tempfile.TemporaryDirectory() as d:
