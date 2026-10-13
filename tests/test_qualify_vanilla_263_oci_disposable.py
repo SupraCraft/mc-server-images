@@ -14,12 +14,12 @@ from qualify_vanilla_263_oci_disposable import (
     BASE, CANDIDATE_TAG, Refused, observed_immutable_image, verify_java25
 )
 
-SHA = "a" * 64
+SHA = "5a2ab74ae179c11e2dbbce67f307cdcf2c1257b3abb0f654d3a310b3d8ea57da"
 OUTPUT = (
-    "Name:      docker.io/itzg/minecraft-server:2026.9.1-java25\n"
+    "Name:      ghcr.io/itzg/minecraft-server:2026.10.0-java25\n"
     "MediaType: application/vnd.oci.image.index.v1+json\n"
     "Digest:    sha256:" + SHA + "\n"
-    "Manifests:\n  Name: docker.io/itzg/minecraft-server@sha256:" + ("b"*64)
+    "Manifests:\n  Name: ghcr.io/itzg/minecraft-server@sha256:" + ("b"*64)
     + "\n  Platform: linux/amd64\n"
 )
 PINNED = ("Name: " + BASE + "@sha256:" + SHA +
@@ -45,6 +45,7 @@ class OciCandidateTests(unittest.TestCase):
             OUTPUT.replace("Digest:    sha256:" + SHA, "Digest:    unspecified"),
             OUTPUT.replace("Manifests:", "Digest:    sha256:" + "c"*64 + "\nManifests:"),
             OUTPUT.replace("linux/amd64", "linux/arm64"),
+            OUTPUT.replace(SHA, "c"*64),
         ):
             def runner(args, timeout=120, check=True):
                 return subprocess.CompletedProcess(args, 0, invalid, "")
