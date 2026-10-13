@@ -1,0 +1,65 @@
+name: OP-4A real Java25 OCI vanilla 26.3 disposable independent-world qualification
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_vanilla_263_oci_disposable.py'
+      - 'tests/test_qualify_vanilla_263_oci_disposable.py'
+      - '.github/workflows/qualify-vanilla-263-oci-disposable.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: op4a-vanilla263-oci-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  isolated-oci:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - name: Checkout candidate exactly
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Cheap red and blue source qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/qualify_vanilla_263_oci_disposable.py
+          python3 -m unittest discover -s tests -p 'test_qualify_vanilla_263_oci_disposable.py' -v
+          docker info --format '{{.ServerVersion}}' > /dev/null
+          docker buildx version
+      - name: Discover immutable OCI digest then actual disposable Java25 vanilla 26.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/op4a"
+          python3 tools/qualify_vanilla_263_oci_disposable.py \
+            --out "$RUNNER_TEMP/op4a/oci-receipt.json"
+          python3 - "$RUNNER_TEMP/op4a/oci-receipt.json" <<'PY'
+          import json,re,sys
+          r=json.load(open(sys.argv[1]))
+          assert r["classification"]=="REAL_DISPOSABLE_VANILLA_263_JAVA25_OCI_WORLD_RETENTION"
+          assert r["minecraft_version"]=="26.3" and r["minecraft_protocol"]==777
+          assert r["java_version_in_container"]==25
+          assert re.fullmatch("sha256:[a-f0-9]{64}",r["image_manifest_sha256"])
+          assert r["executed_immutable_image_ref"].endswith("@"+r["image_manifest_sha256"])
+          assert r["world_retained_after_container_delete_and_reinstall"] is True
+          assert r["container_removed_at_end"] is True
+          assert r["runtime_tag_frozen_for_operations"] is False
+          assert r["native_truenas_app_qualified"] is False
+          assert r["operational_selection"] is False
+          assert r["physical_truenas_apply"]=="HOLD"
+          PY
+      - name: Retain digest and qualified runtime receipt, never world/JAR
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: op4a-vanilla263-java25-oci-world-retention
+          path: ${{ runner.temp }}/op4a/oci-receipt.json
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Scope
+        if: always()
+        run: |
+          echo 'Exact Java25 OCI candidate discovered, pulled/executed only by observed manifest digest in public GitHub runner, real vanilla26.3 status + independent world retention. No TrueNAS native App/source-render/system version, COLLAGE, online auth, operational pin/freeze, physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
