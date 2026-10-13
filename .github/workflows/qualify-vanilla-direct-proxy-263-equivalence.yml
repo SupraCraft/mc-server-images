@@ -1,0 +1,95 @@
+name: S3 direct vs proxied vanilla 26.3 player/world equivalence
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_vanilla_direct_proxy_263_equivalence.py'
+      - 'tests/test_qualify_vanilla_direct_proxy_263_equivalence.py'
+      - '.github/workflows/qualify-vanilla-direct-proxy-263-equivalence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: s3-vanilla-direct-proxy-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  compare:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: SupraCraft/mc-server-images
+          ref: 7f888b5829f4e5576d5ce512d86327348c43f01e
+          path: .deps/accepted-producer
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Cheap red-blue source and negative gates first
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
+          python3 -m py_compile tools/qualify_vanilla_direct_proxy_263_equivalence.py
+          python3 -m unittest discover -s tests -p 'test_qualify_vanilla_direct_proxy_263_equivalence.py' -v
+          python3 -m unittest discover -s tests -p 'test_qualify_vanilla_datapack_player_263.py' -v
+          python3 -m unittest discover -s tests -p 'test_qualify_velocity_vanillacord_263_forwarding.py' -v
+          node --check tools/probe_mineflayer_core_place.js
+          test "$(git -C .deps/accepted-producer rev-parse HEAD)" = 7f888b5829f4e5576d5ce512d86327348c43f01e
+      - name: Install exact existing protocol 777 bot
+        run: |
+          set -euo pipefail
+          bash tools/install_experimental_prismarine_26_3.sh "$RUNNER_TEMP/prismarine"
+          echo "NODE_PATH=$RUNNER_TEMP/prismarine/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Re-export immutable accepted world artifact and official candidates
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/s3"
+          python3 .deps/accepted-producer/tools/export_core_restoration_datapack_26_3.py \
+            --out "$RUNNER_TEMP/s3/lantern-26.3.zip" \
+            --manifest "$RUNNER_TEMP/s3/lantern-26.3.json" \
+            --world-id lantern-rdte --release-id lantern-core-restore-26-3
+          python3 tools/resolve_operational_runtime_versions.py --output "$RUNNER_TEMP/s3/discovery.json"
+      - name: Real player direct/proxied same world gameplay and restore
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_vanilla_direct_proxy_263_equivalence.py \
+            --candidate "$RUNNER_TEMP/s3/lantern-26.3.zip" \
+            --manifest "$RUNNER_TEMP/s3/lantern-26.3.json" \
+            --evidence probes/26.3-release-identity.json \
+            --discovery "$RUNNER_TEMP/s3/discovery.json" \
+            --out "$RUNNER_TEMP/s3/receipt.json"
+          python3 - "$RUNNER_TEMP/s3/receipt.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          assert r["classification"]=="REAL_VANILLA_DIRECT_PROXY_CAUSAL_EQUIVALENCE"
+          for k in ("same_baseline_world", "equivalent_gameplay_effect",
+                    "direct_backend_denied_in_proxied_lane",
+                    "both_worlds_rollback_reobserved",
+                    "temporary_runtimes_worlds_credentials_disposed"):
+              assert r[k] is True,k
+          assert r["source"]["protocol"]==777
+          assert r["direct"]["action"]["backend_uuid"]==r["proxied"]["action"]["backend_uuid"]
+          assert r["auth_account_qualified"] is False
+          assert r["vip_qualified"] is False
+          assert r["operational_selection"] is False
+          assert r["physical_truenas_apply"]=="HOLD"
+          PY
+      - name: Retain sanitized receipt only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s3-vanilla26-3-direct-proxy-causal-equivalence
+          path: ${{ runner.temp }}/s3/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: No operational promotion
+        if: always()
+        run: echo 'Offline, loopback, client gameplay-world equivalence only. No Microsoft auth, VIP, realm isolation, stock client, native TrueNAS or physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
