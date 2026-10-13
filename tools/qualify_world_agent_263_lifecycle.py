@@ -115,6 +115,31 @@ def admit_owned_world_symlink(home: Path, root: Path, agent: Path) -> str:
     return authorized
 
 
+def bind_owned_release(home: Path, agent: Path, release: str) -> None:
+    """Provider-neutral single-hop world binding from exact agent active release.
+
+    This is a materialization adapter, NOT a competing desired-state owner.
+    It may only be called *after* guarded world-agent selection while the
+    backend is quiesced; refuse foreign paths and mutable real directories.
+    """
+    require(owned_active(agent, release), "S5_WORLD_AGENT_NOT_ACTIVE")
+    target = (agent / "releases" / release).resolve(strict=True)
+    require(target.parent == (agent / "releases").resolve(strict=True),
+            "S5_RELEASE_BIND_TARGET_ESCAPED")
+    world = home / "world"
+    require(not world.exists() or world.is_symlink(),
+            "S5_EXISTING_REAL_WORLD_BIND_REFUSED")
+    tmp = home / ".world.next"
+    require(not tmp.exists() and not tmp.is_symlink(),
+            "S5_WORLD_BIND_TMP_RESIDUE")
+    tmp.symlink_to(target, target_is_directory=True)
+    os.replace(tmp, world)
+    require(world.is_symlink() and
+            world.resolve(strict=True) == target and
+            (agent / "active").resolve(strict=True) == target,
+            "S5_WORLD_BIND_READBACK_DRIFT")
+
+
 def classify_vanilla_startup(log: Path) -> str:
     """Bounded causal category, never publish raw Java log, site paths or tokens."""
     if not log.is_file():
@@ -193,8 +218,10 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
             shutil.rmtree(baseline_source)
             activated = safe_switch(agent, "activate", "prior", baseline)
             assert_agent_receipt("activate", activated, "prior", original_sha)
-            os.symlink(agent / "active", home / "world")
+            # One-hop selected world symlink. Mojang 26.3 refused a
+            # symlink-to-active-symlink even with exact owned-root allowlist.
             admit_owned_world_symlink(home, root, agent)
+            bind_owned_release(home, agent, "prior")
             require(owned_active(agent, "prior"), "S5_PRIOR_NOT_ACTIVE")
             stages.append("prior_activated_via_agent")
 
@@ -235,6 +262,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
 
             swap = safe_switch(agent, "activate", "candidate", live)
             assert_agent_receipt("activate", swap, "candidate", candidate_sha)
+            bind_owned_release(home, agent, "candidate")
             stages.append("activate_candidate_after_quiesce")
             running, cand_log = launch(home, jar, evidence, "s5-candidate", handles)
             oracle(running, cand_log, initial_predicate(), "S5_CANDIDATE_PRE_ACTION")
@@ -265,6 +293,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
             stages.append("injected_candidate_artifact_integrity_fault_detected")
             restored = safe_switch(agent, "restore", "snapshot", running)
             assert_agent_receipt("restore", restored, "snapshot", prior_sha)
+            bind_owned_release(home, agent, "snapshot")
             stages.append("restore_snapshot_after_health_fault")
             require(tree_hash(agent / "releases/snapshot") == prior_sha,
                     "S5_SNAPSHOT_BYTE_DRIFT")
