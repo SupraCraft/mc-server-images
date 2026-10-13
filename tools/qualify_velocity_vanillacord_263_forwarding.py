@@ -93,25 +93,20 @@ def backend_usercache(home: pathlib.Path, name: str) -> str:
 
 
 def backend_join_log(home: pathlib.Path, name: str, expected_uuid: str) -> bool:
-    """Unmodified vanilla backend evidence independent of proxy and usercache.
+    """Unmodified vanilla backend join-name observation, independent of proxy.
 
-    Vanilla 26.3 need not write a 'UUID of player' console line. Require the
-    backend's join-name line AND real player data persisted to UUID-keyed NBT.
-    Existing UUID log lines, if present, must not contradict the UUID oracle.
+    Vanilla 26.3 need not emit an explicit UUID line or persist playerdata on
+    this bounded, quick login. UUID comes from its independently written
+    usercache; optional UUID log lines must not contradict that UUID.
     """
     log = (home / "server.log").read_text(errors="replace")
-    require(bool(re.search(r"(?m)^.*" + re.escape(name) +
-                           r" joined the game[ \\t]*$", log)),
-            "VANILLA_BACKEND_JOIN_LOG_MISSING")
+    pattern = r"(?m)^.*:\s+" + re.escape(name) + r" joined the game[ \t]*$"
+    require(len(re.findall(pattern, log)) == 1,
+            "VANILLA_JOIN_LOG_MISSING_OR_AMBIGUOUS")
     matches = re.findall(r"UUID of player " + re.escape(name)
                          + r" is ([0-9a-fA-F-]{36})", log)
     require(all(str(uuid.UUID(m)) == expected_uuid for m in matches),
             "VANILLA_UUID_LOG_MISMATCH")
-    playerdata = home / "world" / "playerdata" / (expected_uuid + ".dat")
-    require(playerdata.is_file(), "VANILLA_FORWARDED_PLAYERDATA_MISSING")
-    raw = playerdata.read_bytes()
-    require(len(raw) > 64 and raw[:2] == bytes((0x1f, 0x8b)),
-            "VANILLA_PLAYERDATA_NOT_COMPRESSED_NBT")
     return True
 
 def stop_vanilla(proc: subprocess.Popen) -> None:
@@ -232,7 +227,6 @@ def execute(discovery: dict) -> dict:
                 },
                 "backend_log_join_independently_observed": True,
                 "backend_usercache_uuid": observed,
-                "backend_playerdata_uuid_matches_expected": True,
                 "expected_proxy_offline_uuid": expected,
                 "forwarded_username_matches_expected": True,
                 "forwarded_uuid_matches_expected": True,

@@ -87,31 +87,24 @@ class S2BForwardingTests(unittest.TestCase):
             with self.assertRaisesRegex(Refused, "VANILLA_USERCACHE_NOT_UNIQUE"):
                 backend_usercache(path, "SupraProbe263")
 
-    def test_vanilla_log_and_persisted_playerdata_are_independent_oracles(self):
+    def test_vanilla_independent_join_log_negative_identity_cases(self):
         name = "SupraProbe263"
-        player_uuid = expected_offline_uuid(name)
+        expected_uuid = expected_offline_uuid(name)
         with tempfile.TemporaryDirectory() as td:
-            home = pathlib.Path(td)
-            log = home / "server.log"
-            data = home / "world" / "playerdata"
-            data.mkdir(parents=True)
-            log.write_text(f"[Server thread/INFO]: {name} joined the game\n")
-            with self.assertRaisesRegex(Refused, "VANILLA_FORWARDED_PLAYERDATA_MISSING"):
-                backend_join_log(home, name, player_uuid)
-            saved = data / (player_uuid + ".dat")
-            saved.write_bytes(bytes((0x1f, 0x8b)) + bytes(100))
-            self.assertTrue(backend_join_log(home, name, player_uuid))
-            log.write_text(f"[Server thread/INFO]: SomeoneElse joined the game\n")
-            with self.assertRaisesRegex(Refused, "VANILLA_BACKEND_JOIN_LOG_MISSING"):
-                backend_join_log(home, name, player_uuid)
-            log.write_text(f"UUID of player {name} is 00000000-0000-0000-0000-000000000001\n"
-                           f"{name} joined the game\n")
+            path = pathlib.Path(td) / "server.log"
+            path.write_text(f"[Server thread/INFO]: {name} joined the game\n")
+            self.assertTrue(backend_join_log(path.parent, name, expected_uuid))
+            path.write_text("[Server thread/INFO]: SomeoneElse joined the game\n")
+            with self.assertRaisesRegex(Refused, "VANILLA_JOIN_LOG_MISSING_OR_AMBIGUOUS"):
+                backend_join_log(path.parent, name, expected_uuid)
+            path.write_text(f"[Server thread/INFO]: {name} joined the game\n"
+                            f"[Server thread/INFO]: {name} joined the game\n")
+            with self.assertRaisesRegex(Refused, "VANILLA_JOIN_LOG_MISSING_OR_AMBIGUOUS"):
+                backend_join_log(path.parent, name, expected_uuid)
+            path.write_text(f"UUID of player {name} is 00000000-0000-0000-0000-000000000001\n"
+                            f"[Server thread/INFO]: {name} joined the game\n")
             with self.assertRaisesRegex(Refused, "VANILLA_UUID_LOG_MISMATCH"):
-                backend_join_log(home, name, player_uuid)
-            log.write_text(f"{name} joined the game\n")
-            saved.write_bytes(bytes(100))
-            with self.assertRaisesRegex(Refused, "VANILLA_PLAYERDATA_NOT_COMPRESSED_NBT"):
-                backend_join_log(home, name, player_uuid)
+                backend_join_log(path.parent, name, expected_uuid)
 
     def test_discovery_version_and_hold_gates(self):
         good={"classification":"READ_ONLY_CANDIDATES_DISCOVERED",

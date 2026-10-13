@@ -65,7 +65,7 @@ jobs:
           for key in ("direct_backend_denied", "wrong_secret_denied",
               "proxy_player_spawned", "backend_log_join_independently_observed",
               "forwarded_username_matches_expected", "forwarded_uuid_matches_expected",
-              "backend_playerdata_uuid_matches_expected", "world_level_dat_observed",
+              "world_level_dat_observed",
               "temporary_runtime_disposed", "temporary_secrets_disposed"):
               assert r.get(key) is True, key
           assert r["source"]["minecraft_protocol"]==777
