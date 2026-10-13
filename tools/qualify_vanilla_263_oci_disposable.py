@@ -124,7 +124,7 @@ def launch(image: str, world: Path, name: str) -> None:
         "-e", "LEVEL=world", "-e", "SEED=4242424242",
         "-e", "VIEW_DISTANCE=3", "-e", "SIMULATION_DISTANCE=2",
         "-e", "MAX_PLAYERS=2", "-e", "MAX_MEMORY=1536M",
-        "-e", "UID=1000", "-e", "GID=1000",
+        "-e", "UID=" + str(os.getuid()), "-e", "GID=" + str(os.getgid()),
         image,
     ]
     run(args, timeout=55)
@@ -221,7 +221,7 @@ def main() -> int:
             "schema": "supracraft.op4a-vanilla263-oci-candidate/1",
             "classification": "FAIL",
             "failure_type": type(exc).__name__,
-            "failure": str(exc)[:180],
+            "failure": str(exc)[:950],
             "native_truenas_app_qualified": False,
             "operational_selection": False,
             "physical_truenas_apply": "HOLD",
