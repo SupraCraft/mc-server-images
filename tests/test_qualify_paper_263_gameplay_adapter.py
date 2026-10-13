@@ -11,6 +11,7 @@ from qualify_paper_263_gameplay_adapter import (
     paper_mode, scoped_pins, semantic_equivalence, Refused, BOT_NAME,
 )
 from qualify_velocity_paper_263_forwarding import expected_offline_uuid
+from qualify_paper_263_gameplay_adapter import select_exact_stable_build
 
 SAMPLE={"username":BOT_NAME, "requested_version":"26.3",
         "negotiated_version":"26.3","protocol":777,
@@ -69,6 +70,24 @@ class PaperAdapterTests(unittest.TestCase):
             bad[key]=value
             with self.subTest(key=key),self.assertRaises(Refused):
                 semantic_equivalence(SAMPLE,bad,SAMPLE["backend_uuid"])
+
+    def test_newest_paper_build_never_supersedes_exact_177(self):
+        rows=[
+            {"id":177,"channel":"STABLE","downloads":{"server:default":{
+                "url":"https://fill.papermc.io/v3/projects/paper/versions/26.3/builds/177/downloads/paper-26.3-177.jar",
+                "checksums":{"sha256":"a"*64}}}},
+            {"id":178,"channel":"STABLE","downloads":{"server:default":{
+                "url":"https://fill.papermc.io/v3/projects/paper/versions/26.3/builds/178/downloads/paper-26.3-178.jar",
+                "checksums":{"sha256":"b"*64}}}}
+        ]
+        selected=select_exact_stable_build(rows,"26.3",177)
+        self.assertEqual(selected["build"],177)
+        self.assertEqual(selected["reported_sha256"],"a"*64)
+        rows[0]["channel"]="EXPERIMENTAL"
+        with self.assertRaises(Refused):
+            select_exact_stable_build(rows,"26.3",177)
+        with self.assertRaises(Refused):
+            select_exact_stable_build(rows,"26.3",176)
 
     def test_source_scope_and_physical_hold(self):
         source={"classification":"READ_ONLY_CANDIDATES_DISCOVERED"}
