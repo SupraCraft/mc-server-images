@@ -115,6 +115,26 @@ def admit_owned_world_symlink(home: Path, root: Path, agent: Path) -> str:
     return authorized
 
 
+def classify_vanilla_startup(log: Path) -> str:
+    """Bounded causal category, never publish raw Java log, site paths or tokens."""
+    if not log.is_file():
+        return "NO_LOG"
+    content = log.read_text(errors="replace").lower()[-24000:]
+    classes = {
+        "SYMLINK": ("symbolic link", "symlink", "allowed_symlinks"),
+        "LEVEL_IO": ("failed to load level", "failed to access world", "level.dat"),
+        "LOCK": ("session.lock", "already in use"),
+        "PERMISSION": ("permission denied", "accessdeniedexception"),
+        "WORLD_PATH": ("invalid world", "not a directory", "world directory"),
+        "EULA": ("eula",),
+        "PORT": ("address already in use", "failed to bind"),
+        "EXCEPTION": ("exception", "error"),
+    }
+    flags = [name for name, variants in classes.items()
+             if any(phrase in content for phrase in variants)]
+    return "_".join(flags[:5]) or "UNKNOWN"
+
+
 def fixture(process: subprocess.Popen, log: Path) -> None:
     send(process, "forceload add 0 0")
     send(process, "fill -2 69 -2 4 69 3 minecraft:stone")
@@ -178,7 +198,11 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
             require(owned_active(agent, "prior"), "S5_PRIOR_NOT_ACTIVE")
             stages.append("prior_activated_via_agent")
 
-            live, log = launch(home, jar, evidence, "s5-prior", handles)
+            try:
+                live, log = launch(home, jar, evidence, "s5-prior", handles)
+            except Refused as exc:
+                raise Refused("S5_PRIOR_BOOT_" +
+                              classify_vanilla_startup(home / "server-s5-prior.log")) from exc
             oracle(live, log, initial_predicate(), "S5_PRIOR_RUNTIME_READY")
             try:
                 safe_switch(agent, "restore", "prior", live)
