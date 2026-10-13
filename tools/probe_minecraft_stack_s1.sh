@@ -12,7 +12,26 @@ printf 'PUBLIC_RELEASE_ACTUAL_SHA256 %s\n' "$(sha256sum vanillacord.jar | cut -d
 printf 'PUBLIC_RELEASE_FILE_BYTES %s\n' "$(wc -c < vanillacord.jar)"
 printf 'PUBLIC_RELEASE_SIGNATURE_HEX %s\n' "$(head -c 4 vanillacord.jar | od -An -tx1 | tr -d '[:space:]')"
 # No bypass. Fail closed before Java if the public bytes differ from release provenance.
-printf '%s  %s\n' "$vc_sha" vanillacord.jar | sha256sum -c -
+if ! printf '%s  %s\n' "$vc_sha" vanillacord.jar | sha256sum -c -; then
+  echo 'PUBLIC_RELEASE_INTEGRITY_FAILURE: comparing independent unauthenticated GitHub download paths'
+  # Signed redirect targets are NEVER logged: URLs may contain bearer-like query parameters.
+  no_cache_url="${vc_url}?rdte_no_cache=${GITHUB_RUN_ID:-manual}-${GITHUB_RUN_ATTEMPT:-1}"
+  uncached_http="$(curl -fsSL --connect-timeout 15 --max-time 120 \
+    -H 'Cache-Control: no-cache' \
+    -w 'http=%{http_code} type=%{content_type} bytes=%{size_download}' \
+    "$no_cache_url" -o vanillacord-uncached.jar)"
+  printf 'PUBLIC_RELEASE_CACHEBUST %s sha256=%s\n' \
+    "$uncached_http" "$(sha256sum vanillacord-uncached.jar | cut -d' ' -f1)"
+  api_url='https://api.github.com/repos/SupraCraft/VanillaCord/releases/assets/637552934'
+  api_http="$(curl -fsSL --connect-timeout 15 --max-time 120 \
+    -H 'Accept: application/octet-stream' -H 'X-GitHub-Api-Version: 2022-11-28' \
+    -w 'http=%{http_code} type=%{content_type} bytes=%{size_download}' \
+    "$api_url" -o vanillacord-api.jar)"
+  printf 'PUBLIC_RELEASE_API_ASSET %s sha256=%s\n' \
+    "$api_http" "$(sha256sum vanillacord-api.jar | cut -d' ' -f1)"
+  echo 'PUBLIC_RELEASE_INTEGRITY_FAILURE: expected canonical SHA; refusing patch/start.'
+  exit 1
+fi
 mkdir -p "$work/server"
 java -jar "$work/vanillacord.jar" 26.3
 patched="$(find out -type f -name '26.3.jar' | head -1)"
