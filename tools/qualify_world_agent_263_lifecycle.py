@@ -279,7 +279,7 @@ def main() -> int:
                       json.loads(args.evidence.read_text()))
     except Exception as exc:
         raw = str(exc)
-        reason = raw if re.fullmatch("[A-Z0-9_]+", raw) else type(exc).__name__
+        reason = raw if re.fullmatch(r"[A-Za-z0-9_.-]{1,95}", raw) else type(exc).__name__
         doc = {"schema": SCHEMA, "classification": "FAIL",
                "failure_type": type(exc).__name__, "failure_code": reason[:95],
                "operational_selection": False, "physical_truenas_apply": "HOLD"}
