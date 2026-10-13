@@ -12,6 +12,7 @@ from qualify_paper_263_gameplay_adapter import (
 )
 from qualify_velocity_paper_263_forwarding import expected_offline_uuid
 from qualify_paper_263_gameplay_adapter import select_exact_stable_build
+from resolve_operational_runtime_versions import Refused as VersionRefused
 
 SAMPLE={"username":BOT_NAME, "requested_version":"26.3",
         "negotiated_version":"26.3","protocol":777,
@@ -84,9 +85,9 @@ class PaperAdapterTests(unittest.TestCase):
         self.assertEqual(selected["build"],177)
         self.assertEqual(selected["reported_sha256"],"a"*64)
         rows[0]["channel"]="EXPERIMENTAL"
-        with self.assertRaises(Refused):
+        with self.assertRaises(VersionRefused):
             select_exact_stable_build(rows,"26.3",177)
-        with self.assertRaises(Refused):
+        with self.assertRaises(VersionRefused):
             select_exact_stable_build(rows,"26.3",176)
 
     def test_source_scope_and_physical_hold(self):
