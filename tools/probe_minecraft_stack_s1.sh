@@ -4,7 +4,14 @@ work="${RUNNER_TEMP:-/tmp}/mc-stack-s1"
 rm -rf "$work"; mkdir -p "$work"; cd "$work"
 vc_url="https://github.com/SupraCraft/VanillaCord/releases/download/v2.9.0/supracraft-vanillacord-2.9.0.jar"
 vc_sha="24e850a261dbf108e2f7ac412c34651ffae753543665ec47d5e40ff9c8981719"
-curl -fsSL "$vc_url" -o vanillacord.jar
+vc_http="$(curl -fsSL --connect-timeout 15 --max-time 120 \
+  -w 'http=%{http_code} type=%{content_type} bytes=%{size_download}' \
+  "$vc_url" -o vanillacord.jar)"
+printf 'PUBLIC_RELEASE_DOWNLOAD %s\n' "$vc_http"
+printf 'PUBLIC_RELEASE_ACTUAL_SHA256 %s\n' "$(sha256sum vanillacord.jar | cut -d' ' -f1)"
+printf 'PUBLIC_RELEASE_FILE_BYTES %s\n' "$(wc -c < vanillacord.jar)"
+printf 'PUBLIC_RELEASE_SIGNATURE_HEX %s\n' "$(head -c 4 vanillacord.jar | od -An -tx1 | tr -d '[:space:]')"
+# No bypass. Fail closed before Java if the public bytes differ from release provenance.
 printf '%s  %s\n' "$vc_sha" vanillacord.jar | sha256sum -c -
 mkdir -p "$work/server"
 java -jar "$work/vanillacord.jar" 26.3
