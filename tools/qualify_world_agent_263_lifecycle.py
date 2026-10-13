@@ -93,6 +93,28 @@ def safe_switch(root: Path, verb: str, release: str,
     return world_agent(root, verb, release)
 
 
+def admit_owned_world_symlink(home: Path, root: Path, agent: Path) -> str:
+    """Vanilla's scoped symlink allowlist, never a global wildcard/trust-all.
+
+    Both home and agent must be direct children of a single disposable root.
+    Allow precisely that owned world's descendants, including active pointer
+    and target releases, not the entire runner /tmp filesystem.
+    """
+    require(home.parent.resolve() == root.resolve() and
+            agent.parent.resolve() == root.resolve() and
+            home != agent and agent.is_dir() and not agent.is_symlink(),
+            "S5_SYMLINK_OWNER_ROOT_REFUSED")
+    authorized = str(agent.resolve(strict=True)) + os.sep
+    require(authorized.startswith(str(root.resolve()) + os.sep) and
+            not any(s in authorized for s in ("*", "?", "[", "]")),
+            "S5_SYMLINK_AUTHORIZATION_TOO_BROAD")
+    (home / "allowed_symlinks.txt").write_text(
+        "# disposable, exact owned release store only\n"
+        + "[prefix]" + authorized + "\n"
+    )
+    return authorized
+
+
 def fixture(process: subprocess.Popen, log: Path) -> None:
     send(process, "forceload add 0 0")
     send(process, "fill -2 69 -2 4 69 3 minecraft:stone")
@@ -152,6 +174,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
             activated = safe_switch(agent, "activate", "prior", baseline)
             assert_agent_receipt("activate", activated, "prior", original_sha)
             os.symlink(agent / "active", home / "world")
+            admit_owned_world_symlink(home, root, agent)
             require(owned_active(agent, "prior"), "S5_PRIOR_NOT_ACTIVE")
             stages.append("prior_activated_via_agent")
 
