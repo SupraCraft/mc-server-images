@@ -101,7 +101,7 @@ def backend_join_log(home: pathlib.Path, name: str, expected_uuid: str) -> bool:
     """
     log = (home / "server.log").read_text(errors="replace")
     require(bool(re.search(r"(?m)^.*" + re.escape(name) +
-                           r" joined the game\\s*$", log)),
+                           r" joined the game[ \\t]*$", log)),
             "VANILLA_BACKEND_JOIN_LOG_MISSING")
     matches = re.findall(r"UUID of player " + re.escape(name)
                          + r" is ([0-9a-fA-F-]{36})", log)
