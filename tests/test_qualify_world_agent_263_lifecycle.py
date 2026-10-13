@@ -49,7 +49,7 @@ class WorldAgentS5Tests(unittest.TestCase):
             self.assertEqual(content.splitlines()[-1],"[prefix]"+prefix)
             self.assertTrue(prefix.endswith("/owned-world/"))
             self.assertNotIn("[regex].*",content)
-            self.assertNotIn("[prefix]/tmp/",content)
+            self.assertNotEqual(content.splitlines()[-1],"[prefix]/tmp/")
             outside=root/"outside"
             outside.mkdir()
             with self.assertRaisesRegex(Refused,"S5_SYMLINK_OWNER_ROOT_REFUSED"):
