@@ -22,13 +22,6 @@ if ! printf '%s  %s\n' "$vc_sha" vanillacord.jar | sha256sum -c -; then
     "$no_cache_url" -o vanillacord-uncached.jar)"
   printf 'PUBLIC_RELEASE_CACHEBUST %s sha256=%s\n' \
     "$uncached_http" "$(sha256sum vanillacord-uncached.jar | cut -d' ' -f1)"
-  api_url='https://api.github.com/repos/SupraCraft/VanillaCord/releases/assets/637552934'
-  api_http="$(curl -fsSL --connect-timeout 15 --max-time 120 \
-    -H 'Accept: application/octet-stream' -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -w 'http=%{http_code} type=%{content_type} bytes=%{size_download}' \
-    "$api_url" -o vanillacord-api.jar)"
-  printf 'PUBLIC_RELEASE_API_ASSET %s sha256=%s\n' \
-    "$api_http" "$(sha256sum vanillacord-api.jar | cut -d' ' -f1)"
   echo 'PUBLIC_RELEASE_INTEGRITY_FAILURE: expected canonical SHA; refusing patch/start.'
   exit 1
 fi
