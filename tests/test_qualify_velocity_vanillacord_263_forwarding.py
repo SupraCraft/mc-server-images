@@ -95,20 +95,20 @@ class S2BForwardingTests(unittest.TestCase):
             log = home / "server.log"
             data = home / "world" / "playerdata"
             data.mkdir(parents=True)
-            log.write_text(f"[Server thread/INFO]: {name} joined the game\\n")
+            log.write_text(f"[Server thread/INFO]: {name} joined the game\n")
             with self.assertRaisesRegex(Refused, "VANILLA_FORWARDED_PLAYERDATA_MISSING"):
                 backend_join_log(home, name, player_uuid)
             saved = data / (player_uuid + ".dat")
             saved.write_bytes(bytes((0x1f, 0x8b)) + bytes(100))
             self.assertTrue(backend_join_log(home, name, player_uuid))
-            log.write_text(f"[Server thread/INFO]: SomeoneElse joined the game\\n")
+            log.write_text(f"[Server thread/INFO]: SomeoneElse joined the game\n")
             with self.assertRaisesRegex(Refused, "VANILLA_BACKEND_JOIN_LOG_MISSING"):
                 backend_join_log(home, name, player_uuid)
-            log.write_text(f"UUID of player {name} is 00000000-0000-0000-0000-000000000001\\n"
-                           f"{name} joined the game\\n")
+            log.write_text(f"UUID of player {name} is 00000000-0000-0000-0000-000000000001\n"
+                           f"{name} joined the game\n")
             with self.assertRaisesRegex(Refused, "VANILLA_UUID_LOG_MISMATCH"):
                 backend_join_log(home, name, player_uuid)
-            log.write_text(f"{name} joined the game\\n")
+            log.write_text(f"{name} joined the game\n")
             saved.write_bytes(bytes(100))
             with self.assertRaisesRegex(Refused, "VANILLA_PLAYERDATA_NOT_COMPRESSED_NBT"):
                 backend_join_log(home, name, player_uuid)
