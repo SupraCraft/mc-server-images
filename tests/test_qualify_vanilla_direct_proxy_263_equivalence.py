@@ -7,8 +7,9 @@ from copy import deepcopy
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from qualify_vanilla_direct_proxy_263_equivalence import (
-    Refused, BOT_NAME, config, same_baseline, semantic_equivalence, PACK_SHA,
+    BOT_NAME, config, same_baseline, semantic_equivalence, PACK_SHA,
 )
+from qualify_vanilla_world_artifact_activation_263 import Refused
 
 BASE = {"username": BOT_NAME, "requested_version": "26.3",
         "negotiated_version": "26.3", "protocol": 777,
