@@ -93,17 +93,26 @@ def backend_usercache(home: pathlib.Path, name: str) -> str:
 
 
 def backend_join_log(home: pathlib.Path, name: str, expected_uuid: str) -> bool:
-    """Independent unmodified vanilla backend log, not a proxy/client assertion."""
-    log = (home / "server.log").read_text(errors="replace")
-    pattern = (r"UUID of player " + re.escape(name)
-               + r" is ([0-9a-fA-F-]{36})")
-    matches = re.findall(pattern, log)
-    require(len(matches) == 1, "VANILLA_UUID_LOG_MISSING_OR_AMBIGUOUS")
-    require(str(uuid.UUID(matches[0])) == expected_uuid, "VANILLA_UUID_LOG_MISMATCH")
-    require(bool(re.search(re.escape(name) + r" joined the game", log)),
-            "VANILLA_BACKEND_JOIN_LOG_MISSING")
-    return True
+    """Unmodified vanilla backend evidence independent of proxy and usercache.
 
+    Vanilla 26.3 need not write a 'UUID of player' console line. Require the
+    backend's join-name line AND real player data persisted to UUID-keyed NBT.
+    Existing UUID log lines, if present, must not contradict the UUID oracle.
+    """
+    log = (home / "server.log").read_text(errors="replace")
+    require(bool(re.search(r"(?m)^.*" + re.escape(name) +
+                           r" joined the game\\s*$", log)),
+            "VANILLA_BACKEND_JOIN_LOG_MISSING")
+    matches = re.findall(r"UUID of player " + re.escape(name)
+                         + r" is ([0-9a-fA-F-]{36})", log)
+    require(all(str(uuid.UUID(m)) == expected_uuid for m in matches),
+            "VANILLA_UUID_LOG_MISMATCH")
+    playerdata = home / "world" / "playerdata" / (expected_uuid + ".dat")
+    require(playerdata.is_file(), "VANILLA_FORWARDED_PLAYERDATA_MISSING")
+    raw = playerdata.read_bytes()
+    require(len(raw) > 64 and raw[:2] == bytes((0x1f, 0x8b)),
+            "VANILLA_PLAYERDATA_NOT_COMPRESSED_NBT")
+    return True
 
 def stop_vanilla(proc: subprocess.Popen) -> None:
     require(proc.poll() is None and proc.stdin is not None, "VANILLA_PREMATURE_EXIT")
@@ -223,7 +232,7 @@ def execute(discovery: dict) -> dict:
                 },
                 "backend_log_join_independently_observed": True,
                 "backend_usercache_uuid": observed,
-                "backend_log_uuid_matches_expected": True,
+                "backend_playerdata_uuid_matches_expected": True,
                 "expected_proxy_offline_uuid": expected,
                 "forwarded_username_matches_expected": True,
                 "forwarded_uuid_matches_expected": True,
