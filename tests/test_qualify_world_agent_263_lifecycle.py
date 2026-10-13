@@ -95,7 +95,7 @@ class WorldAgentS5Tests(unittest.TestCase):
             with self.assertRaisesRegex(Refused,"S5_EXISTING_REAL_WORLD_BIND_REFUSED"):
                 bind_owned_release(home,agent,"prior")
             (home/"world").rmdir()
-            with self.assertRaisesRegex(Refused,"S5_WORLD_AGENT_NOT_ACTIVE"):
+            with self.assertRaisesRegex(Refused,"S5_ACTIVE_OWNER_MISMATCH"):
                 bind_owned_release(home,agent,"candidate")
 
     def test_active_server_blocks_world_pointer_mutation(self):
