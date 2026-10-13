@@ -74,8 +74,8 @@ def verify_java25(image: str) -> str:
     result = run(["docker", "run", "--rm", "--pull=never",
                   "--entrypoint", "java", image, "-version"], 90)
     output = result.stderr + result.stdout
-    require(bool(re.search(r'(?m)^(?:openjdk|java) version "25(?:\\.|")', output)) or
-            bool(re.search(r'(?m)^openjdk 25(?:\\.|\s)', output)),
+    require(bool(re.search(r'(?m)^(?:openjdk|java) version "25(?:[.]|")', output)) or
+            bool(re.search(r'(?m)^openjdk 25(?:[.]|\s)', output)),
             "CONTAINER_JAVA_25_UNVERIFIED")
     return "25"
 
