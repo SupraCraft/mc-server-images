@@ -13,6 +13,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import tempfile
 import urllib.request
@@ -160,6 +161,8 @@ def execute(discovery: dict) -> dict:
                 "MOJANG_SERVER_SHA256_MISMATCH")
         require(zipfile.is_zipfile(patched), "PATCHED_SERVER_NOT_JAR")
         patched_digest = hashlib.sha256(patched.read_bytes()).hexdigest()
+        server_jar = server / "server.jar"
+        shutil.copyfile(patched, server_jar)
         (server / "eula.txt").write_text("eula=true\n")
         (server / "server.properties").write_text(
             f"server-ip=127.0.0.1\nserver-port={BACKEND_PORT}\n"
@@ -182,7 +185,7 @@ def execute(discovery: dict) -> dict:
         secret_file.chmod(0o600)
         handles = []
         try:
-            backend = start_java(patched, server, handles)
+            backend = start_java(server_jar, server, handles)
             wait_status(backend, BACKEND_PORT, "VANILLACORD_263")
             bypass = run_bot(BACKEND_PORT, False, "DIRECT_VANILLA_BACKEND")
             # Wrong credential is an actual running proxy, not a mocked parser.
