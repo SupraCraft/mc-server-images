@@ -1,0 +1,22 @@
+# SupraCraft — 2026-10-13 verified client/world continuation
+
+This is a successor to [OP-3 and COLLAGE correlation](2026-10-12-op3-world-collage-correlation.md), not a replacement for live reconciliation. Primary authority: [mc-server-images #68](https://github.com/SupraCraft/mc-server-images/issues/68). Consumer authority: [collage-private #3](https://github.com/SupraCraft/collage-private/issues/3).
+
+## Independently accepted results
+
+- [MC PR #81](https://github.com/SupraCraft/mc-server-images/pull/81) merged `7fcfd8bd8e10fe0959b1b32524680a6c1d8317cf`. [Public CI 38337517457](https://github.com/SupraCraft/mc-server-images/actions/runs/38337517457) PASS, job `115100859329`, artifact `11784768954`. Nine source/negative unit tests passed. Real experimental offline Mineflayer Minecraft 26.3 client joined a disposable official vanilla 26.3 server and placed the redstone core, triggering the datapack's access/feedback change. Independently verified exact baseline snapshot restoration and that repeating the same real client action after rollback **does not** trigger the removed datapack behavior. Initial run `38337472686` failed test-import discovery before game startup and was corrected.
+- [COLLAGE PR #23](https://github.com/SupraCraft/collage/pull/23) merged `4e634dc3244c27e744be32be2537ef56d7d2afb2`. [Public CI 38338073858](https://github.com/SupraCraft/collage/actions/runs/38338073858) PASS, job `115102612450`, artifact `11785606275`. Eleven source/negative tests plus fresh real client and world rollback. Three human/automation/agent **read-only** source plans correlate to the same immutable artifact and separately operated client-action world receipt. Initial run `38338023359` failed before steps due to malformed pinned setup-node SHA, then corrected.
+- Source `mc-server-images@7f888b5829f4e5576d5ce512d86327348c43f01e`, inner ZIP SHA256 `da25005e8729e6f013f7108ac5b8869dd46323befc78efdae18221b26cafe5f8`, size 739 bytes, world `lantern-rdte`, release `lantern-core-restore-26-3`, Java 25, protocol 777 and datapack format 121.0.
+
+## Acceptance boundary
+
+The test client is experimental Mineflayer using offline server credentials, **not** the Mojang stock graphical client or real user authentication. COLLAGE has source-plan audience parity, **not** mutation authorization or managed provider operation: the real vanilla server was launched separately on disposable GitHub CI. No native TrueNAS 25.04.2.6, CloudNet/App lifecycle, full Two Rivers release, real Gym-managed client, privileged VIP/realm isolation or operational launch accepted. Only compact public-safe receipts were uploaded; game servers and worlds were retired.
+
+## Next-READY missions
+
+1. Reconcile [COLLAGE #19](https://github.com/SupraCraft/collage/issues/19), [private #3](https://github.com/SupraCraft/collage-private/issues/3) and [Agent Dispatch private #614](https://github.com/SemperSupra/agent-dispatch-private/issues/614). Admit current-game vanilla 26.3 in a newly identified disposable TrueNAS 25.04.2.6 target using immutable Java25/container/catalog and read-only provider qualification first. Historical Paper 1.21.11 App 1.15.29/1.15.30 is legacy regression only. Do not replay failed pre-guest P2-005 unchanged.
+2. Reuse COLLAGE, Foundry, CloudNet, world-agent and Gym seams for actual **admitted** managed artifact stage/activate/observe/rollback, provider and realm fencing, negative authorization, idempotency, controller-loss and cleanup receipts. No new IAM or second manager. Reuse identical artifact and causal gameplay proof.
+3. VanillaCord public v2.9.0 [publication authority #79](https://github.com/SupraCraft/VanillaCord-private/issues/79) remains blocked on sanitized public tag/source provenance, authorized publication and unauthenticated byte-identical JAR readback. Surviving private asset SHA256 `24e850a261dbf108e2f7ac412c34651ffae753543665ec47d5e40ff9c8981719`; read-only [PR #82](https://github.com/SupraCraft/VanillaCord-private/pull/82). Do not leak private Git history or consume private GHA quota.
+4. Maintain official 26.4 snapshot read-only watch; distinct stable qualification for all runtimes/clients/game assets before any promotion.
+
+**Way of Working:** cold-start from live heads; Discover/Observe → Plan → admitted disposable Apply → independent Verify with positive/negative oracles, exact SHA/run/artifact receipts and reversible cleanup. Human, CI and agent principal kinds share a semantic request, not privileges. Physical TrueNAS APPLY **HOLD**.
