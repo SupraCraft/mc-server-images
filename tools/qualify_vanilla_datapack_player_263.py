@@ -54,7 +54,7 @@ def install_disposable_operator(home: Path) -> None:
 
 
 def validate_client_result(result: dict, exit_code: int,
-                           joined_log: str) -> dict:
+                           joined_log: str, *, operator_setup: bool = False) -> dict:
     require(type(result) is dict and
             result.get("schema") == "supracraft.mineflayer-core-placement/v0.1",
             "PLAYER_RESULT_SCHEMA")
@@ -75,6 +75,13 @@ def validate_client_result(result: dict, exit_code: int,
             "PLAYER_LOGIN_OR_SPAWN_UNPROVEN")
     require(BOT_NAME + " joined the game" in joined_log,
             "PLAYER_BACKEND_JOIN_NOT_OBSERVED")
+    if operator_setup:
+        require(result.get("operator_fixture_source") ==
+                    "mineflayer_signed_chat_commands" and
+                isinstance(milestones.get("operator_commands_sent"), int) and
+                milestones["spawn"] <= milestones["operator_commands_sent"]
+                <= milestones["placed"],
+                "OFFLINE_OPERATOR_BOT_COMMANDS_UNPROVEN")
     return {
         "username": BOT_NAME,
         "requested_version": result["requested_version"],
@@ -125,7 +132,8 @@ def player_places_core(root: Path, proc: subprocess.Popen,
         require(result_file.is_file(), "PLAYER_RESULT_ABSENT_" + stage)
         result = json.loads(result_file.read_text())
         return validate_client_result(result, client.returncode,
-                                      server_log.read_text(errors="replace"))
+                                      server_log.read_text(errors="replace"),
+                                      operator_setup=operator_setup)
     finally:
         if client.poll() is None:
             client.kill()
