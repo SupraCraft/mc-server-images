@@ -16,6 +16,20 @@ class ClientReceiptTests(unittest.TestCase):
     def test_good(self):
         a = validate_client_result(BASE.copy(),0,JOIN)
         self.assertTrue(a["server_join_independently_observed"])
+    def test_operator_mode_requires_worker_report_and_ordered_milestone(self):
+        good=BASE.copy()
+        good["operator_fixture_source"]="mineflayer_signed_chat_commands"
+        good["milestones"]=dict(BASE["milestones"],operator_commands_sent=3)
+        self.assertTrue(validate_client_result(
+            good,0,JOIN,operator_setup=True)["server_join_independently_observed"])
+        for bad in (
+            dict(good,operator_fixture_source="server_console"),
+            dict(good,milestones=dict(BASE["milestones"])),
+            dict(good,milestones=dict(BASE["milestones"],operator_commands_sent=9)),
+        ):
+            with self.assertRaisesRegex(Refused,"OFFLINE_OPERATOR_BOT_COMMANDS_UNPROVEN"):
+                validate_client_result(bad,0,JOIN,operator_setup=True)
+
     def test_missing_join(self):
         with self.assertRaises(Refused):
             validate_client_result(BASE.copy(),0,"no backend join")
