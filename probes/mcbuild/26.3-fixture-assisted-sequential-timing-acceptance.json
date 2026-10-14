@@ -1,0 +1,90 @@
+{
+  "schema": "supracraft.fixture-assisted-mcbuild-timing-acceptance/v0.1",
+  "accepted_at_utc": "2026-09-28T16:12:32Z",
+  "qualification": {
+    "run_id": 36448965006,
+    "job_id": 109019099567,
+    "code_head_sha": "a46be54f1a0bc1c2d3b40a8914a9fc5f5fad9aaf",
+    "plan_schema": "mcbuild/v0.1-public-fixture",
+    "plan_sha256": "f5e947a028ef4cb5e5526a4353e7015f7f639f3f437f777a015b61fb9d45ee88",
+    "result": "qualified"
+  },
+  "preceding_falsification": {
+    "run_id": 36447703459,
+    "job_id": 109016296777,
+    "result": "failed-before-terminal-receipt",
+    "failure": "controller preparation did not converge for chest-south-single",
+    "disposition": "pre-existing in-air positioning race; repaired with temporary fixture support, not retried unchanged"
+  },
+  "retained_artifact": {
+    "artifact_id": 10982795920,
+    "name": "mcbuild-fixture-assisted-sequential-26.3",
+    "digest": "sha256:ec39d4ec869e66ef46d9f0ecdd03ca0552364e5dd3e060759e58df0d950d9e37",
+    "expires_at": "2026-10-05T16:12:32Z"
+  },
+  "observed": {
+    "actions": 12,
+    "active_plan_ms": 7697.465,
+    "controller_prepare_ms": {
+      "mean": 0.123,
+      "median": 0.0815,
+      "min": 0.058,
+      "max": 0.299
+    },
+    "prepared_to_placed_ms": {
+      "mean": 640.457,
+      "median": 620.0475,
+      "min": 550.699,
+      "max": 828.784
+    },
+    "prepare_to_placed_total_ms": {
+      "mean": 640.58,
+      "median": 620.191,
+      "min": 550.766,
+      "max": 828.913
+    },
+    "worker_packets": 6645,
+    "official_server_verified_actions": 12,
+    "official_server_verified_block_entities": 1,
+    "official_server_verified_fixture_support_cleanup": 12,
+    "bot_positions_stable_at_requested_y": 12
+  },
+  "projection_basis": {
+    "private_target_actions": 5533,
+    "private_workflow_budget_minutes": 25,
+    "unit_cost_ms": 641.4554166666667,
+    "topology_slots": {
+      "1": 5533,
+      "2": 2767,
+      "4": 1385,
+      "8": 697,
+      "16": 359,
+      "32": 191,
+      "64": 111,
+      "128": 72,
+      "256": 67
+    },
+    "projected_active_minutes": {
+      "1": 59.153,
+      "2": 29.582,
+      "4": 14.807,
+      "8": 7.452,
+      "16": 3.838,
+      "32": 2.042,
+      "64": 1.187,
+      "128": 0.77,
+      "256": 0.716
+    }
+  },
+  "decision": {
+    "serial_full_physical_rep_fits_current_25m_budget": false,
+    "ideal_two_worker_rep_fits_current_25m_budget": false,
+    "parallel_builder_implementation_authorized": false,
+    "next_bounded_node": "sustained fixture-assisted ordinary-stone stress rep before any multi-builder implementation"
+  },
+  "scope_notes": [
+    "Projection excludes fixed setup, server boot, terminal validation and multi-worker contention.",
+    "The mixed 12-action fixture is not assumed representative of sustained ordinary-block throughput.",
+    "Temporary barrier support is fixture positioning scaffolding and is independently proven removed; it does not qualify autonomous movement."
+  ]
+}
