@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import uuid
 import json
 import os
 from pathlib import Path
@@ -31,6 +32,25 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_CLIENT = "26.3"
 EXPECTED_PROTOCOL = 777
 WORKER = ROOT / "tools/probe_mineflayer_core_place.js"
+
+
+def offline_bot_uuid(username: str = BOT_NAME) -> str:
+    """Minecraft Java offline-mode UUIDv3, never an online account identity."""
+    import hashlib as _hashlib
+    return str(uuid.UUID(bytes=_hashlib.md5(
+        ("OfflinePlayer:" + username).encode()).digest(), version=3))
+
+
+def install_disposable_operator(home: Path) -> None:
+    """Only one exact synthetic bot operator in temporary offline fixture."""
+    (home / "ops.json").write_text(json.dumps([{
+        "uuid": offline_bot_uuid(),
+        "name": BOT_NAME,
+        "level": 4,
+        "bypassesPlayerLimit": False,
+    }], sort_keys=True)+"\n")
+
+
 
 
 def validate_client_result(result: dict, exit_code: int,
@@ -79,11 +99,13 @@ def configure_fixture(proc: subprocess.Popen, log: Path) -> None:
 
 
 def player_places_core(root: Path, proc: subprocess.Popen,
-                       server_log: Path, stage: str) -> dict:
+                       server_log: Path, stage: str, *,
+                       operator_setup: bool = False) -> dict:
     ready = root / (stage + "-bot.ready")
     result_file = root / (stage + "-bot-result.json")
     env = dict(os.environ, MC_PORT=str(PORT),
-               BOT_READY_FILE=str(ready), BOT_RESULT_FILE=str(result_file))
+               BOT_READY_FILE=str(ready), BOT_RESULT_FILE=str(result_file),
+               BOT_OPERATOR_SETUP="1" if operator_setup else "0")
     client = subprocess.Popen(
         ["node", str(WORKER)],
         cwd=ROOT, env=env, text=True,
@@ -92,9 +114,10 @@ def player_places_core(root: Path, proc: subprocess.Popen,
     output = ""
     try:
         wait_file(ready, client, 45)
-        send(proc, "gamemode survival " + BOT_NAME)
-        send(proc, "give " + BOT_NAME + " minecraft:redstone_block 1")
-        send(proc, "tp " + BOT_NAME + " 0.5 70.0 2.5 180 0")
+        if not operator_setup:
+            send(proc, "gamemode survival " + BOT_NAME)
+            send(proc, "give " + BOT_NAME + " minecraft:redstone_block 1")
+            send(proc, "tp " + BOT_NAME + " 0.5 70.0 2.5 180 0")
         try:
             output, _ = client.communicate(timeout=75)
         except subprocess.TimeoutExpired as e:
@@ -110,7 +133,8 @@ def player_places_core(root: Path, proc: subprocess.Popen,
         # Never store worker stdout or an unsanitized world in public evidence.
 
 
-def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
+def execute(candidate: Path, manifest: dict, evidence: dict, *,
+            operator_setup: bool = False) -> dict:
     accepted = validate_candidate(candidate, manifest)
     info = evidence["artifact_version_json"]
     require(info.get("id") == "26.3" and
@@ -127,6 +151,8 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
         require(digest(jar.read_bytes()) == evidence["server_artifact"]["sha256"],
                 "SERVER_SHA256_MISMATCH")
         server_config(home)
+        if operator_setup:
+            install_disposable_operator(home)
         active = home / "world"
         snapshot = root / "snapshot" / "baseline-world"
         handles = []
@@ -153,7 +179,8 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
 
             proc, log = launch(home, jar, evidence, "client-with-pack", handles)
             oracle(proc, log, initial_predicate(), "OP3C_BEFORE_PLAYER")
-            candidate_player = player_places_core(root, proc, log, "candidate")
+            candidate_player = player_places_core(root, proc, log, "candidate",
+                                                  operator_setup=operator_setup)
             oracle(proc, log, restored_predicate(),
                    "OP3C_PLAYER_CAUSED_PACK_CONSEQUENCE")
             stages.append("player_placed_core_and_pack_reacted")
@@ -177,7 +204,8 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
 
             proc, log = launch(home, jar, evidence, "client-after-rollback", handles)
             oracle(proc, log, initial_predicate(), "OP3C_ROLLBACK_BASELINE")
-            rollback_player = player_places_core(root, proc, log, "rollback")
+            rollback_player = player_places_core(root, proc, log, "rollback",
+                                                 operator_setup=operator_setup)
             oracle(proc, log, baseline_without_pack_predicate(),
                    "OP3C_SAME_PLAYER_ACTION_NO_PACK_CONSEQUENCE")
             require(stop_server(proc) == 0, "PLAYER_ROLLBACK_STOP_FAILED")
@@ -203,6 +231,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict) -> dict:
                 "same_player_action_without_datapack_no_effect": True,
                 "rollback_exact_snapshot_before_restart": True,
                 "mineflayer_offline_protocol_qualified": True,
+                "operator_bot_fixture_commands_qualified": operator_setup,
                 "stock_mojang_client_qualified": False,
                 "authenticated_account_qualified": False,
                 "collage_deployed": False, "truenas_deployed": False,
