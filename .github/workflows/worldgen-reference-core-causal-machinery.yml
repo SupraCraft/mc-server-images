@@ -1,0 +1,130 @@
+name: worldgen CORE causal machinery
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE v1.4 intake run
+        required: true
+        default: "36559943983"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/analyze_causal_path_recoverability.py'
+      - 'tests/test_worldgen_causal_machinery.py'
+      - '.github/workflows/worldgen-reference-core-causal-machinery.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Run causal primitive controls
+        run: python -m unittest -v tests.test_worldgen_causal_machinery
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Preserve blind-analysis boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f source/original-world.zip
+          ! grep -n -E 'human-feedback|sentiment|overall_quality|(^|[^[:alpha:]])fun([^[:alpha:]]|$)|immersion' tools/analyze_legacy_causal_machinery.py
+
+      - name: Extract causal machinery graph
+        run: |
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py \
+            --world-zip source/original-world.zip \
+            --output out/core-v1.4-causal-machinery.json
+
+      - name: Analyze causal path recoverability
+        run: |
+          python tools/analyze_causal_path_recoverability.py \
+            --graph out/core-v1.4-causal-machinery.json \
+            --output out/core-v1.4-causal-paths.json
+
+      - name: Independent structural invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/core-v1.4-causal-machinery.json").read_text())
+          assert d["analysis_kind"]=="static_structural_feedback_blind"
+          assert d["family_counts"].get("command_block",0) > 1000
+          assert d["node_count"] > 3000
+          assert d["component_count"] > 0
+          assert d["command_semantics"]["verb_counts"]
+          assert "No human feedback labels are loaded by this analyzer." in d["limitations"]
+          paths=json.loads(pathlib.Path("out/core-v1.4-causal-paths.json").read_text())
+          assert paths["analysis_kind"]=="structural_causal_evidence_not_quality_score"
+          print(json.dumps({
+              "node_count":d["node_count"],
+              "component_count":d["component_count"],
+              "hybrid_component_count":d["hybrid_component_count"],
+              "family_counts":d["family_counts"],
+              "role_counts":d["role_counts"],
+              "command_semantics":d["command_semantics"],
+              "trapped_chest_count":len(d["trapped_chests"]),
+              "largest_components":d["largest_components"][:5],
+              "causal_path_trusted":paths["trusted_path_metrics"],
+              "causal_path_candidate":paths["candidate_path_metrics"],
+              "causal_path_unresolved_edges":paths["unresolved_edge_count"],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-causal-machinery
+          path: out/
+          retention-days: 14

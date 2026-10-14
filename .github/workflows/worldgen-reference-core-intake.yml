@@ -1,0 +1,88 @@
+name: worldgen reference CORE intake
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/intake_open_reference_world.py'
+      - 'bench/worldgen/reference-worlds/reference-world-corpus-v0.json'
+      - '.github/workflows/worldgen-reference-core-intake.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Reference-world intake is authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Hydrate exact open reference world without feedback labels
+        run: |
+          python tools/intake_open_reference_world.py \
+            --world-id reference.core.v1.4 \
+            --mediafire-page 'https://www.mediafire.com/file/un9wjqh99u3uu37/CORE+-+by+UnlikelyWaffle+%5Bv1.4%5D.zip/file' \
+            --source-page 'https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map' \
+            --license 'CC-BY-SA-4.0' \
+            --attribution 'CORE by UnlikelyWaffle; link the source forum page and creator YouTube as requested by the creator.' \
+            --output-dir out/core
+
+      - name: Independent intake invariants
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, pathlib, zipfile
+          out=pathlib.Path("out/core")
+          receipt=json.loads((out/"intake-receipt.json").read_text())
+          assert receipt["world_id"]=="reference.core.v1.4"
+          assert receipt["license"]=="CC-BY-SA-4.0"
+          assert receipt["analysis_blind"] is True
+          assert receipt["human_feedback_labels_loaded"] is False
+          assert len(receipt["original_sha256"])==64
+          assert receipt["original_bytes"] > 1_000_000
+          with zipfile.ZipFile(out/"original-world.zip") as zf:
+              assert zf.testzip() is None
+          assert "UnlikelyWaffle" in (out/"ATTRIBUTION.md").read_text()
+          print(json.dumps(receipt,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload licensed original plus provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-original
+          path: |
+            out/core/original-world.zip
+            out/core/ATTRIBUTION.md
+            out/core/intake-receipt.json
+          retention-days: 14

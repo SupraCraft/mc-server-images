@@ -1,0 +1,90 @@
+{
+  "schema": "supracraft-causal-capability-manifest/1",
+  "adapter_id": "modern-26.3-java25",
+  "minecraft_version": "26.3",
+  "edition": "java",
+  "side": "dedicated_server",
+  "java_major": 25,
+  "symbol_mode": "unobfuscated",
+  "fail_closed": true,
+  "artifact_provenance": {
+    "provider": "mojang",
+    "version_metadata_url": "https://piston-meta.mojang.com/v1/packages/bc098d111a72e9f6178801544a42099bdfbb0cf2/26.3.json",
+    "server_sha1": "33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c",
+    "server_sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64",
+    "symbol_inventory_sha256": "3163c6e75c15c464e93137b509f349cd1dc54f74a573163150206ccf8ddf498e",
+    "hook_structure_sha256": "b6e41288877648da9969c9220770db85725d2e7147ddb4dca0e64519db06d065"
+  },
+  "bindings": [
+    {
+      "id": "server_tick",
+      "event_family": "tick_boundary",
+      "runtime_class": "net/minecraft/server/MinecraftServer",
+      "runtime_method": "tickServer",
+      "runtime_descriptor": "(Ljava/util/function/BooleanSupplier;)V",
+      "semantic_symbol": "MinecraftServer.tickServer",
+      "expected_bind_count": 1,
+      "class_sha256": "527d416a4317b9e76d8bbe260afb3af08bdbeb632b4978b47d08ee31ec954402"
+    },
+    {
+      "id": "block_state_write",
+      "event_family": "block_state_write",
+      "runtime_class": "net/minecraft/world/level/Level",
+      "runtime_method": "setBlock",
+      "runtime_descriptor": "(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z",
+      "semantic_symbol": "Level.setBlock",
+      "expected_bind_count": 1,
+      "class_sha256": "68abf43ce4638614ca5d8e7ae185d7e06295ac636c4d4fbc21ee7c3d5e05c4a7"
+    },
+    {
+      "id": "command_block_neighbor",
+      "event_family": "command_block_neighbor",
+      "runtime_class": "net/minecraft/world/level/block/CommandBlock",
+      "runtime_method": "neighborChanged",
+      "runtime_descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Block;Lnet/minecraft/world/level/redstone/Orientation;Z)V",
+      "semantic_symbol": "CommandBlock.neighborChanged",
+      "expected_bind_count": 1,
+      "class_sha256": "2cbe573c4833b44e74a1f41fc83473c1f2a6bc2e7d527b73df5af6b48708ad85"
+    },
+    {
+      "id": "command_block_tick",
+      "event_family": "command_block_scheduled_tick",
+      "runtime_class": "net/minecraft/world/level/block/CommandBlock",
+      "runtime_method": "tick",
+      "runtime_descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V",
+      "semantic_symbol": "CommandBlock.tick",
+      "expected_bind_count": 1,
+      "class_sha256": "2cbe573c4833b44e74a1f41fc83473c1f2a6bc2e7d527b73df5af6b48708ad85"
+    },
+    {
+      "id": "command_block_execute",
+      "event_family": "command_trigger",
+      "runtime_class": "net/minecraft/world/level/block/CommandBlock",
+      "runtime_method": "execute",
+      "runtime_descriptor": "(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/BaseCommandBlock;Z)V",
+      "semantic_symbol": "CommandBlock.execute",
+      "expected_bind_count": 1,
+      "class_sha256": "2cbe573c4833b44e74a1f41fc83473c1f2a6bc2e7d527b73df5af6b48708ad85"
+    },
+    {
+      "id": "command_dispatch",
+      "event_family": "command_execute",
+      "runtime_class": "net/minecraft/commands/Commands",
+      "runtime_method": "performCommand",
+      "runtime_descriptor": "(Lcom/mojang/brigadier/ParseResults;Ljava/lang/String;)V",
+      "semantic_symbol": "Commands.performCommand",
+      "expected_bind_count": 1,
+      "class_sha256": "9307c70b1dce250f869dbf0c633856145718c44b078d656c2dc9c3244176a54e"
+    },
+    {
+      "id": "command_dispatch_prefixed",
+      "event_family": "command_execute",
+      "runtime_class": "net/minecraft/commands/Commands",
+      "runtime_method": "performPrefixedCommand",
+      "runtime_descriptor": "(Lnet/minecraft/commands/CommandSourceStack;Ljava/lang/String;)V",
+      "semantic_symbol": "Commands.performPrefixedCommand",
+      "expected_bind_count": 1,
+      "class_sha256": "9307c70b1dce250f869dbf0c633856145718c44b078d656c2dc9c3244176a54e"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/SupraCraft/mc-server-images/bench/worldgen/schemas/persona-trace-v1.schema.json",
+  "title": "Worldgen Persona Trace v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "trace_id", "world_ref", "persona", "objective", "events"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "trace_id": {"type": "string", "minLength": 3},
+    "world_ref": {"type": "string", "minLength": 1},
+    "artifact_version_ref": {"type": ["string", "null"]},
+    "persona": {"type": "string", "minLength": 1},
+    "objective": {"type": "string", "minLength": 1},
+    "profile": {"type": ["string", "null"]},
+    "events": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["t", "position", "kind"],
+        "properties": {
+          "t": {"type": "number", "minimum": 0},
+          "position": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {"type": "number"}
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "observation",
+              "move",
+              "interaction",
+              "progress",
+              "failure",
+              "retry",
+              "discovery",
+              "objective_complete"
+            ]
+          },
+          "action": {"type": ["string", "null"]},
+          "target": {"type": ["string", "null"]},
+          "success": {"type": ["boolean", "null"]},
+          "progress_id": {"type": ["string", "null"]},
+          "failure_class": {"type": ["string", "null"]},
+          "notes": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,117 @@
+name: worldgen reference CORE blind metrics
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE intake run
+        required: true
+        default: "36559943983"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/analyze_legacy_anvil_world.py'
+      - '.github/workflows/worldgen-reference-core-metrics.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Reference-world analysis is authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Assert analysis remains feedback blind
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f source/original-world.zip
+          test ! -d bench/worldgen/reference-worlds/feedback
+          ! grep -R -n -E '"(human_themes|sentiment|overall_quality_label|comment_text)"' bench/worldgen/reference-worlds
+
+      - name: Run generic legacy-world static analysis
+        run: |
+          mkdir -p out
+          python tools/analyze_legacy_anvil_world.py \
+            --world-zip source/original-world.zip \
+            --output out/core-v1.4-static.json
+
+      - name: Independent generic invariants
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          d=json.loads(pathlib.Path("out/core-v1.4-static.json").read_text())
+          assert d["analysis_blind"] is True
+          assert d["human_feedback_labels_loaded"] is False
+          assert d["region_file_count"] == 18
+          assert d["chunk_count"] > 0
+          assert d["decoded_block_slots"] > 0
+          assert d["non_air_blocks"] > 0
+          assert d["block_id_diversity_non_air"] > 10
+          print(json.dumps({
+              "region_file_count":d["region_file_count"],
+              "chunk_count":d["chunk_count"],
+              "block_id_diversity_non_air":d["block_id_diversity_non_air"],
+              "heightmap":d["heightmap"],
+              "interaction_block_counts":d["interaction_block_counts"],
+              "nonempty_command_block_tile_entities":d["nonempty_command_block_tile_entities"],
+              "nonempty_sign_tile_entities":d["nonempty_sign_tile_entities"],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-blind-static-metrics
+          path: out/
+          retention-days: 14

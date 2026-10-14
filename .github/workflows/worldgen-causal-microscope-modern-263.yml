@@ -1,0 +1,452 @@
+name: worldgen causal microscope modern 26.3
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bench/worldgen/observability/supracraft-causal-event-v1.schema.json'
+      - 'bench/worldgen/observability/supracraft-causal-capability-manifest-v1.schema.json'
+      - 'bench/worldgen/observability/modern-26.3-java25-capability-manifest.json'
+      - 'tools/causal-microscope/modern-26.3-agent/**'
+      - 'tools/run_modern_microscope_canary.py'
+      - 'tools/run_modern_redstone_microscope_canary.py'
+      - 'tools/validate_modern_redstone_microscope.py'
+      - 'tests/test_causal_microscope_contract.py'
+      - 'probes/26.3-release-identity.json'
+      - '.github/workflows/worldgen-causal-microscope-modern-263.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: worldgen-causal-microscope-modern-263-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Contract controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v \
+            tests.test_causal_microscope_contract \
+            tests.test_redstone_mechanism_inference \
+            tests.test_redstone_netlist
+          python -m py_compile \
+            tools/run_modern_microscope_canary.py \
+            tools/run_modern_redstone_microscope_canary.py \
+            tools/validate_modern_redstone_microscope.py \
+            tools/infer_redstone_mechanisms.py \
+            tools/correlate_redstone_mechanism_runtime.py \
+            tools/build_redstone_netlist.py \
+            tools/correlate_redstone_netlist_runtime.py \
+            tools/analyze_modern_causal_machinery.py
+
+      - name: Build shaded Java 25 runtime observer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -f tools/causal-microscope/modern-26.3-agent/pom.xml \
+            -DskipTests package
+          agent="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar"
+          bridge="tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar"
+          AGENT_JAR="$agent" BRIDGE_JAR="$bridge" python - <<'PY'
+          import json,os,pathlib,zipfile
+          agent=pathlib.Path(os.environ["AGENT_JAR"])
+          bridge=pathlib.Path(os.environ["BRIDGE_JAR"])
+          assert agent.is_file() and agent.stat().st_size>0,agent
+          assert bridge.is_file() and bridge.stat().st_size>0,bridge
+          with zipfile.ZipFile(agent) as z:
+              names=set(z.namelist())
+              manifest=z.read("META-INF/MANIFEST.MF").decode(
+                  "utf-8",errors="replace"
+              ).replace("\r\n ","").replace("\n ","")
+          with zipfile.ZipFile(bridge) as z:
+              bridge_names=set(z.namelist())
+          checks={
+              "premain":(
+                  "Premain-Class: org.supracraft.microscope.Agent"
+                  in manifest
+              ),
+              "boot_class_path":(
+                  "Boot-Class-Path: "
+                  "causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar"
+                  in manifest
+              ),
+              "bridge_trace_runtime":(
+                  "org/supracraft/microscope/TraceRuntime.class"
+                  in bridge_names
+              ),
+              "bridge_no_asm":not any(
+                  name.startswith("org/objectweb/asm/")
+                  for name in bridge_names
+              ),
+              "agent_relocated_asm":(
+                  "org/supracraft/microscope/internal/asm/ClassReader.class"
+                  in names
+              ),
+              "agent_no_unrelocated_asm":(
+                  "org/objectweb/asm/ClassReader.class" not in names
+              ),
+          }
+          print(json.dumps({
+              "schema":"supracraft-modern-agent-packaging-check/1",
+              "agent_size":agent.stat().st_size,
+              "bridge_size":bridge.stat().st_size,
+              "checks":checks,
+          },indent=2,sort_keys=True))
+          assert all(checks.values()),checks
+          PY
+          echo "MICROSCOPE_AGENT=$PWD/$agent" >> "$GITHUB_ENV"
+
+      - name: Stock exact 26.3 canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/stock out/instrumented
+          python tools/run_modern_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --output-dir out/stock
+
+      - name: Instrumented exact 26.3 canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --output-dir out/instrumented \
+            --java-agent "$MICROSCOPE_AGENT"
+
+      - name: Validate observer effect and causal ordering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import collections,json,pathlib
+          stock=json.loads(pathlib.Path("out/stock/result.json").read_text())
+          inst=json.loads(pathlib.Path("out/instrumented/result.json").read_text())
+
+          for key in (
+              "minecraft_version","java_major","canary_pass","target_position",
+              "command_block_position","command_sha256",
+          ):
+              assert stock[key]==inst[key],(key,stock[key],inst[key])
+          assert stock["instrumented"] is False
+          assert inst["instrumented"] is True
+          assert stock["canary_pass"] is True
+          assert inst["canary_pass"] is True
+          assert inst["trace_present"] is True
+
+          rows=[
+              json.loads(line)
+              for line in pathlib.Path(
+                  "out/instrumented/trace.jsonl"
+              ).read_text().splitlines()
+              if line.strip()
+          ]
+          assert rows
+          assert [r["seq"] for r in rows]==list(range(1,len(rows)+1))
+          assert rows[0]["event_type"]=="trace_start"
+          assert rows[-1]["event_type"]=="trace_end"
+          assert rows[-1]["data"]["dropped_events"]==0
+
+          counts=collections.Counter(r["event_type"] for r in rows)
+          for required in (
+              "tick_start","tick_end","block_state_write",
+              "command_block_neighbor","command_block_scheduled_tick",
+              "command_trigger_start","command_trigger_end",
+              "command_dispatch",
+          ):
+              assert counts[required]>0,(required,counts)
+
+          command_hash=inst["command_sha256"]
+          triggers=[
+              r for r in rows
+              if r["event_type"]=="command_trigger_start"
+              and r["data"].get("command_sha256")==command_hash
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert triggers
+          start=triggers[0]
+          ends=[
+              r for r in rows
+              if r["event_type"]=="command_trigger_end"
+              and r["seq"]>start["seq"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert ends
+          end=ends[0]
+          target_writes=[
+              r for r in rows
+              if r["event_type"]=="block_state_write"
+              and start["seq"]<r["seq"]<end["seq"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["target_position"]
+          ]
+          assert target_writes
+          target=target_writes[0]
+          assert start["tick"]==target["tick"]==end["tick"]
+
+          scheduled=[
+              r for r in rows
+              if r["event_type"]=="command_block_scheduled_tick"
+              and r["seq"]<start["seq"]
+              and r["tick"]==start["tick"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert scheduled
+          neighbours=[
+              r for r in rows
+              if r["event_type"]=="command_block_neighbor"
+              and r["seq"]<start["seq"]
+              and [
+                  r["data"].get("x"),
+                  r["data"].get("y"),
+                  r["data"].get("z"),
+              ]==inst["command_block_position"]
+          ]
+          assert neighbours
+          dispatch=[
+              r for r in rows
+              if r["event_type"]=="command_dispatch"
+              and r["data"].get("command_sha256")==command_hash
+          ]
+          assert dispatch
+
+          tick_starts=[
+              r for r in rows
+              if r["event_type"]=="tick_start"
+              and r["tick"]==start["tick"]
+          ]
+          tick_ends=[
+              r for r in rows
+              if r["event_type"]=="tick_end"
+              and r["tick"]==start["tick"]
+          ]
+          assert tick_starts and tick_ends
+          assert (
+              tick_starts[0]["seq"]
+              < start["seq"]
+              < end["seq"]
+              < tick_ends[-1]["seq"]
+          )
+
+          overhead=(
+              inst["elapsed_seconds"]/stock["elapsed_seconds"]
+              if stock["elapsed_seconds"] else None
+          )
+          report={
+              "schema":"supracraft-modern-microscope-observer-ab/1",
+              "minecraft_version":"26.3",
+              "semantic_divergence":False,
+              "stock_canary_pass":stock["canary_pass"],
+              "instrumented_canary_pass":inst["canary_pass"],
+              "command_tick":start["tick"],
+              "causal_seq":{
+                  "neighbor":neighbours[-1]["seq"],
+                  "scheduled_tick":scheduled[-1]["seq"],
+                  "command_trigger_start":start["seq"],
+                  "target_write":target["seq"],
+                  "command_trigger_end":end["seq"],
+              },
+              "event_counts":dict(sorted(counts.items())),
+              "dropped_events":0,
+              "stock_elapsed_seconds":stock["elapsed_seconds"],
+              "instrumented_elapsed_seconds":inst["elapsed_seconds"],
+              "elapsed_ratio":(
+                  round(overhead,6) if overhead is not None else None
+              ),
+              "boundary":"observer A/B plus event order supports the canary mechanism only; it does not promote unobserved redstone, packet, client, or human semantics",
+          }
+          pathlib.Path("out/observer-ab-report.json").write_text(
+              json.dumps(report,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+
+      - name: Stock exact 26.3 connected-wire redstone fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/redstone-positive-stock out/redstone-positive-instrumented \
+            out/redstone-gap-stock out/redstone-gap-instrumented
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --fixture positive \
+            --output-dir out/redstone-positive-stock
+
+      - name: Instrumented exact 26.3 connected-wire redstone fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --fixture positive \
+            --output-dir out/redstone-positive-instrumented \
+            --java-agent "$MICROSCOPE_AGENT"
+
+      - name: Stock exact 26.3 one-block-gap hard negative
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --fixture gap \
+            --output-dir out/redstone-gap-stock
+
+      - name: Instrumented exact 26.3 one-block-gap hard negative
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_microscope_canary.py \
+            --evidence probes/26.3-release-identity.json \
+            --server-jar out/server-26.3.jar \
+            --fixture gap \
+            --output-dir out/redstone-gap-instrumented \
+            --java-agent "$MICROSCOPE_AGENT"
+
+      - name: Validate exact 26.3 redstone observer effect and bounded ordering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/validate_modern_redstone_microscope.py \
+            --root out \
+            --version 26.3 \
+            --output out/redstone-observer-ab-report.json
+
+      - name: Recover positive and gap mechanism schematics
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fixture in positive gap; do
+            python tools/analyze_modern_causal_machinery.py \
+              --world-zip "out/redstone-$fixture-stock/world.zip" \
+              --output "out/redstone-$fixture-machinery.json"
+            python tools/infer_redstone_mechanisms.py \
+              --graph "out/redstone-$fixture-machinery.json" \
+              --output "out/redstone-$fixture-mechanism.json" \
+              --dot-output "out/redstone-$fixture-schematic.dot"
+            python tools/build_redstone_netlist.py \
+              --graph "out/redstone-$fixture-machinery.json" \
+              --output "out/redstone-$fixture-netlist.json" \
+              --dot-output "out/redstone-$fixture-functional.dot" \
+              --layers-output "out/redstone-$fixture-layers.json"
+          done
+
+      - name: Correlate inferred schematic with observed behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/correlate_redstone_mechanism_runtime.py \
+            --positive-mechanism out/redstone-positive-mechanism.json \
+            --gap-mechanism out/redstone-gap-mechanism.json \
+            --runtime-report out/redstone-observer-ab-report.json \
+            --positive-result out/redstone-positive-instrumented/result.json \
+            --gap-result out/redstone-gap-instrumented/result.json \
+            --output out/redstone-mechanism-runtime-correlation.json
+
+      - name: Correlate collapsed wire netlist with observed behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/correlate_redstone_netlist_runtime.py \
+            --positive-netlist out/redstone-positive-netlist.json \
+            --gap-netlist out/redstone-gap-netlist.json \
+            --runtime-report out/redstone-observer-ab-report.json \
+            --output out/redstone-netlist-runtime-correlation.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: causal-microscope-modern-26.3
+          path: |
+            bench/worldgen/observability/modern-26.3-java25-capability-manifest.json
+            tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar
+            tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT-bootstrap.jar
+            out/stock/result.json
+            out/instrumented/result.json
+            out/instrumented/trace.jsonl
+            out/instrumented/diagnostic.json
+            out/observer-ab-report.json
+            out/redstone-positive-stock/result.json
+            out/redstone-positive-stock/world.zip
+            out/redstone-positive-instrumented/result.json
+            out/redstone-positive-instrumented/trace.jsonl
+            out/redstone-gap-stock/result.json
+            out/redstone-gap-stock/world.zip
+            out/redstone-gap-instrumented/result.json
+            out/redstone-gap-instrumented/trace.jsonl
+            out/redstone-observer-ab-report.json
+            out/redstone-positive-machinery.json
+            out/redstone-positive-mechanism.json
+            out/redstone-positive-schematic.dot
+            out/redstone-gap-machinery.json
+            out/redstone-gap-mechanism.json
+            out/redstone-gap-schematic.dot
+            out/redstone-mechanism-runtime-correlation.json
+            out/redstone-positive-netlist.json
+            out/redstone-positive-functional.dot
+            out/redstone-positive-layers.json
+            out/redstone-gap-netlist.json
+            out/redstone-gap-functional.dot
+            out/redstone-gap-layers.json
+            out/redstone-netlist-runtime-correlation.json
+          retention-days: 14

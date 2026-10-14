@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "status": "research_consumer_projection",
+  "authority_ref": "mark-e-deyoung/concept-policy-engine-private#301",
+  "authority_branch": "research/game-world-qualitative-concepts",
+  "watchset_path": "data/research/game-world-qualitative-concept-watchset-2026-09-29.json",
+  "consumer": "SupraCraft world-generator benchmark",
+  "invariants": [
+    "do_not_treat_player_experience_as_direct_world_fact",
+    "do_not_treat_popularity_as_quality",
+    "do_not_force_cross_language_exact_equivalence",
+    "freeze_automated_metrics_before_feedback_coding",
+    "retain_original_language_and_source_ancestry",
+    "no_single_overall_quality_score"
+  ],
+  "analysis_planes": [
+    "descriptive_world_property",
+    "player_experience_assessment",
+    "preference_context_fit",
+    "non_world_confounds"
+  ],
+  "candidate_concept_ids": [
+    "research.game_world.affordance_legibility",
+    "research.game_world.anticipatory_excitement",
+    "research.game_world.atmospheric_coherence",
+    "research.game_world.boredom",
+    "research.game_world.causal_legibility",
+    "research.game_world.challenge_information_sufficiency",
+    "research.game_world.content_variety",
+    "research.game_world.coziness_comfort",
+    "research.game_world.disorientation_confusion",
+    "research.game_world.embodied_functionality",
+    "research.game_world.environmental_adaptation",
+    "research.game_world.environmental_believability",
+    "research.game_world.evocative_environmental_narrative",
+    "research.game_world.exploratory_pull",
+    "research.game_world.frustration",
+    "research.game_world.fun_enjoyment",
+    "research.game_world.immersion",
+    "research.game_world.landmark_prominence",
+    "research.game_world.navigation_legibility",
+    "research.game_world.pacing_content_density",
+    "research.game_world.perceived_challenge_fairness",
+    "research.game_world.perceived_polish",
+    "research.game_world.place_identity",
+    "research.game_world.productive_mystery",
+    "research.game_world.progression_legibility",
+    "research.game_world.repetition_monotony",
+    "research.game_world.retry_recovery_burden",
+    "research.game_world.visual_design_coherence"
+  ],
+  "language_lanes": [
+    "en",
+    "ja",
+    "zh-Hans",
+    "fr",
+    "de",
+    "ru",
+    "ko",
+    "es",
+    "pt"
+  ],
+  "source_benchmark_refs": [
+    "https://gendesignmc.wikidot.com/wiki:evaluation"
+  ]
+}

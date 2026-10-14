@@ -1,0 +1,78 @@
+name: worldgen CORE runtime probe selection
+
+on:
+  workflow_dispatch:
+    inputs:
+      causal_run_id:
+        description: Accepted CORE causal extraction run
+        required: true
+        default: "36581277508"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/select_legacy_runtime_probes.py'
+      - '.github/workflows/worldgen-reference-core-runtime-probe-selection.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_CAUSAL_RUN_ID: "36581277508"
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+      - name: Resolve causal run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.causal_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_CAUSAL_RUN_ID"
+          echo "CAUSAL_RUN_ID=$run_id" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.CAUSAL_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-causal-machinery
+          path: source
+      - name: Select bounded probes
+        run: |
+          mkdir -p out
+          python tools/select_legacy_runtime_probes.py             --graph source/core-v1.4-causal-machinery.json             --limit 5             --output out/probe-selection.json
+      - name: Verify bounded diverse selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/probe-selection.json").read_text())
+          assert d["selection_kind"]=="feedback_blind_structural"
+          assert 1 <= d["selected_count"] <= 5
+          assert all(x["candidate_component_command_blocks"] > 0 for x in d["selected"])
+          print(json.dumps({"selected":d["selected"]},indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-runtime-probe-selection
+          path: out/
+          retention-days: 14

@@ -1,0 +1,247 @@
+name: worldgen CORE runtime causal calibration
+
+on:
+  workflow_dispatch:
+    inputs:
+      static_source_run_id:
+        description: Successful CORE v1.4 intake run
+        required: true
+        default: "36559943983"
+      runtime_source_run_id:
+        description: Accepted exact-1.8.8 pressure runtime run
+        required: true
+        default: "36890898790"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/analyze_runtime_causal_calibration.py'
+      - 'tests/test_worldgen_runtime_causal_calibration.py'
+      - '.github/workflows/worldgen-reference-core-runtime-causal-calibration.yml'
+
+concurrency:
+  group: worldgen-core-runtime-calibration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_STATIC_SOURCE_RUN_ID: "36559943983"
+      DEFAULT_RUNTIME_SOURCE_RUN_ID: "36890898790"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Run calibration regression controls
+        run: |
+          python -m py_compile tools/analyze_runtime_causal_calibration.py
+          python -m unittest -v tests.test_worldgen_runtime_causal_calibration
+
+      - name: Resolve frozen source runs
+        shell: bash
+        env:
+          INPUT_STATIC_RUN_ID: ${{ inputs.static_source_run_id }}
+          INPUT_RUNTIME_RUN_ID: ${{ inputs.runtime_source_run_id }}
+        run: |
+          set -euo pipefail
+          static_id="$INPUT_STATIC_RUN_ID"
+          runtime_id="$INPUT_RUNTIME_RUN_ID"
+          [[ -n "$static_id" ]] || static_id="$DEFAULT_STATIC_SOURCE_RUN_ID"
+          [[ -n "$runtime_id" ]] || runtime_id="$DEFAULT_RUNTIME_SOURCE_RUN_ID"
+          echo "STATIC_SOURCE_RUN_ID=$static_id" >> "$GITHUB_ENV"
+          echo "RUNTIME_SOURCE_RUN_ID=$runtime_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.STATIC_SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.RUNTIME_SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-pressure-plate-runtime
+          path: runtime
+
+      - name: Build current static graph
+        run: |
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py \
+            --world-zip source/original-world.zip \
+            --output out/core-v1.4-causal-machinery.json
+
+      - name: Overlay accepted runtime feedback witnesses
+        run: |
+          python tools/analyze_runtime_causal_calibration.py \
+            --graph out/core-v1.4-causal-machinery.json \
+            --runtime runtime/pressure-plate-paired-probes.json \
+            --static-source-run-id "$STATIC_SOURCE_RUN_ID" \
+            --runtime-source-run-id "$RUNTIME_SOURCE_RUN_ID" \
+            --output out/core-v1.4-runtime-causal-calibration.json
+
+      - name: Validate overlay boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path(
+              "out/core-v1.4-runtime-causal-calibration.json"
+          ).read_text())
+          assert d["schema"]=="supracraft-runtime-causal-calibration/1"
+          assert d["analysis_kind"]=="runtime_witness_overlay_not_static_edge_promotion"
+          assert d["witness_count"]==3
+          assert d["provenance"]["static_source_run_id"]
+          assert d["provenance"]["runtime_source_run_id"]
+
+          expected={"327,75,-23","392,109,-86","302,95,-69"}
+          assert {w["probe_node_id"] for w in d["witnesses"]}==expected
+
+          for w in d["witnesses"]:
+              assert w["calibration_class"] in {
+                  "no_runtime_feedback_witness",
+                  "runtime_feedback_with_trusted_static_path",
+                  "runtime_feedback_with_candidate_only_static_path",
+                  "runtime_feedback_without_static_feedback_path",
+              }
+              support=w["static_support"]["to_any_presentation_feedback"]
+              assert support["support_class"] in {"trusted","candidate_only","none"}
+              for node_id,node_support in w["static_support"][
+                  "to_runtime_feedback_command_nodes"
+              ].items():
+                  assert node_id
+                  assert node_support["support_class"] in {
+                      "trusted","candidate_only","none"
+                  }
+
+          # The frozen accepted runtime receipt must still preserve the hard
+          # negative as execution/delivery evidence without a world-target delta.
+          hard=next(w for w in d["witnesses"] if w["probe_node_id"]=="302,95,-69")
+          assert hard["runtime_outcome_class"]==(
+              "selected_command_state_change_without_observable_target_delta"
+          )
+          assert hard["runtime_feedback"]["self_effect_delta_observed"] is True
+          assert hard["runtime_feedback"][
+              "presentation_delivery_candidate_observed"
+          ] is True
+          assert hard["runtime_feedback"][
+              "scoped_feedback_command_state_change_count"
+          ]==2
+
+          death=next(w for w in d["witnesses"] if w["probe_node_id"]=="327,75,-23")
+          assert death["runtime_feedback"]["outcome_event_delta_observed"] is True
+          assert death["runtime_feedback"][
+              "presentation_delivery_candidate_observed"
+          ] is False
+          assert death["runtime_feedback"]["protocol_semantic_class_counts"]=={
+              "death":1
+          }
+          assert death["calibration_class"]=="no_runtime_feedback_witness"
+
+          literal=next(w for w in d["witnesses"] if w["probe_node_id"]=="392,109,-86")
+          assert literal["runtime_feedback"][
+              "presentation_delivery_candidate_observed"
+          ] is True
+          assert literal["runtime_feedback"]["protocol_semantic_class_counts"]=={
+              "literal_text":2
+          }
+          assert literal["runtime_feedback"][
+              "authored_literal_payload_hash_match_count"
+          ]==2
+          assert literal["runtime_feedback"][
+              "authored_literal_payload_unique_static_match_count"
+          ]==2
+          assert literal["runtime_feedback"]["attribution_class"]==(
+              "client_literal_payload_identity_match_without_command_execution_state_delta"
+          )
+          literal_matches={
+              match["static_node_ids"][0]:match
+              for match in literal["payload_identity_matches"]
+              if match["unique_static_match"]
+          }
+          assert set(literal_matches)=={"388,85,-75","392,86,-63"}
+          assert literal_matches["388,85,-75"]["static_support"][
+              "388,85,-75"
+          ]["support_class"]=="trusted"
+          second_support=literal_matches["392,86,-63"]["static_support"][
+              "392,86,-63"
+          ]
+          assert second_support["support_class"]=="trusted"
+          assert second_support["trusted_path"]["hop_count"] > 32
+          assert any(
+              step["edge_type"]==(
+                  "legacy_repeater_through_command_block_to_dust_power"
+              )
+              for step in second_support["trusted_path"]["steps"]
+          )
+          assert literal["calibration_class"]==(
+              "runtime_feedback_with_trusted_static_path"
+          )
+
+          print(json.dumps({
+              "provenance":d["provenance"],
+              "calibration_class_counts":d["calibration_class_counts"],
+              "witnesses":[{
+                  "probe_node_id":w["probe_node_id"],
+                  "runtime_outcome_class":w["runtime_outcome_class"],
+                  "runtime_feedback":w["runtime_feedback"],
+                  "to_any_feedback_support":w["static_support"][
+                      "to_any_presentation_feedback"
+                  ]["support_class"],
+                  "runtime_feedback_command_support":{
+                      k:v["support_class"] for k,v in w["static_support"][
+                          "to_runtime_feedback_command_nodes"
+                      ].items()
+                  },
+                  "payload_identity_support":[{
+                      "static_node_ids":m["static_node_ids"],
+                      "unique_static_match":m["unique_static_match"],
+                      "support":{
+                          k:v["support_class"]
+                          for k,v in m["static_support"].items()
+                      },
+                  } for m in w.get("payload_identity_matches",[])],
+                  "calibration_class":w["calibration_class"],
+              } for w in d["witnesses"]],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-core-v1.4-runtime-causal-calibration
+          path: |
+            out/core-v1.4-causal-machinery.json
+            out/core-v1.4-runtime-causal-calibration.json
+          retention-days: 14

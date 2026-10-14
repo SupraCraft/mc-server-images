@@ -1,0 +1,145 @@
+name: worldgen 26.3 causal fixture
+# tip revalidation: causal fixture semantics unchanged; rerun at branch tip after exact-1.8.8 pressure-plate qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/generate_26_3_causal_fixture.py'
+      - 'tools/analyze_modern_causal_machinery.py'
+      - 'tools/analyze_datapack_causal_semantics.py'
+      - 'tools/merge_causal_graphs.py'
+      - 'tools/analyze_causal_path_recoverability.py'
+      - 'probes/26.3-release-identity.json'
+      - '.github/workflows/worldgen-26-3-causal-fixture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Generate exact 26.3 causal fixture
+        run: |
+          python tools/generate_26_3_causal_fixture.py \
+            --evidence probes/26.3-release-identity.json \
+            --output-dir out
+
+      - name: Analyze modern machinery graph
+        run: |
+          python tools/analyze_modern_causal_machinery.py \
+            --world-zip out/world.zip \
+            --output out/causal-machinery.json
+
+      - name: Analyze loaded datapack semantics
+        run: |
+          python tools/analyze_datapack_causal_semantics.py \
+            --world-zip out/world.zip \
+            --output out/datapack-causal.json
+
+      - name: Merge physical and datapack graph layers
+        run: |
+          python tools/merge_causal_graphs.py \
+            --graph out/causal-machinery.json \
+            --graph out/datapack-causal.json \
+            --output out/combined-causal-graph.json
+
+      - name: Analyze structural causal-path recoverability
+        run: |
+          python tools/analyze_causal_path_recoverability.py \
+            --graph out/combined-causal-graph.json \
+            --output out/causal-paths.json
+
+      - name: Verify fixture semantics survived materialization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/causal-machinery.json").read_text())
+          f=d["family_counts"]
+          e=d["edge_counts"]
+          assert f.get("minecraft:command_block",0) >= 1
+          assert f.get("minecraft:chain_command_block",0) >= 2
+          assert f.get("minecraft:trapped_chest",0) >= 2
+          assert f.get("minecraft:comparator",0) >= 1
+          assert f.get("minecraft:repeater",0) >= 1
+          assert d["scoreboard"]["objective_count"] >= 1
+          assert d["entity_surface_node_count"] >= 2
+          assert e.get("command_world_target",0) >= 1
+          assert e.get("container_inventory_signal_read",0) >= 1
+          assert e.get("open_emits_redstone_power_candidate",0) >= 1
+          paths=json.loads(pathlib.Path("out/causal-paths.json").read_text())
+          dp=json.loads(pathlib.Path("out/datapack-causal.json").read_text())
+          assert paths["trusted_path_metrics"]["sensor_to_actuator"]["covered_count"] >= 1
+          assert paths["trusted_path_metrics"]["sensor_to_feedback"]["covered_count"] >= 1
+          assert paths["analysis_kind"]=="structural_causal_evidence_not_quality_score"
+          combined=json.loads(pathlib.Path("out/combined-causal-graph.json").read_text())
+          assert dp["function_count"] >= 2
+          assert dp["verb_counts"].get("scoreboard",0) >= 2
+          assert dp["verb_counts"].get("data",0) >= 1
+          assert dp["verb_counts"].get("schedule",0) >= 1
+          dp_edges={e["edge_type"] for e in dp["edges"]}
+          assert "function_schedule" in dp_edges
+          assert "scoreboard_write" in dp_edges
+          assert "storage_write" in dp_edges
+          combined_edges={e.get("edge_type") for e in combined["edges"]}
+          assert "command_function_call" in combined_edges
+          assert combined["unresolved_edge_count"] >= 0
+          assert paths["trusted_path_metrics"]["sensor_to_state"]["covered_count"] >= 1
+          assert paths["trusted_path_metrics"]["sensor_to_feedback"]["covered_count"] >= 1
+          print(json.dumps({
+            "family_counts":f,
+            "edge_counts":e,
+            "scoreboard":d["scoreboard"],
+            "entity_surface_node_count":d["entity_surface_node_count"],
+            "role_counts":d["role_counts"],
+            "causal_path_trusted":paths["trusted_path_metrics"],
+            "causal_path_candidate":paths["candidate_path_metrics"],
+            "datapack":{"function_count":dp["function_count"],"edge_count":dp["edge_count"],"verb_counts":dp["verb_counts"],"role_counts":dp["role_counts"]},
+            "combined_graph":{"node_count":combined["node_count"],"edge_count":combined["edge_count"],"resolved_edge_count":combined["resolved_edge_count"],"unresolved_edge_count":combined["unresolved_edge_count"]}
+          },indent=2,sort_keys=True))
+          print("MODERN-CAUSAL-FIXTURE-PASS")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-26.3-causal-fixture
+          path: out/
+          retention-days: 14

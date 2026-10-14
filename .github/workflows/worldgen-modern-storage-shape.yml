@@ -1,0 +1,96 @@
+name: worldgen 26.3 storage shape probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Accepted vanilla bootstrap run
+        required: true
+        default: "36509631901"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/probe_modern_world_storage.py'
+      - '.github/workflows/worldgen-modern-storage-shape.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36509631901"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: worldgen-bootstrap-normal
+          path: source
+
+      - name: Probe current storage shape
+        run: |
+          mkdir -p out
+          python tools/probe_modern_world_storage.py \
+            --world-zip source/world.zip \
+            --output out/storage-shape.json
+
+      - name: Verify 26.3 split layout was observed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/storage-shape.json").read_text())
+          assert d["chunk_count"] > 0
+          assert d["entity_chunk_count"] > 0
+          assert d["chunk_top_level_keys"]
+          assert d["entity_chunk_top_level_keys"]
+          print("MODERN-STORAGE-SHAPE-PASS")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-26.3-storage-shape
+          path: out/
+          retention-days: 14
