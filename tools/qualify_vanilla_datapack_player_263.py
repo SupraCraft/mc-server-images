@@ -257,10 +257,12 @@ def main() -> int:
     p.add_argument("--manifest", type=Path, required=True)
     p.add_argument("--evidence", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--operator-setup", action="store_true")
     args = p.parse_args()
     try:
         result = execute(args.candidate, json.loads(args.manifest.read_text()),
-                         json.loads(args.evidence.read_text()))
+                         json.loads(args.evidence.read_text()),
+                         operator_setup=args.operator_setup)
         code = 0
     except Exception as exc:
         result = {
