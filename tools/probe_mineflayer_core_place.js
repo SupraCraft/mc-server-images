@@ -5,6 +5,7 @@ const { Vec3 } = require('vec3')
 const port = Number(process.env.MC_PORT || '25571')
 const readyFile = process.env.BOT_READY_FILE
 const resultFile = process.env.BOT_RESULT_FILE
+const operatorSetup = process.env.BOT_OPERATOR_SETUP === '1'
 
 if (!readyFile || !resultFile) {
   throw new Error('BOT_READY_FILE and BOT_RESULT_FILE are required')
@@ -101,6 +102,22 @@ bot.once('spawn', async () => {
   fs.writeFileSync(readyFile, 'spawned\n')
 
   try {
+    if (operatorSetup) {
+      // Only for offline synthetic Mineflayer on an explicitly isolated
+      // test server where this one bot UUID is pre-authorized as an OP.
+      // No RCON, no console/input pipe and no operational privilege.
+      result.operator_fixture_source = 'mineflayer_signed_chat_commands'
+      const commands = [
+        '/gamemode survival SupraCraftProbe',
+        '/give SupraCraftProbe minecraft:redstone_block 1',
+        '/tp SupraCraftProbe 0.5 70.0 2.5 180 0'
+      ]
+      for (const command of commands) {
+        bot.chat(command)
+        await bot.waitForTicks(10)
+      }
+      result.milestones.operator_commands_sent = Date.now()
+    }
     const deadline = Date.now() + 30000
     let core = null
     while (Date.now() < deadline) {
