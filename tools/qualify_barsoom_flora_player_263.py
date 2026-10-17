@@ -30,10 +30,53 @@ from gen_dead_sea import build as build_terrain
 from smoke_vanilla_runtime import download_verified_server
 from probe_core_restoration_datapack_26_3 import send, stop_server, server_error_lines
 from qualify_vanilla_world_artifact_activation_263 import Refused, launch, oracle, require
-from qualify_barsoom_263 import bot_start, NAME
+from qualify_barsoom_263 import NAME
 
 PORT = 25593
 POISON_PATH = 'active_effects[{id:"minecraft:poison"}]'
+
+
+def bot_start_diagnostic(root: Path, stage: str, server_log: Path):
+    """Capture original Mineflayer transport's actual failure instead of timing out blind."""
+    folder = root / stage
+    folder.mkdir()
+    env = {**os.environ, "MC_PORT": str(PORT), "BARSOOM_PROBE_ROOT": str(folder)}
+    bot_log = folder / "bot.log"
+    with bot_log.open("w", encoding="utf-8") as stream:
+        proc = subprocess.Popen(
+            ["node", str(PINNED / "tools/probe_mineflayer_barsoom_263.js")],
+            env=env, cwd=PINNED, stdout=stream, stderr=subprocess.STDOUT)
+    try:
+        end = time.monotonic() + 45
+        while time.monotonic() < end:
+            status_file = folder / "bot-status.json"
+            status = json.loads(status_file.read_text()) if status_file.is_file() else {}
+            if (folder / "bot.ready").is_file():
+                require(status.get("minecraft_version") == "26.3" and
+                        status.get("protocol_version") == 777 and
+                        status.get("connected") is True, "BOT_VERSION_PROTOCOL_DRIFT")
+                require(f"{NAME} joined the game" in server_log.read_text(errors="replace"),
+                        "BOT_JOIN_UNPROVEN")
+                return proc, folder
+            if status.get("error") or proc.poll() is not None:
+                raise Refused(
+                    "BOT_START_REJECTED:status=" + json.dumps(status)[-1100:] +
+                    ":node=" + bot_log.read_text(errors="replace")[-1100:] +
+                    ":server=" + server_log.read_text(errors="replace")[-1400:])
+            time.sleep(.25)
+        raise Refused("BOT_START_NO_READY:status=" +
+                      (folder / "bot-status.json").read_text()[-1000:]
+                      if (folder / "bot-status.json").exists() else
+                      "BOT_START_NO_STATUS:node=" + bot_log.read_text(errors="replace")[-900:] +
+                      ":server=" + server_log.read_text(errors="replace")[-1300:])
+    except Exception:
+        if proc.poll() is None:
+            proc.terminate()
+            try: proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5)
+        raise
 
 
 def run(evidence: dict, steps: list[str]) -> dict:
@@ -78,7 +121,7 @@ def run(evidence: dict, steps: list[str]) -> dict:
                    "execute positioned 20 160 0 if entity @e[type=minecraft:marker,tag=barsoom_flora.trap,distance=..2]",
                    "FLORA_PLAYER_TRAP_PRESENT")
             steps.append("jawbloom_garden_and_trap_initialized")
-            bot, folder = bot_start(base, "flora-bot", log)
+            bot, folder = bot_start_diagnostic(base, "flora-bot", log)
             steps.append("real_protocol_777_player_joined")
             send(proc, f"tp {NAME} 0.5 160 0.5")
             send(proc, f"effect clear {NAME} minecraft:poison")
