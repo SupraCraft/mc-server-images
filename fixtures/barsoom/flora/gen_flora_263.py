@@ -26,7 +26,7 @@ def make(spec: dict) -> dict[str, bytes]:
     commands = [
         "# BARSOOM FLORA RDTE. Destructive 28x13x9 fixture: use in a fresh disposable world only.",
         "kill @e[type=minecraft:marker,tag=barsoom_flora.trap,distance=..32]",
-        "fill ~-3 ~-1 ~-6 ~24 ~-1 ~6 minecraft:red_sand replace",
+        "fill ~-3 ~-1 ~-6 ~24 ~-1 ~6 minecraft:red_terracotta replace",
         "fill ~-3 ~ ~-6 ~24 ~7 ~6 minecraft:air replace",
     ]
     expected = []
@@ -73,7 +73,7 @@ def build(output: Path, specification: Path = HERE / "species.json") -> dict:
             z.writestr(info, contents)
     return {"schema": "supracraft.barsoom.flora-build/1", "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
             "members": sorted(files), "minecraft": "26.3", "species": [plant["id"] for plant in spec["species"]],
-            "probes": {s: next(e for e in expected if e["species"] == s) for s in (plant["id"] for plant in spec["species"])},
+            "probes": {s: next(e for e in expected if e["species"] == s and e["position"][1] >= 0) for s in (plant["id"] for plant in spec["species"])},
             "deployment": "opt_in_disposable_only", "vanilla_block_proxies": True}
 
 
