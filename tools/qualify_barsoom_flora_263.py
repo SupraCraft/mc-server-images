@@ -61,8 +61,10 @@ def run(evidence: dict) -> dict:
                 require(not server_error_lines(log) and 'Failed to load data packs' not in content,
                         'FLORA_LOAD_ERROR:' + content[-1600:])
                 steps.append(f'native_boot_{rep+1}_passed')
+                send(proc, 'forceload remove all')
                 send(proc, 'forceload add 0 0')
-                time.sleep(0.8)
+                send(proc, 'forceload add 16 0')  # jawbloom is in the neighboring chunk
+                time.sleep(1.2)
                 if rep == 0:
                     prove(proc, log, 'execute if block 0 160 0 minecraft:air', 'NO_AUTOMATIC_PLANTING')
                     steps.append('no_implicit_world_mutation')
