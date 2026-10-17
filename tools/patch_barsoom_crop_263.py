@@ -28,9 +28,16 @@ def patch(original:Path,dest:Path)->dict:
     assert 'minecraft:wheat' not in source
     source=source.replace('tellraw @a ', 'schedule function barsoom:replant 40t replace\ntellraw @a ',1)
     members[RESTORE]=source
-    members[REPLANT]='# Runs 2 seconds after restoration; existing marker is the durable local anchor.\n'+''.join(
-        line.replace('execute at @e[','execute if score #canal barsoom.state matches 1.. at @e[',1)+'\n' for line in planting
-    )
+    # 26.3 native falsification: /fill wheat returns without durable crop;
+    # individual /setblock wheat survives on exactly the same hydrated farmland.
+    plant_commands=[
+        (f'execute if score #canal barsoom.state matches 1.. '
+         f'at @e[type=minecraft:marker,tag=barsoom.canal_control,limit=1] '
+         f'run setblock ~{x} ~0 ~{z} minecraft:wheat[age=2]')
+        for x in (-6,-5,-4,4,5,6) for z in range(3,20)
+    ]
+    assert len(plant_commands)==102
+    members[REPLANT]='# Scheduled 40t after irrigation; 26.3-qualified individual block-placement family.\n'+('\n'.join(plant_commands))+'\n'
     dest.parent.mkdir(parents=True,exist_ok=True)
     with zipfile.ZipFile(dest,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
         for name,body in sorted(members.items()):

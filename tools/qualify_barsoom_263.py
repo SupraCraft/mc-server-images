@@ -28,7 +28,7 @@ ROOT=Path(__file__).resolve().parents[1]
 BUILDER=ROOT/'fixtures/barsoom/build_barsoom.py'
 BOT=ROOT/'tools/probe_mineflayer_barsoom_263.js'
 EXPECTED='e6ec6e428718ec4916780c41b828d9ef1d345886a786d0e5b48303070d738752'
-CANDIDATE='3a6306c64b9cc5379784c917bd3ab2551e11775a55e5bf6ebe4072f46101a350'
+CANDIDATE='8d6969281937d1fa740e6104c72ef640ca1522c1bbaa877da642b1624e77214c'
 NAME='SupraCraftProbe'
 
 
@@ -144,38 +144,15 @@ def run(evidence:dict,steps:list[str]) -> None:
             steps.append('repair_command_accepted')
             oracle(proc,log,'execute if block 0 84 5 minecraft:water','BARSOOM_RESTORED_WATER')
             steps.append('central_canal_water_verified')
-            # Stop at first crop failure, but independently diagnose mechanism
-            # in this disposable failed fixture only. Do not promote as PASS.
             from probe_core_restoration_datapack_26_3 import wait_for_predicate
-            def crop_present(label:str,timeout=1.2)->bool:
-                try:
-                    wait_for_predicate(proc,log,marker='BARSOOM_CROP_'+label,
-                                       predicate='execute if block 5 85 5 minecraft:wheat',timeout=timeout)
-                    return True
-                except RuntimeError:
-                    return False
-            original_crop_present=crop_present('initial',timeout=3.5)
-            steps.append('crop_after_schedule='+str(original_crop_present))
-            if not original_crop_present:
-                send(proc,'function barsoom:replant')
-                time.sleep(.4)
-                manual_function=crop_present('manual_function')
-                steps.append('crop_after_direct_function='+str(manual_function))
-                if not manual_function:
-                    send(proc,'fill 4 85 3 6 85 19 minecraft:wheat[age=2]')
-                    time.sleep(.4)
-                    manual_fill=crop_present('manual_fill')
-                    steps.append('crop_after_direct_fill='+str(manual_fill))
-                    if not manual_fill:
-                        send(proc,'setblock 5 85 5 minecraft:wheat[age=2]')
-                        time.sleep(.4)
-                        steps.append('crop_after_direct_setblock='+str(crop_present('manual_setblock')))
-                lines=log.read_text(errors='replace').splitlines()
-                errors=[line[-180:] for line in lines if any(k in line.lower() for k in
-                        ('unknown or incomplete command','failed to load function','could not','invalid command','barsoom:replant','error]'))]
-                steps.append('native_errors='+json.dumps(errors[-5:]))
-                raise Refused('BARSOOM_CANDIDATE_CROP_MISSING_AFTER_SCHEDULE')
-            steps.append('field_crops_verified')
+            try:
+                wait_for_predicate(proc,log,marker='BARSOOM_RESTORED_CROP',
+                    predicate='execute if block 5 85 5 minecraft:wheat',timeout=9)
+            except RuntimeError as e:
+                raise Refused('BARSOOM_CROP_STILL_MISSING_AFTER_SINGLE_SETBLOCK') from e
+            oracle(proc,log,'execute if block 4 85 4 minecraft:wheat if block 6 85 10 minecraft:wheat',
+                   'BARSOOM_CROP_DISTRIBUTION')
+            steps.append('multiple_irrigated_fields_planted')
             send(proc,f'execute store result score #rod_probe barsoom.state run clear {NAME} minecraft:lightning_rod 0')
             oracle(proc,log,'execute if score #rod_probe barsoom.state matches 0','BARSOOM_ROD_CONSUMED')
             steps.append('rod_consumed_once')
@@ -218,7 +195,7 @@ def main() -> int:
         error=type(exc).__name__+': '+str(exc)
     receipt={'schema':'supracraft-barsoom-qualifier/v0.1','original_inner_sha256':EXPECTED,'tested_candidate_sha256':CANDIDATE,
              'minecraft_version':'26.3','server_backend':'official_vanilla',
-             'synthetic_client':'offline_mineflayer_26.3','candidate_fix':'delayed_crops_40t','stages':steps,
+             'synthetic_client':'offline_mineflayer_26.3','candidate_fix':'40t_delayed_individual_setblock_wheat','stages':steps,
              'result':'PASS' if error is None else 'FAIL','first_failure':error,
              'stock_client_qualified':False,'human_visual_review':False,
              'worldgen_macrogeography_qualified':False,'physical_truenas_apply':'HOLD'}
