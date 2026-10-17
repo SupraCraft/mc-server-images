@@ -160,6 +160,20 @@ def run(evidence:dict,steps:list[str]) -> None:
                     crop_observations[key]=False
             steps.append('crop_readback:'+json.dumps(crop_observations,sort_keys=True))
             if not crop_observations['wheat_x5y85z5']:
+                # Diagnostic-only mutation on this disposable FAILED candidate:
+                # can a standalone vanilla command plant and retain wheat here?
+                send(proc,'setblock 5 85 5 minecraft:wheat[age=2]')
+                time.sleep(.6)
+                try:
+                    wait_for_predicate(proc,log,marker='BARSOOM_DIAGNOSTIC_REPLANT',
+                                       predicate='execute if block 5 85 5 minecraft:wheat',timeout=1.5)
+                    steps.append('diagnostic_manual_replant=accepted')
+                except RuntimeError:
+                    steps.append('diagnostic_manual_replant=rejected_or_immediately_broken')
+                log_lines=log.read_text(errors='replace').splitlines()
+                related=[line.split('INFO]:')[-1].strip()[:150] for line in log_lines
+                         if any(k in line.lower() for k in ('blocks filled','blocks were filled','failed','unknown command','wheat','farmland','could not'))]
+                steps.append('diagnostic_vanilla_command_messages:'+json.dumps(related[-8:]))
                 raise Refused('BARSOOM_RESTORED_CROP_NOT_PRESENT_READBACK')
             steps.append('field_crops_verified')
             send(proc,f'execute store result score #rod_probe barsoom.state run clear {NAME} minecraft:lightning_rod 0')
