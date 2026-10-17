@@ -16,7 +16,7 @@ PACK = {"pack": {"description": "Barsoom scarlet scatter native 26.3 worldgen RD
                  "min_format": [121, 0], "max_format": [121, 0]}}
 FEATURE = {
     "type": "minecraft:projected_random_patchy_square",
-    "block": {"type": "minecraft:simple", "state": {"Name": "minecraft:dead_bush"}},
+    "block": {"type": "minecraft:simple", "state": {"id": "minecraft:dead_bush"}},
     "project_through": {"type": "minecraft:matching_blocks", "blocks": ["minecraft:air"]},
     "size": 5,
     "max_projection_height": 24
