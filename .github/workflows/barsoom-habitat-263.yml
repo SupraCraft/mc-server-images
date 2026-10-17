@@ -1,0 +1,50 @@
+name: Barsoom 26.3 projected vegetation feature admission
+on:
+  pull_request:
+    paths:
+      - 'fixtures/barsoom/habitat/**'
+      - 'tools/test_barsoom_habitat_263.py'
+      - 'tools/qualify_barsoom_habitat_263.py'
+      - '.github/workflows/barsoom-habitat-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barsoom-habitat-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-feature:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Deterministic static feature build
+        run: |
+          set -euo pipefail
+          python3 -m py_compile fixtures/barsoom/habitat/gen_habitat_263.py tools/qualify_barsoom_habitat_263.py tools/test_barsoom_habitat_263.py
+          python3 -m unittest tools/test_barsoom_habitat_263.py -v
+          mkdir -p "$RUNNER_TEMP/barsoom-habitat"
+          python3 fixtures/barsoom/habitat/gen_habitat_263.py --output "$RUNNER_TEMP/barsoom-habitat/habitat.zip" --manifest "$RUNNER_TEMP/barsoom-habitat/static.json"
+      - name: Actual vanilla 26.3 projected vegetation and block witness
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_barsoom_habitat_263.py --evidence probes/26.3-release-identity.json --out "$RUNNER_TEMP/barsoom-habitat/native.json"
+      - name: Retain compact evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-26-3-habitat-rdte
+          path: |
+            ${{ runner.temp }}/barsoom-habitat/static.json
+            ${{ runner.temp }}/barsoom-habitat/native.json
+          retention-days: 14
+          if-no-files-found: warn
+      - if: always()
+        run: echo 'Prepared-surface feature proof only. Does not establish autonomous biome generation or client art.' >> "$GITHUB_STEP_SUMMARY"
