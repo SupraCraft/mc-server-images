@@ -69,6 +69,25 @@ def run(evidence: dict) -> dict:
                     prove(proc, log, 'execute if block 0 160 0 minecraft:air', 'NO_AUTOMATIC_PLANTING')
                     steps.append('no_implicit_world_mutation')
                     send(proc, 'execute positioned 0 160 0 run function barsoom_flora:demo')
+                if rep == 1:
+                    # Classify restart failure before changing gameplay or weakening predicates.
+                    diagnostics = {
+                        'loaded': 'execute if loaded 0 160 0',
+                        'air': 'execute if block 0 160 0 minecraft:air',
+                        'bush': 'execute if block 0 160 0 minecraft:dead_bush',
+                        'red_sand_base': 'execute if block 0 159 0 minecraft:red_sand',
+                        'log': 'execute if block 5 160 0 minecraft:stripped_mangrove_log',
+                        'jaw_dirt': 'execute if block 20 159 0 minecraft:dirt',
+                        'marker': 'execute positioned 20 160 0 if entity @e[type=minecraft:marker,tag=barsoom_flora.trap,distance=..2]',
+                    }
+                    for key, predicate in diagnostics.items():
+                        send(proc, predicate + ' run say BF_RESTART_' + key.upper())
+                    time.sleep(1.0)
+                    observed = [key for key in diagnostics if 'BF_RESTART_' + key.upper() in log.read_text(errors='replace')]
+                    steps.append('restart_diagnostics=' + ','.join(observed))
+                    if 'bush' not in observed:
+                        raise RuntimeError('RESTART_GARDEN_STATE_MISSING:observed=' + ','.join(observed)
+                                           + ':log=' + log.read_text(errors='replace')[-2200:])
                 for name, probe in flora['probes'].items():
                     x, dy, z = probe['position']
                     prove(proc, log, f'execute if block {x} {160+dy} {z} {probe["state"]}',
