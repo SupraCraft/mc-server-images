@@ -75,7 +75,7 @@ def run(evidence: dict) -> dict:
                         'loaded': 'execute if loaded 0 160 0',
                         'air': 'execute if block 0 160 0 minecraft:air',
                         'bush': 'execute if block 0 160 0 minecraft:dead_bush',
-                        'red_sand_base': 'execute if block 0 159 0 minecraft:red_sand',
+                        'coarse_dirt_base': 'execute if block 0 159 0 minecraft:coarse_dirt',
                         'log': 'execute if block 5 160 0 minecraft:stripped_mangrove_log',
                         'jaw_dirt': 'execute if block 20 159 0 minecraft:dirt',
                         'marker': 'execute positioned 20 160 0 if entity @e[type=minecraft:marker,tag=barsoom_flora.trap,distance=..2]',
