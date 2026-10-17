@@ -24,7 +24,7 @@ class HabitatTests(unittest.TestCase):
                 self.assertEqual(set(z.namelist()), set(first["members"]))
                 f = json.loads(z.read("data/barsoom_habitat/worldgen/feature/scarlet_patch.json"))
                 self.assertEqual(f["type"], "minecraft:projected_random_patchy_square")
-                self.assertEqual(f["block"]["state"]["Name"], "minecraft:dead_bush")
+                self.assertEqual(f["block"]["state"]["id"], "minecraft:dead_bush")
                 self.assertEqual(f["max_projection_height"], 24)
                 self.assertEqual(json.loads(z.read("pack.mcmeta"))["pack"]["min_format"], [121, 0])
 
