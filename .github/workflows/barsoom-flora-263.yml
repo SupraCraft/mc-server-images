@@ -4,6 +4,7 @@ on:
     paths:
       - 'fixtures/barsoom/flora/**'
       - 'tools/qualify_barsoom_flora_263.py'
+      - 'tools/qualify_barsoom_flora_player_263.py'
       - 'tools/test_barsoom_flora_263.py'
       - '.github/workflows/barsoom-flora-263.yml'
   workflow_dispatch:
@@ -13,7 +14,7 @@ jobs:
   native-flora:
     if: github.event.repository.private == false
     runs-on: ubuntu-24.04
-    timeout-minutes: 14
+    timeout-minutes: 26
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -22,17 +23,37 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+      - name: Checkout previously qualified public offline-player oracle (immutable)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: SupraCraft/mc-server-images
+          ref: 0db08cb5051ddcf9128df42f0852d82f2b125864
+          path: .deps/qualified-outpost-source
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
       - name: Static and deterministic build
         run: |
           set -euo pipefail
           python3 -m unittest tools/test_barsoom_flora_263.py -v
-          python3 -m py_compile fixtures/barsoom/flora/gen_flora_263.py tools/qualify_barsoom_flora_263.py
+          python3 -m py_compile fixtures/barsoom/flora/gen_flora_263.py tools/qualify_barsoom_flora_263.py tools/qualify_barsoom_flora_player_263.py
           mkdir -p "$RUNNER_TEMP/barsoom-flora"
           python3 fixtures/barsoom/flora/gen_flora_263.py --output "$RUNNER_TEMP/barsoom-flora/pack.zip" --manifest "$RUNNER_TEMP/barsoom-flora/static.json"
       - name: Official 26.3 world, block predicates and restart
         run: |
           set -euo pipefail
           python3 tools/qualify_barsoom_flora_263.py --evidence probes/26.3-release-identity.json --out "$RUNNER_TEMP/barsoom-flora/native.json"
+      - name: Install already-pinned protocol-777 synthetic player runtime
+        run: |
+          set -euo pipefail
+          test "$(git -C .deps/qualified-outpost-source rev-parse HEAD)" = 0db08cb5051ddcf9128df42f0852d82f2b125864
+          bash tools/install_experimental_prismarine_26_3.sh "$RUNNER_TEMP/prismarine"
+          echo "NODE_PATH=$RUNNER_TEMP/prismarine/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Official 26.3 real-player jawbloom poison in/out/cleanup
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_barsoom_flora_player_263.py --evidence probes/26.3-release-identity.json --out "$RUNNER_TEMP/barsoom-flora/player.json"
       - name: Retain compact evidence only
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -41,6 +62,7 @@ jobs:
           path: |
             ${{ runner.temp }}/barsoom-flora/static.json
             ${{ runner.temp }}/barsoom-flora/native.json
+            ${{ runner.temp }}/barsoom-flora/player.json
           retention-days: 14
           if-no-files-found: warn
       - if: always()
