@@ -105,6 +105,9 @@ def run(evidence: dict, steps: list[str]) -> dict:
                 if observed["installed"]:
                     raise ValueError("FLORA_INJECTION_DUPLICATED")
                 x, y, z = ORIGIN
+                # Cannot run setblock functions in an unloaded distant chunk.
+                send(proc, "forceload add 96 0 128 0")
+                time.sleep(1.0)
                 send(proc, f"execute positioned {x} {y} {z} run function barsoom_flora:demo")
                 observe_species(proc, log, old_oracle, flora, steps, "first")
                 observed["installed"] = True
