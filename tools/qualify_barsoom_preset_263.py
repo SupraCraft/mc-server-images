@@ -21,6 +21,7 @@ from sys import path as syspath
 ROOT=Path(__file__).resolve().parents[1]
 syspath.insert(0,str(ROOT/'fixtures/barsoom/terrain'))
 from gen_dead_sea import build
+from compose_barsoom_263 import compose
 PORT=25599
 
 def status_ready(proc, log, timeout=180):
@@ -38,7 +39,7 @@ def prove(proc, log, predicate, mark, timeout=10):
  try:wait_for_predicate(proc,log,marker=mark,predicate=predicate,timeout=timeout)
  except RuntimeError as exc:raise Refused('PRESET_PREDICATE_'+mark+':'+str(exc)[-900:]) from exc
 
-def execute(evidence, out):
+def execute(evidence, out, outpost_pack=None):
  steps=[]
  require(evidence['artifact_version_json']['id']=='26.3' and evidence['artifact_version_json']['java_version']==25,'VERSION_INVALID')
  with tempfile.TemporaryDirectory(prefix='barsoom-dead-sea-') as tmp:
@@ -46,7 +47,14 @@ def execute(evidence, out):
   jar=home/'server.jar';download_verified_server(evidence,jar)
   require(hashlib.sha256(jar.read_bytes()).hexdigest()==evidence['server_artifact']['sha256'],'OFFICIAL_JAR_MISMATCH')
   world=home/'world';(world/'datapacks').mkdir(parents=True)
-  rec=build(world/'datapacks/barsoom-dead-sea.zip');steps.append('pack_built_and_staged_before_creation')
+  terrain=d/'terrain.zip';build(terrain)
+  if outpost_pack:
+   rec=compose(outpost_pack,terrain,world/'datapacks/barsoom-dead-sea.zip')
+   steps.append('exact_outpost_and_terrain_composed_before_creation')
+  else:
+   shutil.copyfile(terrain,world/'datapacks/barsoom-dead-sea.zip')
+   rec={'sha256':hashlib.sha256(terrain.read_bytes()).hexdigest()}
+   steps.append('pack_built_and_staged_before_creation')
   (home/'eula.txt').write_text('eula=true\n')
   (home/'server.properties').write_text(
    'server-ip=127.0.0.1\nserver-port=25599\nonline-mode=false\n'
@@ -65,6 +73,9 @@ def execute(evidence, out):
     content=log.read_text(errors='replace')
     require(not server_error_lines(log) and 'Failed to load data packs' not in content,'NATIVE_DATAPACK_LOAD_ERROR:'+content[-1600:])
     steps.append('no_server_load_errors')
+    if outpost_pack:
+     prove(proc,log,'execute if score #built barsoom.state matches 0 if score #canal barsoom.state matches 0','COMPOSITE_OUTPOST_FUNCTIONS_LOADED')
+     steps.append('composed_outpost_datapack_initializes_state')
     # Worldgen state is checked from sampled *biome* reads. This will fail
     # if server silently creates default plains/forest/river terrain.
     send(proc,'forceload add 0 0')
@@ -86,9 +97,9 @@ def execute(evidence, out):
           'minecraft':'26.3','protocol':777,'stock_client_qualified':False,'custom_macrogeography_qualified':False,'physical_truenas_apply':'HOLD'}
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--evidence',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+ p=argparse.ArgumentParser();p.add_argument('--evidence',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--outpost-pack',type=Path)
  a=p.parse_args();result={'result':'FAIL'}
- try:result=execute(json.loads(a.evidence.read_text()),a.out)
+ try:result=execute(json.loads(a.evidence.read_text()),a.out,a.outpost_pack)
  except Exception as exc:result.update({'error':type(exc).__name__+': '+str(exc),'classification':'NATIVE_PRESET_UNQUALIFIED','minecraft':'26.3'})
  a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
  print(json.dumps(result,sort_keys=True,indent=2))
