@@ -164,7 +164,15 @@ def run(evidence:dict,steps:list[str]) -> None:
             no_errors(log,'build_repair')
             steps.append('first_server_save_and_stop')
             proc,log=launch(home,jar,evidence,'barsoom-restarted',handles)
-            oracle(proc,log,'execute if score #built barsoom.state matches 1 if score #canal barsoom.state matches 1 if block 0 84 5 minecraft:water if block -20 85 10 minecraft:diamond_block','BARSOOM_RESTART_PERSISTENCE')
+            # Distinguish saved-score regression from absent loaded block-state
+            # on an empty world. Do not count unloaded chunks as vanished blocks.
+            oracle(proc,log,'execute if score #built barsoom.state matches 1 if score #canal barsoom.state matches 1','BARSOOM_RESTART_SCORE_PERSISTENCE')
+            steps.append('restart_score_state_persisted')
+            send(proc,'forceload add -24 -24 24 24')
+            time.sleep(1.5)
+            oracle(proc,log,'execute if block 0 84 5 minecraft:water','BARSOOM_RESTART_CANAL_WATER')
+            steps.append('restart_canal_water_persisted')
+            oracle(proc,log,'execute if block -20 85 10 minecraft:diamond_block','BARSOOM_RESTART_PLAYER_MODIFICATION')
             steps.append('world_and_canal_survive_restart')
             bot,folder=bot_start(root,'second-bot',log)
             send(proc,f'tp {NAME} 0.5 85.0 0.5');time.sleep(.5)
