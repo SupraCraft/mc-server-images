@@ -139,7 +139,28 @@ def run(evidence:dict,steps:list[str]) -> None:
             steps.append('repair_command_accepted')
             oracle(proc,log,'execute if block 0 84 5 minecraft:water','BARSOOM_RESTORED_WATER')
             steps.append('central_canal_water_verified')
-            oracle(proc,log,'execute if block 5 85 5 minecraft:wheat','BARSOOM_RESTORED_CROP')
+            # Independently categorize the original crop failure before considering a fix.
+            from probe_core_restoration_datapack_26_3 import wait_for_predicate
+            probes={
+                'farmland_x5y84z5':'execute if block 5 84 5 minecraft:farmland',
+                'hydrated_x5y84z5':'execute if block 5 84 5 minecraft:farmland[moisture=7]',
+                'wheat_x5y85z5':'execute if block 5 85 5 minecraft:wheat',
+                'air_x5y85z5':'execute if block 5 85 5 minecraft:air',
+                'water_x5y85z5':'execute if block 5 85 5 minecraft:water',
+                'wheat_x4y85z4':'execute if block 4 85 4 minecraft:wheat',
+                'wheat_x6y85z10':'execute if block 6 85 10 minecraft:wheat'
+            }
+            crop_observations={}
+            for key,query in probes.items():
+                try:
+                    wait_for_predicate(proc,log,marker='BARSOOM_CROP_PROBE_'+key,
+                                       predicate=query,timeout=1.3)
+                    crop_observations[key]=True
+                except RuntimeError:
+                    crop_observations[key]=False
+            steps.append('crop_readback:'+json.dumps(crop_observations,sort_keys=True))
+            if not crop_observations['wheat_x5y85z5']:
+                raise Refused('BARSOOM_RESTORED_CROP_NOT_PRESENT_READBACK')
             steps.append('field_crops_verified')
             send(proc,f'execute store result score #rod_probe barsoom.state run clear {NAME} minecraft:lightning_rod 0')
             oracle(proc,log,'execute if score #rod_probe barsoom.state matches 0','BARSOOM_ROD_CONSUMED')
