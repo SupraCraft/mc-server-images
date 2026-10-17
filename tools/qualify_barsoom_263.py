@@ -28,7 +28,7 @@ ROOT=Path(__file__).resolve().parents[1]
 BUILDER=ROOT/'fixtures/barsoom/build_barsoom.py'
 BOT=ROOT/'tools/probe_mineflayer_barsoom_263.js'
 EXPECTED='e6ec6e428718ec4916780c41b828d9ef1d345886a786d0e5b48303070d738752'
-CANDIDATE='8d6969281937d1fa740e6104c72ef640ca1522c1bbaa877da642b1624e77214c'
+CANDIDATE='e3cf6c59121f8a85cf4291780d7549fd3f4ae95af285b8da41e97719e933f4dc'
 NAME='SupraCraftProbe'
 
 
@@ -149,22 +149,8 @@ def run(evidence:dict,steps:list[str]) -> None:
                 wait_for_predicate(proc,log,marker='BARSOOM_RESTORED_CROP',
                     predicate='execute if block 5 85 5 minecraft:wheat',timeout=9)
             except RuntimeError as e:
-                # Preserve first failure; diagnose three different execution contexts.
-                for label,cmd in [
-                    ('direct_function','function barsoom:replant'),
-                    ('conditional_marker','execute if score #canal barsoom.state matches 1.. at @e[type=minecraft:marker,tag=barsoom.canal_control,limit=1] run setblock ~5 ~0 ~5 minecraft:wheat[age=2]'),
-                    ('unconditional_marker','execute at @e[type=minecraft:marker,tag=barsoom.canal_control,limit=1] run setblock ~5 ~0 ~5 minecraft:wheat[age=2]'),
-                    ('absolute_setblock','setblock 5 85 5 minecraft:wheat[age=2]')]:
-                    send(proc,cmd);time.sleep(.35)
-                    try:
-                        wait_for_predicate(proc,log,marker='BARSOOM_DIAG_'+label,
-                            predicate='execute if block 5 85 5 minecraft:wheat',timeout=1.4)
-                        steps.append('crop_diagnostic_'+label+'=true')
-                        break
-                    except RuntimeError:
-                        steps.append('crop_diagnostic_'+label+'=false')
                 raise Refused('BARSOOM_CROP_STILL_MISSING_AFTER_SINGLE_SETBLOCK') from e
-            oracle(proc,log,'execute if block 4 85 4 minecraft:wheat if block 6 85 10 minecraft:wheat',
+            oracle(proc,log,'execute if block 4 85 4 minecraft:wheat if block 6 85 10 minecraft:wheat if block -5 85 5 minecraft:wheat',
                    'BARSOOM_CROP_DISTRIBUTION')
             steps.append('multiple_irrigated_fields_planted')
             send(proc,f'execute store result score #rod_probe barsoom.state run clear {NAME} minecraft:lightning_rod 0')
@@ -209,7 +195,7 @@ def main() -> int:
         error=type(exc).__name__+': '+str(exc)
     receipt={'schema':'supracraft-barsoom-qualifier/v0.1','original_inner_sha256':EXPECTED,'tested_candidate_sha256':CANDIDATE,
              'minecraft_version':'26.3','server_backend':'official_vanilla',
-             'synthetic_client':'offline_mineflayer_26.3','candidate_fix':'40t_delayed_individual_setblock_wheat','stages':steps,
+             'synthetic_client':'offline_mineflayer_26.3','candidate_fix':'four_direct_restoration_setblocks','stages':steps,
              'result':'PASS' if error is None else 'FAIL','first_failure':error,
              'stock_client_qualified':False,'human_visual_review':False,
              'worldgen_macrogeography_qualified':False,'physical_truenas_apply':'HOLD'}
