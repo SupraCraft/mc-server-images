@@ -149,6 +149,20 @@ def run(evidence:dict,steps:list[str]) -> None:
                 wait_for_predicate(proc,log,marker='BARSOOM_RESTORED_CROP',
                     predicate='execute if block 5 85 5 minecraft:wheat',timeout=9)
             except RuntimeError as e:
+                # Preserve first failure; diagnose three different execution contexts.
+                for label,cmd in [
+                    ('direct_function','function barsoom:replant'),
+                    ('conditional_marker','execute if score #canal barsoom.state matches 1.. at @e[type=minecraft:marker,tag=barsoom.canal_control,limit=1] run setblock ~5 ~0 ~5 minecraft:wheat[age=2]'),
+                    ('unconditional_marker','execute at @e[type=minecraft:marker,tag=barsoom.canal_control,limit=1] run setblock ~5 ~0 ~5 minecraft:wheat[age=2]'),
+                    ('absolute_setblock','setblock 5 85 5 minecraft:wheat[age=2]')]:
+                    send(proc,cmd);time.sleep(.35)
+                    try:
+                        wait_for_predicate(proc,log,marker='BARSOOM_DIAG_'+label,
+                            predicate='execute if block 5 85 5 minecraft:wheat',timeout=1.4)
+                        steps.append('crop_diagnostic_'+label+'=true')
+                        break
+                    except RuntimeError:
+                        steps.append('crop_diagnostic_'+label+'=false')
                 raise Refused('BARSOOM_CROP_STILL_MISSING_AFTER_SINGLE_SETBLOCK') from e
             oracle(proc,log,'execute if block 4 85 4 minecraft:wheat if block 6 85 10 minecraft:wheat',
                    'BARSOOM_CROP_DISTRIBUTION')
