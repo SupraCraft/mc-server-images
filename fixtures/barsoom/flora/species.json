@@ -2,39 +2,305 @@
   "schema": "supracraft.barsoom.flora-species/1",
   "minecraft": "26.3",
   "species": [
-    {"id": "red_grass", "class": "groundcover", "habitat": ["minecraft:badlands"], "growth": "static_proxy", "origin": [0, 0], "blocks": [
-      {"at": [0, 0, 0], "state": "minecraft:dead_bush"},
-      {"at": [1, 0, 1], "state": "minecraft:dead_bush"},
-      {"at": [-1, 0, -1], "state": "minecraft:dead_bush"}
-    ]},
-    {"id": "thornwood", "class": "tree", "habitat": ["minecraft:badlands"], "growth": "future_sapling_controller", "origin": [5, 0], "blocks": [
-      {"at": [0, 0, 0], "state": "minecraft:stripped_mangrove_log"},
-      {"at": [0, 1, 0], "state": "minecraft:stripped_mangrove_log"},
-      {"at": [0, 2, 0], "state": "minecraft:stripped_mangrove_log"},
-      {"at": [0, 3, 0], "state": "minecraft:stripped_mangrove_log"},
-      {"at": [1, 3, 0], "state": "minecraft:stripped_mangrove_log[axis=x]"},
-      {"at": [1, 4, 0], "state": "minecraft:cherry_leaves[persistent=true]"},
-      {"at": [0, 4, 0], "state": "minecraft:cherry_leaves[persistent=true]"},
-      {"at": [-1, 3, 0], "state": "minecraft:cherry_leaves[persistent=true]"}
-    ]},
-    {"id": "glowcap", "class": "fungus", "habitat": ["minecraft:badlands"], "growth": "static_proxy", "origin": [10, 0], "blocks": [
-      {"at": [0, -1, 0], "state": "minecraft:crimson_nylium"},
-      {"at": [0, 0, 0], "state": "minecraft:crimson_fungus"},
-      {"at": [1, 0, 0], "state": "minecraft:mushroom_stem"},
-      {"at": [1, 1, 0], "state": "minecraft:mushroom_stem"},
-      {"at": [1, 2, 0], "state": "minecraft:shroomlight"},
-      {"at": [0, 2, 0], "state": "minecraft:red_mushroom_block"},
-      {"at": [2, 2, 0], "state": "minecraft:red_mushroom_block"}
-    ]},
-    {"id": "canal_reed", "class": "cultivated", "habitat": ["minecraft:badlands"], "growth": "vanilla_random_ticks", "origin": [15, 0], "blocks": [
-      {"at": [-1, -1, 0], "state": "minecraft:water"},
-      {"at": [0, 0, 0], "state": "minecraft:sugar_cane"},
-      {"at": [1, -1, 0], "state": "minecraft:farmland[moisture=7]"},
-      {"at": [1, 0, 0], "state": "minecraft:wheat[age=0]"}
-    ]},
-    {"id": "jawbloom", "class": "carnivorous", "habitat": ["minecraft:badlands"], "growth": "static_proxy_plus_periodic_proximity_poison", "origin": [20, 0], "blocks": [
-      {"at": [0, -1, 0], "state": "minecraft:dirt"},
-      {"at": [0, 0, 0], "state": "minecraft:sweet_berry_bush[age=3]"}
-    ], "behavior": {"kind": "proximity_poison", "radius": 2, "period_ticks": 20, "duration_seconds": 2}}
+    {
+      "id": "red_grass",
+      "class": "groundcover",
+      "habitat": [
+        "minecraft:badlands"
+      ],
+      "growth": "static_proxy",
+      "origin": [
+        0,
+        0
+      ],
+      "blocks": [
+        {
+          "at": [
+            0,
+            -1,
+            0
+          ],
+          "state": "minecraft:coarse_dirt"
+        },
+        {
+          "at": [
+            1,
+            -1,
+            1
+          ],
+          "state": "minecraft:coarse_dirt"
+        },
+        {
+          "at": [
+            -1,
+            -1,
+            -1
+          ],
+          "state": "minecraft:coarse_dirt"
+        },
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "state": "minecraft:dead_bush"
+        },
+        {
+          "at": [
+            1,
+            0,
+            1
+          ],
+          "state": "minecraft:dead_bush"
+        },
+        {
+          "at": [
+            -1,
+            0,
+            -1
+          ],
+          "state": "minecraft:dead_bush"
+        }
+      ]
+    },
+    {
+      "id": "thornwood",
+      "class": "tree",
+      "habitat": [
+        "minecraft:badlands"
+      ],
+      "growth": "future_sapling_controller",
+      "origin": [
+        5,
+        0
+      ],
+      "blocks": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "state": "minecraft:stripped_mangrove_log"
+        },
+        {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "state": "minecraft:stripped_mangrove_log"
+        },
+        {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "state": "minecraft:stripped_mangrove_log"
+        },
+        {
+          "at": [
+            0,
+            3,
+            0
+          ],
+          "state": "minecraft:stripped_mangrove_log"
+        },
+        {
+          "at": [
+            1,
+            3,
+            0
+          ],
+          "state": "minecraft:stripped_mangrove_log[axis=x]"
+        },
+        {
+          "at": [
+            1,
+            4,
+            0
+          ],
+          "state": "minecraft:cherry_leaves[persistent=true]"
+        },
+        {
+          "at": [
+            0,
+            4,
+            0
+          ],
+          "state": "minecraft:cherry_leaves[persistent=true]"
+        },
+        {
+          "at": [
+            -1,
+            3,
+            0
+          ],
+          "state": "minecraft:cherry_leaves[persistent=true]"
+        }
+      ]
+    },
+    {
+      "id": "glowcap",
+      "class": "fungus",
+      "habitat": [
+        "minecraft:badlands"
+      ],
+      "growth": "static_proxy",
+      "origin": [
+        10,
+        0
+      ],
+      "blocks": [
+        {
+          "at": [
+            0,
+            -1,
+            0
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "state": "minecraft:crimson_fungus"
+        },
+        {
+          "at": [
+            1,
+            0,
+            0
+          ],
+          "state": "minecraft:mushroom_stem"
+        },
+        {
+          "at": [
+            1,
+            1,
+            0
+          ],
+          "state": "minecraft:mushroom_stem"
+        },
+        {
+          "at": [
+            1,
+            2,
+            0
+          ],
+          "state": "minecraft:shroomlight"
+        },
+        {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "state": "minecraft:red_mushroom_block"
+        },
+        {
+          "at": [
+            2,
+            2,
+            0
+          ],
+          "state": "minecraft:red_mushroom_block"
+        }
+      ]
+    },
+    {
+      "id": "canal_reed",
+      "class": "cultivated",
+      "habitat": [
+        "minecraft:badlands"
+      ],
+      "growth": "vanilla_random_ticks",
+      "origin": [
+        15,
+        0
+      ],
+      "blocks": [
+        {
+          "at": [
+            -1,
+            -1,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "at": [
+            0,
+            -1,
+            0
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "state": "minecraft:sugar_cane"
+        },
+        {
+          "at": [
+            1,
+            -1,
+            0
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "at": [
+            1,
+            0,
+            0
+          ],
+          "state": "minecraft:wheat[age=0]"
+        }
+      ]
+    },
+    {
+      "id": "jawbloom",
+      "class": "carnivorous",
+      "habitat": [
+        "minecraft:badlands"
+      ],
+      "growth": "static_proxy_plus_periodic_proximity_poison",
+      "origin": [
+        20,
+        0
+      ],
+      "blocks": [
+        {
+          "at": [
+            0,
+            -1,
+            0
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "state": "minecraft:sweet_berry_bush[age=3]"
+        }
+      ],
+      "behavior": {
+        "kind": "proximity_poison",
+        "radius": 2,
+        "period_ticks": 20,
+        "duration_seconds": 2
+      }
+    }
   ]
 }
