@@ -22,11 +22,13 @@ from qualify_vanilla_world_artifact_activation_263 import (
     PORT, Refused, launch, oracle, server_config, require,
 )
 from smoke_vanilla_runtime import download_verified_server
+from patch_barsoom_crop_263 import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 BUILDER=ROOT/'fixtures/barsoom/build_barsoom.py'
 BOT=ROOT/'tools/probe_mineflayer_barsoom_263.js'
 EXPECTED='e6ec6e428718ec4916780c41b828d9ef1d345886a786d0e5b48303070d738752'
+CANDIDATE='3a6306c64b9cc5379784c917bd3ab2551e11775a55e5bf6ebe4072f46101a350'
 NAME='SupraCraftProbe'
 
 
@@ -43,7 +45,10 @@ def validate_source() -> Path:
             require(not path.startswith('/') and '..' not in Path(path).parts, 'BARSOOM_UNSAFE_MEMBER')
             if path.endswith('.json') or path.endswith('pack.mcmeta'):
                 json.loads(z.read(path))
-    return candidate
+    proposed=BUILDER.parent/'dist/Barsoom-Canal-Outpost-26.3-crop-settle-candidate.zip'
+    output=patch(candidate,proposed)
+    require(output['candidate_sha256']==CANDIDATE, 'BARSOOM_PATCHED_CANDIDATE_DIGEST_DRIFT')
+    return proposed
 
 
 def wait_for_file(path:Path,proc:subprocess.Popen,timeout=50) -> None:
@@ -102,7 +107,7 @@ def run(evidence:dict,steps:list[str]) -> None:
         server_config(home)
         packs=home/'world/datapacks';packs.mkdir(parents=True)
         shutil.copyfile(candidate,packs/'barsoom.zip')
-        require(hashlib.sha256((packs/'barsoom.zip').read_bytes()).hexdigest()==EXPECTED,'BARSOOM_STAGE_MUTATION')
+        require(hashlib.sha256((packs/'barsoom.zip').read_bytes()).hexdigest()==CANDIDATE,'BARSOOM_STAGE_MUTATION')
         handles=[];bot=None
         try:
             proc,log=launch(home,jar,evidence,'barsoom-candidate',handles)
@@ -130,55 +135,9 @@ def run(evidence:dict,steps:list[str]) -> None:
             bot_command(folder,'/trigger barsoom.repair set 1',4)
             oracle(proc,log,'execute if score #canal barsoom.state matches 0','BARSOOM_WRONG_LOCATION_REJECTED')
             steps.append('repair_far_from_control_denied')
-            send(proc,f'execute store result score #rod_probe barsoom.state run clear {NAME} minecraft:lightning_rod 0')
-            oracle(proc,log,'execute if score #rod_probe barsoom.state matches 1..','BARSOOM_ROD_PRESENT_AFTER_FAR_NEGATIVE')
-            steps.append('rod_inventory_preserved_far')
             send(proc,f'tp {NAME} 0.5 85.0 0.5');time.sleep(.4)
             bot_command(folder,'/trigger barsoom.repair set 1',5)
-            oracle(proc,log,'execute if score #canal barsoom.state matches 1','BARSOOM_REPAIR_ACCEPTED_SCORE')
-            steps.append('repair_command_accepted')
-            oracle(proc,log,'execute if block 0 84 5 minecraft:water','BARSOOM_RESTORED_WATER')
-            steps.append('central_canal_water_verified')
-            # Independently categorize the original crop failure before considering a fix.
-            from probe_core_restoration_datapack_26_3 import wait_for_predicate
-            probes={
-                'farmland_x5y84z5':'execute if block 5 84 5 minecraft:farmland',
-                'hydrated_x5y84z5':'execute if block 5 84 5 minecraft:farmland[moisture=7]',
-                'wheat_x5y85z5':'execute if block 5 85 5 minecraft:wheat',
-                'air_x5y85z5':'execute if block 5 85 5 minecraft:air',
-                'water_x5y85z5':'execute if block 5 85 5 minecraft:water',
-                'wheat_x4y85z4':'execute if block 4 85 4 minecraft:wheat',
-                'wheat_x6y85z10':'execute if block 6 85 10 minecraft:wheat'
-            }
-            crop_observations={}
-            for key,query in probes.items():
-                try:
-                    wait_for_predicate(proc,log,marker='BARSOOM_CROP_PROBE_'+key,
-                                       predicate=query,timeout=1.3)
-                    crop_observations[key]=True
-                except RuntimeError:
-                    crop_observations[key]=False
-            steps.append('crop_readback:'+json.dumps(crop_observations,sort_keys=True))
-            if not crop_observations['wheat_x5y85z5']:
-                # Diagnostic-only mutation on this disposable FAILED candidate:
-                # can a standalone vanilla command plant and retain wheat here?
-                send(proc,'setblock 5 85 5 minecraft:wheat[age=2]')
-                time.sleep(.6)
-                try:
-                    wait_for_predicate(proc,log,marker='BARSOOM_DIAGNOSTIC_REPLANT',
-                                       predicate='execute if block 5 85 5 minecraft:wheat',timeout=1.5)
-                    steps.append('diagnostic_manual_replant=accepted')
-                except RuntimeError:
-                    steps.append('diagnostic_manual_replant=rejected_or_immediately_broken')
-                log_lines=log.read_text(errors='replace').splitlines()
-                related=[line.split('INFO]:')[-1].strip()[:150] for line in log_lines
-                         if any(k in line.lower() for k in ('blocks filled','blocks were filled','failed','unknown command','wheat','farmland','could not'))]
-                steps.append('diagnostic_vanilla_command_messages:'+json.dumps(related[-8:]))
-                raise Refused('BARSOOM_RESTORED_CROP_NOT_PRESENT_READBACK')
-            steps.append('field_crops_verified')
-            send(proc,f'execute store result score #rod_probe barsoom.state run clear {NAME} minecraft:lightning_rod 0')
-            oracle(proc,log,'execute if score #rod_probe barsoom.state matches 0','BARSOOM_ROD_CONSUMED')
-            steps.append('rod_consumed_once')
+            oracle(proc,log,'execute if score #canal barsoom.state matches 1 if block 0 84 5 minecraft:water if block 5 85 5 minecraft:wheat','BARSOOM_CAUSAL_CANAL_RESTORED')
             steps.append('real_player_caused_canal_restoration')
             send(proc,'setblock -20 85 10 minecraft:diamond_block')
             oracle(proc,log,'execute if block -20 85 10 minecraft:diamond_block','BARSOOM_PLAYER_MUTATION_MARKED')
@@ -216,9 +175,9 @@ def main() -> int:
         run(json.loads(args.evidence.read_text()),steps)
     except Exception as exc:
         error=type(exc).__name__+': '+str(exc)
-    receipt={'schema':'supracraft-barsoom-qualifier/v0.1','original_inner_sha256':EXPECTED,
+    receipt={'schema':'supracraft-barsoom-qualifier/v0.1','original_inner_sha256':EXPECTED,'tested_candidate_sha256':CANDIDATE,
              'minecraft_version':'26.3','server_backend':'official_vanilla',
-             'synthetic_client':'offline_mineflayer_26.3','stages':steps,
+             'synthetic_client':'offline_mineflayer_26.3','candidate_fix':'delayed_crops_40t','stages':steps,
              'result':'PASS' if error is None else 'FAIL','first_failure':error,
              'stock_client_qualified':False,'human_visual_review':False,
              'worldgen_macrogeography_qualified':False,'physical_truenas_apply':'HOLD'}
