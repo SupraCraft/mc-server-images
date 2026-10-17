@@ -63,7 +63,16 @@ def run(evidence: dict, steps: list[str]) -> dict:
                                     cwd=home, stdin=subprocess.PIPE, stdout=stream,
                                     stderr=subprocess.STDOUT, text=True)
             try:
-                status_ready(proc, log)
+                try:
+                    status_ready(proc, log)
+                except Exception as exc:
+                    lines = log.read_text(errors="replace").splitlines()
+                    relevant = [line for line in lines if any(
+                        token in line.lower() for token in (
+                            "error", "registry", "unknown", "failed", "unbound",
+                            "parse", "decode", "scarlet", "habitat"))]
+                    raise RuntimeError("NATIVE_REGISTRY_DIAGNOSTIC:" +
+                                       " | ".join(relevant)[-9000:]) from exc
                 require(not server_error_lines(log), "NATIVE_PACK_LOAD_ERROR")
                 require("Failed to load data packs" not in log.read_text(errors="replace"),
                         "NATIVE_REGISTRY_PARSE_REJECTED")
