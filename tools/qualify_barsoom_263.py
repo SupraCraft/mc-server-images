@@ -144,7 +144,37 @@ def run(evidence:dict,steps:list[str]) -> None:
             steps.append('repair_command_accepted')
             oracle(proc,log,'execute if block 0 84 5 minecraft:water','BARSOOM_RESTORED_WATER')
             steps.append('central_canal_water_verified')
-            oracle(proc,log,'execute if block 5 85 5 minecraft:wheat','BARSOOM_RESTORED_CROP')
+            # Stop at first crop failure, but independently diagnose mechanism
+            # in this disposable failed fixture only. Do not promote as PASS.
+            from probe_core_restoration_datapack_26_3 import wait_for_predicate
+            def crop_present(label:str,timeout=1.2)->bool:
+                try:
+                    wait_for_predicate(proc,log,marker='BARSOOM_CROP_'+label,
+                                       predicate='execute if block 5 85 5 minecraft:wheat',timeout=timeout)
+                    return True
+                except RuntimeError:
+                    return False
+            original_crop_present=crop_present('initial',timeout=3.5)
+            steps.append('crop_after_schedule='+str(original_crop_present))
+            if not original_crop_present:
+                send(proc,'function barsoom:replant')
+                time.sleep(.4)
+                manual_function=crop_present('manual_function')
+                steps.append('crop_after_direct_function='+str(manual_function))
+                if not manual_function:
+                    send(proc,'fill 4 85 3 6 85 19 minecraft:wheat[age=2]')
+                    time.sleep(.4)
+                    manual_fill=crop_present('manual_fill')
+                    steps.append('crop_after_direct_fill='+str(manual_fill))
+                    if not manual_fill:
+                        send(proc,'setblock 5 85 5 minecraft:wheat[age=2]')
+                        time.sleep(.4)
+                        steps.append('crop_after_direct_setblock='+str(crop_present('manual_setblock')))
+                lines=log.read_text(errors='replace').splitlines()
+                errors=[line[-180:] for line in lines if any(k in line.lower() for k in
+                        ('unknown or incomplete command','failed to load function','could not','invalid command','barsoom:replant','error]'))]
+                steps.append('native_errors='+json.dumps(errors[-5:]))
+                raise Refused('BARSOOM_CANDIDATE_CROP_MISSING_AFTER_SCHEDULE')
             steps.append('field_crops_verified')
             send(proc,f'execute store result score #rod_probe barsoom.state run clear {NAME} minecraft:lightning_rod 0')
             oracle(proc,log,'execute if score #rod_probe barsoom.state matches 0','BARSOOM_ROD_CONSUMED')
