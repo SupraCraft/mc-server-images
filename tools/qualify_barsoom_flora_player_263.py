@@ -100,6 +100,7 @@ def run(evidence: dict, steps: list[str]) -> dict:
         (home / "eula.txt").write_text("eula=true\n", encoding="utf-8")
         (home / "server.properties").write_text(
             "server-ip=127.0.0.1\nserver-port=25593\nonline-mode=false\n"
+            "white-list=false\nenforce-whitelist=false\n"
             "level-name=world\nlevel-type=barsoom:dead_sea\n"
             "initial-enabled-packs=vanilla,file/terrain.zip,file/flora.zip\n"
             "view-distance=3\nsimulation-distance=2\nmax-players=2\n"
