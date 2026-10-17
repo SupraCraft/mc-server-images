@@ -1,0 +1,48 @@
+name: Barsoom Java 26.3 Dead Sea world preset native canary
+on:
+  pull_request:
+    paths:
+      - 'fixtures/barsoom/terrain/**'
+      - 'tools/qualify_barsoom_preset_263.py'
+      - '.github/workflows/barsoom-dead-sea-worldgen-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barsoom-preset-native-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  fixed-badlands-province:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Static canary admission
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/qualify_barsoom_preset_263.py fixtures/barsoom/terrain/gen_dead_sea.py
+          mkdir -p "$RUNNER_TEMP/barsoom"
+          python3 fixtures/barsoom/terrain/gen_dead_sea.py --output "$RUNNER_TEMP/barsoom/dead-sea.zip"
+      - name: Official 26.3 server, actual world-preset generation
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_barsoom_preset_263.py \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/barsoom/receipt.json"
+      - name: Retain bounded receipt; no world or copyrighted binary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-dead-sea-worldgen-263
+          path: ${{ runner.temp }}/barsoom/receipt.json
+          retention-days: 14
+          if-no-files-found: warn
+      - if: always()
+        run: echo 'World preset proof only. Not full Barsoom macrogeography, balanced survival, client visuals or production deployment.' >> "$GITHUB_STEP_SUMMARY"
