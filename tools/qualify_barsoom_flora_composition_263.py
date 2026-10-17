@@ -47,9 +47,6 @@ def configure(home: Path, flora_zip: Path) -> None:
         "level-seed=4242424242\nsync-chunk-writes=true\n"
         "motd=Barsoom three-producer vanilla RDTE\n"
     )
-    folder = home / "world/datapacks"
-    folder.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(flora_zip, folder / "flora.zip")
 
 
 def observe_species(proc, log, original_oracle, flora, steps: list[str], phase: str):
@@ -97,6 +94,7 @@ def run(evidence: dict, steps: list[str]) -> dict:
         old_candidate = qualified.CANDIDATE
         old_config = qualified.server_config
         old_oracle = qualified.oracle
+        old_launch = qualified.launch
         observed = {"installed": False, "restart": False}
 
         def instrumented_oracle(proc, log, predicate, marker):
@@ -118,10 +116,29 @@ def run(evidence: dict, steps: list[str]) -> dict:
                 observed["restart"] = True
                 steps.append("quest_canal_and_flora_persisted_after_restart")
 
+        def instrumented_launch(home, jar, evidence, step, handles):
+            # The original qualified.run owns creation of world/datapacks.
+            # Only stage after that mkdir and base pack copy but before boot.
+            if step == "barsoom-candidate":
+                packs = home / "world/datapacks"
+                if not (packs / "barsoom.zip").is_file():
+                    raise ValueError("OUTPOST_NOT_STAGED_BEFORE_FLORA")
+                if (packs / "flora.zip").exists():
+                    raise ValueError("FLORA_ALREADY_STAGED")
+                shutil.copyfile(flora_file, packs / "flora.zip")
+                steps.append("independent_flora_staged_before_first_boot")
+            elif step == "barsoom-restarted":
+                if not (home / "world/datapacks/flora.zip").is_file():
+                    raise ValueError("FLORA_NOT_PERSISTENT_FOR_RESTART")
+            else:
+                raise ValueError("UNEXPECTED_SERVER_LIFECYCLE:" + step)
+            return old_launch(home, jar, evidence, step, handles)
+
         try:
             qualified.validate_source = lambda: base_file
             qualified.CANDIDATE = composed["sha256"]
             qualified.server_config = lambda home: configure(home, flora_file)
+            qualified.launch = instrumented_launch
             qualified.oracle = instrumented_oracle
             qualified.run(evidence, steps)
             if not all(observed.values()):
@@ -131,6 +148,7 @@ def run(evidence: dict, steps: list[str]) -> dict:
             qualified.CANDIDATE = old_candidate
             qualified.server_config = old_config
             qualified.oracle = old_oracle
+            qualified.launch = old_launch
         return {"base_sha256": composed["sha256"], "flora_sha256": flora["sha256"],
                 "minecraft": "26.3", "gameplay": "original_full_player_quest",
                 "composition": "two_distinct_packs_in_one_world",
