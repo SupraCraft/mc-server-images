@@ -1,0 +1,63 @@
+name: Barsoom 26.3 three-producer composition canary
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_barsoom_flora_composition_263.py'
+      - '.github/workflows/barsoom-flora-composition-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barsoom-flora-composition-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  composite-world:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Checkout immutable original accepted outpost source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: SupraCraft/mc-server-images
+          ref: 0db08cb5051ddcf9128df42f0852d82f2b125864
+          path: .deps/qualified-outpost-source
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Static provenance and contract
+        run: |
+          set -euo pipefail
+          test "$(git -C .deps/qualified-outpost-source rev-parse HEAD)" = 0db08cb5051ddcf9128df42f0852d82f2b125864
+          python3 -m py_compile tools/qualify_barsoom_flora_composition_263.py fixtures/barsoom/flora/gen_flora_263.py fixtures/barsoom/terrain/gen_dead_sea.py tools/compose_barsoom_263.py
+          python3 -m unittest tools/test_barsoom_flora_263.py -v
+          mkdir -p "$RUNNER_TEMP/barsoom-three-way"
+      - name: Restore already-qualified experimental protocol 777 synthetic client
+        run: |
+          set -euo pipefail
+          bash tools/install_experimental_prismarine_26_3.sh "$RUNNER_TEMP/prismarine"
+          echo "NODE_PATH=$RUNNER_TEMP/prismarine/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Native official 26.3 outpost quest + terrain + flora in same world
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_barsoom_flora_composition_263.py \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/barsoom-three-way/receipt.json"
+      - name: Preserve public-safe minimal receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-flora-three-producer-263
+          path: ${{ runner.temp }}/barsoom-three-way/receipt.json
+          retention-days: 14
+          if-no-files-found: warn
+      - if: always()
+        run: echo 'Disposable exact-26.3 world. This does not qualify multi-province worldgen, human visuals or physical TrueNAS deployment.' >> "$GITHUB_STEP_SUMMARY"
