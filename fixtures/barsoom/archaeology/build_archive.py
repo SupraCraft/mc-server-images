@@ -32,7 +32,8 @@ execute positioned ~ ~ ~ align xyz run function barsoom_arch:build
 scoreboard players set #built barsoom_arch.state 1
 tellraw @a {"text":"Ancient harbor remains revealed. Descend the ladder to the buried archive and recover the sea seal.","color":"gold"}''')
 func('build', '''# Destructive bounded prototype: 25x34 columns and y -11..+5 about command position.
-# Ground-level quay, stranded mooring posts and abandoned surviving cistern.
+# Ground-level quay: clear residual vanilla terrain so route does not depend on spawn seed.
+fill ~-12 ~0 ~-9 ~12 ~5 ~24 minecraft:air replace
 fill ~-12 ~-2 ~-9 ~12 ~-2 ~24 minecraft:terracotta replace
 fill ~-9 ~-1 ~-8 ~9 ~-1 ~8 minecraft:cut_sandstone replace
 fill ~-9 ~0 ~-8 ~-9 ~3 ~8 minecraft:cracked_stone_bricks replace
