@@ -45,7 +45,8 @@ def run(evidence, steps, result):
         (home/'eula.txt').write_text('eula=true\n')
         (home/'server.properties').write_text(
             'server-ip=127.0.0.1\nserver-port=25597\nonline-mode=false\nwhite-list=false\nenforce-whitelist=false\n'
-            'level-name=world\nlevel-seed=4242424242\nlevel-type=minecraft:normal\n'
+            'level-name=world\nlevel-seed=4242424242\nlevel-type=minecraft:flat\n'
+            'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:stone","height":65},{"block":"minecraft:grass_block","height":1}]}\n'
             'initial-enabled-packs=vanilla,file/barsoom-arch.zip\n'
             'view-distance=4\nsimulation-distance=3\nspawn-protection=0\n'
             'generate-structures=false\nsync-chunk-writes=true\n'
@@ -63,11 +64,11 @@ def run(evidence, steps, result):
             # MCWORLD build-time materialization: no player spawns *inside* a
             # destructively generated well. The player later explores on foot.
             send(proc,'forceload add -16 -16 24 32')
-            send(proc,'execute positioned 0 85 0 run function barsoom_arch:establish')
-            oracle(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0 if block 4 75 17 minecraft:chest','ARCH_PREBUILT_SITE')
-            send(proc,'setworldspawn 3 85 1')
+            send(proc,'execute positioned 0 3 0 run function barsoom_arch:establish')
+            oracle(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0 if block 4 -7 17 minecraft:chest','ARCH_PREBUILT_SITE')
+            send(proc,'setworldspawn 3 3 1')
             send(proc,'gamerule minecraft:spawn_radius 0')
-            steps.append('world_materialized_at_fixed_coordinates_before_player_join')
+            steps.append('flat_control_world_materialized_before_player_join')
             bstream=bout.open('w',encoding='utf-8')
             env={**os.environ,'MC_PORT':str(PORT),'BARSOOM_ARCH_BOT_RESULT':str(out),'BARSOOM_ARCH_PREBUILT':'1'}
             bot=subprocess.Popen(['node',str(BOT_SCRIPT)],cwd=ROOT,env=env,stdout=bstream,stderr=subprocess.STDOUT,text=True)

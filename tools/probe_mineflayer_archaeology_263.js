@@ -86,11 +86,11 @@ bot.once('spawn', async ()=>{
     await idle(16)
     const p=bot.entity.position.clone()
     const prebuilt=process.env.BARSOOM_ARCH_PREBUILT==='1'
-    const base=prebuilt?{x:0,y:85,z:0}:{x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
+    const base=prebuilt?{x:0,y:3,z:0}:{x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
     rec.base=base;snap('initial_spawn')
     if (prebuilt) {
       const spawnDistance=Math.hypot(p.x-3.5,p.z-1.5)
-      if (spawnDistance>4 || Math.abs(p.y-85)>3) {
+      if (spawnDistance>4 || Math.abs(p.y-3)>3) {
         throw new Error('natural worldspawn deviated from admitted arrival: '+p)
       }
       rec.stages.push('entered_pre_materialized_world_at_real_spawn')
