@@ -120,7 +120,8 @@ def run(evidence: dict, steps: list[str], seed: int) -> dict:
             "initial-enabled-packs=vanilla,file/terrain.zip,file/habitat.zip\n"
             "view-distance=3\nsimulation-distance=2\nspawn-protection=0\nmax-players=1\n"
             "generate-structures=false\nsync-chunk-writes=true\n"
-            "enable-rcon=false\nenable-query=false\n"\n            f"level-seed={seed}\n"
+            "enable-rcon=false\nenable-query=false\n"
+            f"level-seed={seed}\n"
             "motd=Barsoom natural Badlands habitat proof\n")
         log = home / "native.log"
         records = []
