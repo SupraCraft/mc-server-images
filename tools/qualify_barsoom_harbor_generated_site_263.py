@@ -84,6 +84,7 @@ def select_site(proc, log, spec, rejected):
     c = spec['constraints']
     for x, z in spec['candidates']:
         heights = []
+        admitted = False
         try:
             send(proc, f'forceload add {x-16} {z-16} {x+80} {z+32}')
             oracle(proc, log, f'execute if biome {x} 64 {z} minecraft:badlands',
@@ -99,12 +100,16 @@ def select_site(proc, log, spec, rejected):
                 else:
                     require(abs(y - heights[0]) <= c['absolute_max_height_delta'],
                             'SITE_SURFACE_GRADE_EXCEEDS_BOUND')
+            admitted = True
             return {'x':x, 'y':heights[0], 'z':z, 'native_heights':heights,
                     'biome':'minecraft:badlands', 'placement_backend':'vanilla_26.3_build_time'}
         except Exception as exc:
             rejected.append({'candidate':[x,z], 'observed_heights':heights,
                              'rejection':type(exc).__name__+': '+str(exc)[:380]})
-    raise Refused('NO_GENERATED_SITE_SATISFIES_FROZEN_CONSTRAINTS')
+        finally:
+            if not admitted:
+                send(proc, f'forceload remove {x-16} {z-16} {x+80} {z+32}')
+    raise Refused('NO_GENERATED_SITE_SATISFIES_FROZEN_CONSTRAINTS:'+json.dumps(rejected)[-10000:])
 
 def run_one(seed: int, spec: dict) -> dict:
     evidence=json.loads((ROOT/'probes/26.3-release-identity.json').read_text())
