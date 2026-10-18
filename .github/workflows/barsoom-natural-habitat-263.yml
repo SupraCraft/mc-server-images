@@ -35,9 +35,12 @@ jobs:
       - name: Native surface survey and unprepared wild vegetation witness
         run: |
           set -euo pipefail
-          python3 tools/qualify_barsoom_natural_habitat_263.py \
-            --evidence probes/26.3-release-identity.json \
-            --out "$RUNNER_TEMP/barsoom-natural-habitat/native.json"
+          for seed in 1811001 4242424242; do
+            python3 tools/qualify_barsoom_natural_habitat_263.py \
+              --evidence probes/26.3-release-identity.json \
+              --seed "$seed" \
+              --out "$RUNNER_TEMP/barsoom-natural-habitat/native-$seed.json"
+          done
       - name: Persist bounded immutable evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -45,7 +48,8 @@ jobs:
           name: barsoom-natural-habitat-263
           path: |
             ${{ runner.temp }}/barsoom-natural-habitat/static.json
-            ${{ runner.temp }}/barsoom-natural-habitat/native.json
+            ${{ runner.temp }}/barsoom-natural-habitat/native-1811001.json
+            ${{ runner.temp }}/barsoom-natural-habitat/native-4242424242.json
           retention-days: 14
           if-no-files-found: warn
       - if: always()
