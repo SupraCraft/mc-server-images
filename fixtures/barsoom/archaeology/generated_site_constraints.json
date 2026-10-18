@@ -1,0 +1,150 @@
+{
+  "schema": "supracraft.mcworld.barsoom-harbor-site/0.1",
+  "release": "Minecraft Java 26.3",
+  "name": "unnamed buried harbor (noncanonical research candidate)",
+  "realization": "exact-version generated terrain followed by bounded vanilla server build-time functions",
+  "terrain_preset": "barsoom:dead_sea",
+  "biome": "minecraft:badlands",
+  "origin": "site anchor at world surface determined by native heightmap, not a fixed elevation",
+  "constraints": {
+    "anchor_height_min": 75,
+    "anchor_height_max": 180,
+    "surface_heightmap": "motion_blocking_no_leaves",
+    "absolute_max_height_delta": 5,
+    "samples": [
+      [
+        0,
+        0
+      ],
+      [
+        -12,
+        -9
+      ],
+      [
+        12,
+        -9
+      ],
+      [
+        -12,
+        24
+      ],
+      [
+        12,
+        24
+      ],
+      [
+        32,
+        1
+      ],
+      [
+        64,
+        0
+      ]
+    ],
+    "buried_floor_offset": -11,
+    "max_build_footprint_relative": [
+      [
+        -12,
+        -11,
+        -9
+      ],
+      [
+        80,
+        5,
+        24
+      ]
+    ],
+    "exact_version": [
+      "26.3",
+      25,
+      777
+    ],
+    "require_biome_at_anchor_and_approach": true,
+    "physical_quest_begins_after_generated_site_gate": true
+  },
+  "seeds": [
+    1811001,
+    4242424242
+  ],
+  "candidates": [
+    [
+      128,
+      128
+    ],
+    [
+      256,
+      128
+    ],
+    [
+      128,
+      256
+    ],
+    [
+      -128,
+      -128
+    ],
+    [
+      -256,
+      128
+    ],
+    [
+      128,
+      -256
+    ],
+    [
+      256,
+      256
+    ],
+    [
+      -256,
+      -256
+    ],
+    [
+      384,
+      128
+    ],
+    [
+      128,
+      384
+    ],
+    [
+      -384,
+      128
+    ],
+    [
+      384,
+      -384
+    ],
+    [
+      -384,
+      -384
+    ],
+    [
+      512,
+      512
+    ],
+    [
+      -512,
+      512
+    ],
+    [
+      512,
+      -512
+    ]
+  ],
+  "semantics": {
+    "canonical_named_place": false,
+    "real_paleoshoreline_attested": false,
+    "source_of_worldgen": "official Mojang vanilla 26.3 plus unchanged namespaced Dead Sea preset",
+    "same_world_physical_player_qualified": false,
+    "human_stock_client_qualified": false,
+    "production_deployment": "HOLD"
+  },
+  "policies": [
+    "no private-hosted Actions",
+    "public-free disposable official server only",
+    "record first failure and all rejected candidates",
+    "do not merge or deploy without independent review",
+    "no existing-world writes"
+  ]
+}
