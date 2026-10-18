@@ -94,15 +94,19 @@ def run(evidence, steps, result):
             bstream=bout.open('w',encoding='utf-8')
             neg_ready=root/'unmarked-attempt-awaits-native-oracle'
             neg_ack=root/'unmarked-native-verified'
+            pre_ready=root/'marked-acquired-awaits-native-oracle'
+            pre_ack=root/'marked-acquired-native-verified'
             pos_ready=root/'marked-attempt-awaits-native-oracle'
             pos_ack=root/'marked-native-verified'
             env={**os.environ,'MC_PORT':str(PORT),'BARSOOM_ARCH_BOT_RESULT':str(out),
                  'BARSOOM_ARCH_PREBUILT':'1',
                  'BARSOOM_ARCH_NEG_READY':str(neg_ready),'BARSOOM_ARCH_NEG_ACK':str(neg_ack),
+                 'BARSOOM_ARCH_PRE_READY':str(pre_ready),'BARSOOM_ARCH_PRE_ACK':str(pre_ack),
                  'BARSOOM_ARCH_POS_READY':str(pos_ready),'BARSOOM_ARCH_POS_ACK':str(pos_ack)}
             bot=subprocess.Popen(['node',str(BOT_SCRIPT)],cwd=ROOT,env=env,stdout=bstream,stderr=subprocess.STDOUT,text=True)
             deadline=time.monotonic()+332
             negative_verified=False
+            pre_verified=False
             positive_verified=False
             while bot.poll() is None and time.monotonic()<deadline:
                 if neg_ready.exists() and not negative_verified:
@@ -120,10 +124,25 @@ def run(evidence, steps, result):
                     negative_verified=True
                     steps.append('independent_live_player_unmarked_rejection_dry_well_item_retained')
                     neg_ack.write_text('verified\n',encoding='utf-8')
-                if pos_ready.exists() and negative_verified and not positive_verified:
+                if pre_ready.exists() and negative_verified and not pre_verified:
+                    oracle(proc,log,f'execute if entity @a[name={BOT_NAME}]','ARCH_PRE_PLAYER_ONLINE')
+                    # /clear <player> <predicate> 0 counts without removing items.
+                    # Verify BOTH items in the genuine server inventory BEFORE
+                    # the player submits the second, positive restore trigger.
+                    send(proc,f'execute store result score #hearts barsoom_arch.state run clear {BOT_NAME} minecraft:heart_of_the_sea 0')
+                    oracle(proc,log,'execute if score #hearts barsoom_arch.state matches 2','ARCH_PRE_EXACT_TWO_SEALS')
+                    send(proc,f'execute store result score #marked_hearts barsoom_arch.state run clear {BOT_NAME} minecraft:heart_of_the_sea[minecraft:custom_data~{{barsoom_arch:{{harbor_seal:1b}}}}] 0')
+                    oracle(proc,log,'execute if score #marked_hearts barsoom_arch.state matches 1','ARCH_PRE_EXACT_ONE_MARKED')
+                    oracle(proc,log,'execute unless items block 4 73 17 container.0 minecraft:heart_of_the_sea','ARCH_PRE_CANONICAL_CHEST_WITHDRAWN')
+                    pre_verified=True
+                    steps.append('native_pre_positive_two_seals_one_marked')
+                    pre_ack.write_text('verified\n',encoding='utf-8')
+                if pos_ready.exists() and pre_verified and not positive_verified:
                     oracle(proc,log,f'execute if entity @a[name={BOT_NAME}]','ARCH_POS_PLAYER_ONLINE')
                     oracle(proc,log,'execute if score #well barsoom_arch.state matches 1 if block 0 82 0 minecraft:water',
                         'ARCH_POS_RESTORED_WELL_AND_SCORE')
+                    send(proc,f'execute store result score #hearts barsoom_arch.state run clear {BOT_NAME} minecraft:heart_of_the_sea 0')
+                    oracle(proc,log,'execute if score #hearts barsoom_arch.state matches 1','ARCH_POS_EXACT_ONE_SEAL_REMAINS')
                     oracle(proc,log,f'execute if items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea',
                         'ARCH_POS_UNMARKED_ITEM_RETAINED')
                     oracle(proc,log,f'execute unless items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea[minecraft:custom_data~{{barsoom_arch:{{harbor_seal:1b}}}}]',
@@ -138,7 +157,7 @@ def run(evidence, steps, result):
                 bot.terminate();bot.wait(timeout=5)
                 raise Refused('ARCH_PHYSICAL_PLAYER_TIMEOUT')
             require(out.exists(),'ARCH_PHYSICAL_BOT_NO_RECEIPT:'+bout.read_text(errors='replace')[-1000:])
-            require(negative_verified and positive_verified,'ARCH_PHYSICAL_NEGATIVE_OR_POSITIVE_LIVE_GATE_NOT_COMPLETED')
+            require(negative_verified and pre_verified and positive_verified,'ARCH_PHYSICAL_NEGATIVE_PRE_OR_POSITIVE_LIVE_GATE_NOT_COMPLETED')
             player=json.loads(out.read_text());result['player_receipt']=player
             steps.extend(player.get('stages',[]))
             require(bot.returncode==0 and not player.get('error'),'ARCH_PHYSICAL_PLAYER_FAILED:'+str(player.get('error'))[:900])
