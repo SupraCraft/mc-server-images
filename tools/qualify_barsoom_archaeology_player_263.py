@@ -60,8 +60,16 @@ def run(evidence, steps, result):
             require(not server_error_lines(log) and 'Failed to load function' not in log.read_text(errors='replace'),'ARCH_PHYSICAL_PACK_LOAD_ERRORS')
             oracle(proc,log,'execute if score #built barsoom_arch.state matches 0 if score #well barsoom_arch.state matches 0','ARCH_PHYSICAL_ZERO_STATE')
             steps.append('archaeology_scoreboard_loaded')
+            # MCWORLD build-time materialization: no player spawns *inside* a
+            # destructively generated well. The player later explores on foot.
+            send(proc,'forceload add -16 -16 24 32')
+            send(proc,'execute positioned 0 85 0 run function barsoom_arch:establish')
+            oracle(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0 if block 4 75 17 minecraft:chest','ARCH_PREBUILT_SITE')
+            send(proc,'setworldspawn 3 85 1')
+            send(proc,'gamerule minecraft:spawn_radius 0')
+            steps.append('world_materialized_at_fixed_coordinates_before_player_join')
             bstream=bout.open('w',encoding='utf-8')
-            env={**os.environ,'MC_PORT':str(PORT),'BARSOOM_ARCH_BOT_RESULT':str(out)}
+            env={**os.environ,'MC_PORT':str(PORT),'BARSOOM_ARCH_BOT_RESULT':str(out),'BARSOOM_ARCH_PREBUILT':'1'}
             bot=subprocess.Popen(['node',str(BOT_SCRIPT)],cwd=ROOT,env=env,stdout=bstream,stderr=subprocess.STDOUT,text=True)
             deadline=time.monotonic()+162
             while bot.poll() is None and time.monotonic()<deadline:

@@ -85,11 +85,21 @@ bot.once('spawn', async ()=>{
     // Let the game's tick-load function enable vanilla /trigger objectives.
     await idle(16)
     const p=bot.entity.position.clone()
-    const base={x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
+    const prebuilt=process.env.BARSOOM_ARCH_PREBUILT==='1'
+    const base=prebuilt?{x:0,y:85,z:0}:{x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
     rec.base=base;snap('initial_spawn')
-    bot.chat('/trigger barsoom_arch.start set 1')
+    if (prebuilt) {
+      const spawnDistance=Math.hypot(p.x-3.5,p.z-1.5)
+      if (spawnDistance>4 || Math.abs(p.y-85)>3) {
+        throw new Error('natural worldspawn deviated from admitted arrival: '+p)
+      }
+      rec.stages.push('entered_pre_materialized_world_at_real_spawn')
+    } else {
+      bot.chat('/trigger barsoom_arch.start set 1')
+      rec.stages.push('player_trigger_built_site')
+    }
     await waitUntil(()=>bot.blockAt(new Vec3(base.x+0,base.y+0,base.z+4))?.name==='ladder',14)
-    rec.stages.push('player_trigger_built_site');snap('site_built')
+    snap('site_loaded')
 
     // Stay on the east-hand surface quay until next to the ladder. Walking
     // diagonally towards z+5 was observed to drop the player ten blocks into
