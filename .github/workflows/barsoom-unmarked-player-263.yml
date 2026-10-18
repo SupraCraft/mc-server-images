@@ -39,12 +39,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/barsoom-arch-unmarked"
           python3 tools/qualify_barsoom_archaeology_unmarked_263.py \
             --evidence probes/26.3-release-identity.json \
-            --out "$RUNNER_TEMP/barsoom-arch-physical/receipt.json"
+            --out "$RUNNER_TEMP/barsoom-arch-unmarked/receipt.json"
       - name: Preserve first-failure and bounded physical receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: barsoom-archaeology-26.3-unmarked-player
-          path: ${{ runner.temp }}/barsoom-arch-physical/receipt.json
+          path: ${{ runner.temp }}/barsoom-arch-unmarked/receipt.json
           if-no-files-found: warn
           retention-days: 14
