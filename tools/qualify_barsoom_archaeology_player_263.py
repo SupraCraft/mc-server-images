@@ -63,7 +63,7 @@ def run(evidence, steps, result):
             steps.append('archaeology_scoreboard_loaded')
             # MCWORLD build-time materialization: no player spawns *inside* a
             # destructively generated well. The player later explores on foot.
-            send(proc,'forceload add -16 -16 24 32')
+            send(proc,'forceload add -16 -16 80 32')
             send(proc,'execute positioned 0 3 0 run function barsoom_arch:establish')
             oracle(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0 if block 4 -7 17 minecraft:chest','ARCH_PREBUILT_SITE')
             # Recovered spawn-search semantics require a genuinely safe
@@ -71,10 +71,12 @@ def run(evidence, steps, result):
             # an invalid location causes vanilla to select a nearby surface.
             # Place the spawn *outside* the authored ruin and provide a dry
             # level stone pedestrian approach to the surface quay.
-            send(proc,'fill 3 2 0 19 2 3 minecraft:cut_sandstone replace')
-            send(proc,'fill 13 3 -1 19 8 4 minecraft:air replace')
-            oracle(proc,log,'execute if block 16 2 1 minecraft:cut_sandstone if block 16 3 1 minecraft:air if block 16 4 1 minecraft:air','ARCH_ARRIVAL_PAD')
-            send(proc,'setworldspawn 16 3 1')
+            send(proc,'fill 3 2 0 80 2 3 minecraft:cut_sandstone replace')
+            send(proc,'fill 52 2 -12 76 2 12 minecraft:cut_sandstone replace')
+            send(proc,'fill 13 3 -1 80 8 4 minecraft:air replace')
+            send(proc,'fill 52 3 -12 76 8 12 minecraft:air replace')
+            oracle(proc,log,'execute if block 64 2 0 minecraft:cut_sandstone if block 64 3 0 minecraft:air if block 64 4 0 minecraft:air','ARCH_ARRIVAL_PAD')
+            send(proc,'setworldspawn 64 3 0')
             send(proc,'gamerule minecraft:spawn_radius 0')
             steps.append('safe_external_arrival_pad_materialized_before_player_join')
             bstream=bout.open('w',encoding='utf-8')

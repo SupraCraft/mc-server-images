@@ -93,7 +93,7 @@ bot.once('spawn', async ()=>{
       // another nearby valid cell. Admit ONLY the separately built bridge,
       // with inspected solid footing, not an unbounded distance tolerance.
       const footing=bot.blockAt(new Vec3(Math.floor(p.x),Math.floor(p.y-1),Math.floor(p.z)))
-      const withinPad=p.x>=3 && p.x<20 && p.z>=0 && p.z<4 && Math.abs(p.y-3)<1.25
+      const withinPad=p.x>=52 && p.x<77 && p.z>=-12 && p.z<13 && Math.abs(p.y-3)<1.25
       if (!withinPad || !footing || footing.name!=='cut_sandstone') {
         throw new Error('natural spawn was not on qualified arrival walkway: '+p+
           '; footing='+(footing?.name||'unloaded'))
@@ -109,6 +109,9 @@ bot.once('spawn', async ()=>{
     // Walk along a *materialized* surface bridge from the external spawn pad.
     // No teleport or server-forced relocation of the actual player.
     if (prebuilt) {
+      await walkTo(base.x+48.5,base.z+1.5,30)
+      await walkTo(base.x+33.5,base.z+1.5,30)
+      await walkTo(base.x+18.5,base.z+1.5,30)
       await walkTo(base.x+3.5,base.z+1.5,30)
       rec.stages.push('walked_from_natural_spawn_to_quay');snap('quay_arrival')
     }
