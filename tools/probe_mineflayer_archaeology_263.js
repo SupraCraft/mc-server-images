@@ -89,11 +89,16 @@ bot.once('spawn', async ()=>{
     const base=prebuilt?{x:0,y:3,z:0}:{x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
     rec.base=base;snap('initial_spawn')
     if (prebuilt) {
-      const spawnDistance=Math.hypot(p.x-16.5,p.z-1.5)
-      if (spawnDistance>3 || Math.abs(p.y-3)>1.5) {
-        throw new Error('natural worldspawn deviated from admitted arrival: '+p)
+      // Exact-version vanilla may move the player from setworldspawn onto
+      // another nearby valid cell. Admit ONLY the separately built bridge,
+      // with inspected solid footing, not an unbounded distance tolerance.
+      const footing=bot.blockAt(new Vec3(Math.floor(p.x),Math.floor(p.y-1),Math.floor(p.z)))
+      const withinPad=p.x>=3 && p.x<20 && p.z>=0 && p.z<4 && Math.abs(p.y-3)<1.25
+      if (!withinPad || !footing || footing.name!=='cut_sandstone') {
+        throw new Error('natural spawn was not on qualified arrival walkway: '+p+
+          '; footing='+(footing?.name||'unloaded'))
       }
-      rec.stages.push('entered_pre_materialized_world_at_real_spawn')
+      rec.stages.push('entered_pre_materialized_world_on_verified_walkway')
     } else {
       bot.chat('/trigger barsoom_arch.start set 1')
       rec.stages.push('player_trigger_built_site')
