@@ -96,7 +96,7 @@ def bush_witnesses(proc, log: Path, origin: tuple[int, int], serial: str) -> set
     return batch_query(proc, log, "BW_" + serial + "_", queries, timeout=35)
 
 
-def run(evidence: dict, steps: list[str]) -> dict:
+def run(evidence: dict, steps: list[str], seed: int) -> dict:
     ident = evidence["artifact_version_json"]
     require(ident["id"] == "26.3" and ident["java_version"] == 25 and
             ident["protocol_version"] == 777, "VERSION_OR_PROTOCOL_MISMATCH")
@@ -120,7 +120,7 @@ def run(evidence: dict, steps: list[str]) -> dict:
             "initial-enabled-packs=vanilla,file/terrain.zip,file/habitat.zip\n"
             "view-distance=3\nsimulation-distance=2\nspawn-protection=0\nmax-players=1\n"
             "generate-structures=false\nsync-chunk-writes=true\n"
-            "enable-rcon=false\nenable-query=false\nlevel-seed=1811001\n"
+            "enable-rcon=false\nenable-query=false\n"\n            f"level-seed={seed}\n"
             "motd=Barsoom natural Badlands habitat proof\n")
         log = home / "native.log"
         records = []
@@ -178,7 +178,7 @@ def run(evidence: dict, steps: list[str]) -> dict:
                         proc.kill()
                         proc.wait(timeout=10)
         return {
-            "seed": 1811001, "world_preset": "barsoom:dead_sea",
+            "seed": seed, "world_preset": "barsoom:dead_sea",
             "terrain_sha256": terrain["sha256"], "habitat_sha256": habitat["sha256"],
             "sample_sites": records, "positive_site": winner["site"],
             "new_bushes_on_untouched_surface": winner["sample"]["new_bushes"],
@@ -192,13 +192,13 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--evidence", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
-    a = p.parse_args()
+    p.add_argument("--seed", type=int, default=1811001)\n    a = p.parse_args()
     steps: list[str] = []
     receipt = {"schema": "supracraft.barsoom.natural-habitat/1", "result": "FAIL",
                "first_failure": None, "steps": steps,
                "stock_client": "NOT_RUN", "physical_truenas_apply": "HOLD"}
     try:
-        receipt.update(run(json.loads(a.evidence.read_text()), steps))
+        receipt.update(run(json.loads(a.evidence.read_text()), steps, a.seed))
         receipt["result"] = "PASS"
     except Exception as e:
         receipt["first_failure"] = type(e).__name__ + ": " + str(e)
