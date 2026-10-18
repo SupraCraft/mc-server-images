@@ -80,15 +80,31 @@ def run(evidence, steps, result):
             send(proc,'gamerule minecraft:spawn_radius 0')
             steps.append('safe_external_arrival_pad_materialized_before_player_join')
             bstream=bout.open('w',encoding='utf-8')
-            env={**os.environ,'MC_PORT':str(PORT),'BARSOOM_ARCH_BOT_RESULT':str(out),'BARSOOM_ARCH_PREBUILT':'1'}
+            live_ready=root/'player-awaits-server-oracle'
+            live_ack=root/'server-oracle-verified'
+            env={**os.environ,'MC_PORT':str(PORT),'BARSOOM_ARCH_BOT_RESULT':str(out),
+                 'BARSOOM_ARCH_PREBUILT':'1','BARSOOM_ARCH_LIVE_READY':str(live_ready),
+                 'BARSOOM_ARCH_LIVE_ACK':str(live_ack)}
             bot=subprocess.Popen(['node',str(BOT_SCRIPT)],cwd=ROOT,env=env,stdout=bstream,stderr=subprocess.STDOUT,text=True)
             deadline=time.monotonic()+162
+            live_consumption_verified=False
             while bot.poll() is None and time.monotonic()<deadline:
+                if live_ready.exists() and not live_consumption_verified:
+                    # Entity inventory predicates are only meaningful while
+                    # the player is still connected. Do not query offline
+                    # entity state after Mineflayer has called quit().
+                    oracle(proc,log,f'execute if entity @a[name={BOT_NAME}]','ARCH_PLAYER_CONNECTED_FOR_ITEM_ORACLE')
+                    oracle(proc,log,f'execute unless items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea',
+                           'ARCH_PHYSICAL_SEAL_CONSUMED_LIVE')
+                    live_consumption_verified=True
+                    steps.append('independent_server_confirmed_live_player_item_consumption')
+                    live_ack.write_text('verified\n',encoding='utf-8')
                 time.sleep(.5)
             if bot.poll() is None:
                 bot.terminate();bot.wait(timeout=5)
                 raise Refused('ARCH_PHYSICAL_PLAYER_TIMEOUT')
             require(out.exists(),'ARCH_PHYSICAL_BOT_NO_RECEIPT:'+bout.read_text(errors='replace')[-1000:])
+            require(live_consumption_verified,'ARCH_PHYSICAL_LIVE_INVENTORY_GATE_NOT_COMPLETED')
             player=json.loads(out.read_text());result['player_receipt']=player
             steps.extend(player.get('stages',[]))
             require(bot.returncode==0 and not player.get('error'),'ARCH_PHYSICAL_PLAYER_FAILED:'+str(player.get('error'))[:900])
@@ -103,7 +119,6 @@ def run(evidence, steps, result):
             oracle(proc,log,'execute at @e[type=minecraft:marker,tag=barsoom_arch.well,limit=1] if block ~6 ~0 ~2 minecraft:wheat','ARCH_PHYSICAL_CROP_ONLY')
             steps.append('independent_crop_verified')
             oracle(proc,log,'execute at @e[type=minecraft:marker,tag=barsoom_arch.well,limit=1] unless items block ~4 ~-10 ~17 container.0 minecraft:heart_of_the_sea','ARCH_PHYSICAL_CHEST_EMPTY')
-            oracle(proc,log,f'execute unless items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea','ARCH_PHYSICAL_SEAL_CONSUMED')
             steps.append('independent_server_confirms_real_item_and_well_restoration')
             # Save and restart with independent scoreboard, water and player-authored mutation readbacks.
             send(proc,'save-all flush')

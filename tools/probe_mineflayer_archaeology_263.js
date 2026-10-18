@@ -170,6 +170,14 @@ bot.once('spawn', async ()=>{
     await idle(14)
     if(bot.inventory.items().some(x=>x.name==='heart_of_the_sea'))throw new Error('restoration did not consume sea seal')
     rec.stages.push('player_trigger_restored_well_and_consumed_seal');snap('restored')
+    // Keep the player online while the independent server checks inventory.
+    // The authority is Minecraft's live /execute if items, not bot inference.
+    const liveReady=process.env.BARSOOM_ARCH_LIVE_READY
+    const liveAck=process.env.BARSOOM_ARCH_LIVE_ACK
+    if (!liveReady||!liveAck)throw new Error('live inventory oracle synchronization paths unavailable')
+    fs.writeFileSync(liveReady,'awaiting-native-oracle\n')
+    await waitUntil(()=>fs.existsSync(liveAck),25)
+    rec.stages.push('native_server_confirmed_seal_absence_while_connected')
     finish(0)
   }catch(e){rec.error=String(e&&e.stack?e.stack:e);finish(1)}
 })
