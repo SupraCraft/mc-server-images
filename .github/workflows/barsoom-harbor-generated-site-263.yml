@@ -1,0 +1,47 @@
+name: Barsoom 26.3 generated-terrain buried-harbor site acceptance
+on:
+  pull_request:
+    paths:
+      - 'fixtures/barsoom/archaeology/generated_site_constraints.json'
+      - 'tools/qualify_barsoom_harbor_generated_site_263.py'
+      - '.github/workflows/barsoom-harbor-generated-site-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generated-site:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Static contract and pinned-source admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tools/qualify_barsoom_harbor_generated_site_263.py \
+            fixtures/barsoom/archaeology/build_archive.py \
+            fixtures/barsoom/terrain/gen_dead_sea.py
+          python3 -m json.tool fixtures/barsoom/archaeology/generated_site_constraints.json > /dev/null
+      - name: Native vanilla 26.3 two-seed heightmap materialization and restart
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/barsoom-generated-site"
+          python3 tools/qualify_barsoom_harbor_generated_site_263.py \
+            --out "$RUNNER_TEMP/barsoom-generated-site/receipt.json"
+      - name: Preserve selected coordinates, rejected sites and first failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-harbor-generated-site-263
+          path: ${{ runner.temp }}/barsoom-generated-site/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
