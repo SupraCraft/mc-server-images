@@ -19,7 +19,7 @@ function snap(label) {
 }
 const idle = async t => bot.waitForTicks(t)
 function clear() { for (const s of ['forward','back','left','right','jump','sneak','sprint']) bot.setControlState(s,false) }
-async function walkTo(x,z,limit=25,tol=0.7) {
+async function walkTo(x,z,limit=25,tol=1.0) {
   const deadline=Date.now()+limit*1000
   let stuck=0, old=null
   while (Date.now() < deadline) {
