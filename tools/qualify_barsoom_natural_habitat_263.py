@@ -193,7 +193,8 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--evidence", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
-    p.add_argument("--seed", type=int, default=1811001)\n    a = p.parse_args()
+    p.add_argument("--seed", type=int, default=1811001)
+    a = p.parse_args()
     steps: list[str] = []
     receipt = {"schema": "supracraft.barsoom.natural-habitat/1", "result": "FAIL",
                "first_failure": None, "steps": steps,
