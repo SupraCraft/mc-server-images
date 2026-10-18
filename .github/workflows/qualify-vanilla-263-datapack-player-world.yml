@@ -74,6 +74,20 @@ jobs:
           assert r["rollback_exact_snapshot_before_restart"]
           assert r["candidate_player"]["server_join_independently_observed"]
           assert r["postrollback_player"]["server_join_independently_observed"]
+          witnesses=r["standalone_stopped_region_witnesses"]
+          assert set(witnesses)=={"baseline","candidate","rollback"}
+          for stage in ("baseline","candidate","rollback"):
+            w=witnesses[stage]
+            assert w["schema"]=="supracraft.op4l-019-standalone-stopped-region/1"
+            assert w["classification"] in {
+              "REGION_FILE_BOUNDED_PRESENT", "REGION_NOT_PRESENT",
+              "REGION_NOT_REGULAR_FILE", "REGION_OUT_OF_BOUNDS",
+              "REGION_STAT_INCONCLUSIVE"}
+            assert w["host_observer_only"] is True
+            assert w["region_bytes_published"] is False
+            assert w["native_truenas_oracle_pass"] is False
+            assert w["g4_three_checkpoint_world_pass"] is False
+            assert w["physical_truenas_apply"]=="HOLD"
           assert not r["stock_mojang_client_qualified"]
           assert not r["authenticated_account_qualified"]
           assert not r["collage_deployed"]
@@ -91,4 +105,4 @@ jobs:
       - name: Maintain exact scope
         if: always()
         run: |
-          echo 'Real offline Mineflayer 26.3 protocol 777 player input and official vanilla server action/effect/rollback. Does NOT prove stock Mojang client rendering, Microsoft auth, Gym managed actor, full Two Rivers story, COLLAGE, TrueNAS or physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Real offline Mineflayer 26.3 protocol 777 player input and official vanilla server action/effect/rollback. Records host-side stopped Anvil region presence after each real fixture, but does NOT prove TrueNAS middleware stat, three-point G4 backend, stock Mojang client, Microsoft auth, managed actor, Two Rivers, COLLAGE or physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
