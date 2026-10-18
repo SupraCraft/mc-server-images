@@ -13,7 +13,7 @@ from qualify_vanilla_world_artifact_activation_263 import Refused,require
 
 ROOT=Path(__file__).resolve().parents[1]
 BUILDER=ROOT/'fixtures/barsoom/archaeology/build_archive.py'
-PACK_SHA='ff84fcc975411782e2b0dfa454f4a3a91687ab50cb8d210af0b3ebd53150d283'
+PACK_SHA='bc2913b22b397528ddf9ae5b9f10029edd20b447438b0a933b72b2d48b3435ce'
 PORT=25597
 
 def ready(p, log, timeout=170):
@@ -65,7 +65,7 @@ def run(evidence,steps):
             send(proc,'forceload add -16 -16 24 32')
             send(proc,'execute positioned 0 85 0 run function barsoom_arch:establish')
             check(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0','SITE_INITIALIZED')
-            check(proc,log,'execute if block 4 75 17 minecraft:chest if block 0 85 4 minecraft:ladder[facing=south] if block 1 84 4 minecraft:cut_sandstone','ROOM_AND_LADDER')
+            check(proc,log,'execute if block 4 75 17 minecraft:chest if block 0 85 4 minecraft:ladder[facing=south] if block 1 84 4 minecraft:cut_sandstone if block 9 85 1 minecraft:air','ROOM_AND_LADDER')
             check(proc,log,'execute if entity @e[type=minecraft:marker,tag=barsoom_arch.well] if entity @e[type=minecraft:marker,tag=barsoom_arch.archive]','SURFACE_AND_BURIED_MARKERS')
             check(proc,log,'execute if items block 4 75 17 container.0 minecraft:heart_of_the_sea','CANONICAL_ITEM_IN_REAL_CHEST')
             check(proc,log,'execute if block 0 84 0 minecraft:cut_sandstone','WELL_DRY_BEFORE_REPAIR')

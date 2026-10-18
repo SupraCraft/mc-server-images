@@ -38,6 +38,8 @@ fill ~-12 ~-2 ~-9 ~12 ~-2 ~24 minecraft:terracotta replace
 fill ~-9 ~-1 ~-8 ~9 ~-1 ~8 minecraft:cut_sandstone replace
 fill ~-9 ~0 ~-8 ~-9 ~3 ~8 minecraft:cracked_stone_bricks replace
 fill ~9 ~0 ~-8 ~9 ~3 ~8 minecraft:cracked_stone_bricks replace
+# A gate opening from the east approach road into the harbor court.
+fill ~9 ~0 ~0 ~9 ~2 ~2 minecraft:air replace
 fill ~-9 ~0 ~-8 ~9 ~3 ~-8 minecraft:cracked_stone_bricks replace
 fill ~-3 ~0 ~-8 ~3 ~2 ~-8 minecraft:air replace
 fill ~-3 ~0 ~-1 ~3 ~2 ~-1 minecraft:air replace
