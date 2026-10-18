@@ -195,6 +195,7 @@ bot.once('spawn', async ()=>{
     if(bot.entity.position.y<base.y-2)throw new Error('unsafe second shaft approach')
     await recoverByPhysicalRoute('marked')
     if(seals()!==2)throw new Error('both legitimate and unmarked seal not in player inventory')
+    await gate('PRE') // server-authoritative two-item carry before restoration
     bot.chat('/trigger barsoom_arch.restore set 1')
     await idle(14)
     if(seals()!==1)throw new Error('marked seal not selectively consumed')
