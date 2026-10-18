@@ -46,7 +46,7 @@ def run(evidence, steps, result):
         (home/'server.properties').write_text(
             'server-ip=127.0.0.1\nserver-port=25597\nonline-mode=false\nwhite-list=false\nenforce-whitelist=false\n'
             'level-name=world\nlevel-seed=4242424242\nlevel-type=minecraft:flat\n'
-            'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:stone","height":65},{"block":"minecraft:grass_block","height":1}]}\n'
+            'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:stone","height":145},{"block":"minecraft:grass_block","height":1}]}\n'
             'initial-enabled-packs=vanilla,file/barsoom-arch.zip\n'
             'view-distance=4\nsimulation-distance=3\nspawn-protection=0\n'
             'generate-structures=false\nsync-chunk-writes=true\n'
@@ -64,19 +64,19 @@ def run(evidence, steps, result):
             # MCWORLD build-time materialization: no player spawns *inside* a
             # destructively generated well. The player later explores on foot.
             send(proc,'forceload add -16 -16 80 32')
-            send(proc,'execute positioned 0 3 0 run function barsoom_arch:establish')
-            oracle(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0 if block 4 -7 17 minecraft:chest','ARCH_PREBUILT_SITE')
+            send(proc,'execute positioned 0 83 0 run function barsoom_arch:establish')
+            oracle(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0 if block 4 73 17 minecraft:chest','ARCH_PREBUILT_SITE')
             # Recovered spawn-search semantics require a genuinely safe
             # materialized arrival site. Do not rely on setworldspawn alone:
             # an invalid location causes vanilla to select a nearby surface.
             # Place the spawn *outside* the authored ruin and provide a dry
             # level stone pedestrian approach to the surface quay.
-            send(proc,'fill 3 2 0 80 2 3 minecraft:cut_sandstone replace')
-            send(proc,'fill 52 2 -12 76 2 12 minecraft:cut_sandstone replace')
-            send(proc,'fill 13 3 -1 80 8 4 minecraft:air replace')
-            send(proc,'fill 52 3 -12 76 8 12 minecraft:air replace')
-            oracle(proc,log,'execute if block 64 2 0 minecraft:cut_sandstone if block 64 3 0 minecraft:air if block 64 4 0 minecraft:air','ARCH_ARRIVAL_PAD')
-            send(proc,'setworldspawn 64 3 0')
+            send(proc,'fill 3 82 0 80 82 3 minecraft:cut_sandstone replace')
+            send(proc,'fill 52 82 -12 76 82 12 minecraft:cut_sandstone replace')
+            send(proc,'fill 13 83 -1 80 88 4 minecraft:air replace')
+            send(proc,'fill 52 83 -12 76 88 12 minecraft:air replace')
+            oracle(proc,log,'execute if block 64 82 0 minecraft:cut_sandstone if block 64 83 0 minecraft:air if block 64 84 0 minecraft:air','ARCH_ARRIVAL_PAD')
+            send(proc,'setworldspawn 64 83 0')
             send(proc,'gamerule minecraft:spawn_radius 0')
             steps.append('safe_external_arrival_pad_materialized_before_player_join')
             bstream=bout.open('w',encoding='utf-8')

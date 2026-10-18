@@ -86,14 +86,14 @@ bot.once('spawn', async ()=>{
     await idle(16)
     const p=bot.entity.position.clone()
     const prebuilt=process.env.BARSOOM_ARCH_PREBUILT==='1'
-    const base=prebuilt?{x:0,y:3,z:0}:{x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
+    const base=prebuilt?{x:0,y:83,z:0}:{x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
     rec.base=base;snap('initial_spawn')
     if (prebuilt) {
       // Exact-version vanilla may move the player from setworldspawn onto
       // another nearby valid cell. Admit ONLY the separately built bridge,
       // with inspected solid footing, not an unbounded distance tolerance.
       const footing=bot.blockAt(new Vec3(Math.floor(p.x),Math.floor(p.y-1),Math.floor(p.z)))
-      const withinPad=p.x>=52 && p.x<77 && p.z>=-12 && p.z<13 && Math.abs(p.y-3)<1.25
+      const withinPad=p.x>=52 && p.x<77 && p.z>=-12 && p.z<13 && Math.abs(p.y-83)<1.25
       if (!withinPad || !footing || footing.name!=='cut_sandstone') {
         throw new Error('natural spawn was not on qualified arrival walkway: '+p+
           '; footing='+(footing?.name||'unloaded'))
