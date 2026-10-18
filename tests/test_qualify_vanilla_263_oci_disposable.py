@@ -5,13 +5,14 @@ and must not be inferred from these mocks.
 """
 import pathlib
 import sys
+import tempfile
 import subprocess
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "tools"))
 from qualify_vanilla_263_oci_disposable import (
-    BASE, CANDIDATE_TAG, Refused, observed_immutable_image, verify_java25
+    BASE, CANDIDATE_TAG, Refused, observed_immutable_image, verify_java25, stopped_world_region_witness
 )
 
 SHA = "5a2ab74ae179c11e2dbbce67f307cdcf2c1257b3abb0f654d3a310b3d8ea57da"
@@ -61,6 +62,50 @@ class OciCandidateTests(unittest.TestCase):
         with patch("qualify_vanilla_263_oci_disposable.run", side_effect=runner):
             with self.assertRaisesRegex(Refused, "IMMUTABLE"):
                 observed_immutable_image()
+
+    def test_real_world_region_witness_bounded_nondisclosing_shapes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            region = root / "dimensions" / "minecraft" / "overworld" / "region"
+            region.mkdir(parents=True)
+            target = region / "r.0.0.mca"
+            def observe(wanted):
+                record = stopped_world_region_witness(root)
+                self.assertEqual(record["classification"], wanted)
+                self.assertEqual(record["fixed_overworld_region_name"], "r.0.0.mca")
+                self.assertFalse(record["region_bytes_published"])
+                self.assertFalse(record["native_truenas_oracle_pass"])
+                self.assertFalse(record["g4_three_checkpoint_world_pass"])
+                self.assertEqual(record["physical_truenas_apply"], "HOLD")
+                self.assertNotIn(tmp, str(record))
+            observe("REGION_NOT_PRESENT")
+            legacy = root / "region"
+            legacy.mkdir()
+            (legacy / "r.0.0.mca").write_bytes(b"x" * 8192)
+            # Refuse legacy 1.21.11 file as authority for 26.3 Overworld.
+            observe("REGION_NOT_PRESENT")
+            target.write_bytes(b"x" * 8192)
+            observe("REGION_FILE_BOUNDED_PRESENT")
+            target.write_bytes(b"x" * 7)
+            observe("REGION_OUT_OF_BOUNDS")
+            target.unlink()
+            target.symlink_to(root / "foreign")
+            observe("REGION_NOT_REGULAR_FILE")
+            target.unlink()
+            target.mkdir()
+            observe("REGION_NOT_REGULAR_FILE")
+
+    def test_region_witness_is_not_a_fallback_or_authoritative_oracle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            world = pathlib.Path(tmp)
+            location = world / "dimensions" / "minecraft" / "overworld" / "region"
+            location.mkdir(parents=True)
+            (location / "r.0.0.mca").write_bytes(b"z" * 8192)
+            outcome = stopped_world_region_witness(world)
+            self.assertTrue(outcome["host_observer_only"])
+            self.assertFalse(outcome["native_truenas_oracle_pass"])
+            self.assertNotIn("world_path", outcome)
+            self.assertNotIn("region_digest", outcome)
 
     def test_java25_only(self):
         for stderr, wanted in (

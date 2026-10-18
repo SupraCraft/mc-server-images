@@ -45,6 +45,20 @@ jobs:
           assert re.fullmatch("sha256:[a-f0-9]{64}",r["image_manifest_sha256"])
           assert r["executed_immutable_image_ref"].endswith("@"+r["image_manifest_sha256"])
           assert r["world_retained_after_container_delete_and_reinstall"] is True
+          for key in ("first_stopped_region_witness",
+                      "reinstalled_stopped_region_witness"):
+            witness=r[key]
+            assert witness["schema"]=="supracraft.op4l-019-standalone-stopped-region/1"
+            assert witness["classification"] in {
+              "REGION_FILE_BOUNDED_PRESENT", "REGION_NOT_PRESENT",
+              "REGION_NOT_REGULAR_FILE", "REGION_OUT_OF_BOUNDS",
+              "REGION_STAT_INCONCLUSIVE"}
+            assert witness["fixed_overworld_region_name"]=="r.0.0.mca"
+            assert witness["host_observer_only"] is True
+            assert witness["region_bytes_published"] is False
+            assert witness["native_truenas_oracle_pass"] is False
+            assert witness["g4_three_checkpoint_world_pass"] is False
+            assert witness["physical_truenas_apply"]=="HOLD"
           assert r["container_removed_at_end"] is True
           assert r["runtime_tag_frozen_for_operations"] is False
           assert r["native_truenas_app_qualified"] is False
@@ -62,4 +76,4 @@ jobs:
       - name: Scope
         if: always()
         run: |
-          echo 'Exact Java25 OCI candidate discovered, pulled/executed only by observed manifest digest in public GitHub runner, real vanilla26.3 status + independent world retention. No TrueNAS native App/source-render/system version, COLLAGE, online auth, operational pin/freeze, physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Exact Java25 OCI candidate discovered, pulled/executed only by observed manifest digest in public GitHub runner, real vanilla26.3 status + independent world retention. Stopped-world fixed overworld Anvil file presence is a host-only source witness, not a native TrueNAS FILESYSTEM_ATTRS_READ verdict or G4 world acceptance. No native App, COLLAGE, online auth, operational pin/freeze, physical APPLY.' >> "$GITHUB_STEP_SUMMARY"
