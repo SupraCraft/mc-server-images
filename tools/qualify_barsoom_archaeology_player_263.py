@@ -44,7 +44,7 @@ def run(evidence, steps, result):
         steps.append('exact_original_archaeology_pack_verified')
         (home/'eula.txt').write_text('eula=true\n')
         (home/'server.properties').write_text(
-            'server-ip=127.0.0.1\nserver-port=25597\nonline-mode=false\n'
+            'server-ip=127.0.0.1\nserver-port=25597\nonline-mode=false\nwhite-list=false\nenforce-whitelist=false\n'
             'level-name=world\nlevel-seed=4242424242\nlevel-type=minecraft:normal\n'
             'initial-enabled-packs=vanilla,file/barsoom-arch.zip\n'
             'view-distance=4\nsimulation-distance=3\nspawn-protection=0\n'
