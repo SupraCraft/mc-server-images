@@ -89,8 +89,8 @@ bot.once('spawn', async ()=>{
     const base=prebuilt?{x:0,y:3,z:0}:{x:Math.floor(p.x),y:Math.floor(p.y),z:Math.floor(p.z)}
     rec.base=base;snap('initial_spawn')
     if (prebuilt) {
-      const spawnDistance=Math.hypot(p.x-3.5,p.z-1.5)
-      if (spawnDistance>4 || Math.abs(p.y-3)>3) {
+      const spawnDistance=Math.hypot(p.x-16.5,p.z-1.5)
+      if (spawnDistance>3 || Math.abs(p.y-3)>1.5) {
         throw new Error('natural worldspawn deviated from admitted arrival: '+p)
       }
       rec.stages.push('entered_pre_materialized_world_at_real_spawn')
@@ -101,6 +101,12 @@ bot.once('spawn', async ()=>{
     await waitUntil(()=>bot.blockAt(new Vec3(base.x+0,base.y+0,base.z+4))?.name==='ladder',14)
     snap('site_loaded')
 
+    // Walk along a *materialized* surface bridge from the external spawn pad.
+    // No teleport or server-forced relocation of the actual player.
+    if (prebuilt) {
+      await walkTo(base.x+3.5,base.z+1.5,30)
+      rec.stages.push('walked_from_natural_spawn_to_quay');snap('quay_arrival')
+    }
     // Stay on the east-hand surface quay until next to the ladder. Walking
     // diagonally towards z+5 was observed to drop the player ten blocks into
     // the unguarded shaft on exact vanilla 26.3 (preserved first failure).

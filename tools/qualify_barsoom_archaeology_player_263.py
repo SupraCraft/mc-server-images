@@ -66,9 +66,17 @@ def run(evidence, steps, result):
             send(proc,'forceload add -16 -16 24 32')
             send(proc,'execute positioned 0 3 0 run function barsoom_arch:establish')
             oracle(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0 if block 4 -7 17 minecraft:chest','ARCH_PREBUILT_SITE')
-            send(proc,'setworldspawn 3 3 1')
+            # Recovered spawn-search semantics require a genuinely safe
+            # materialized arrival site. Do not rely on setworldspawn alone:
+            # an invalid location causes vanilla to select a nearby surface.
+            # Place the spawn *outside* the authored ruin and provide a dry
+            # level stone pedestrian approach to the surface quay.
+            send(proc,'fill 3 2 0 19 2 3 minecraft:cut_sandstone replace')
+            send(proc,'fill 13 3 -1 19 8 4 minecraft:air replace')
+            oracle(proc,log,'execute if block 16 2 1 minecraft:cut_sandstone if block 16 3 1 minecraft:air if block 16 4 1 minecraft:air','ARCH_ARRIVAL_PAD')
+            send(proc,'setworldspawn 16 3 1')
             send(proc,'gamerule minecraft:spawn_radius 0')
-            steps.append('flat_control_world_materialized_before_player_join')
+            steps.append('safe_external_arrival_pad_materialized_before_player_join')
             bstream=bout.open('w',encoding='utf-8')
             env={**os.environ,'MC_PORT':str(PORT),'BARSOOM_ARCH_BOT_RESULT':str(out),'BARSOOM_ARCH_PREBUILT':'1'}
             bot=subprocess.Popen(['node',str(BOT_SCRIPT)],cwd=ROOT,env=env,stdout=bstream,stderr=subprocess.STDOUT,text=True)
