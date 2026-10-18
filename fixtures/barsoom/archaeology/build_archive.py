@@ -59,6 +59,8 @@ fill ~-1 ~-10 ~5 ~1 ~-7 ~11 minecraft:air replace
 # Backing wall supports physically climbable ladder (south-facing).
 fill ~0 ~-11 ~3 ~0 ~2 ~3 minecraft:stone_bricks replace
 fill ~0 ~-10 ~4 ~0 ~1 ~4 minecraft:ladder[facing=south] replace
+# Safe one-block landing between the ladder and the east quay.
+setblock ~1 ~-1 ~4 minecraft:cut_sandstone
 # Connect into underground archive at Z=11, at walking height.
 fill ~-1 ~-10 ~9 ~1 ~-7 ~12 minecraft:air replace
 # Lower chamber storage, an artifact and inscriptions (books require text fixture later).
