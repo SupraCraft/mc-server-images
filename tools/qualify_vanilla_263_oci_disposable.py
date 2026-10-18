@@ -36,6 +36,9 @@ DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 # Only an observer of the existing host-owned, stopped world's fixed region.
 # No alternate paths, raw bytes, dynamic directory scans or mutation.
 REGION_NAME = "r.0.0.mca"
+# Mojang Java 26.1 Snapshot 6 relocated vanilla dimensions into namespaced
+# paths; the root-level region/ is a pre-26.1 format only.
+OVERWORLD_REGION_COMPONENTS = ("dimensions", "minecraft", "overworld", "region")
 MIN_REGION_BYTES = 8192
 MAX_REGION_BYTES = 64 * 1024 * 1024
 
@@ -153,7 +156,7 @@ def stopped_world_region_witness(world: Path) -> dict:
     A negative result cannot identify why the native TrueNAS DDP stat failed.
     No raw world, paths, metadata or host data are published.
     """
-    target = world / "region" / REGION_NAME
+    target = world.joinpath(*OVERWORLD_REGION_COMPONENTS) / REGION_NAME
     status = "REGION_NOT_PRESENT"
     try:
         # lstat never follows a symbolic link to an unowned file.
