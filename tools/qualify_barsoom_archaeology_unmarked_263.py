@@ -113,9 +113,9 @@ def run(evidence, steps, result):
                     oracle(proc,log,f'execute if entity @a[name={BOT_NAME}]','ARCH_NEG_PLAYER_ONLINE')
                     oracle(proc,log,'execute if score #well barsoom_arch.state matches 0 if block 0 82 0 minecraft:cut_sandstone','ARCH_NEG_DRY_WELL_AND_ZERO_SCORE')
                     oracle(proc,log,f'execute if score {BOT_NAME} barsoom_arch.accept matches 0','ARCH_NEG_REJECTED_ACCEPT_SCORE')
-                    oracle(proc,log,f'execute if items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea',
+                    oracle(proc,log,f'execute if items entity {BOT_NAME} container.* minecraft:heart_of_the_sea',
                         'ARCH_NEG_ITEM_RETAINED_BY_PLAYER')
-                    oracle(proc,log,f'execute unless items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea[minecraft:custom_data~{{barsoom_arch:{{harbor_seal:1b}}}}]',
+                    oracle(proc,log,f'execute unless items entity {BOT_NAME} container.* minecraft:heart_of_the_sea[minecraft:custom_data~{{barsoom_arch:{{harbor_seal:1b}}}}]',
                         'ARCH_NEG_PLAYER_HAS_NO_MARKED_ITEM')
                     oracle(proc,log,'execute unless items block 6 73 18 container.0 minecraft:heart_of_the_sea',
                         'ARCH_NEG_DISPOSABLE_CHEST_WITHDRAWN')
@@ -143,9 +143,9 @@ def run(evidence, steps, result):
                         'ARCH_POS_RESTORED_WELL_AND_SCORE')
                     send(proc,f'execute store result score #hearts barsoom_arch.state run clear {BOT_NAME} minecraft:heart_of_the_sea 0')
                     oracle(proc,log,'execute if score #hearts barsoom_arch.state matches 1','ARCH_POS_EXACT_ONE_SEAL_REMAINS')
-                    oracle(proc,log,f'execute if items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea',
+                    oracle(proc,log,f'execute if items entity {BOT_NAME} container.* minecraft:heart_of_the_sea',
                         'ARCH_POS_UNMARKED_ITEM_RETAINED')
-                    oracle(proc,log,f'execute unless items entity {BOT_NAME} inventory.* minecraft:heart_of_the_sea[minecraft:custom_data~{{barsoom_arch:{{harbor_seal:1b}}}}]',
+                    oracle(proc,log,f'execute unless items entity {BOT_NAME} container.* minecraft:heart_of_the_sea[minecraft:custom_data~{{barsoom_arch:{{harbor_seal:1b}}}}]',
                         'ARCH_POS_MARKED_ITEM_CONSUMED_ONLY')
                     oracle(proc,log,'execute unless items block 4 73 17 container.0 minecraft:heart_of_the_sea',
                         'ARCH_POS_ORIGINAL_ARCHIVE_CHEST_EMPTY')
