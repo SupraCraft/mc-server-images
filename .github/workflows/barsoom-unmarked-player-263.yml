@@ -1,0 +1,50 @@
+name: Barsoom real-player unmarked artifact rejection Java 26.3
+on:
+  pull_request:
+    paths:
+      - 'tools/probe_mineflayer_archaeology_unmarked_263.js'
+      - 'tools/qualify_barsoom_archaeology_unmarked_263.py'
+      - '.github/workflows/barsoom-unmarked-player-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  physical-player:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Qualify source and reuse pinned 26.3 Mineflayer transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/qualify_barsoom_archaeology_unmarked_263.py fixtures/barsoom/archaeology/build_archive.py
+          node --check tools/probe_mineflayer_archaeology_unmarked_263.js
+          bash tools/install_experimental_prismarine_26_3.sh "$RUNNER_TEMP/prismarine"
+          echo "NODE_PATH=$RUNNER_TEMP/prismarine/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Physical unmarked-negative then genuine marked-positive two-trip witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/barsoom-arch-unmarked"
+          python3 tools/qualify_barsoom_archaeology_unmarked_263.py \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/barsoom-arch-unmarked/receipt.json"
+      - name: Preserve first-failure and bounded physical receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-archaeology-26.3-unmarked-player
+          path: ${{ runner.temp }}/barsoom-arch-unmarked/receipt.json
+          if-no-files-found: warn
+          retention-days: 14
