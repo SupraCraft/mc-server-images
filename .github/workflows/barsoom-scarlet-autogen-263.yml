@@ -1,0 +1,55 @@
+name: Barsoom 26.3 Scarlet Wastes automatic vegetation admission
+on:
+  pull_request:
+    paths:
+      - 'fixtures/barsoom/biomes/**'
+      - 'tools/test_barsoom_scarlet_autogen_263.py'
+      - 'tools/qualify_barsoom_scarlet_autogen_263.py'
+      - '.github/workflows/barsoom-scarlet-autogen-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barsoom-scarlet-autogen-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  autogen:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Static named-biome source and collision checks
+        run: |
+          set -euo pipefail
+          python3 -m py_compile fixtures/barsoom/biomes/gen_scarlet_wastes_263.py tools/test_barsoom_scarlet_autogen_263.py tools/qualify_barsoom_scarlet_autogen_263.py
+          python3 -m unittest tools/test_barsoom_scarlet_autogen_263.py -v
+          mkdir -p "$RUNNER_TEMP/barsoom-scarlet"
+          python3 fixtures/barsoom/biomes/gen_scarlet_wastes_263.py --output "$RUNNER_TEMP/barsoom-scarlet/pack.zip" --receipt "$RUNNER_TEMP/barsoom-scarlet/static.json"
+      - name: Native new-chunk feature production versus unchanged vanilla biome
+        run: |
+          set -euo pipefail
+          for seed in 1811001 4242424242; do
+            python3 tools/qualify_barsoom_scarlet_autogen_263.py \
+              --evidence probes/26.3-release-identity.json --seed "$seed" \
+              --out "$RUNNER_TEMP/barsoom-scarlet/native-$seed.json"
+          done
+      - name: Persist compact first-failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-scarlet-autogen-263
+          path: |
+            ${{ runner.temp }}/barsoom-scarlet/static.json
+            ${{ runner.temp }}/barsoom-scarlet/native-1811001.json
+            ${{ runner.temp }}/barsoom-scarlet/native-4242424242.json
+          retention-days: 14
+          if-no-files-found: warn
+      - if: always()
+        run: echo 'Custom explicitly selected fresh-world preset, not existing Dead Sea or existing saves. No manual place feature, no stock-client HIL, no production apply.' >> "$GITHUB_STEP_SUMMARY"
