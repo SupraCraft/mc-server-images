@@ -13,7 +13,7 @@ from qualify_vanilla_world_artifact_activation_263 import Refused,require
 
 ROOT=Path(__file__).resolve().parents[1]
 BUILDER=ROOT/'fixtures/barsoom/archaeology/build_archive.py'
-PACK_SHA='8dc71771b1a39b9c96654c8cd1e8da39a24f234c810787254e0f9a34178fd1cc'
+PACK_SHA='4aec62c48d494c4ee00dfe6992ecd8c40d189a9d448ac17e26aa696ad59cdb3f'
 PORT=25597
 
 def ready(p, log, timeout=170):

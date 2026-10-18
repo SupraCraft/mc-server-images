@@ -52,6 +52,8 @@ fill ~-8 ~-11 ~9 ~8 ~-5 ~23 minecraft:cracked_deepslate_bricks hollow
 fill ~-7 ~-10 ~10 ~7 ~-6 ~22 minecraft:air replace
 fill ~-2 ~-11 ~13 ~2 ~-11 ~20 minecraft:polished_blackstone replace
 # The 2-wide descent shaft and air gallery are constructed separately from the room.
+# Make the shaft/gallery floor independent of naturally generated caves below.
+fill ~-1 ~-11 ~4 ~1 ~-11 ~12 minecraft:polished_blackstone replace
 fill ~-1 ~-10 ~4 ~1 ~2 ~5 minecraft:air replace
 fill ~-1 ~-10 ~5 ~1 ~-7 ~11 minecraft:air replace
 # Backing wall supports physically climbable ladder (south-facing).

@@ -39,7 +39,7 @@ async function descendLadder(base,limit=30) {
   const deadline=Date.now()+limit*1000
   while(Date.now()<deadline) {
     const p=bot.entity.position
-    if(p.y < base.y-8) {clear();return}
+    if(p.y < base.y-9.5) {clear();return}
     // Keep feet inside ladder block, touching the solid support wall at z-1.
     await bot.lookAt(new Vec3(base.x+.5,p.y+1.2,base.z+3.0),true)
     bot.setControlState('sneak',true)
