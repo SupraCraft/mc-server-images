@@ -1,0 +1,56 @@
+name: Barsoom 26.3 natural Badlands vegetation qualification
+on:
+  pull_request:
+    paths:
+      - 'tools/qualify_barsoom_natural_habitat_263.py'
+      - '.github/workflows/barsoom-natural-habitat-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barsoom-natural-habitat-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  natural-surface:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Static exact-version and unchanged producer checks
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/qualify_barsoom_natural_habitat_263.py
+          python3 -m unittest tools/test_barsoom_habitat_263.py -v
+          mkdir -p "$RUNNER_TEMP/barsoom-natural-habitat"
+          python3 fixtures/barsoom/habitat/gen_habitat_263.py \
+            --output "$RUNNER_TEMP/barsoom-natural-habitat/habitat.zip" \
+            --manifest "$RUNNER_TEMP/barsoom-natural-habitat/static.json"
+      - name: Native surface survey and unprepared wild vegetation witness
+        run: |
+          set -euo pipefail
+          for seed in 1811001 4242424242; do
+            python3 tools/qualify_barsoom_natural_habitat_263.py \
+              --evidence probes/26.3-release-identity.json \
+              --seed "$seed" \
+              --out "$RUNNER_TEMP/barsoom-natural-habitat/native-$seed.json"
+          done
+      - name: Persist bounded immutable evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-natural-habitat-263
+          path: |
+            ${{ runner.temp }}/barsoom-natural-habitat/static.json
+            ${{ runner.temp }}/barsoom-natural-habitat/native-1811001.json
+            ${{ runner.temp }}/barsoom-natural-habitat/native-4242424242.json
+          retention-days: 14
+          if-no-files-found: warn
+      - if: always()
+        run: echo 'Survey of unmodified terrain, one native vegetation actuator on a disposable world; NOT biome-wide automatic vegetation or stock-client visuals.' >> "$GITHUB_STEP_SUMMARY"
