@@ -91,11 +91,14 @@ bot.once('spawn', async ()=>{
     await waitUntil(()=>bot.blockAt(new Vec3(base.x+0,base.y+0,base.z+4))?.name==='ladder',14)
     rec.stages.push('player_trigger_built_site');snap('site_built')
 
-    // Exit the surface room around the east edge of the support wall.
-    await walkTo(base.x+2.5,base.z+5.5)
-    await walkTo(base.x+.5,base.z+5.5)
+    // Stay on the east-hand surface quay until next to the ladder. Walking
+    // diagonally towards z+5 was observed to drop the player ten blocks into
+    // the unguarded shaft on exact vanilla 26.3 (preserved first failure).
+    await walkTo(base.x+2.5,base.z+1.5,14);snap('east_quay_approach')
+    await walkTo(base.x+2.5,base.z+4.5,14);snap('shaft_east_edge')
+    if (bot.entity.position.y < base.y-2) throw new Error('unsafe drop before ladder entry: '+bot.entity.position)
+    await walkTo(base.x+.5,base.z+4.5,10,.35)
     rec.stages.push('walked_to_ladder_entrance');snap('ladder_entrance')
-    await walkTo(base.x+.5,base.z+4.5,8,.32)
     await descendLadder(base,35)
     rec.stages.push('physically_descended_ladder');snap('bottom_of_shaft')
     await walkTo(base.x+.5,base.z+12.5,20)
