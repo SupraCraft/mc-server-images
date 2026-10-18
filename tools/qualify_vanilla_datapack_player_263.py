@@ -19,6 +19,7 @@ import subprocess
 import tempfile
 
 from minecraft_world_agent import tree_hash
+from qualify_vanilla_263_oci_disposable import stopped_world_region_witness
 from probe_core_restoration_datapack_26_3 import (
     BOT_NAME, wait_file, send, initial_predicate, restored_predicate, stop_server
 )
@@ -169,6 +170,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
             proc, log = launch(home, jar, evidence, "client-baseline", handles)
             configure_fixture(proc, log)
             require(stop_server(proc) == 0, "BASELINE_SAVE_STOP_FAILED")
+            baseline_region = stopped_world_region_witness(active)
             stages.append("baseline_quiesced")
             baseline_sha = tree_hash(active)
             snapshot.parent.mkdir()
@@ -193,6 +195,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                    "OP3C_PLAYER_CAUSED_PACK_CONSEQUENCE")
             stages.append("player_placed_core_and_pack_reacted")
             require(stop_server(proc) == 0, "PLAYER_CANDIDATE_STOP_FAILED")
+            candidate_region = stopped_world_region_witness(active)
             candidate_sha = tree_hash(active)
             require(candidate_sha != baseline_sha and staged.is_file(),
                     "ACTIVATED_WORLD_NOT_PERSISTED")
@@ -217,6 +220,7 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
             oracle(proc, log, baseline_without_pack_predicate(),
                    "OP3C_SAME_PLAYER_ACTION_NO_PACK_CONSEQUENCE")
             require(stop_server(proc) == 0, "PLAYER_ROLLBACK_STOP_FAILED")
+            rollback_region = stopped_world_region_witness(active)
             stages.append("same_player_action_did_not_restore_without_pack")
 
             return {
@@ -230,6 +234,11 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                 "world_id": manifest["world_id"],
                 "release_id": manifest["release_id"],
                 "baseline_world_sha256": baseline_sha,
+                "standalone_stopped_region_witnesses": {
+                    "baseline": baseline_region,
+                    "candidate": candidate_region,
+                    "rollback": rollback_region,
+                },
                 "candidate_world_sha256": candidate_sha,
                 "restored_world_sha256": restored_sha,
                 "stages": stages,
