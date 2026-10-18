@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import time
@@ -32,6 +33,11 @@ PORT = 25594
 VERSION = "26.3"
 PROTOCOL = 777
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+# Only an observer of the existing host-owned, stopped world's fixed region.
+# No alternate paths, raw bytes, dynamic directory scans or mutation.
+REGION_NAME = "r.0.0.mca"
+MIN_REGION_BYTES = 8192
+MAX_REGION_BYTES = 64 * 1024 * 1024
 
 
 class Refused(RuntimeError):
@@ -140,6 +146,42 @@ def stop_remove(name: str) -> None:
     run(["docker", "rm", name], 30)
 
 
+def stopped_world_region_witness(world: Path) -> dict:
+    """Source-only host witness for the exact vanilla overworld Anvil path.
+
+    Caller guarantees the pinned OCI container was gracefully stopped first.
+    A negative result cannot identify why the native TrueNAS DDP stat failed.
+    No raw world, paths, metadata or host data are published.
+    """
+    target = world / "region" / REGION_NAME
+    status = "REGION_NOT_PRESENT"
+    try:
+        # lstat never follows a symbolic link to an unowned file.
+        raw = target.lstat()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        status = "REGION_STAT_INCONCLUSIVE"
+    else:
+        if not stat.S_ISREG(raw.st_mode):
+            status = "REGION_NOT_REGULAR_FILE"
+        elif not MIN_REGION_BYTES <= raw.st_size <= MAX_REGION_BYTES:
+            status = "REGION_OUT_OF_BOUNDS"
+        else:
+            status = "REGION_FILE_BOUNDED_PRESENT"
+    return {
+        "schema": "supracraft.op4l-019-standalone-stopped-region/1",
+        "classification": status,
+        "fixed_overworld_region_name": REGION_NAME,
+        "was_container_stopped": True,
+        "host_observer_only": True,
+        "region_bytes_published": False,
+        "native_truenas_oracle_pass": False,
+        "g4_three_checkpoint_world_pass": False,
+        "physical_truenas_apply": "HOLD",
+    }
+
+
 def execute() -> dict:
     digest, immutable = observed_immutable_image()
     with tempfile.TemporaryDirectory(prefix="supracraft-oci263-") as tmp:
@@ -158,6 +200,7 @@ def execute() -> dict:
             require((world / "level.dat").is_file(),
                     "HOST_OWNED_WORLD_LEVEL_DAT_ABSENT")
             stop_remove(name)
+            first_region = stopped_world_region_witness(world)
             require((world / "level.dat").is_file(),
                     "WORLD_DELETED_WITH_APP")
             first_world_sha = tree_hash(world)
@@ -173,6 +216,7 @@ def execute() -> dict:
                     "WORLD_SENTINEL_NOT_RETAINED_ON_REINSTALL")
             require((world / "level.dat").is_file(), "WORLD_NOT_REMOUNTED")
             stop_remove(name)
+            reinstalled_region = stopped_world_region_witness(world)
             require(not docker_running(name) and
                     (world / "level.dat").is_file() and
                     sentinel.is_file(),
@@ -190,6 +234,8 @@ def execute() -> dict:
                 "first_status": first,
                 "after_reinstall_status": after_restart,
                 "first_world_tree_sha256": first_world_sha,
+                "first_stopped_region_witness": first_region,
+                "reinstalled_stopped_region_witness": reinstalled_region,
                 "external_world_sentinel_sha256": sentinel_sha,
                 "world_retained_after_container_delete_and_reinstall": True,
                 "container_removed_at_end": True,
