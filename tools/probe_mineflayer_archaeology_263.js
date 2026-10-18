@@ -126,8 +126,12 @@ bot.once('spawn', async ()=>{
     await walkTo(base.x+.5,base.z+4.5,25,.32)
     await ascendLadder(base,40)
     rec.stages.push('physically_ascended_ladder');snap('surface_return')
-    await walkTo(base.x+.5,base.z+5.5,10)
-    await walkTo(base.x+2.5,base.z+5.5,10)
+    // On leaving the ladder, move EAST onto the existing quay deck first.
+    // Walking south into z+5.5 re-entered the open shaft on native 26.3.
+    await walkTo(base.x+2.5,base.z+4.5,12)
+    if (bot.entity.position.y < base.y-2) throw new Error('unsafe return from ladder: '+bot.entity.position)
+    rec.stages.push('safely_exited_ladder_to_east_quay');snap('east_quay_return')
+    await walkTo(base.x+2.5,base.z+1.5,12)
     await walkTo(base.x+1.5,base.z+.5,15)
     rec.stages.push('walked_back_to_well');snap('well_reached')
     bot.chat('/trigger barsoom_arch.restore set 1')
