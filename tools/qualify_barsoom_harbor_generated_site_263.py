@@ -72,10 +72,10 @@ def surface(proc, log, x: int, z: int, ident: int) -> int:
     key = f'#site_height_{ident}'
     send(proc, f'execute positioned {x} 0 {z} positioned over motion_blocking_no_leaves run summon minecraft:marker ~ ~ ~ {{Tags:["{tag}"]}}')
     oracle(proc, log, f'execute if entity @e[type=minecraft:marker,tag={tag},limit=1]',
-           f'SITE_HEIGHT_MARKER_{ident}', timeout=7)
+           f'SITE_HEIGHT_MARKER_{ident}')
     send(proc, f'execute store result score {key} barsoom_arch.state run data get entity @e[type=minecraft:marker,tag={tag},limit=1] Pos[1] 1')
     oracle(proc, log, f'execute if score {key} barsoom_arch.state matches 0..255',
-           f'SITE_NATIVE_HEIGHT_SAVED_{ident}', timeout=7)
+           f'SITE_NATIVE_HEIGHT_SAVED_{ident}')
     y = native_score_integer(proc, log, key, str(ident))
     send(proc, f'kill @e[type=minecraft:marker,tag={tag}]')
     return y
@@ -87,9 +87,9 @@ def select_site(proc, log, spec, rejected):
         try:
             send(proc, f'forceload add {x-16} {z-16} {x+80} {z+32}')
             oracle(proc, log, f'execute if biome {x} 64 {z} minecraft:badlands',
-                   f'WORLDGEN_ANCHOR_BIOME_{x}_{z}', timeout=5)
+                   f'WORLDGEN_ANCHOR_BIOME_{x}_{z}')
             oracle(proc, log, f'execute if biome {x+64} 64 {z} minecraft:badlands',
-                   f'WORLDGEN_APPROACH_BIOME_{x}_{z}', timeout=5)
+                   f'WORLDGEN_APPROACH_BIOME_{x}_{z}')
             for idx, (dx, dz) in enumerate(c['samples']):
                 y = surface(proc, log, x+dx, z+dz, idx)
                 heights.append(y)
