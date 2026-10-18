@@ -72,11 +72,14 @@ def scan_surface(proc, log: Path, center: tuple[int, int], site_index: int) -> d
     badlands = [(x, z) for x in xs for z in zs if f"B_{x}_{z}" in witnessed]
     soils = {state: [(x, z) for x in xs for z in zs if f"S_{x}_{z}_{state}" in witnessed]
              for state in SOILS}
+    chosen = next(((kind, positions) for kind in
+                   ("red_sand", "terracotta", "orange_terracotta", "red_terracotta")
+                   if (positions := soils[kind])), (None, []))
     return {"center": [x0, z0], "badlands_sample_count": len(badlands),
             "surface_soil_counts": {k: len(v) for k, v in soils.items()},
             "red_sand_columns": [list(p) for p in soils["red_sand"]],
-            "selected": soils["red_sand"][len(soils["red_sand"]) // 2]
-            if soils["red_sand"] else None}
+            "selected_substrate": chosen[0],
+            "selected": chosen[1][len(chosen[1]) // 2] if chosen[1] else None}
 
 
 def bush_witnesses(proc, log: Path, origin: tuple[int, int], serial: str) -> set[str]:
