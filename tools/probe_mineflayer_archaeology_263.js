@@ -37,19 +37,27 @@ async function walkTo(x,z,limit=25,tol=1.0) {
 }
 async function descendLadder(base,limit=30) {
   const deadline=Date.now()+limit*1000
+  let minY=Infinity,maxY=-Infinity
+  clear()
   while(Date.now()<deadline) {
     const p=bot.entity.position
-    if(p.y < base.y-9.5) {clear();return}
-    // Keep feet inside ladder block, touching the solid support wall at z-1.
-    await bot.lookAt(new Vec3(base.x+.5,p.y+1.2,base.z+3.0),true)
-    bot.setControlState('sneak',true)
-    bot.setControlState('forward',true)
+    minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y)
+    if(p.y < base.y-9.5) {clear();rec.ladder_descent={minY,maxY,endY:p.y};return}
+    // Pressing FORWARD against a ladder is the climbing actuator. Earlier
+    // bot treatment combined forward+sneak and climbed two blocks above the
+    // entrance instead of descending. Free-fall while contacting the ladder
+    // lets vanilla apply its native limited downward velocity.
+    bot.setControlState('forward',false)
+    bot.setControlState('sneak',false)
+    bot.setControlState('jump',false)
     await idle(3)
     if(Math.abs(p.x-(base.x+.5))>1.1 || Math.abs(p.z-(base.z+4.5))>1.8) {
-      clear();throw new Error(`left ladder gallery at ${p}`)
+      clear();rec.ladder_descent={minY,maxY,endY:p.y}
+      throw new Error(`left ladder gallery at ${p}`)
     }
   }
-  clear();throw new Error(`ladder descent timed out at ${bot.entity.position}`)
+  clear();rec.ladder_descent={minY,maxY,endY:bot.entity.position.y}
+  throw new Error(`ladder descent timed out at ${bot.entity.position}`)
 }
 async function ascendLadder(base,limit=35) {
   const deadline=Date.now()+limit*1000
