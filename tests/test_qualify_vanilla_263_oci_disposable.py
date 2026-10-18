@@ -66,8 +66,8 @@ class OciCandidateTests(unittest.TestCase):
     def test_real_world_region_witness_bounded_nondisclosing_shapes(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
-            region = root / "region"
-            region.mkdir()
+            region = root / "dimensions" / "minecraft" / "overworld" / "region"
+            region.mkdir(parents=True)
             target = region / "r.0.0.mca"
             def observe(wanted):
                 record = stopped_world_region_witness(root)
@@ -78,6 +78,11 @@ class OciCandidateTests(unittest.TestCase):
                 self.assertFalse(record["g4_three_checkpoint_world_pass"])
                 self.assertEqual(record["physical_truenas_apply"], "HOLD")
                 self.assertNotIn(tmp, str(record))
+            observe("REGION_NOT_PRESENT")
+            legacy = root / "region"
+            legacy.mkdir()
+            (legacy / "r.0.0.mca").write_bytes(b"x" * 8192)
+            # Refuse legacy 1.21.11 file as authority for 26.3 Overworld.
             observe("REGION_NOT_PRESENT")
             target.write_bytes(b"x" * 8192)
             observe("REGION_FILE_BOUNDED_PRESENT")
@@ -93,8 +98,9 @@ class OciCandidateTests(unittest.TestCase):
     def test_region_witness_is_not_a_fallback_or_authoritative_oracle(self):
         with tempfile.TemporaryDirectory() as tmp:
             world = pathlib.Path(tmp)
-            (world / "region").mkdir()
-            (world / "region" / "r.0.0.mca").write_bytes(b"z" * 8192)
+            location = world / "dimensions" / "minecraft" / "overworld" / "region"
+            location.mkdir(parents=True)
+            (location / "r.0.0.mca").write_bytes(b"z" * 8192)
             outcome = stopped_world_region_witness(world)
             self.assertTrue(outcome["host_observer_only"])
             self.assertFalse(outcome["native_truenas_oracle_pass"])
