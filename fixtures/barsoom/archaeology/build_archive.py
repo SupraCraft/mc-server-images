@@ -67,7 +67,7 @@ setblock ~1 ~-1 ~4 minecraft:cut_sandstone
 fill ~-1 ~-10 ~9 ~1 ~-7 ~12 minecraft:air replace
 # Lower chamber storage, an artifact and inscriptions (books require text fixture later).
 setblock ~4 ~-10 ~17 minecraft:chest[facing=west]
-item replace block ~4 ~-10 ~17 container.0 with minecraft:heart_of_the_sea 1
+item replace block ~4 ~-10 ~17 container.0 with minecraft:heart_of_the_sea[minecraft:custom_data={barsoom_arch:{harbor_seal:1b}}] 1
 item replace block ~4 ~-10 ~17 container.1 with minecraft:book 1
 setblock ~-5 ~-10 ~17 minecraft:sea_lantern
 setblock ~-4 ~-10 ~19 minecraft:chiseled_deepslate
@@ -77,7 +77,7 @@ summon minecraft:marker ~0 ~-10 ~17 {Tags:["barsoom_arch.archive"]}
 setblock ~-11 ~0 ~5 minecraft:weathered_copper
 setblock ~11 ~0 ~5 minecraft:oxidized_copper''')
 func('attempt_restore', '''scoreboard players set @s barsoom_arch.accept 0
-execute if score #built barsoom_arch.state matches 1.. if score #well barsoom_arch.state matches 0 if entity @e[type=minecraft:marker,tag=barsoom_arch.well,distance=..6] store result score @s barsoom_arch.accept run clear @s minecraft:heart_of_the_sea 1
+execute if score #built barsoom_arch.state matches 1.. if score #well barsoom_arch.state matches 0 if entity @e[type=minecraft:marker,tag=barsoom_arch.well,distance=..6] store result score @s barsoom_arch.accept run clear @s minecraft:heart_of_the_sea[minecraft:custom_data~{barsoom_arch:{harbor_seal:1b}}] 1
 execute if score @s barsoom_arch.accept matches 1.. run function barsoom_arch:restore
 execute unless score @s barsoom_arch.accept matches 1.. run tellraw @s {"text":"You need the archive's sea seal and must stand beside the old well.","color":"red"}''')
 func('restore', '''scoreboard players set #well barsoom_arch.state 1

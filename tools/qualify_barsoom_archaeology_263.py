@@ -13,7 +13,7 @@ from qualify_vanilla_world_artifact_activation_263 import Refused,require
 
 ROOT=Path(__file__).resolve().parents[1]
 BUILDER=ROOT/'fixtures/barsoom/archaeology/build_archive.py'
-PACK_SHA='bc2913b22b397528ddf9ae5b9f10029edd20b447438b0a933b72b2d48b3435ce'
+PACK_SHA='a81eb98447f097d373233342786d94d2b8634c2f28d2d26543fd5b205663fd81'
 PORT=25597
 
 def ready(p, log, timeout=170):
@@ -67,7 +67,11 @@ def run(evidence,steps):
             check(proc,log,'execute if score #built barsoom_arch.state matches 1 if score #well barsoom_arch.state matches 0','SITE_INITIALIZED')
             check(proc,log,'execute if block 4 75 17 minecraft:chest if block 0 85 4 minecraft:ladder[facing=south] if block 1 84 4 minecraft:cut_sandstone if block 9 85 1 minecraft:air','ROOM_AND_LADDER')
             check(proc,log,'execute if entity @e[type=minecraft:marker,tag=barsoom_arch.well] if entity @e[type=minecraft:marker,tag=barsoom_arch.archive]','SURFACE_AND_BURIED_MARKERS')
-            check(proc,log,'execute if items block 4 75 17 container.0 minecraft:heart_of_the_sea','CANONICAL_ITEM_IN_REAL_CHEST')
+            check(proc,log,'execute if items block 4 75 17 container.0 minecraft:heart_of_the_sea[minecraft:custom_data~{barsoom_arch:{harbor_seal:1b}}]','CANONICAL_ORIGIN_MARKED_ITEM_IN_CHEST')
+            # Test fixture's unrelated lookalike must fail the *same* item predicate.
+            send(proc,'setblock 6 75 18 minecraft:chest')
+            send(proc,'item replace block 6 75 18 container.0 with minecraft:heart_of_the_sea 1')
+            check(proc,log,'execute unless items block 6 75 18 container.0 minecraft:heart_of_the_sea[minecraft:custom_data~{barsoom_arch:{harbor_seal:1b}}]','UNMARKED_LOOKALIKE_REJECTED')
             check(proc,log,'execute if block 0 84 0 minecraft:cut_sandstone','WELL_DRY_BEFORE_REPAIR')
             steps.append('bounded_surface_archive_shaft_markers_loot_verified')
             # Server-authored positive restoration tests the mechanical consequence,

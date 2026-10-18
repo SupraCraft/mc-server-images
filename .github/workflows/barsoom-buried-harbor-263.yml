@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           python3 -m py_compile fixtures/barsoom/archaeology/build_archive.py tools/qualify_barsoom_archaeology_263.py
           python3 fixtures/barsoom/archaeology/build_archive.py --out "$RUNNER_TEMP/archaeology.zip"
-          echo "bc2913b22b397528ddf9ae5b9f10029edd20b447438b0a933b72b2d48b3435ce  $RUNNER_TEMP/archaeology.zip" | sha256sum -c -
+          echo "a81eb98447f097d373233342786d94d2b8634c2f28d2d26543fd5b205663fd81  $RUNNER_TEMP/archaeology.zip" | sha256sum -c -
       - name: Native Minecraft 26.3 buried harbor and save-state oracles
         shell: bash
         run: |

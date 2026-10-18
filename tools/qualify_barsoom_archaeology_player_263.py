@@ -15,7 +15,7 @@ from qualify_vanilla_world_artifact_activation_263 import Refused,require,oracle
 ROOT=Path(__file__).resolve().parents[1]
 BUILDER=ROOT/'fixtures/barsoom/archaeology/build_archive.py'
 BOT_SCRIPT=ROOT/'tools/probe_mineflayer_archaeology_263.js'
-EXPECTED_SHA='bc2913b22b397528ddf9ae5b9f10029edd20b447438b0a933b72b2d48b3435ce'
+EXPECTED_SHA='a81eb98447f097d373233342786d94d2b8634c2f28d2d26543fd5b205663fd81'
 BOT_NAME='SupraArchProbe';PORT=25597
 
 def ready(proc,log,timeout=160):
