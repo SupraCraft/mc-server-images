@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: SemperSupra/agent-dispatch
-          ref: 789d09e55032152260d3ca2816a858e3119d8754
+          ref: 3c1725c58fc0d643d233b961599a41da8713d428
           path: .deps/pinned-anvil
           persist-credentials: false
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C .deps/accepted-producer rev-parse HEAD)" = 7f888b5829f4e5576d5ce512d86327348c43f01e
-          test "$(git -C .deps/pinned-anvil rev-parse HEAD)" = 789d09e55032152260d3ca2816a858e3119d8754
+          test "$(git -C .deps/pinned-anvil rev-parse HEAD)" = 3c1725c58fc0d643d233b961599a41da8713d428
           python3 -m py_compile tools/qualify_vanilla_datapack_player_263.py
           python3 -m unittest discover -s tests -p 'test_op4n_anvil_decoder_263.py' -v
           (cd .deps/pinned-anvil && python3 -m unittest tests.test_native_vanilla263_anvil_blocks -v)
