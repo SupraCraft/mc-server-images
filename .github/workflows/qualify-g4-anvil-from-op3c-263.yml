@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: SemperSupra/agent-dispatch
-          ref: c0a1cc4dbddc231b57e96a1d3acbfe67fb9c2405
+          ref: decf783158da603e6b01a53a057183c650f2c935
           path: .deps/agent-dispatch
           persist-credentials: false
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C .deps/accepted-producer rev-parse HEAD)" = 7f888b5829f4e5576d5ce512d86327348c43f01e
-          test "$(git -C .deps/agent-dispatch rev-parse HEAD)" = c0a1cc4dbddc231b57e96a1d3acbfe67fb9c2405
+          test "$(git -C .deps/agent-dispatch rev-parse HEAD)" = decf783158da603e6b01a53a057183c650f2c935
           python3 -m py_compile tools/qualify_op3c_real_anvil_decoder_263.py
           python3 -m unittest discover -s tests -p 'test_qualify_op3c_real_anvil_decoder_263.py' -v
           python3 -m unittest discover -s tests -p 'test_qualify_vanilla_datapack_player_263.py' -v
@@ -77,7 +77,7 @@ jobs:
           r=json.load(open(sys.argv[1]))
           assert r["schema"]=="supracraft.op3c-real-vanilla263-g4-anvil-source-qualification/1"
           assert r["real_op3c_player_qualified"] is True
-          assert r["decoder_source_ref"]=="c0a1cc4dbddc231b57e96a1d3acbfe67fb9c2405"
+          assert r["decoder_source_ref"]=="decf783158da603e6b01a53a057183c650f2c935"
           assert r["physical_truenas_apply"]=="HOLD" and r["g4_acceptance"]=="HOLD"
           assert not r["native_truenas_oracle_pass"] and not r["op4o_022_admitted"]
           assert not r["raw_world_bytes_published"] and not r["server_binary_published"]
