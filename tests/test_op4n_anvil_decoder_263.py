@@ -52,6 +52,22 @@ class SourceSafetyTests(unittest.TestCase):
             self.assertFalse(result["native_truenas_g4_pass"])
             self.assertFalse(invoked)
 
+    def test_symlinked_parent_directory_never_read(self):
+        with tempfile.TemporaryDirectory() as d:
+            world = pathlib.Path(d) / "world"
+            foreign = pathlib.Path(d) / "foreign"
+            foreign.mkdir()
+            (foreign / "r.0.0.mca").write_bytes(b"X" * 8192)
+            parent = world / "dimensions/minecraft/overworld/region"
+            parent.parent.mkdir(parents=True)
+            parent.symlink_to(foreign, target_is_directory=True)
+            called = []
+            row = stopped_real_anvil_diagnostic(
+                world, "rollback", lambda blob,stage:called.append(stage))
+            self.assertEqual(row["classification"], "REGION_SYMLINK_REFUSED")
+            self.assertFalse(row["native_truenas_g4_pass"])
+            self.assertEqual(called, [])
+
     def test_mismatched_decoder_digest_and_stage_refused(self):
         with tempfile.TemporaryDirectory() as d:
             world=pathlib.Path(d)
@@ -61,11 +77,27 @@ class SourceSafetyTests(unittest.TestCase):
             for witness in (
                 {"classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
                  "block_state_expectations_matched":True,
-                 "stage":"preaction","region_sha256":"0"*64},
+                 "stage":"preaction","region_sha256":"0"*64,
+                 "native_guest_server_owned_bytes_proven":False,
+                 "backend_independent_world_oracle_pass":False},
                 {"classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
                  "block_state_expectations_matched":True,
                  "stage":"rollback",
-                 "region_sha256":hashlib.sha256(b"0"*8192).hexdigest()},
+                 "region_sha256":hashlib.sha256(b"0"*8192).hexdigest(),
+                 "native_guest_server_owned_bytes_proven":False,
+                 "backend_independent_world_oracle_pass":False},
+                {"classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
+                 "block_state_expectations_matched":True,
+                 "stage":"preaction",
+                 "region_sha256":hashlib.sha256(b"0"*8192).hexdigest(),
+                 "native_guest_server_owned_bytes_proven":True,
+                 "backend_independent_world_oracle_pass":False},
+                {"classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
+                 "block_state_expectations_matched":True,
+                 "stage":"preaction",
+                 "region_sha256":hashlib.sha256(b"0"*8192).hexdigest(),
+                 "native_guest_server_owned_bytes_proven":False,
+                 "backend_independent_world_oracle_pass":True},
             ):
                 result=stopped_real_anvil_diagnostic(
                     world,"preaction",lambda blob,stage:witness)
@@ -82,7 +114,9 @@ class SourceSafetyTests(unittest.TestCase):
                 "classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
                 "block_state_expectations_matched":True,
                 "stage":stage,
-                "region_sha256":hashlib.sha256(blob).hexdigest()}
+                "region_sha256":hashlib.sha256(blob).hexdigest(),
+                "native_guest_server_owned_bytes_proven":False,
+                "backend_independent_world_oracle_pass":False}
             result=stopped_real_anvil_diagnostic(world,"rollback",good)
             self.assertEqual(result["classification"],"STANDALONE_REAL_263_DECODER_MATCH")
             self.assertFalse(result["native_truenas_g4_pass"])
