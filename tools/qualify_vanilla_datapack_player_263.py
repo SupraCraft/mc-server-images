@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import uuid
 import json
 import os
@@ -142,8 +143,66 @@ def player_places_core(root: Path, proc: subprocess.Popen,
         # Never store worker stdout or an unsanitized world in public evidence.
 
 
+# These fixed codes are from the pinned public decoder source. Never retain
+# arbitrary exception strings or guest/world material in a public receipt.
+_ANVIL_REFUSALS = frozenset({
+    "NBT_SIZE", "NBT_TRUNCATED", "NBT_STRING_TOO_LONG",
+    "NBT_UTF8_INVALID", "NBT_RECURSION", "NBT_ARRAY_BOUNDS",
+    "NBT_LIST_BOUNDS", "NBT_TAG_UNSUPPORTED", "NBT_DUPLICATE_NAME",
+    "NBT_COMPOUND_TOO_LARGE", "NBT_ROOT_NOT_COMPOUND",
+    "NBT_TRAILING_BYTES", "REGION_FILE_BOUNDS",
+    "REGION_CHUNK_NOT_OWNED", "REGION_CHUNK_LENGTH_INVALID",
+    "REGION_COMPRESSION_UNSUPPORTED", "REGION_TRUNCATED",
+    "REGION_DECOMPRESS_BOUNDS", "REGION_WRONG_CHUNK",
+    "FIXTURE_COORDINATE_DRIFT", "SECTION_LIST_INVALID",
+    "SECTION_ID_AMBIGUOUS", "BLOCK_PALETTE_MISSING",
+    "BLOCK_PALETTE_INVALID", "BLOCK_DATA_REQUIRED",
+    "BLOCK_DATA_INVALID", "BLOCK_DATA_TRUNCATED",
+    "BLOCK_PALETTE_INDEX_INVALID", "SERVER_BLOCK_CONSEQUENCE_ABSENT",
+    "STAGE_NOT_ADMITTED",
+})
+
+
+def stopped_real_anvil_diagnostic(world: Path, stage: str, decoder) -> dict:
+    """Observe actual stopped standalone 26.3 bytes, never publish them.
+
+    Public OP-3C fixture is NOT an authenticated native TrueNAS guest; even a
+    successful decoder result may only qualify this standalone source oracle.
+    """
+    if stage not in ("preaction", "candidate", "rollback"):
+        return {"classification": "BAD_STAGE", "native_truenas_g4_pass": False}
+    fixed = world / "dimensions/minecraft/overworld/region/r.0.0.mca"
+    try:
+        size = fixed.stat().st_size
+        if not 8192 <= size <= 64 * 1024 * 1024 or not fixed.is_file():
+            return {"classification": "REGION_FILE_BOUNDS",
+                    "native_truenas_g4_pass": False}
+        blob = fixed.read_bytes()
+        if len(blob) != size:
+            return {"classification": "REGION_FILE_DRIFT",
+                    "native_truenas_g4_pass": False}
+        witness = decoder(blob, stage)
+        if witness.get("classification") != "UNTRUSTED_REGION_BYTES_DECODED_ONLY" or not witness.get("block_state_expectations_matched"):
+            return {"classification": "DECODER_UNEXPECTED_VERDICT",
+                    "native_truenas_g4_pass": False}
+        return {"classification": "STANDALONE_REAL_263_DECODER_MATCH",
+                "stage": stage, "native_truenas_g4_pass": False,
+                "region_bytes_published": False}
+    except OSError:
+        return {"classification": "REGION_UNAVAILABLE",
+                "native_truenas_g4_pass": False}
+    except Exception as exc:
+        # Preserve fixed public-source refusal codes only. Do not retain raw
+        # error text, world bytes, paths, or runtime/provider exceptions.
+        code = str(exc)
+        return {"classification": "DECODER_REFUSED",
+                "reason": code if code in _ANVIL_REFUSALS else "UNCLASSIFIED",
+                "native_truenas_g4_pass": False,
+                "region_bytes_published": False}
+
+
 def execute(candidate: Path, manifest: dict, evidence: dict, *,
-            operator_setup: bool = False) -> dict:
+            operator_setup: bool = False, anvil_decoder=None) -> dict:
     accepted = validate_candidate(candidate, manifest)
     info = evidence["artifact_version_json"]
     require(info.get("id") == "26.3" and
@@ -166,11 +225,15 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
         snapshot = root / "snapshot" / "baseline-world"
         handles = []
         stages = []
+        decoder_observations = {}
         try:
             proc, log = launch(home, jar, evidence, "client-baseline", handles)
             configure_fixture(proc, log)
             require(stop_server(proc) == 0, "BASELINE_SAVE_STOP_FAILED")
             baseline_region = stopped_world_region_witness(active)
+            if anvil_decoder is not None:
+                decoder_observations["preaction"] = stopped_real_anvil_diagnostic(
+                    active, "preaction", anvil_decoder)
             stages.append("baseline_quiesced")
             baseline_sha = tree_hash(active)
             snapshot.parent.mkdir()
@@ -196,6 +259,9 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
             stages.append("player_placed_core_and_pack_reacted")
             require(stop_server(proc) == 0, "PLAYER_CANDIDATE_STOP_FAILED")
             candidate_region = stopped_world_region_witness(active)
+            if anvil_decoder is not None:
+                decoder_observations["candidate"] = stopped_real_anvil_diagnostic(
+                    active, "candidate", anvil_decoder)
             candidate_sha = tree_hash(active)
             require(candidate_sha != baseline_sha and staged.is_file(),
                     "ACTIVATED_WORLD_NOT_PERSISTED")
@@ -221,6 +287,9 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                    "OP3C_SAME_PLAYER_ACTION_NO_PACK_CONSEQUENCE")
             require(stop_server(proc) == 0, "PLAYER_ROLLBACK_STOP_FAILED")
             rollback_region = stopped_world_region_witness(active)
+            if anvil_decoder is not None:
+                decoder_observations["rollback"] = stopped_real_anvil_diagnostic(
+                    active, "rollback", anvil_decoder)
             stages.append("same_player_action_did_not_restore_without_pack")
 
             return {
@@ -239,6 +308,8 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                     "candidate": candidate_region,
                     "rollback": rollback_region,
                 },
+                **({"op4n_pinned_anvil_decoder": decoder_observations}
+                   if anvil_decoder is not None else {}),
                 "candidate_world_sha256": candidate_sha,
                 "restored_world_sha256": restored_sha,
                 "stages": stages,
@@ -275,11 +346,24 @@ def main() -> int:
     p.add_argument("--evidence", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--operator-setup", action="store_true")
+    p.add_argument("--anvil-decoder-file", type=Path)
     args = p.parse_args()
     try:
+        decoder = None
+        if args.anvil_decoder_file is not None:
+            if args.anvil_decoder_file.name != "qualify_native_vanilla263_anvil_blocks.py":
+                raise ValueError("PINNED_ANVIL_DECODER_FILENAME_INVALID")
+            spec = importlib.util.spec_from_file_location(
+                "accepted_agent_dispatch_anvil_decoder", args.anvil_decoder_file)
+            if spec is None or spec.loader is None:
+                raise ValueError("PINNED_ANVIL_DECODER_UNAVAILABLE")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            decoder = module.inspect
         result = execute(args.candidate, json.loads(args.manifest.read_text()),
                          json.loads(args.evidence.read_text()),
-                         operator_setup=args.operator_setup)
+                         operator_setup=args.operator_setup,
+                         anvil_decoder=decoder)
         code = 0
     except Exception as exc:
         result = {
