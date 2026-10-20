@@ -1,4 +1,5 @@
 """Source-only negative checks for opt-in, public-safe real 26.3 decoder diagnostic."""
+import hashlib
 import pathlib
 import tempfile
 import sys
@@ -35,16 +36,58 @@ class SourceSafetyTests(unittest.TestCase):
                 raise ValueError("NBT_LIST_BOUNDS")
             output=stopped_real_anvil_diagnostic(world,"preaction",fixed_error)
             self.assertEqual(output["reason"],"NBT_LIST_BOUNDS")
+    def test_symlink_region_refused_before_decoder_reads(self):
+        with tempfile.TemporaryDirectory() as d:
+            world=pathlib.Path(d)
+            fixed=world/"dimensions/minecraft/overworld/region/r.0.0.mca"
+            fixed.parent.mkdir(parents=True)
+            outside=world/"outside-region.mca"
+            outside.write_bytes(b"X"*8192)
+            fixed.symlink_to(outside)
+            invoked=[]
+            result=stopped_real_anvil_diagnostic(
+                world, "preaction",
+                lambda blob,stage: invoked.append(True))
+            self.assertEqual(result["classification"],"REGION_SYMLINK_REFUSED")
+            self.assertFalse(result["native_truenas_g4_pass"])
+            self.assertFalse(invoked)
+
+    def test_mismatched_decoder_digest_and_stage_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            world=pathlib.Path(d)
+            fixed=world/"dimensions/minecraft/overworld/region/r.0.0.mca"
+            fixed.parent.mkdir(parents=True)
+            fixed.write_bytes(b"0"*8192)
+            for witness in (
+                {"classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
+                 "block_state_expectations_matched":True,
+                 "stage":"preaction","region_sha256":"0"*64},
+                {"classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
+                 "block_state_expectations_matched":True,
+                 "stage":"rollback",
+                 "region_sha256":hashlib.sha256(b"0"*8192).hexdigest()},
+            ):
+                result=stopped_real_anvil_diagnostic(
+                    world,"preaction",lambda blob,stage:witness)
+                self.assertEqual(result["classification"],
+                                 "DECODER_UNEXPECTED_VERDICT")
+
     def test_positive_does_not_promote_truenas(self):
         with tempfile.TemporaryDirectory() as d:
             world=pathlib.Path(d)
             fixed=world/"dimensions/minecraft/overworld/region/r.0.0.mca"
             fixed.parent.mkdir(parents=True)
             fixed.write_bytes(b"0"*8192)
-            good=lambda blob,stage: {"classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY","block_state_expectations_matched":True}
+            good=lambda blob,stage: {
+                "classification":"UNTRUSTED_REGION_BYTES_DECODED_ONLY",
+                "block_state_expectations_matched":True,
+                "stage":stage,
+                "region_sha256":hashlib.sha256(blob).hexdigest()}
             result=stopped_real_anvil_diagnostic(world,"rollback",good)
             self.assertEqual(result["classification"],"STANDALONE_REAL_263_DECODER_MATCH")
             self.assertFalse(result["native_truenas_g4_pass"])
             self.assertFalse(result["region_bytes_published"])
+            self.assertEqual(result["region_sha256"],
+                             hashlib.sha256(b"0"*8192).hexdigest())
 
 if __name__ == "__main__": unittest.main()
