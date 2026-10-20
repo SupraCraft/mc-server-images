@@ -13,7 +13,7 @@ class FakeG4Refused(ValueError):
 
 class PublicDiagnosticTests(unittest.TestCase):
     def test_exact_consumed_source_not_new_admission(self):
-        self.assertEqual(PINNED_G4_REF, "c0a1cc4dbddc231b57e96a1d3acbfe67fb9c2405")
+        self.assertEqual(PINNED_G4_REF, "decf783158da603e6b01a53a057183c650f2c935")
         self.assertEqual(STAGES, ("preaction", "candidate", "rollback"))
         self.assertIn("source-qualification", SCHEMA)
 
