@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.util
+import stat
 import uuid
 import json
 import os
@@ -173,20 +174,39 @@ def stopped_real_anvil_diagnostic(world: Path, stage: str, decoder) -> dict:
         return {"classification": "BAD_STAGE", "native_truenas_g4_pass": False}
     fixed = world / "dimensions/minecraft/overworld/region/r.0.0.mca"
     try:
-        size = fixed.stat().st_size
-        if not 8192 <= size <= 64 * 1024 * 1024 or not fixed.is_file():
-            return {"classification": "REGION_FILE_BOUNDS",
+        # Do not follow an attacker-controlled final symlink into a different
+        # region or host file. O_NOFOLLOW also closes the check/open race.
+        if fixed.is_symlink():
+            return {"classification": "REGION_SYMLINK_REFUSED",
                     "native_truenas_g4_pass": False}
-        blob = fixed.read_bytes()
+        if not hasattr(os, "O_NOFOLLOW"):
+            return {"classification": "REGION_NOFOLLOW_UNSUPPORTED",
+                    "native_truenas_g4_pass": False}
+        with os.fdopen(os.open(fixed, os.O_RDONLY | os.O_NOFOLLOW),
+                       "rb") as region_file:
+            identity = os.fstat(region_file.fileno())
+            size = identity.st_size
+            if not stat.S_ISREG(identity.st_mode) or not 8192 <= size <= 64 * 1024 * 1024:
+                return {"classification": "REGION_FILE_BOUNDS",
+                        "native_truenas_g4_pass": False}
+            blob = region_file.read(size + 1)
         if len(blob) != size:
             return {"classification": "REGION_FILE_DRIFT",
                     "native_truenas_g4_pass": False}
+        # Independent SHA binds source decoder to bytes actually opened, not
+        # merely a caller-supplied stage verdict. Hash only, never raw region.
+        digest = hashlib.sha256(blob).hexdigest()
         witness = decoder(blob, stage)
-        if witness.get("classification") != "UNTRUSTED_REGION_BYTES_DECODED_ONLY" or not witness.get("block_state_expectations_matched"):
+        if (type(witness) is not dict or
+                witness.get("classification") != "UNTRUSTED_REGION_BYTES_DECODED_ONLY" or
+                witness.get("block_state_expectations_matched") is not True or
+                witness.get("stage") != stage or
+                witness.get("region_sha256") != digest):
             return {"classification": "DECODER_UNEXPECTED_VERDICT",
                     "native_truenas_g4_pass": False}
         return {"classification": "STANDALONE_REAL_263_DECODER_MATCH",
-                "stage": stage, "native_truenas_g4_pass": False,
+                "stage": stage, "region_sha256": digest,
+                "native_truenas_g4_pass": False,
                 "region_bytes_published": False}
     except OSError:
         return {"classification": "REGION_UNAVAILABLE",
@@ -292,6 +312,17 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                     active, "rollback", anvil_decoder)
             stages.append("same_player_action_did_not_restore_without_pack")
 
+            if anvil_decoder is not None:
+                verified = [decoder_observations.get(k, {})
+                            for k in ("preaction", "candidate", "rollback")]
+                hashes = [v.get("region_sha256") for v in verified]
+                require(all(v.get("classification") ==
+                            "STANDALONE_REAL_263_DECODER_MATCH"
+                            for v in verified),
+                        "REAL_ANVIL_THREE_STAGE_DECODE_REFUSED")
+                require(all(type(h) is str and len(h) == 64 for h in hashes)
+                        and len(set(hashes)) == 3,
+                        "REAL_ANVIL_THREE_STAGE_REPLAY_REFUSED")
             return {
                 "schema": "supracraft.op3c-vanilla-client-world-artifact/1",
                 "classification": "REAL_OFFLINE_PLAYER_ACTION_CAUSAL_ARTIFACT_AND_ROLLBACK",
