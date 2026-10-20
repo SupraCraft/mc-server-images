@@ -24,7 +24,7 @@ from qualify_vanilla_263_oci_disposable import (
 
 ROOT = Path(__file__).resolve().parents[1]
 DECODER = ROOT / ".deps/agent-dispatch/scripts/qualify_native_vanilla263_anvil_blocks.py"
-PINNED_G4_REF = "e400f3a1719a21cf91ebc86ba8d44efea05c1325"
+PINNED_G4_REF = "c0a1cc4dbddc231b57e96a1d3acbfe67fb9c2405"
 STAGES = ("preaction", "candidate", "rollback")
 SCHEMA = "supracraft.op3c-real-vanilla263-g4-anvil-source-qualification/1"
 
