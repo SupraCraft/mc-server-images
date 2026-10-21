@@ -1,0 +1,25 @@
+name: Legacy gameplay motif discovery - source only
+on:
+  push:
+    branches:
+      - feat/legacy-gameplay-motif-discovery-20261022
+    paths:
+      - 'tools/classify_legacy_gameplay_motifs.py'
+      - 'tests/test_classify_legacy_gameplay_motifs.py'
+      - '.github/workflows/legacy-gameplay-motif-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-only-motif-hard-negatives:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python syntax check
+        run: python3 -m py_compile tools/classify_legacy_gameplay_motifs.py tests/test_classify_legacy_gameplay_motifs.py
+      - name: Synthetic hard negatives - no world, no network, no server
+        run: python3 -m unittest discover -s tests -p 'test_classify_legacy_gameplay_motifs.py' -v
