@@ -1,13 +1,62 @@
 """Source-only negative checks for opt-in, public-safe real 26.3 decoder diagnostic."""
 import hashlib
+import json
 import pathlib
 import tempfile
 import sys
 import unittest
+from unittest import mock
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "tools"))
-from qualify_vanilla_datapack_player_263 import stopped_real_anvil_diagnostic
+import qualify_vanilla_datapack_player_263 as op3c
+from qualify_vanilla_datapack_player_263 import (
+    stopped_real_anvil_diagnostic, bounded_public_failure, Refused
+)
 
 class SourceSafetyTests(unittest.TestCase):
+    def test_top_level_failure_receipt_never_publishes_arbitrary_text(self):
+        for raised in (
+            RuntimeError("auth_token=SECRET /mnt/foreign/secret-world"),
+            ValueError("private-provider: bearer=SECRET"),
+            Refused("SECRET_UNRECOGNIZED_CODE"),
+        ):
+            with self.subTest(error=type(raised).__name__):
+                sanitized = bounded_public_failure(raised)
+                self.assertEqual(sanitized["failure"], "UNCLASSIFIED")
+                self.assertEqual(sanitized["error_type"], "UNCLASSIFIED")
+                self.assertNotIn("SECRET", str(sanitized))
+                self.assertNotIn("/mnt/", str(sanitized))
+        accepted = bounded_public_failure(Refused(
+            "REAL_ANVIL_THREE_STAGE_REPLAY_REFUSED"))
+        self.assertEqual(accepted["failure"],
+                         "REAL_ANVIL_THREE_STAGE_REPLAY_REFUSED")
+        self.assertEqual(accepted["error_type"], "Refused")
+        self.assertEqual(bounded_public_failure(ValueError(
+            "PINNED_ANVIL_DECODER_UNAVAILABLE"))["failure"],
+            "PINNED_ANVIL_DECODER_UNAVAILABLE")
+
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            manifest, evidence = root / "manifest.json", root / "evidence.json"
+            manifest.write_text("{}")
+            evidence.write_text("{}")
+            out = root / "public-receipt.json"
+            argv = ["prog", "--candidate", str(root / "candidate.zip"),
+                    "--manifest", str(manifest), "--evidence",
+                    str(evidence), "--out", str(out)]
+            with (mock.patch.object(sys, "argv", argv),
+                  mock.patch.object(op3c, "execute",
+                                    side_effect=RuntimeError(
+                                        "auth_token=PRIVATE /mnt/owned-world"))):
+                self.assertEqual(op3c.main(), 1)
+            receipt = json.loads(out.read_text())
+            self.assertEqual(receipt["classification"], "FAIL")
+            self.assertEqual(receipt["failure"], "UNCLASSIFIED")
+            self.assertEqual(receipt["error_type"], "UNCLASSIFIED")
+            self.assertEqual(receipt["physical_truenas_apply"], "HOLD")
+            self.assertFalse(receipt["operational_selection"])
+            self.assertNotIn("PRIVATE", out.read_text())
+            self.assertNotIn("/mnt/", out.read_text())
+
     def test_no_read_of_missing_world(self):
         with tempfile.TemporaryDirectory() as d:
             observed=stopped_real_anvil_diagnostic(pathlib.Path(d), "preaction",lambda blob,stage: {})
