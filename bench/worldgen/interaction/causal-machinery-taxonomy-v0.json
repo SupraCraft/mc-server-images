@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "status": "research_taxonomy_v0",
+  "purpose": "Model Minecraft world-play machinery as a causal semantic graph rather than isolated blocks or scripts.",
+  "core_model": {
+    "node_roles": [
+      "sensor_input",
+      "signal_transport",
+      "logic_gate",
+      "timer_clock",
+      "state_memory",
+      "condition_query",
+      "semantic_state",
+      "actuator",
+      "content_generator",
+      "presentation_feedback",
+      "world_materializer"
+    ],
+    "edge_types": [
+      "powers",
+      "reads",
+      "writes",
+      "triggers",
+      "gates",
+      "delays",
+      "transforms",
+      "spawns",
+      "moves",
+      "rewards",
+      "reveals",
+      "persists",
+      "renders",
+      "contradicts_if_unsynchronized"
+    ],
+    "invariant": "Every player-meaningful mechanism should be traceable from perceivable input through state/logic to effect and feedback; hidden implementation may support the experience but should not create unexplained or contradictory canonical state."
+  },
+  "embodied_primitives": [
+    {
+      "family": "command_blocks",
+      "semantic_roles": [
+        "logic_gate",
+        "condition_query",
+        "actuator",
+        "orchestrator"
+      ],
+      "capabilities": [
+        "impulse, chain, and repeating execution modes",
+        "conditional/unconditional sequencing",
+        "redstone-triggered or always-active execution",
+        "target-selector and execute-context composition",
+        "invoke functions and commands that read/write scoreboards, storage, entities, blocks, inventories, effects, text, sounds, particles, structures and world state"
+      ],
+      "ux_strengths": [
+        "can be physically embedded in authored machinery",
+        "excellent bridge from redstone events to high-level scripted effects"
+      ],
+      "risks": [
+        "opaque causality if hidden",
+        "tick-heavy repeating chains",
+        "fragile coordinate coupling",
+        "command/version drift"
+      ]
+    },
+    {
+      "family": "redstone_signal_network",
+      "semantic_roles": [
+        "signal_transport",
+        "logic_gate",
+        "timer_clock",
+        "state_memory"
+      ],
+      "capabilities": [
+        "0-15 analog signal strength",
+        "repeaters for direction/delay/re-powering",
+        "comparators for analog reads/subtraction/comparison",
+        "torches and circuit topology for boolean logic",
+        "pulse/clock/latch constructions",
+        "visible physical causality"
+      ],
+      "ux_strengths": [
+        "diegetic and inspectable",
+        "supports puzzles whose causal structure can be learned by players"
+      ],
+      "risks": [
+        "chunk/tick timing sensitivity",
+        "cross-chunk activation complexity",
+        "unreadable spaghetti without spatial discipline"
+      ]
+    },
+    {
+      "family": "trapped_chests_and_container_signals",
+      "semantic_roles": [
+        "sensor_input",
+        "state_memory",
+        "condition_query"
+      ],
+      "capabilities": [
+        "opening a trapped chest emits redstone power",
+        "container inventory can be read through comparator behavior",
+        "container contents can encode puzzle/state inputs",
+        "pairs naturally with hoppers, droppers, dispensers and command logic"
+      ],
+      "ux_strengths": [
+        "interaction is natural Minecraft behavior",
+        "can make loot/opening itself a cause rather than merely a reward"
+      ],
+      "risks": [
+        "surprise traps without signaling can feel arbitrary",
+        "inventory mutation must remain synchronized with semantic state"
+      ]
+    },
+    {
+      "family": "physical_sensors",
+      "semantic_roles": [
+        "sensor_input",
+        "condition_query"
+      ],
+      "examples": [
+        "buttons and levers",
+        "pressure and weighted pressure plates",
+        "tripwire hooks",
+        "observers",
+        "daylight detectors",
+        "sculk sensors and calibrated sculk sensors",
+        "target blocks",
+        "comparators reading containers and selected block states"
+      ],
+      "ux_strengths": [
+        "allow location, motion, sound/vibration, projectile, time and object-state to become gameplay inputs"
+      ]
+    },
+    {
+      "family": "physical_actuators",
+      "semantic_roles": [
+        "actuator",
+        "presentation_feedback"
+      ],
+      "examples": [
+        "pistons and sticky pistons",
+        "doors, trapdoors, fence gates",
+        "dispensers and droppers",
+        "hoppers and crafters",
+        "rails and powered rails",
+        "lamps",
+        "note blocks and jukeboxes",
+        "TNT and environmental transformations"
+      ],
+      "ux_strengths": [
+        "produce visible consequences that help players infer causal relationships"
+      ]
+    }
+  ],
+  "data_driven_primitives": [
+    {
+      "family": "functions_commands_execute",
+      "semantic_roles": [
+        "orchestrator",
+        "condition_query",
+        "actuator"
+      ],
+      "capabilities": [
+        "reusable datapack functions",
+        "execute predicates/context switching",
+        "scheduled/tick-driven logic",
+        "command macros where supported by the data-pack function system",
+        "26.3 compute command and compute-backed data mutation"
+      ]
+    },
+    {
+      "family": "scoreboards_and_command_storage",
+      "semantic_roles": [
+        "semantic_state",
+        "state_memory"
+      ],
+      "capabilities": [
+        "persistent counters, flags and numeric state",
+        "entity/player-scoped state",
+        "structured command storage for non-entity state",
+        "bridge between embodied redstone and hidden semantic rules"
+      ],
+      "design_rule": "Prefer these for authored semantic state over treating redstone wire power as canonical narrative truth."
+    },
+    {
+      "family": "advancements_predicates_tags",
+      "semantic_roles": [
+        "sensor_input",
+        "condition_query",
+        "semantic_state"
+      ],
+      "capabilities": [
+        "event-like player criteria via advancements",
+        "reusable predicates for entity/item/block/context conditions",
+        "tags for declarative semantic grouping",
+        "26.3 richer block matching and slot-source conditions"
+      ]
+    },
+    {
+      "family": "loot_items_recipes_components",
+      "semantic_roles": [
+        "content_generator",
+        "state_memory",
+        "actuator"
+      ],
+      "capabilities": [
+        "loot tables and item modifiers",
+        "custom recipes and 26.3 data-driven potion recipes",
+        "item data components and predicates",
+        "26.3 block_transformer component: an item can transform a block with configured sound/particles",
+        "custom item interaction semantics through components"
+      ]
+    },
+    {
+      "family": "structures_worldgen",
+      "semantic_roles": [
+        "world_materializer",
+        "content_generator"
+      ],
+      "capabilities": [
+        "structure templates and processors",
+        "jigsaw/template composition",
+        "features and placement modifiers",
+        "26.3 template processors and volume-match block predicates",
+        "biome/dimension/environment attributes and spawn behavior"
+      ]
+    }
+  ],
+  "interaction_and_presentation_primitives": [
+    {
+      "family": "interaction_entities",
+      "semantic_roles": [
+        "sensor_input"
+      ],
+      "capabilities": [
+        "invisible configurable hit/interaction surfaces that record attacks and right-click interactions"
+      ],
+      "use_cases": [
+        "custom buttons/hotspots",
+        "interaction zones",
+        "precise UX surfaces decoupled from visible block geometry"
+      ]
+    },
+    {
+      "family": "display_entities",
+      "semantic_roles": [
+        "presentation_feedback"
+      ],
+      "capabilities": [
+        "block, item and text displays with arbitrary transforms and interpolation"
+      ],
+      "use_cases": [
+        "labels",
+        "floating clues",
+        "animated props",
+        "non-solid visual affordances"
+      ]
+    },
+    {
+      "family": "text_ui_audio_particles",
+      "semantic_roles": [
+        "presentation_feedback"
+      ],
+      "capabilities": [
+        "titles, subtitles, actionbar, bossbars, tellraw",
+        "signs/books/text displays",
+        "playsound and music",
+        "particles and visual effects"
+      ],
+      "ux_rule": "Feedback should make the causal result legible without over-explaining the puzzle."
+    },
+    {
+      "family": "resource_packs",
+      "semantic_roles": [
+        "presentation_feedback",
+        "world_materializer"
+      ],
+      "capabilities": [
+        "textures, models, sounds, fonts and UI assets",
+        "custom item/block presentation through model/data-component systems",
+        "post-processing shaders"
+      ]
+    },
+    {
+      "family": "posteffects_26_3",
+      "semantic_roles": [
+        "presentation_feedback"
+      ],
+      "capabilities": [
+        "server command can request add/list/remove/clear post effects on players",
+        "effects are client resource-pack post-processing shaders"
+      ],
+      "caveat": "Server cannot know whether a client-side post effect actually rendered; treat as requested presentation state, not authoritative world truth."
+    }
+  ],
+  "semantic_composition_patterns": [
+    {
+      "pattern": "diegetic_puzzle",
+      "chain": [
+        "sensor_input",
+        "redstone_signal",
+        "logic_gate",
+        "physical_actuator",
+        "presentation_feedback"
+      ],
+      "example": "Player places weighted item -> comparator threshold satisfied -> piston route opens -> lamp/note confirms success."
+    },
+    {
+      "pattern": "hybrid_authored_event",
+      "chain": [
+        "embodied_sensor",
+        "command_block_or_function",
+        "semantic_state",
+        "world_actuator",
+        "presentation_feedback"
+      ],
+      "example": "Player opens trapped chest -> event checks narrative flags -> records theft -> changes faction state -> locks route/spawns response -> audio/text/world change explains consequence."
+    },
+    {
+      "pattern": "persistent_consequence",
+      "chain": [
+        "player_action",
+        "semantic_state_write",
+        "causal_rule",
+        "materialization",
+        "verification"
+      ],
+      "example": "Unique mechanism destroyed -> durable fact prevents regeneration -> later repair requires explicit resource/state transition."
+    },
+    {
+      "pattern": "custom_item_world_verb",
+      "chain": [
+        "item_component",
+        "block_condition",
+        "block_transform",
+        "semantic_event",
+        "feedback"
+      ],
+      "example": "A custom tool transforms only approved ritual blocks, emits particles/sound, and advances a puzzle state."
+    }
+  ],
+  "extraction_targets": [
+    "command block positions/types/commands/conditional-chain topology",
+    "redstone-connected components and signal-direction graph",
+    "container/trapped-chest inventory and comparator dependencies",
+    "observer/sculk/tripwire/pressure/button/lever sensor edges",
+    "piston/dispenser/dropper/hopper/crafter/door/light/note/TNT actuator edges",
+    "scoreboard/storage reads and writes",
+    "datapack function call graph and scheduled/tick entry points",
+    "advancement/predicate/loot/item-modifier/recipe/tag references",
+    "structure/worldgen processor references",
+    "display/interaction entities and player-facing feedback",
+    "resource-pack model/sound/posteffect dependencies"
+  ],
+  "evaluation_questions": [
+    "Can a player perceive the cause before or soon after the effect?",
+    "Is the mechanism state reconstructible and deterministic?",
+    "Does physical state agree with semantic/canonical state?",
+    "Are failure, retry and success states clearly distinguishable?",
+    "Can the mechanism survive chunk unload/reload and server restart?",
+    "Can simultaneous players produce races or double-consume unique state?",
+    "Does regeneration overwrite a committed consequence?",
+    "Is hidden command/datapack machinery doing work that should be visible or explained diegetically?",
+    "Can a generator safely edit the area without severing causal edges?",
+    "Can static analysis recover enough of the graph to drive automated tours/persona tests?"
+  ]
+}

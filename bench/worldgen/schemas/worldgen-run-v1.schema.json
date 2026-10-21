@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/SupraCraft/mc-server-images/bench/worldgen/schemas/worldgen-run-v1.schema.json",
+  "title": "Worldgen Run Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "generator_ref", "seed", "minecraft_version", "execution", "artifacts", "status"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "minLength": 3},
+    "generator_ref": {"type": "string", "minLength": 1},
+    "pipeline_ref": {"type": ["string", "null"]},
+    "seed": {"type": ["integer", "string"]},
+    "scenario": {"type": ["string", "null"]},
+    "minecraft_version": {"const": "26.3"},
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository_visibility", "runner_label", "money_usd", "started_at"],
+      "properties": {
+        "repository_visibility": {"const": "public"},
+        "runner_label": {"type": "string", "minLength": 1},
+        "runner_image": {"type": ["string", "null"]},
+        "money_usd": {"const": 0},
+        "started_at": {"type": "string"},
+        "elapsed_seconds": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "path", "sha256"],
+        "properties": {
+          "kind": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "status": {"type": "string", "enum": ["success", "failed", "blocked", "partial"]},
+    "blocker": {"type": ["string", "null"]}
+  }
+}

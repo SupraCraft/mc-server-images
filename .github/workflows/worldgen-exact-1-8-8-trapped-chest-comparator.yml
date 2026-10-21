@@ -1,0 +1,178 @@
+name: worldgen exact 1.8.8 trapped-chest comparator fixture
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/legacy_trapped_chest_player.js'
+      - 'tools/probe_legacy_trapped_chest_fixture.py'
+      - 'tools/probe_legacy_trapped_chest_comparator_fixture.py'
+      - 'tools/probe_legacy_reference_mechanisms.py'
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/run_legacy_reference_server.py'
+      - 'bench/worldgen/interaction/exact-1.8.8-trapped-chest-comparator-source-evidence-v0.json'
+      - '.github/workflows/worldgen-exact-1-8-8-trapped-chest-comparator.yml'
+
+concurrency:
+  group: worldgen-trapped-chest-comparator-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check nbtlib==2.0.4
+          mkdir -p trapped-chest-comparator-player-runtime
+          cd trapped-chest-comparator-player-runtime
+          npm init -y >/dev/null 2>&1
+          npm install --ignore-scripts --no-audit --no-fund mineflayer@4.39.0
+          echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
+
+      - name: Validate exact comparator source oracle and harness syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/legacy_trapped_chest_player.js
+          python -m py_compile tools/probe_legacy_trapped_chest_fixture.py
+          python -m py_compile tools/probe_legacy_trapped_chest_comparator_fixture.py
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path(
+              "bench/worldgen/interaction/exact-1.8.8-trapped-chest-comparator-source-evidence-v0.json"
+          ).read_text())
+          assert d["schema"]=="supracraft-exact-version-source-evidence/1"
+          assert d["minecraft_version"]=="1.8.8"
+          s=d["observed_source_semantics"]
+          assert s["fixture_expected_empty_signal"]==0
+          assert s["fixture_expected_one_stone_signal"]==1
+          assert "calcRedstoneFromInventory" in s["trapped_chest_comparator_override"]
+          assert "updateComparatorOutputLevel" in s["inventory_mutation_notification"]
+          assert "setInventorySlotContents" in s["replaceitem_mutation"]
+          print("TRAPPED-CHEST-COMPARATOR-SOURCE-ORACLE-PASS")
+          PY
+
+      - name: Run paired exact 1.8.8 inventory comparator fixture
+        run: |
+          mkdir -p out
+          python tools/probe_legacy_trapped_chest_comparator_fixture.py \
+            --version 1.8.8 \
+            --player-client-script tools/legacy_trapped_chest_player.js \
+            --output out/trapped-chest-comparator.json
+
+      - name: Validate inventory fullness channel and preserve opening boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("out/trapped-chest-comparator.json").read_text())
+          assert d["schema"]=="supracraft-paired-legacy-trapped-chest-comparator/1"
+          assert d["minecraft_version"]=="1.8.8"
+          assert d["paired_control_design"] is True
+          assert d["activation_method"]=="paired_inventory_fullness_replaceitem"
+
+          for arm in ("control","activated"):
+              actor=d["player_actor"][arm]
+              assert actor["status"]=="ready"
+              assert actor["minecraft_version"]=="1.8.8"
+              assert actor["protocol_version"]==47
+              assert actor["mineflayer_version"]=="4.39.0"
+
+              setup=d["fixture_setup_verification"][arm]
+              assert setup["all_matched"] is True
+              assert set(setup["checks"])=={
+                  "trapped_chest","comparator_empty_input_state"
+              }
+              assert all(row["matched"] is True for row in setup["checks"].values())
+
+              obs=d["player_observation"][arm]
+              assert obs["schema"]=="supracraft-legacy-trapped-chest-observation/1"
+              assert obs["open_observed"] is False
+              assert obs["max_open_count"]==0
+
+              block=d["comparator_block_state"][arm]
+              assert block["observed"] is True
+
+          inv=d["inventory_fingerprint"]
+          assert inv["control"]["present"] is True
+          assert inv["activated"]["present"] is True
+          assert inv["control"]["item_entry_count"]==0
+          assert inv["activated"]["item_entry_count"]==1
+          assert inv["control"]["sha256"] != inv["activated"]["sha256"]
+
+          signal=d["comparator_output"]
+          assert signal["expected_control"]==0
+          assert signal["expected_activated"]==1
+          assert signal["control"]["present"] is True
+          assert signal["activated"]["present"] is True
+          assert signal["control"]["output_signal"]==0
+          assert signal["activated"]["output_signal"]==1
+
+          evidence=d["evidence"]
+          assert evidence["inventory_transition_observed"] is True
+          assert evidence["comparator_signal_transition_observed"] is True
+          assert evidence["chest_opening_observed"] is False
+
+          boundary=d["channel_boundary"]
+          assert boundary["qualified"]=="inventory_fullness_to_comparator_signal"
+          assert boundary["held_separate"]=="player_open_count_to_redstone_power"
+          assert boundary["player_open_behavior_exercised"] is False
+
+          print(json.dumps({
+              "inventory_fingerprint":inv,
+              "comparator_output":signal,
+              "comparator_block_state":d["comparator_block_state"],
+              "channel_boundary":boundary,
+          },indent=2,sort_keys=True))
+          print("TRAPPED-CHEST-COMPARATOR-PASS")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exact-1.8.8-trapped-chest-comparator
+          path: out/trapped-chest-comparator.json
+          retention-days: 14

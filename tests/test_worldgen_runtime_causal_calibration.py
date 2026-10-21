@@ -1,0 +1,347 @@
+import importlib.util
+import unittest
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+spec=importlib.util.spec_from_file_location(
+    "runtime_calibration",
+    ROOT/"tools"/"analyze_runtime_causal_calibration.py",
+)
+cal=importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(cal)
+
+
+def node(nid,*roles):
+    return {"node_id":nid,"roles":list(roles)}
+
+
+def runtime_row(
+    probe, *, message=False, effect=False, protocol_class=None,
+    changed_feedback=None
+):
+    changed_feedback=changed_feedback or []
+    protocol_added=[]
+    if protocol_class is not None:
+        protocol_added=[{
+            "sha256":"1"*64,
+            "position":1,
+            "component_kind":"translate" if protocol_class=="death" else "string",
+            "semantic_class":protocol_class,
+            "command_verb":None,
+            "count":1,
+        }]
+    return {
+        "probe":{"node_id":probe,"family":"wooden_pressure_plate"},
+        "execution_receipt":{"outcome_class":"fixture"},
+        "presentation_feedback_command_state_changes":[
+            {
+                "node_id":nid,
+                "verb":"effect",
+                "changed_fields":["success_count"],
+                "success_count_changed":True,
+                "control_success_count":0,
+                "activated_success_count":1,
+            }
+            for nid in changed_feedback
+        ],
+        "client_feedback_delta":{
+            "message_events_added":(
+                [{"sha256":"0"*64,"position":"system","count":1}]
+                if message else []
+            ),
+            "message_events_removed":[],
+            "protocol_chat_events_added":protocol_added,
+            "protocol_chat_events_removed":[],
+            "self_effect_events_added":(
+                [{"event":"start","id":1,"amplifier":0,"duration":20,"count":1}]
+                if effect else []
+            ),
+            "self_effect_events_removed":[],
+            "control_truncated":False,
+            "activated_truncated":False,
+        },
+    }
+
+
+class RuntimeCausalCalibrationTests(unittest.TestCase):
+    def test_candidate_only_runtime_feedback_remains_candidate_only(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[
+                node("sensor","sensor_input"),
+                node("dust","signal_transport"),
+                node("feedback","presentation_feedback"),
+            ],
+            "edges":[
+                {
+                    "source":"sensor","target":"dust",
+                    "edge_type":"direct","certainty":"adequate",
+                },
+                {
+                    "a":"dust","b":"feedback",
+                    "edge_type":"physical_adjacency_candidate","certainty":"weak",
+                },
+            ],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row(
+                "sensor",effect=True,changed_feedback=["feedback"]
+            )],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual(
+            "runtime_feedback_with_candidate_only_static_path",
+            w["calibration_class"],
+        )
+        self.assertEqual(
+            "candidate_only",
+            w["static_support"]["to_any_presentation_feedback"]["support_class"],
+        )
+        self.assertEqual(
+            1,
+            w["static_support"]["to_runtime_feedback_command_nodes"]["feedback"][
+                "candidate_path"
+            ]["weak_hop_count"],
+        )
+        self.assertEqual(
+            "scoped_feedback_command_execution_plus_client_delivery",
+            w["runtime_feedback"]["attribution_class"],
+        )
+
+    def test_runtime_delivery_without_static_path_stays_unattributed(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[
+                node("sensor","sensor_input"),
+                node("feedback","presentation_feedback"),
+            ],
+            "edges":[],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row(
+                "sensor",message=True,protocol_class="literal_text"
+            )],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual(
+            "runtime_feedback_without_static_feedback_path",
+            w["calibration_class"],
+        )
+        self.assertEqual(
+            "none",
+            w["static_support"]["to_any_presentation_feedback"]["support_class"],
+        )
+        self.assertEqual(
+            "client_presentation_delivery_without_scoped_feedback_command_state_delta",
+            w["runtime_feedback"]["attribution_class"],
+        )
+
+    def test_literal_payload_hash_match_is_identity_not_execution_claim(self):
+        digest="0"*64
+        feedback=node("feedback","presentation_feedback")
+        feedback["command"]={
+            "verb":"tellraw",
+            "presentation_payload_fingerprints":{
+                "kind":"tellraw_json",
+                "parse_status":"parsed",
+                "json_kind":"string",
+                "literal_text_sha256":digest,
+            },
+        }
+        graph={
+            "schema":"fixture/static",
+            "nodes":[
+                node("sensor","sensor_input"),
+                feedback,
+            ],
+            "edges":[{
+                "source":"sensor","target":"feedback",
+                "edge_type":"exact","certainty":"strong",
+            }],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row(
+                "sensor",message=True,protocol_class="literal_text"
+            )],
+        }
+        original_edges=list(graph["edges"])
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual(original_edges,graph["edges"])
+        self.assertEqual(1,len(w["payload_identity_matches"]))
+        match=w["payload_identity_matches"][0]
+        self.assertEqual(digest,match["sha256"])
+        self.assertTrue(match["unique_static_match"])
+        self.assertEqual(["feedback"],match["static_node_ids"])
+        self.assertEqual(
+            "trusted",
+            match["static_support"]["feedback"]["support_class"],
+        )
+        self.assertEqual(
+            1,
+            w["runtime_feedback"][
+                "authored_literal_payload_hash_match_count"
+            ],
+        )
+        self.assertEqual(
+            1,
+            w["runtime_feedback"][
+                "authored_literal_payload_unique_static_match_count"
+            ],
+        )
+        self.assertEqual(
+            "client_literal_payload_identity_match_without_command_execution_state_delta",
+            w["runtime_feedback"]["attribution_class"],
+        )
+        self.assertEqual(
+            0,
+            w["runtime_feedback"][
+                "scoped_feedback_command_state_change_count"
+            ],
+        )
+
+    def test_death_packet_is_preserved_as_outcome_not_presentation_feedback(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[
+                node("sensor","sensor_input"),
+                node("feedback","presentation_feedback"),
+            ],
+            "edges":[{
+                "source":"sensor","target":"feedback",
+                "edge_type":"exact","certainty":"strong",
+            }],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row(
+                "sensor",message=True,protocol_class="death"
+            )],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual("no_runtime_feedback_witness",w["calibration_class"])
+        self.assertTrue(w["runtime_feedback"]["client_delivery_observed"])
+        self.assertTrue(w["runtime_feedback"]["outcome_event_delta_observed"])
+        self.assertFalse(
+            w["runtime_feedback"]["presentation_delivery_candidate_observed"]
+        )
+        self.assertEqual(
+            {"death":1},
+            w["runtime_feedback"]["protocol_semantic_class_counts"],
+        )
+        self.assertEqual(
+            "client_outcome_event_without_presentation_feedback_attribution",
+            w["runtime_feedback"]["attribution_class"],
+        )
+
+    def test_unclassified_legacy_message_is_not_promoted_to_presentation_feedback(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[node("sensor","sensor_input")],
+            "edges":[],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row("sensor",message=True)],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual("no_runtime_feedback_witness",w["calibration_class"])
+        self.assertTrue(
+            w["runtime_feedback"]["unclassified_message_delta_observed"]
+        )
+        self.assertFalse(
+            w["runtime_feedback"]["presentation_delivery_candidate_observed"]
+        )
+
+    def test_trusted_static_path_is_reported_without_edge_mutation(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[
+                node("sensor","sensor_input"),
+                node("feedback","presentation_feedback"),
+            ],
+            "edges":[{
+                "source":"sensor","target":"feedback",
+                "edge_type":"exact","certainty":"strong",
+            }],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row(
+                "sensor",effect=True,changed_feedback=["feedback"]
+            )],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual(
+            "runtime_feedback_with_trusted_static_path",
+            w["calibration_class"],
+        )
+        self.assertEqual(
+            "trusted",
+            w["static_support"]["to_any_presentation_feedback"]["support_class"],
+        )
+        self.assertEqual(
+            1,
+            w["static_support"]["to_any_presentation_feedback"]["trusted_path"][
+                "hop_count"
+            ],
+        )
+
+    def test_no_runtime_feedback_witness_does_not_claim_calibration(self):
+        graph={
+            "schema":"fixture/static",
+            "nodes":[node("sensor","sensor_input")],
+            "edges":[],
+        }
+        runtime={
+            "schema":"fixture/runtime",
+            "results":[runtime_row("sensor")],
+        }
+        d=cal.analyze(graph,runtime)
+        w=d["witnesses"][0]
+        self.assertEqual("no_runtime_feedback_witness",w["calibration_class"])
+        self.assertFalse(w["runtime_feedback"]["client_delivery_observed"])
+        self.assertFalse(
+            w["runtime_feedback"]["presentation_delivery_candidate_observed"]
+        )
+
+
+    def test_runtime_path_search_horizon_covers_long_bounded_chain(self):
+        graph={}
+        for i in range(42):
+            graph[f"n{i}"]=[]
+        for i in range(41):
+            graph[f"n{i}"].append((
+                f"n{i+1}",
+                {"edge_type":"exact","certainty":"adequate"},
+            ))
+        path=cal.shortest_path(graph,"n0",{"n41"})
+        self.assertIsNotNone(path)
+        self.assertEqual(41,len(path))
+
+    def test_runtime_path_search_horizon_remains_bounded_at_64_hops(self):
+        graph={}
+        for i in range(66):
+            graph[f"n{i}"]=[]
+        for i in range(65):
+            graph[f"n{i}"].append((
+                f"n{i+1}",
+                {"edge_type":"exact","certainty":"adequate"},
+            ))
+        self.assertIsNone(cal.shortest_path(graph,"n0",{"n65"}))
+        self.assertIsNotNone(cal.shortest_path(graph,"n0",{"n64"}))
+        self.assertEqual(64,len(cal.shortest_path(graph,"n0",{"n64"})))
+
+
+
+if __name__=="__main__":
+    unittest.main()

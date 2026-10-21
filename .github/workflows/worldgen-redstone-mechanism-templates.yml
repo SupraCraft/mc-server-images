@@ -1,0 +1,346 @@
+name: worldgen redstone mechanism templates
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bench/worldgen/observability/redstone-mechanism-reference-catalog-v0.json'
+      - 'bench/worldgen/observability/redstone-mechanism-taxonomy-v1.json'
+      - 'bench/worldgen/observability/supracraft-redstone-netlist-v1.schema.json'
+      - 'tools/run_modern_redstone_template_canary.py'
+      - 'tools/run_modern_rs_latch_canary.py'
+      - 'tools/validate_modern_rs_latch.py'
+      - 'tools/correlate_rs_latch_netlist.py'
+      - 'tools/validate_modern_redstone_templates.py'
+      - 'tools/correlate_redstone_template_netlist.py'
+      - 'tools/build_redstone_netlist.py'
+      - 'tools/analyze_modern_causal_machinery.py'
+      - 'tests/test_redstone_netlist.py'
+      - 'tools/causal-microscope/modern-26.3-agent/**'
+      - 'tools/causal-microscope/modern-26.4-snapshot-2-agent/**'
+      - 'tools/discover_minecraft_observability.py'
+      - '.github/workflows/worldgen-redstone-mechanism-templates.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: worldgen-redstone-mechanism-templates-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    name: ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: release
+            version: "26.3"
+            evidence_mode: static
+            evidence_path: probes/26.3-release-identity.json
+            server_jar: out/server-26.3.jar
+            agent_pom: tools/causal-microscope/modern-26.3-agent/pom.xml
+            agent_jar: tools/causal-microscope/modern-26.3-agent/target/causal-microscope-modern-agent-0.1.0-SNAPSHOT.jar
+            adapter_id: modern-26.3-java25
+          - key: snapshot
+            version: "26.4-snapshot-2"
+            evidence_mode: discovery
+            evidence_path: out/discovery/discovery.json
+            server_jar: out/discovery/server.jar
+            agent_pom: tools/causal-microscope/modern-26.4-snapshot-2-agent/pom.xml
+            agent_jar: tools/causal-microscope/modern-26.4-snapshot-2-agent/target/causal-microscope-modern-snapshot-agent-0.1.0-SNAPSHOT.jar
+            adapter_id: modern-26.4-snapshot-2-java25
+
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Enforce public/free execution policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Template contract controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest -v tests.test_redstone_netlist
+          python -m py_compile \
+            tools/run_modern_redstone_template_canary.py \
+            tools/run_modern_rs_latch_canary.py \
+            tools/validate_modern_redstone_templates.py \
+            tools/validate_modern_rs_latch.py \
+            tools/correlate_rs_latch_netlist.py \
+            tools/correlate_redstone_template_netlist.py \
+            tools/build_redstone_netlist.py \
+            tools/analyze_modern_causal_machinery.py \
+            tools/discover_minecraft_observability.py
+
+      - name: Build exact-version observer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -f "${{ matrix.agent_pom }}" -DskipTests package
+          test -s "${{ matrix.agent_jar }}"
+          echo "MICROSCOPE_AGENT=$PWD/${{ matrix.agent_jar }}" >> "$GITHUB_ENV"
+
+      - name: Resolve exact snapshot evidence
+        if: matrix.evidence_mode == 'discovery'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/discovery
+          python tools/discover_minecraft_observability.py probe \
+            --channel snapshot \
+            --expected-version "${{ matrix.version }}" \
+            --expected-java 25 \
+            --work-dir out/discovery \
+            --output out/discovery/discovery.json
+
+      - name: Run stock standard templates
+        id: stock_templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p \
+            out/repeater-d1-stock out/repeater-d1-instrumented \
+            out/repeater-d4-stock out/repeater-d4-instrumented \
+            out/not-gate-stock out/not-gate-instrumented \
+            out/or-gate-stock out/or-gate-instrumented \
+            out/nor-gate-stock out/nor-gate-instrumented \
+            out/and-gate-stock out/and-gate-instrumented \
+            out/xor-gate-stock out/xor-gate-instrumented \
+            out/rising-edge-stock out/rising-edge-instrumented \
+            out/repeater-ring-stock out/repeater-ring-instrumented \
+            out/rs-latch-stock out/rs-latch-instrumented
+
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture repeater_delay --delay 1 \
+            --output-dir out/repeater-d1-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture repeater_delay --delay 4 \
+            --output-dir out/repeater-d4-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture not_gate \
+            --output-dir out/not-gate-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture or_gate \
+            --output-dir out/or-gate-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture nor_gate \
+            --output-dir out/nor-gate-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture and_gate \
+            --output-dir out/and-gate-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture xor_gate \
+            --output-dir out/xor-gate-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture rising_edge_detector \
+            --output-dir out/rising-edge-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture repeater_ring_oscillator \
+            --output-dir out/repeater-ring-stock \
+            --expected-version "${{ matrix.version }}"
+          python tools/run_modern_rs_latch_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --output-dir out/rs-latch-stock \
+            --expected-version "${{ matrix.version }}"
+
+      - name: Preserve instrumented rising-edge trace after stock failure
+        if: failure() && steps.stock_templates.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture rising_edge_detector \
+            --output-dir out/rising-edge-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id "${{ matrix.adapter_id }}" \
+            --expected-version "${{ matrix.version }}"
+
+      - name: Preserve instrumented repeater-ring trace after stock failure
+        if: failure() && steps.stock_templates.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_modern_redstone_template_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --fixture repeater_ring_oscillator \
+            --output-dir out/repeater-ring-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id "${{ matrix.adapter_id }}" \
+            --expected-version "${{ matrix.version }}"
+
+      - name: Run instrumented standard templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          for spec in \
+            "repeater_delay:1:repeater-d1" \
+            "repeater_delay:4:repeater-d4" \
+            "not_gate::not-gate" \
+            "or_gate::or-gate" \
+            "nor_gate::nor-gate" \
+            "and_gate::and-gate" \
+            "xor_gate::xor-gate" \
+            "rising_edge_detector::rising-edge" \
+            "repeater_ring_oscillator::repeater-ring"; do
+            IFS=: read -r fixture delay outname <<< "$spec"
+            args=(
+              --evidence "${{ matrix.evidence_path }}"
+              --server-jar "${{ matrix.server_jar }}"
+              --fixture "$fixture"
+              --output-dir "out/$outname-instrumented"
+              --java-agent "$MICROSCOPE_AGENT"
+              --adapter-id "${{ matrix.adapter_id }}"
+              --expected-version "${{ matrix.version }}"
+            )
+            if [[ -n "$delay" ]]; then
+              args+=(--delay "$delay")
+            fi
+            python tools/run_modern_redstone_template_canary.py "${args[@]}"
+          done
+
+          python tools/run_modern_rs_latch_canary.py \
+            --evidence "${{ matrix.evidence_path }}" \
+            --server-jar "${{ matrix.server_jar }}" \
+            --output-dir out/rs-latch-instrumented \
+            --java-agent "$MICROSCOPE_AGENT" \
+            --adapter-id "${{ matrix.adapter_id }}" \
+            --expected-version "${{ matrix.version }}"
+
+      - name: Validate exact runtime contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/validate_modern_redstone_templates.py \
+            --root out \
+            --version "${{ matrix.version }}" \
+            --output out/redstone-template-runtime-report.json
+          python tools/validate_modern_rs_latch.py \
+            --stock out/rs-latch-stock/result.json \
+            --instrumented out/rs-latch-instrumented/result.json \
+            --trace out/rs-latch-instrumented/trace.jsonl \
+            --version "${{ matrix.version }}" \
+            --output out/rs-latch-runtime-report.json
+
+      - name: Recover standard template netlists and schematics
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fixture in repeater-d1 repeater-d4 not-gate or-gate nor-gate and-gate xor-gate rising-edge repeater-ring rs-latch; do
+            python tools/analyze_modern_causal_machinery.py \
+              --world-zip "out/$fixture-stock/world.zip" \
+              --output "out/$fixture-machinery.json"
+            python tools/build_redstone_netlist.py \
+              --graph "out/$fixture-machinery.json" \
+              --output "out/$fixture-netlist.json" \
+              --dot-output "out/$fixture-functional.dot" \
+              --layers-output "out/$fixture-layers.json"
+          done
+
+      - name: Correlate structure with runtime contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/correlate_redstone_template_netlist.py \
+            --runtime-report out/redstone-template-runtime-report.json \
+            --repeater-d1-netlist out/repeater-d1-netlist.json \
+            --repeater-d4-netlist out/repeater-d4-netlist.json \
+            --not-netlist out/not-gate-netlist.json \
+            --or-netlist out/or-gate-netlist.json \
+            --nor-netlist out/nor-gate-netlist.json \
+            --and-netlist out/and-gate-netlist.json \
+            --xor-netlist out/xor-gate-netlist.json \
+            --rising-edge-netlist out/rising-edge-netlist.json \
+            --ring-netlist out/repeater-ring-netlist.json \
+            --output out/redstone-template-netlist-runtime-correlation.json
+          python tools/correlate_rs_latch_netlist.py \
+            --runtime-report out/rs-latch-runtime-report.json \
+            --netlist out/rs-latch-netlist.json \
+            --output out/rs-latch-netlist-runtime-correlation.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: redstone-mechanism-templates-${{ matrix.version }}
+          path: |
+            out/discovery/discovery.json
+            out/*-stock/result.json
+            out/*-stock/diagnostic.json
+            out/*-stock/world.zip
+            out/*-instrumented/result.json
+            out/*-instrumented/diagnostic.json
+            out/*-instrumented/trace.jsonl
+            out/*-machinery.json
+            out/*-netlist.json
+            out/*-functional.dot
+            out/*-layers.json
+            out/redstone-template-runtime-report.json
+            out/redstone-template-netlist-runtime-correlation.json
+            out/rs-latch-runtime-report.json
+            out/rs-latch-netlist-runtime-correlation.json
+          retention-days: 14

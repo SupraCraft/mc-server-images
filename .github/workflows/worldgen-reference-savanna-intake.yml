@@ -1,0 +1,89 @@
+name: worldgen reference Savanna intake
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/intake_open_reference_world.py'
+      - 'bench/worldgen/reference-worlds/reference-world-corpus-v0.json'
+      - '.github/workflows/worldgen-reference-savanna-intake.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Reference-world intake is authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Hydrate original Savanna Scramble v2 without feedback labels
+        run: |
+          python tools/intake_open_reference_world.py \
+            --world-id reference.savanna-scramble.v2 \
+            --download-page 'https://mapcraft.me/files2/Savanna_Scramble_v2.zip' \
+            --source-page 'https://www.planetminecraft.com/project/savanna-scramble/' \
+            --license 'CC-BY-NC-SA-4.0_with_voice-file-modification-exception' \
+            --attribution 'Savanna Scramble by Ercerus. Source/license authority: Planet Minecraft creator page. Transport mirror: MapCraft.me v2 ZIP; mirror equivalence to creator-hosted bytes is not independently proven. Modification of voice-containing files is prohibited by the creator licensing exception.' \
+            --output-dir out/savanna
+
+      - name: Independent intake invariants
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, pathlib, zipfile
+          out=pathlib.Path("out/savanna")
+          receipt=json.loads((out/"intake-receipt.json").read_text())
+          assert receipt["world_id"]=="reference.savanna-scramble.v2"
+          assert receipt["analysis_blind"] is True
+          assert receipt["human_feedback_labels_loaded"] is False
+          assert len(receipt["original_sha256"])==64
+          assert receipt["original_bytes"] > 1_000_000
+          with zipfile.ZipFile(out/"original-world.zip") as zf:
+              assert zf.testzip() is None
+          attribution=(out/"ATTRIBUTION.md").read_text()
+          assert "Ercerus" in attribution
+          assert "voice" in attribution.lower()
+          print(json.dumps(receipt,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload licensed original plus provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-savanna-scramble-v2-original
+          path: |
+            out/savanna/original-world.zip
+            out/savanna/ATTRIBUTION.md
+            out/savanna/intake-receipt.json
+          retention-days: 14

@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "status": "research_evaluation_profiles_v0",
+  "principle": "metric applicability is declared by intended gameplay profile; not_applicable is not failure and must not enter an aggregate score",
+  "profiles": [
+    {
+      "profile_id": "survival_sandbox",
+      "intent": "Vanilla-like survival/progression where player is expected to gather resources and advance through ordinary Minecraft systems.",
+      "required_metric_families": [
+        "spawn_safety",
+        "resource_accessibility",
+        "biome_ecology",
+        "progression_affordances",
+        "runtime_spawning"
+      ],
+      "optional_metric_families": [
+        "architecture",
+        "story",
+        "puzzle_legibility",
+        "collectibles"
+      ],
+      "not_applicable_by_default": []
+    },
+    {
+      "profile_id": "authored_adventure",
+      "intent": "Authored experience where progression is controlled by designed interactions, story, objectives, or scripted mechanics rather than ordinary survival economy.",
+      "required_metric_families": [
+        "progression_legibility",
+        "affordance_legibility",
+        "navigation",
+        "retry_recovery",
+        "runtime_integrity",
+        "pacing"
+      ],
+      "optional_metric_families": [
+        "resource_accessibility",
+        "combat",
+        "collectibles",
+        "story",
+        "architecture",
+        "atmosphere"
+      ],
+      "not_applicable_by_default": [
+        "vanilla_survival_start_bundle"
+      ]
+    },
+    {
+      "profile_id": "collectathon_exploration",
+      "intent": "Authored exploration centered on finding collectibles/POIs, route discovery, optional content, and spatial curiosity.",
+      "required_metric_families": [
+        "navigation",
+        "landmark_prominence",
+        "collectible_discoverability",
+        "hint_scaffolding",
+        "exploration",
+        "pacing"
+      ],
+      "optional_metric_families": [
+        "atmosphere",
+        "architecture",
+        "story",
+        "parkour",
+        "runtime_integrity"
+      ],
+      "not_applicable_by_default": [
+        "vanilla_survival_start_bundle",
+        "ore_progression"
+      ]
+    },
+    {
+      "profile_id": "puzzle_adventure",
+      "intent": "Progression depends on understanding and manipulating authored puzzle mechanics.",
+      "required_metric_families": [
+        "affordance_legibility",
+        "progression_legibility",
+        "challenge_information_sufficiency",
+        "retry_recovery",
+        "runtime_integrity"
+      ],
+      "optional_metric_families": [
+        "story",
+        "atmosphere",
+        "architecture",
+        "combat"
+      ],
+      "not_applicable_by_default": [
+        "vanilla_survival_start_bundle",
+        "biome_ecology_quality"
+      ]
+    },
+    {
+      "profile_id": "parkour_time_trial",
+      "intent": "Movement challenge where route readability, checkpoints, difficulty progression and retry cost dominate.",
+      "required_metric_families": [
+        "route_legibility",
+        "movement_feasibility",
+        "difficulty_progression",
+        "checkpoint_spacing",
+        "retry_recovery",
+        "performance"
+      ],
+      "optional_metric_families": [
+        "visual_variety",
+        "exploration",
+        "secrets",
+        "multiplayer"
+      ],
+      "not_applicable_by_default": [
+        "vanilla_survival_start_bundle",
+        "ore_progression",
+        "runtime_mob_ecology"
+      ]
+    },
+    {
+      "profile_id": "showcase_exploration",
+      "intent": "World primarily intended for looking, wandering, architecture/terrain appreciation or machinima rather than survival progression.",
+      "required_metric_families": [
+        "visual_variety",
+        "architecture",
+        "place_identity",
+        "navigation",
+        "performance"
+      ],
+      "optional_metric_families": [
+        "atmosphere",
+        "realism",
+        "discoverability"
+      ],
+      "not_applicable_by_default": [
+        "vanilla_survival_start_bundle",
+        "ordinary_progression"
+      ]
+    },
+    {
+      "profile_id": "generated_settlement",
+      "intent": "Procedurally generated settlement evaluated as an adaptive, embodied, narratively evocative and visually coherent built environment across varying input terrain.",
+      "required_metric_families": [
+        "terrain_adaptation",
+        "embodied_functionality",
+        "navigation",
+        "resource_food_security_affordances",
+        "narrative_integration",
+        "visual_design_coherence"
+      ],
+      "optional_metric_families": [
+        "architecture",
+        "place_identity",
+        "villager_functionality",
+        "mob_safety",
+        "transport",
+        "performance"
+      ],
+      "not_applicable_by_default": [
+        "vanilla_survival_start_bundle",
+        "global_world_biome_diversity"
+      ]
+    }
+  ],
+  "profile_assignments": [
+    {
+      "world_ref": "reference.core.v1.4",
+      "primary_profile": "puzzle_adventure",
+      "secondary_profiles": [
+        "authored_adventure"
+      ],
+      "evidence_ref": "creator description: puzzle/adventure, multiple endings, authored mechanics"
+    },
+    {
+      "world_ref": "reference.savanna-scramble.v2",
+      "primary_profile": "collectathon_exploration",
+      "secondary_profiles": [
+        "authored_adventure"
+      ],
+      "evidence_ref": "creator description: exploration, jump'n'run, story, hidden treasures/collectibles"
+    }
+  ],
+  "reporting_rule": "Every metric receipt must report applicable|not_applicable|unknown before pass/fail or comparison. Cross-profile comparisons may compare shared descriptive dimensions but may not treat profile-specific omissions as deficits."
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "supracraft-exact-version-source-evidence/1",
+  "subject": "minecraft-1.8.8-trapped-chest-inventory-comparator",
+  "minecraft_version": "1.8.8",
+  "source": {
+    "repository": "ZeroedInOnTech/1.8.8",
+    "commit": "47c636a70ff7fc60c52ac3ac4bca426e8b55743a",
+    "mcp_build": 918,
+    "files": [
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockChest.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneComparator.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/tileentity/TileEntityComparator.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/tileentity/TileEntity.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/tileentity/TileEntityChest.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/inventory/Container.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/command/CommandReplaceItem.java"
+    ]
+  },
+  "observed_source_semantics": {
+    "trapped_chest_comparator_override": "BlockChest comparator input override calls Container.calcRedstoneFromInventory(getLockableContainer(...)); this channel is inventory fullness, not numPlayersUsing.",
+    "inventory_formula": "For each nonempty slot add stackSize/min(inventoryLimit,itemMaxStackSize), divide by inventory size, then return floor(fraction*14)+(nonemptySlotCount>0?1:0).",
+    "fixture_expected_empty_signal": 0,
+    "fixture_expected_one_stone_signal": 1,
+    "comparator_input_resolution": "BlockRedstoneComparator.calculateInputStrength examines the block at comparatorPos.offset(FACING) and uses its comparator input override when present.",
+    "comparator_signal_storage": "BlockRedstoneComparator.getActiveSignal returns TileEntityComparator.OutputSignal; onStateChange stores calculateOutput(...) into that tile entity.",
+    "inventory_mutation_notification": "TileEntityChest.setInventorySlotContents calls markDirty; TileEntity.markDirty marks the chunk dirty and calls world.updateComparatorOutputLevel for the chest block.",
+    "replaceitem_mutation": "CommandReplaceItem block mode resolves the target IInventory and invokes setInventorySlotContents for the selected slot."
+  },
+  "runtime_hypothesis": {
+    "fixture_channel": "paired exact-1.8.8 fresh worlds with a single trapped chest and an adjacent comparator facing the chest; control chest remains empty while activated chest receives one stone in slot.container.0 through replaceitem",
+    "expected_signal": "control OutputSignal=0; activated OutputSignal=1",
+    "opening_isolation": "the exact-version Mineflayer actor only loads the fixture chunk and never opens the chest in either arm"
+  },
+  "inference_boundary": [
+    "This fixture may promote only trapped-chest inventory/fullness to comparator signal behavior exercised by the paired empty-versus-one-item intervention.",
+    "Comparator evidence must not be used as a substitute for trapped-chest player-open-count redstone power.",
+    "The source formula grounds the exact 1.8.8 0..15 computation, but this bounded runtime fixture exercises only the 0-to-1 transition.",
+    "Comparator signal execution is structural/runtime evidence, not player perception, comprehension, legibility, fun, fairness, immersion, or overall quality."
+  ]
+}

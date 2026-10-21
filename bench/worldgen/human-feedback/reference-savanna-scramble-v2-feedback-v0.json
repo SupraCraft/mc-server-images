@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "corpus_id": "reference.savanna-scramble.v2.human-feedback-v0",
+  "world_ref": "reference.savanna-scramble.v2",
+  "artifact_version_ref": "sha256:c2fcb67b2750901b137e7f0bcc756558ffa5a4ad790a1503df2166f6eb58d5e3",
+  "metrics_frozen_ref": "github-actions:SupraCraft/mc-server-images/36565553649",
+  "coding_status": "initial_source-grounded_non_exhaustive",
+  "authority_refs": [
+    "SupraCraft/mc-structure-foundry-private#7",
+    "mark-e-deyoung/concept-policy-engine-private#301"
+  ],
+  "structured_context": [
+    {
+      "source_ref": "https://www.minecraftmaps.com/49389-savanna-scramble",
+      "source_role": "community_rating",
+      "observed": "4.6/5 from 50 ratings at retrieval time",
+      "interpretation": "sampling/context only; not mapped to quality or fun"
+    }
+  ],
+  "annotations": [
+    {
+      "schema_version": 1,
+      "annotation_id": "savanna.pmc.player.relaxing-scenery.001",
+      "world_ref": "reference.savanna-scramble.v2",
+      "artifact_version_ref": "v2",
+      "source": {
+        "source_ref": "https://www.planetminecraft.com/project/savanna-scramble/#comment-5198156",
+        "source_role": "forum_comment",
+        "independence_group": "planetminecraft-savanna-thread",
+        "published_at": "2024-10-16",
+        "retrieved_at": "2026-09-29",
+        "author_relation": "independent_player"
+      },
+      "language": "en",
+      "script": "Latn",
+      "evidence_scope": "player_experience",
+      "original_text_ref": "Planet Minecraft comment by Taiwanese player; no bulk copy retained",
+      "translation_ref": null,
+      "reporter_context": {
+        "skill_level": null,
+        "solo_multiplayer": "unknown",
+        "genre_preference": null,
+        "session_context": "completed/recorded playthrough; commenter identifies as Taiwanese and Chinese-speaking"
+      },
+      "concept_annotations": [
+        {
+          "concept_id": "research.game_world.atmospheric_coherence",
+          "evidence_relation": "supports",
+          "certainty": "strong",
+          "native_lexicalization": "atmosphere is relaxing",
+          "notes": "Player independently praises scenery, decoration, music, and atmosphere as a coherent positive experience."
+        },
+        {
+          "concept_id": "research.game_world.coziness_comfort",
+          "evidence_relation": "supports",
+          "certainty": "adequate",
+          "native_lexicalization": "relaxing",
+          "notes": "Relaxing is not assumed exact-equivalent to cozy; retained as overlapping comfort evidence."
+        },
+        {
+          "concept_id": "research.game_world.challenge_information_sufficiency",
+          "evidence_relation": "supports",
+          "certainty": "strong",
+          "native_lexicalization": "hint fireworks",
+          "notes": "Player explicitly reports that hint fireworks make collecting all 22 key items easy enough to complete."
+        },
+        {
+          "concept_id": "research.game_world.fun_enjoyment",
+          "evidence_relation": "supports",
+          "certainty": "strong",
+          "native_lexicalization": "enjoy playing this map",
+          "notes": "Direct player enjoyment report; not inferred from rating/downloads."
+        },
+        {
+          "concept_id": "research.game_world.perceived_polish",
+          "evidence_relation": "supports",
+          "certainty": "adequate",
+          "native_lexicalization": "scenery is beautiful / decoration is exquisite",
+          "notes": "Aesthetic praise is only partial evidence for polish and is kept separate from technical correctness."
+        }
+      ],
+      "confounds": [
+        "translation_uncertainty"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "annotation_id": "savanna.creator.v2-fix.002",
+      "world_ref": "reference.savanna-scramble.v2",
+      "artifact_version_ref": "v2",
+      "source": {
+        "source_ref": "https://www.planetminecraft.com/project/savanna-scramble/",
+        "source_role": "author_changelog",
+        "independence_group": "savanna-author-changelog",
+        "published_at": "2023-04-10",
+        "retrieved_at": "2026-09-29",
+        "author_relation": "creator"
+      },
+      "language": "en",
+      "script": "Latn",
+      "evidence_scope": "world_intrinsic",
+      "original_text_ref": "Planet Minecraft v2 update log; no bulk copy retained",
+      "translation_ref": null,
+      "reporter_context": {
+        "skill_level": null,
+        "solo_multiplayer": null,
+        "genre_preference": null,
+        "session_context": "version-2 revision history"
+      },
+      "concept_annotations": [
+        {
+          "concept_id": "research.game_world.perceived_polish",
+          "evidence_relation": "supports",
+          "certainty": "adequate",
+          "native_lexicalization": "bridge pieces ... no longer disappear",
+          "notes": "Creator records a concrete collectible/inventory defect fix; creator evidence is separated from player judgment."
+        },
+        {
+          "concept_id": "research.game_world.affordance_legibility",
+          "evidence_relation": "mentions",
+          "certainty": "weak",
+          "native_lexicalization": "bridge pieces from barrels",
+          "notes": "The changelog establishes a collectible interaction path, but does not by itself prove its legibility to players."
+        }
+      ],
+      "confounds": []
+    }
+  ],
+  "initial_alignment_questions": [
+    "Can the benchmark identify authored adventure starts where survival-resource scarcity is intentional rather than defective?",
+    "Can visual/audio/tour features explain atmosphere/coherence reports without claiming to measure player relaxation directly?",
+    "Can hint/collectible discoverability be measured through persona completion and time-to-discovery rather than resource counts?",
+    "Can technical collectible-loss defects be detected independently from visual polish?"
+  ],
+  "preliminary_blind_metric_interpretation": [
+    "The static survival bundle is absent near spawn, but this should be treated as profile mismatch rather than a negative quality result for an adventure/collectathon map.",
+    "A chest within five horizontal blocks of spawn supports an authored interaction start more than a vanilla survival start.",
+    "The single observed biome palette in the bounded spawn window does not imply low experiential variety across the full authored map."
+  ],
+  "limitations": [
+    "The main independent qualitative comment is English text written by a Taiwanese Chinese-speaking player; it is cross-cultural evidence but not a native-Chinese lexicalization sample.",
+    "Creator changelog evidence is not independent player feedback.",
+    "The 4.6/5 rating is retained only as structured context and is not translated into any concept annotation.",
+    "No overall score is derived."
+  ]
+}

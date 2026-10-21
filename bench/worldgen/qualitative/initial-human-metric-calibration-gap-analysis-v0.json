@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "status": "initial_calibration_gap_analysis",
+  "frozen_evidence": [
+    {
+      "world_ref": "reference.core.v1.4",
+      "artifact_sha256": "61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998",
+      "blind_metrics_ref": "github-actions:36560410515",
+      "feedback_ref": "bench/worldgen/human-feedback/reference-core-v1.4-feedback-v0.json"
+    },
+    {
+      "world_ref": "reference.savanna-scramble.v2",
+      "artifact_sha256": "c2fcb67b2750901b137e7f0bcc756558ffa5a4ad790a1503df2166f6eb58d5e3",
+      "blind_metrics_ref": "github-actions:36565553649",
+      "feedback_ref": "bench/worldgen/human-feedback/reference-savanna-scramble-v2-feedback-v0.json"
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "calibration.core.mechanism-density-not-legibility",
+      "world_ref": "reference.core.v1.4",
+      "blind_observation": {
+        "command_blocks": 1445,
+        "redstone_components": 4638,
+        "chests_plus_trapped_chests": 1083,
+        "block_id_diversity_non_air": 100
+      },
+      "human_concepts": [
+        "research.game_world.progression_legibility",
+        "research.game_world.affordance_legibility",
+        "research.game_world.challenge_information_sufficiency",
+        "research.game_world.perceived_polish"
+      ],
+      "alignment": "coverage_gap",
+      "interpretation": "Static mechanism density demonstrates complexity and interaction substrate, but cannot establish whether intended interactions or progression are legible. Player reports and creator fixes identify exactly those failures.",
+      "benchmark_action": [
+        "add persona/runtime stall detection",
+        "measure time-to-next-progress-event",
+        "measure failed/unproductive interaction attempts",
+        "retain command/redstone density only as mechanism-complexity/context, not quality"
+      ]
+    },
+    {
+      "finding_id": "calibration.savanna.survival-metric-profile-mismatch",
+      "world_ref": "reference.savanna-scramble.v2",
+      "blind_observation": {
+        "spawn": [
+          0,
+          65,
+          0
+        ],
+        "chunks_seen": 81,
+        "biome_palette_diversity": 1,
+        "survival_bundle_observed": false,
+        "nearby_container_distance": 5,
+        "normal_survival_resources_observed": 0
+      },
+      "human_concepts": [
+        "research.game_world.atmospheric_coherence",
+        "research.game_world.challenge_information_sufficiency",
+        "research.game_world.fun_enjoyment",
+        "research.game_world.perceived_polish"
+      ],
+      "alignment": "metric_not_applicable_to_intended_profile",
+      "interpretation": "Absence of normal survival resources near spawn is expected for an authored adventure/collectathon start and must not become a negative quality signal. The nearby chest is more relevant to the intended interaction profile.",
+      "benchmark_action": [
+        "make resource/progression expectations conditional on declared gameplay profile",
+        "distinguish survival-start feasibility from authored-adventure feasibility",
+        "add collectible/hint/goal affordance metrics for adventure profiles",
+        "never aggregate profile-inapplicable metrics into a general score"
+      ]
+    },
+    {
+      "finding_id": "calibration.savanna.human-primary-atmosphere",
+      "world_ref": "reference.savanna-scramble.v2",
+      "blind_observation": {
+        "current_static_analyzers": "no audio/theme/atmosphere measurement",
+        "camera_lane": "official 26.3 client tour qualified on generated reference world, reusable after version-compatible treatment"
+      },
+      "human_concepts": [
+        "research.game_world.atmospheric_coherence",
+        "research.game_world.coziness_comfort",
+        "research.game_world.fun_enjoyment"
+      ],
+      "alignment": "human_primary_unexplained",
+      "interpretation": "Player praise for scenery, decoration, music, relaxation and enjoyment is not explained by the current resource/biome static analyzer. This is an evidence-backed reason to add visual/audio/theme analysis, while keeping relaxation/fun as human-primary outcomes.",
+      "benchmark_action": [
+        "add rendered-view diversity/coherence features",
+        "preserve audio/theme metadata where applicable",
+        "test visual/audio proxies against held-out human reports",
+        "do not directly score relaxation, immersion or fun"
+      ]
+    }
+  ],
+  "falsification_questions": [
+    "Can a mechanically dense map be highly legible, falsifying any simple complexity->confusion rule?",
+    "Can an adventure map with no survival resources receive strong human approval because resources are profile-inapplicable?",
+    "Can visual-coherence metrics distinguish a praised authored environment from a visually incoherent but mechanically valid one?",
+    "Do persona stall/backtrack metrics predict reported confusion after controlling for puzzle difficulty and player skill?"
+  ],
+  "disposition": "Use these as benchmark-development hypotheses; do not change Concept Authority or produce an overall quality score from two worlds."
+}

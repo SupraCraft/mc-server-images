@@ -1,0 +1,115 @@
+name: worldgen reference Savanna blind metrics
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful Savanna Scramble v2 intake run
+        required: true
+        default: "36562497826"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/analyze_worldgen_region_resources.py'
+      - '.github/workflows/worldgen-reference-savanna-metrics.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36562497826"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Reference-world analysis is authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-savanna-scramble-v2-original
+          path: source
+
+      - name: Assert analysis remains feedback blind
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f source/original-world.zip
+          ! grep -R -n -E '"(human_themes|sentiment|overall_quality_label|comment_text)"' bench/worldgen/reference-worlds
+
+      - name: Run bounded spawn-centered resource and biome analysis
+        run: |
+          mkdir -p out
+          python tools/analyze_worldgen_region_resources.py \
+            --world-zip source/original-world.zip \
+            --chunk-radius 4 \
+            --output out/savanna-v2-resources-biomes.json
+
+      - name: Independent blind invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          d=json.loads(pathlib.Path("out/savanna-v2-resources-biomes.json").read_text())
+          assert d["chunks_seen"] > 0
+          assert d["decode_errors"] == []
+          assert len(d["spawn_reference"]["position"]) == 3
+          assert d["biome_palette_diversity"] > 0
+          print(json.dumps({
+              "spawn_reference":d["spawn_reference"],
+              "bounded_chunk_box":d["bounded_chunk_box"],
+              "chunks_seen":d["chunks_seen"],
+              "biome_palette_diversity":d["biome_palette_diversity"],
+              "resource_counts":d["resource_counts"],
+              "early_game_static_checks":d["early_game_static_checks"],
+              "nearest_resource_from_spawn":d["nearest_resource_from_spawn"],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-savanna-scramble-v2-blind-static-metrics
+          path: out/
+          retention-days: 14
