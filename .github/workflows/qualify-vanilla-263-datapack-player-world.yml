@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/qualify_vanilla_datapack_player_263.py'
       - 'tests/test_qualify_vanilla_datapack_player_263.py'
+      - 'tests/test_op4n_anvil_decoder_263.py'
       - '.github/workflows/qualify-vanilla-263-datapack-player-world.yml'
   workflow_dispatch:
 permissions:
