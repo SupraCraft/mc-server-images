@@ -387,6 +387,52 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                     out.close()
 
 
+
+# No arbitrary RuntimeError/OS error text, paths, provider diagnostics or
+# credentials may be printed or retained by public hosted-runner artifacts.
+# Unknown first failures remain explicitly UNCLASSIFIED, never promoted.
+_OP3C_PUBLIC_FAILURE_CODES = frozenset({
+    "PINNED_ANVIL_DECODER_FILENAME_INVALID",
+    "PINNED_ANVIL_DECODER_UNAVAILABLE",
+    "VANILLA_SOURCE_VERSION_DRIFT",
+    "PROVEN_PLAYER_WORKER_MISSING",
+    "SERVER_SHA256_MISMATCH",
+    "BASELINE_SAVE_STOP_FAILED",
+    "BASELINE_SNAPSHOT_READBACK_MISMATCH",
+    "OVERWRITE_REFUSED",
+    "STAGED_CANDIDATE_DIGEST_MISMATCH",
+    "PLAYER_CANDIDATE_STOP_FAILED",
+    "ACTIVATED_WORLD_NOT_PERSISTED",
+    "ACTIVE_SERVER_RESTORE_REFUSED",
+    "FAILED_TO_ROLLBACK_EXACT_WORLD",
+    "PLAYER_ROLLBACK_STOP_FAILED",
+    "REAL_ANVIL_THREE_STAGE_DECODE_REFUSED",
+    "REAL_ANVIL_THREE_STAGE_REPLAY_REFUSED",
+    "PLAYER_RESULT_SCHEMA",
+    "PLAYER_PLACEMENT_NOT_PROVED",
+    "PLAYER_PROTOCOL_DRIFT",
+    "PLAYER_LOGIN_OR_SPAWN_UNPROVEN",
+    "PLAYER_BACKEND_JOIN_NOT_OBSERVED",
+    "OFFLINE_OPERATOR_BOT_COMMANDS_UNPROVEN",
+})
+
+
+def bounded_public_failure(exc: Exception) -> dict:
+    """Only fixed source-authored codes cross the public receipt boundary."""
+    code = (exc.args[0] if len(exc.args) == 1 and
+            type(exc.args[0]) is str else None)
+    accepted = (type(exc) is Refused and code in _OP3C_PUBLIC_FAILURE_CODES)
+    pin_error = (type(exc) is ValueError and code in {
+        "PINNED_ANVIL_DECODER_FILENAME_INVALID",
+        "PINNED_ANVIL_DECODER_UNAVAILABLE",
+    })
+    return {
+        "error_type": "Refused" if accepted else (
+            "ValueError" if pin_error else "UNCLASSIFIED"),
+        "failure": code if accepted or pin_error else "UNCLASSIFIED",
+    }
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--candidate", type=Path, required=True)
@@ -417,8 +463,7 @@ def main() -> int:
         result = {
             "schema": "supracraft.op3c-vanilla-client-world-artifact/1",
             "classification": "FAIL",
-            "error_type": type(exc).__name__,
-            "failure": str(exc)[:250],
+            **bounded_public_failure(exc),
             "physical_truenas_apply": "HOLD",
             "operational_selection": False,
         }
