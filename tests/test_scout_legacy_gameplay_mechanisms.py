@@ -8,11 +8,11 @@ from tools.scout_legacy_gameplay_mechanisms import scout
 
 def fixture():
     kinds = [
-        ("0:0:0", "stone_pressure_plate"),
-        ("1:0:0", "redstone_wire"),
-        ("2:0:0", "command_block"),
-        ("3:0:0", "sticky_piston"),
-        ("4:0:0", "redstone_wire"),
+        ("0,1,0", "stone_pressure_plate"),
+        ("1,1,0", "redstone_wire"),
+        ("1,0,0", "command_block"),
+        ("2,1,0", "sticky_piston"),
+        ("4,1,0", "redstone_wire"),
     ]
     def e(source, target, edge_type):
         return {"source": source, "target": target, "edge_type": edge_type,
@@ -26,17 +26,17 @@ def fixture():
         ],
         "edges": {
             "physical_adjacency_candidates": [
-                {"a": "0:0:0", "b": "2:0:0",
+                {"a": "0,1,0", "b": "1,0,0",
                  "edge_type": "physical_adjacency_candidate"}
             ],
             "direct_redstone_edges": [
-                e("0:0:0", "1:0:0", "legacy_sensor_direct_dust_power"),
-                e("1:0:0", "2:0:0", "legacy_dust_downward_command_power"),
-                e("1:0:0", "3:0:0", "legacy_dust_direct_component_power"),
-                e("4:0:0", "3:0:0", "legacy_dust_direct_component_power"),
+                e("0,1,0", "1,1,0", "legacy_sensor_direct_dust_power"),
+                e("1,1,0", "1,0,0", "legacy_dust_downward_command_power"),
+                e("1,1,0", "2,1,0", "legacy_dust_direct_component_power"),
+                e("4,1,0", "2,1,0", "legacy_dust_direct_component_power"),
             ],
             "command_world_targets": [
-                {"source": "2:0:0", "target": None, "target_position": [900, 50, 4],
+                {"source": "1,0,0", "target": None, "target_position": [900, 50, 4],
                  "edge_type": "command_world_target"}
             ],
             "command_chain_candidates": [],
@@ -68,8 +68,8 @@ class CandidateScoutTests(unittest.TestCase):
 
     def test_wrong_direction_does_not_join(self):
         f = fixture()
-        f["edges"]["direct_redstone_edges"][0]["source"] = "1:0:0"
-        f["edges"]["direct_redstone_edges"][0]["target"] = "0:0:0"
+        f["edges"]["direct_redstone_edges"][0]["source"] = "1,1,0"
+        f["edges"]["direct_redstone_edges"][0]["target"] = "0,1,0"
         self.assertEqual(scout(f, version="1.8.8")["hypotheses"][0]["structural_path_count"], 0)
 
     def test_unqualified_version_fails_closed(self):
@@ -103,7 +103,7 @@ class CandidateScoutTests(unittest.TestCase):
 
     def test_no_raw_source_coordinates_or_names_in_receipt(self):
         output = json.dumps(scout(fixture(), version="1.8.8"))
-        for forbidden in ["0:0:0", "900", "/secretworld", "private-test-actor"]:
+        for forbidden in ["0,1,0", "target_position", "/secretworld", "private-test-actor"]:
             self.assertNotIn(forbidden, output)
 
     def test_deterministic_readback(self):
