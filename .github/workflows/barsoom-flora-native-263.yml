@@ -1,0 +1,53 @@
+name: Barsoom flora vanilla Java 26.3 native qualification
+on:
+  pull_request:
+    paths:
+      - 'fixtures/barsoom/flora/**'
+      - 'tools/qualify_barsoom_flora_263.py'
+      - 'tests/test_barsoom_flora_263.py'
+      - '.github/workflows/barsoom-flora-native-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barsoom-flora-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-five-species:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Compile, static tests, and deterministic pack
+        run: |
+          set -euo pipefail
+          python3 -m py_compile fixtures/barsoom/flora/gen_flora_263.py tools/qualify_barsoom_flora_263.py tests/test_barsoom_flora_263.py
+          python3 tests/test_barsoom_flora_263.py
+          mkdir -p "$RUNNER_TEMP/barsoom-flora"
+          python3 fixtures/barsoom/flora/gen_flora_263.py --output "$RUNNER_TEMP/barsoom-flora/pack.zip" --receipt "$RUNNER_TEMP/barsoom-flora/static-receipt.json"
+      - name: Official 26.3 parse, native five-species witnesses, idempotency and restart
+        run: |
+          set -euo pipefail
+          python3 tools/qualify_barsoom_flora_263.py \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/barsoom-flora/native-receipt.json"
+      - name: Retain compact receipts only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-flora-native-263
+          path: |
+            ${{ runner.temp }}/barsoom-flora/static-receipt.json
+            ${{ runner.temp }}/barsoom-flora/native-receipt.json
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Scope and safety
+        if: always()
+        run: echo 'Research fixture only; native vanilla-proxy block witnesses, not custom models, ecosystem, stock client HIL or physical TrueNAS acceptance.' >> "$GITHUB_STEP_SUMMARY"
