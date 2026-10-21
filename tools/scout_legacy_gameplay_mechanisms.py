@@ -35,6 +35,26 @@ EDGE_BUCKETS = {
     "chain_facing_successor_candidate": "programmable_chain",
     "conditional_predecessor_success_dependency": "programmable_chain",
 }
+ALLOWED_BY_COLLECTION = {
+    "direct_redstone_edges": {
+        "legacy_sensor_direct_dust_power", "legacy_pressure_plate_support_power",
+        "legacy_button_attached_support_power", "legacy_dust_horizontal_connection",
+        "legacy_dust_direct_component_power", "legacy_dust_downward_command_power",
+    },
+    "repeater_command_block_conduction_edges": {
+        "legacy_repeater_through_command_block_to_dust_power",
+    },
+    "command_world_targets": {"command_world_target"},
+    "container_comparator_reads": {"container_inventory_signal_read"},
+    "trapped_chest_open_power_candidates": {"open_emits_redstone_power_candidate"},
+    "command_chain_candidates": {
+        "chain_facing_successor_candidate",
+        "conditional_predecessor_success_dependency",
+    },
+    "command_authored_redstone_edges": {
+        "authored_redstone_block_direct_power", "legacy_setblock_redstone_direct_power",
+    },
+}
 EDGE_GROUPS = {
     "direct_redstone_edges",
     "repeater_command_block_conduction_edges",
@@ -119,9 +139,8 @@ def scout(graph, *, version):
         if not bucket:
             ignored[str(kind)] += 1
             continue
-        if collection == "command_world_targets" and kind != "command_world_target":
-            ignored[str(kind)] += 1
-            continue
+        if kind not in ALLOWED_BY_COLLECTION[collection]:
+            raise ValueError("recognized edge in incorrect domain collection")
         counts[bucket] += 1
         sf = node_map[src].get("family")
         df = node_map[dst].get("family") if dst is not None else None
