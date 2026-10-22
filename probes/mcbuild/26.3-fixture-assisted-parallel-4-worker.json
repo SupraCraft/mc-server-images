@@ -1,0 +1,2823 @@
+{
+  "controller": {
+    "collision_rule": "team-collisionRule-never",
+    "fixture_support_cleanup": "server-console-setblock-air",
+    "inventory_provisioning": "server-console-clear-and-give",
+    "positioning": "server-console-teleport-with-temporary-barrier-support",
+    "receipts": [
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.113,
+        "dispatch_to_placed_ms": 942.983,
+        "fixture_support_at": [
+          0,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z0-x0",
+        "index": 0,
+        "worker_elapsed_ms": 941.315,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.1,
+        "dispatch_to_placed_ms": 683.902,
+        "fixture_support_at": [
+          1,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z0-x1",
+        "index": 1,
+        "worker_elapsed_ms": 673.43,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.252,
+        "dispatch_to_placed_ms": 617.895,
+        "fixture_support_at": [
+          2,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z0-x2",
+        "index": 2,
+        "worker_elapsed_ms": 601.285,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.099,
+        "dispatch_to_placed_ms": 643.494,
+        "fixture_support_at": [
+          3,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z0-x3",
+        "index": 3,
+        "worker_elapsed_ms": 640.095,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.102,
+        "dispatch_to_placed_ms": 574.843,
+        "fixture_support_at": [
+          4,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z0-x4",
+        "index": 4,
+        "worker_elapsed_ms": 573.009,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.086,
+        "dispatch_to_placed_ms": 631.045,
+        "fixture_support_at": [
+          5,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z0-x5",
+        "index": 5,
+        "worker_elapsed_ms": 624.653,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.086,
+        "dispatch_to_placed_ms": 566.972,
+        "fixture_support_at": [
+          5,
+          69,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z1-x5",
+        "index": 6,
+        "worker_elapsed_ms": 563.74,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.076,
+        "dispatch_to_placed_ms": 643.167,
+        "fixture_support_at": [
+          4,
+          69,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z1-x4",
+        "index": 7,
+        "worker_elapsed_ms": 641.325,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.121,
+        "dispatch_to_placed_ms": 634.722,
+        "fixture_support_at": [
+          3,
+          69,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z1-x3",
+        "index": 8,
+        "worker_elapsed_ms": 633.832,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.077,
+        "dispatch_to_placed_ms": 592.816,
+        "fixture_support_at": [
+          2,
+          69,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z1-x2",
+        "index": 9,
+        "worker_elapsed_ms": 591.893,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.076,
+        "dispatch_to_placed_ms": 570.148,
+        "fixture_support_at": [
+          1,
+          69,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z1-x1",
+        "index": 10,
+        "worker_elapsed_ms": 569.264,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.064,
+        "dispatch_to_placed_ms": 604.11,
+        "fixture_support_at": [
+          0,
+          69,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y70-z1-x0",
+        "index": 11,
+        "worker_elapsed_ms": 603.1,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.066,
+        "dispatch_to_placed_ms": 657.998,
+        "fixture_support_at": [
+          0,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z0-x0",
+        "index": 12,
+        "worker_elapsed_ms": 655.543,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.059,
+        "dispatch_to_placed_ms": 554.854,
+        "fixture_support_at": [
+          1,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z0-x1",
+        "index": 13,
+        "worker_elapsed_ms": 539.611,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 1.577,
+        "dispatch_to_placed_ms": 523.458,
+        "fixture_support_at": [
+          2,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z0-x2",
+        "index": 14,
+        "worker_elapsed_ms": 523.416,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.061,
+        "dispatch_to_placed_ms": 500.991,
+        "fixture_support_at": [
+          3,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z0-x3",
+        "index": 15,
+        "worker_elapsed_ms": 499.381,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 3.083,
+        "dispatch_to_placed_ms": 544.764,
+        "fixture_support_at": [
+          4,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z0-x4",
+        "index": 16,
+        "worker_elapsed_ms": 543.801,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.054,
+        "dispatch_to_placed_ms": 570.909,
+        "fixture_support_at": [
+          5,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z0-x5",
+        "index": 17,
+        "worker_elapsed_ms": 567.98,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.056,
+        "dispatch_to_placed_ms": 581.375,
+        "fixture_support_at": [
+          5,
+          70,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z1-x5",
+        "index": 18,
+        "worker_elapsed_ms": 580.56,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.062,
+        "dispatch_to_placed_ms": 554.008,
+        "fixture_support_at": [
+          4,
+          70,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z1-x4",
+        "index": 19,
+        "worker_elapsed_ms": 548.002,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.138,
+        "dispatch_to_placed_ms": 543.403,
+        "fixture_support_at": [
+          3,
+          70,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z1-x3",
+        "index": 20,
+        "worker_elapsed_ms": 542.334,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.042,
+        "dispatch_to_placed_ms": 568.561,
+        "fixture_support_at": [
+          2,
+          70,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z1-x2",
+        "index": 21,
+        "worker_elapsed_ms": 565.739,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.058,
+        "dispatch_to_placed_ms": 547.358,
+        "fixture_support_at": [
+          1,
+          70,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z1-x1",
+        "index": 22,
+        "worker_elapsed_ms": 546.516,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.087,
+        "dispatch_to_placed_ms": 767.636,
+        "fixture_support_at": [
+          0,
+          70,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y71-z1-x0",
+        "index": 23,
+        "worker_elapsed_ms": 551.46,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.096,
+        "dispatch_to_placed_ms": 562.106,
+        "fixture_support_at": [
+          0,
+          71,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z0-x0",
+        "index": 24,
+        "worker_elapsed_ms": 561.188,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.117,
+        "dispatch_to_placed_ms": 583.64,
+        "fixture_support_at": [
+          1,
+          71,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z0-x1",
+        "index": 25,
+        "worker_elapsed_ms": 581.604,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.086,
+        "dispatch_to_placed_ms": 572.863,
+        "fixture_support_at": [
+          2,
+          71,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z0-x2",
+        "index": 26,
+        "worker_elapsed_ms": 570.034,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.084,
+        "dispatch_to_placed_ms": 568.39,
+        "fixture_support_at": [
+          3,
+          71,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z0-x3",
+        "index": 27,
+        "worker_elapsed_ms": 558.646,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.081,
+        "dispatch_to_placed_ms": 601.057,
+        "fixture_support_at": [
+          4,
+          71,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z0-x4",
+        "index": 28,
+        "worker_elapsed_ms": 596.964,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.061,
+        "dispatch_to_placed_ms": 649.417,
+        "fixture_support_at": [
+          5,
+          71,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z0-x5",
+        "index": 29,
+        "worker_elapsed_ms": 638.135,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.104,
+        "dispatch_to_placed_ms": 560.193,
+        "fixture_support_at": [
+          5,
+          71,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z1-x5",
+        "index": 30,
+        "worker_elapsed_ms": 559.243,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.097,
+        "dispatch_to_placed_ms": 566.383,
+        "fixture_support_at": [
+          4,
+          71,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z1-x4",
+        "index": 31,
+        "worker_elapsed_ms": 562.066,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.192,
+        "dispatch_to_placed_ms": 602.758,
+        "fixture_support_at": [
+          3,
+          71,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z1-x3",
+        "index": 32,
+        "worker_elapsed_ms": 597.29,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.078,
+        "dispatch_to_placed_ms": 535.975,
+        "fixture_support_at": [
+          2,
+          71,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z1-x2",
+        "index": 33,
+        "worker_elapsed_ms": 534.293,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.179,
+        "dispatch_to_placed_ms": 732.243,
+        "fixture_support_at": [
+          1,
+          71,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z1-x1",
+        "index": 34,
+        "worker_elapsed_ms": 549.277,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.164,
+        "dispatch_to_placed_ms": 708.995,
+        "fixture_support_at": [
+          0,
+          71,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y72-z1-x0",
+        "index": 35,
+        "worker_elapsed_ms": 553.45,
+        "worker_index": 0
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.09,
+        "dispatch_to_placed_ms": 649.887,
+        "fixture_support_at": [
+          0,
+          72,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z0-x0",
+        "index": 36,
+        "worker_elapsed_ms": 648.985,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.087,
+        "dispatch_to_placed_ms": 621.575,
+        "fixture_support_at": [
+          1,
+          72,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z0-x1",
+        "index": 37,
+        "worker_elapsed_ms": 620.292,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.096,
+        "dispatch_to_placed_ms": 583.697,
+        "fixture_support_at": [
+          2,
+          72,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z0-x2",
+        "index": 38,
+        "worker_elapsed_ms": 579.122,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.107,
+        "dispatch_to_placed_ms": 550.698,
+        "fixture_support_at": [
+          3,
+          72,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z0-x3",
+        "index": 39,
+        "worker_elapsed_ms": 533.523,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.091,
+        "dispatch_to_placed_ms": 580.229,
+        "fixture_support_at": [
+          4,
+          72,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z0-x4",
+        "index": 40,
+        "worker_elapsed_ms": 579.126,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar3",
+        "controller_prepare_ms": 0.083,
+        "dispatch_to_placed_ms": 588.137,
+        "fixture_support_at": [
+          5,
+          72,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z0-x5",
+        "index": 41,
+        "worker_elapsed_ms": 582.393,
+        "worker_index": 3
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.094,
+        "dispatch_to_placed_ms": 521.36,
+        "fixture_support_at": [
+          5,
+          72,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z1-x5",
+        "index": 42,
+        "worker_elapsed_ms": 520.483,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.087,
+        "dispatch_to_placed_ms": 567.54,
+        "fixture_support_at": [
+          4,
+          72,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z1-x4",
+        "index": 43,
+        "worker_elapsed_ms": 564.035,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.087,
+        "dispatch_to_placed_ms": 611.543,
+        "fixture_support_at": [
+          3,
+          72,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z1-x3",
+        "index": 44,
+        "worker_elapsed_ms": 610.806,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar2",
+        "controller_prepare_ms": 0.078,
+        "dispatch_to_placed_ms": 745.294,
+        "fixture_support_at": [
+          2,
+          72,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z1-x2",
+        "index": 45,
+        "worker_elapsed_ms": 551.546,
+        "worker_index": 2
+      },
+      {
+        "bot_name": "SupraPar1",
+        "controller_prepare_ms": 0.081,
+        "dispatch_to_placed_ms": 647.904,
+        "fixture_support_at": [
+          1,
+          72,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z1-x1",
+        "index": 46,
+        "worker_elapsed_ms": 518.82,
+        "worker_index": 1
+      },
+      {
+        "bot_name": "SupraPar0",
+        "controller_prepare_ms": 0.083,
+        "dispatch_to_placed_ms": 556.46,
+        "fixture_support_at": [
+          0,
+          72,
+          3
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "stone-y73-z1-x0",
+        "index": 47,
+        "worker_elapsed_ms": 551.192,
+        "worker_index": 0
+      }
+    ]
+  },
+  "explicit_exclusions": [
+    "pathfinding",
+    "survival-resource-acquisition",
+    "autonomous-inventory-planning",
+    "generalized-worker-count",
+    "private-5533-action-end-to-end-realization"
+  ],
+  "minecraft": {
+    "edition": "java",
+    "protocol": 777,
+    "version": "26.3",
+    "world_version": 5023
+  },
+  "official_server_verified_actions": 48,
+  "official_server_verified_fixture_support_cleanup": 48,
+  "plan": {
+    "actions": 48,
+    "schema": "mcbuild/v0.1-public-fixture",
+    "sha256": "4afedaab2d1ddeb42ffbe06924564a5af1ba659fcb2a5d9f9087fceb92cfb3fe"
+  },
+  "qualified_capabilities": [
+    "execution.position.fixture-controller",
+    "inventory.provision.fixture-controller",
+    "plan.execute.parallel.fixture-assisted.4-worker"
+  ],
+  "result": "qualified",
+  "scheduler": {
+    "dependency_authority": "plan.depends_on",
+    "max_inflight_observed": 4,
+    "placement_retries": 0,
+    "policy": "lowest-plan-index-ready-action-to-lowest-idle-worker",
+    "worker_action_counts": [
+      15,
+      12,
+      11,
+      10
+    ],
+    "workers": 4
+  },
+  "schema": "supracraft.fixture-assisted-parallel-mcbuild-qualification/v0.1",
+  "status_protocol": 777,
+  "timing": {
+    "active_plan_ms": 9742.3,
+    "clock": "time.perf_counter_ns",
+    "dispatch_to_placed_ms": [
+      942.983,
+      657.998,
+      683.902,
+      562.106,
+      554.854,
+      617.895,
+      583.64,
+      523.458,
+      649.887,
+      643.494,
+      572.863,
+      621.575,
+      500.991,
+      574.843,
+      583.697,
+      568.39,
+      544.764,
+      631.045,
+      550.698,
+      601.057,
+      566.972,
+      570.909,
+      580.229,
+      581.375,
+      643.167,
+      649.417,
+      560.193,
+      554.008,
+      588.137,
+      634.722,
+      521.36,
+      566.383,
+      543.403,
+      592.816,
+      567.54,
+      602.758,
+      568.561,
+      570.148,
+      535.975,
+      547.358,
+      611.543,
+      604.11,
+      745.294,
+      732.243,
+      767.636,
+      647.904,
+      708.995,
+      556.46
+    ]
+  },
+  "workers": [
+    {
+      "action_count": 15,
+      "actions": [
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            70,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            70,
+            2.5
+          ],
+          "bot_position_before": [
+            0.5,
+            70,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z0-x0",
+          "index": 0,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              69,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "external-bootstrap"
+          },
+          "worker_elapsed_ms": 941.315247
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            70,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            70,
+            2.5
+          ],
+          "bot_position_before": [
+            1.5,
+            70,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z0-x1",
+          "index": 1,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              70,
+              0
+            ],
+            "face": [
+              1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 673.429543
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            70,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            70,
+            2.5
+          ],
+          "bot_position_before": [
+            2.5,
+            70,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z0-x2",
+          "index": 2,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              70,
+              0
+            ],
+            "face": [
+              1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 601.284972
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            70,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            70,
+            2.5
+          ],
+          "bot_position_before": [
+            3.5,
+            70,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z0-x3",
+          "index": 3,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              70,
+              0
+            ],
+            "face": [
+              1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 640.09476
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            70,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            70,
+            2.5
+          ],
+          "bot_position_before": [
+            4.5,
+            70,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z0-x4",
+          "index": 4,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              70,
+              0
+            ],
+            "face": [
+              1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 573.009055
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            70,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            70,
+            2.5
+          ],
+          "bot_position_before": [
+            5.5,
+            70,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z0-x5",
+          "index": 5,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              70,
+              0
+            ],
+            "face": [
+              1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 624.652939
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            70,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            70,
+            3.5
+          ],
+          "bot_position_before": [
+            5.5,
+            70,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z1-x5",
+          "index": 6,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              70,
+              0
+            ],
+            "face": [
+              0,
+              0,
+              1
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 563.739625
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            70,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            70,
+            3.5
+          ],
+          "bot_position_before": [
+            4.5,
+            70,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z1-x4",
+          "index": 7,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              70,
+              1
+            ],
+            "face": [
+              -1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 641.32518
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            70,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            70,
+            3.5
+          ],
+          "bot_position_before": [
+            3.5,
+            70,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z1-x3",
+          "index": 8,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              70,
+              1
+            ],
+            "face": [
+              -1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 633.832222
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            70,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            70,
+            3.5
+          ],
+          "bot_position_before": [
+            2.5,
+            70,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z1-x2",
+          "index": 9,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              70,
+              1
+            ],
+            "face": [
+              -1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 591.893431
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            70,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            70,
+            3.5
+          ],
+          "bot_position_before": [
+            1.5,
+            70,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z1-x1",
+          "index": 10,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              70,
+              1
+            ],
+            "face": [
+              -1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 569.264167
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            70,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            70,
+            3.5
+          ],
+          "bot_position_before": [
+            0.5,
+            70,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y70-z1-x0",
+          "index": 11,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              70,
+              1
+            ],
+            "face": [
+              -1,
+              0,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 603.099753
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            71,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            71,
+            3.5
+          ],
+          "bot_position_before": [
+            0.5,
+            71,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z1-x0",
+          "index": 23,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              70,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 551.459864
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            72,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            72,
+            3.5
+          ],
+          "bot_position_before": [
+            0.5,
+            72,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z1-x0",
+          "index": 35,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              71,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 553.45017
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            73,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            73,
+            3.5
+          ],
+          "bot_position_before": [
+            0.5,
+            73,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z1-x0",
+          "index": 47,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              72,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 551.191739
+        }
+      ],
+      "bot_name": "SupraPar0",
+      "completed": true,
+      "last_packet": {
+        "name": "entity_head_rotation",
+        "state": "play"
+      },
+      "minecraft_data_version": "3.117.0",
+      "minecraft_protocol_version": "1.68.0",
+      "mineflayer_version": "4.39.0",
+      "negotiated_version": "26.3",
+      "packet_count": 9398,
+      "protocol_version": 777,
+      "requested_version": "26.3",
+      "schema": "supracraft.fixture-assisted-parallel-worker/v0.1"
+    },
+    {
+      "action_count": 12,
+      "actions": [
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            71,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            71,
+            2.5
+          ],
+          "bot_position_before": [
+            0.5,
+            71,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z0-x0",
+          "index": 12,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              70,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 655.543235
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            72,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            72,
+            2.5
+          ],
+          "bot_position_before": [
+            0.5,
+            72,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z0-x0",
+          "index": 24,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              71,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 561.187503
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            0,
+            73,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            0.5,
+            73,
+            2.5
+          ],
+          "bot_position_before": [
+            0.5,
+            73,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z0-x0",
+          "index": 36,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              0,
+              72,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 648.984987
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            71,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            71,
+            2.5
+          ],
+          "bot_position_before": [
+            3.5,
+            71,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z0-x3",
+          "index": 15,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              70,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 499.380892
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            72,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            72,
+            2.5
+          ],
+          "bot_position_before": [
+            3.5,
+            72,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z0-x3",
+          "index": 27,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              71,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 558.646491
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            73,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            73,
+            2.5
+          ],
+          "bot_position_before": [
+            3.5,
+            73,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z0-x3",
+          "index": 39,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              72,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 533.522842
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            73,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            73,
+            2.5
+          ],
+          "bot_position_before": [
+            4.5,
+            73,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z0-x4",
+          "index": 40,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              72,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 579.126078
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            72,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            72,
+            3.5
+          ],
+          "bot_position_before": [
+            5.5,
+            72,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z1-x5",
+          "index": 30,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              71,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 559.243472
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            73,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            73,
+            3.5
+          ],
+          "bot_position_before": [
+            5.5,
+            73,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z1-x5",
+          "index": 42,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              72,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 520.482856
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            73,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            73,
+            3.5
+          ],
+          "bot_position_before": [
+            4.5,
+            73,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z1-x4",
+          "index": 43,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              72,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 564.035068
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            73,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            73,
+            3.5
+          ],
+          "bot_position_before": [
+            3.5,
+            73,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z1-x3",
+          "index": 44,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              72,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 610.805746
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            73,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            73,
+            3.5
+          ],
+          "bot_position_before": [
+            1.5,
+            73,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z1-x1",
+          "index": 46,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              72,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 518.819625
+        }
+      ],
+      "bot_name": "SupraPar1",
+      "completed": true,
+      "last_packet": {
+        "name": "update_health",
+        "state": "play"
+      },
+      "minecraft_data_version": "3.117.0",
+      "minecraft_protocol_version": "1.68.0",
+      "mineflayer_version": "4.39.0",
+      "negotiated_version": "26.3",
+      "packet_count": 9351,
+      "protocol_version": 777,
+      "requested_version": "26.3",
+      "schema": "supracraft.fixture-assisted-parallel-worker/v0.1"
+    },
+    {
+      "action_count": 11,
+      "actions": [
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            71,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            71,
+            2.5
+          ],
+          "bot_position_before": [
+            1.5,
+            71,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z0-x1",
+          "index": 13,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              70,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 539.610945
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            72,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            72,
+            2.5
+          ],
+          "bot_position_before": [
+            1.5,
+            72,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z0-x1",
+          "index": 25,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              71,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 581.603907
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            73,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            73,
+            2.5
+          ],
+          "bot_position_before": [
+            1.5,
+            73,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z0-x1",
+          "index": 37,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              72,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 620.292172
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            71,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            71,
+            2.5
+          ],
+          "bot_position_before": [
+            4.5,
+            71,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z0-x4",
+          "index": 16,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              70,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 543.800638
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            72,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            72,
+            2.5
+          ],
+          "bot_position_before": [
+            4.5,
+            72,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z0-x4",
+          "index": 28,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              71,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 596.964039
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            71,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            71,
+            3.5
+          ],
+          "bot_position_before": [
+            5.5,
+            71,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z1-x5",
+          "index": 18,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              70,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 580.55972
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            71,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            71,
+            3.5
+          ],
+          "bot_position_before": [
+            4.5,
+            71,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z1-x4",
+          "index": 19,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              70,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 548.002067
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            4,
+            72,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            4.5,
+            72,
+            3.5
+          ],
+          "bot_position_before": [
+            4.5,
+            72,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z1-x4",
+          "index": 31,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              4,
+              71,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 562.066401
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            72,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            72,
+            3.5
+          ],
+          "bot_position_before": [
+            3.5,
+            72,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z1-x3",
+          "index": 32,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              71,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 597.289751
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            72,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            72,
+            3.5
+          ],
+          "bot_position_before": [
+            2.5,
+            72,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z1-x2",
+          "index": 33,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              71,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 534.293478
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            73,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            73,
+            3.5
+          ],
+          "bot_position_before": [
+            2.5,
+            73,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z1-x2",
+          "index": 45,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              72,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 551.54556
+        }
+      ],
+      "bot_name": "SupraPar2",
+      "completed": true,
+      "last_packet": {
+        "name": "entity_head_rotation",
+        "state": "play"
+      },
+      "minecraft_data_version": "3.117.0",
+      "minecraft_protocol_version": "1.68.0",
+      "mineflayer_version": "4.39.0",
+      "negotiated_version": "26.3",
+      "packet_count": 9363,
+      "protocol_version": 777,
+      "requested_version": "26.3",
+      "schema": "supracraft.fixture-assisted-parallel-worker/v0.1"
+    },
+    {
+      "action_count": 10,
+      "actions": [
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            71,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            71,
+            2.5
+          ],
+          "bot_position_before": [
+            2.5,
+            71,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z0-x2",
+          "index": 14,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              70,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 523.416283
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            72,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            72,
+            2.5
+          ],
+          "bot_position_before": [
+            2.5,
+            72,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z0-x2",
+          "index": 26,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              71,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 570.034271
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            73,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            73,
+            2.5
+          ],
+          "bot_position_before": [
+            2.5,
+            73,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z0-x2",
+          "index": 38,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              72,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 579.121762
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            71,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            71,
+            2.5
+          ],
+          "bot_position_before": [
+            5.5,
+            71,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z0-x5",
+          "index": 17,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              70,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 567.979931
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            72,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            72,
+            2.5
+          ],
+          "bot_position_before": [
+            5.5,
+            72,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z0-x5",
+          "index": 29,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              71,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 638.135291
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            5,
+            73,
+            0
+          ],
+          "before": "air",
+          "bot_position_after": [
+            5.5,
+            73,
+            2.5
+          ],
+          "bot_position_before": [
+            5.5,
+            73,
+            2.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y73-z0-x5",
+          "index": 41,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              5,
+              72,
+              0
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 582.392642
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            3,
+            71,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            3.5,
+            71,
+            3.5
+          ],
+          "bot_position_before": [
+            3.5,
+            71,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z1-x3",
+          "index": 20,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              3,
+              70,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 542.333579
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            2,
+            71,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            2.5,
+            71,
+            3.5
+          ],
+          "bot_position_before": [
+            2.5,
+            71,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z1-x2",
+          "index": 21,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              2,
+              70,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 565.739099
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            71,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            71,
+            3.5
+          ],
+          "bot_position_before": [
+            1.5,
+            71,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y71-z1-x1",
+          "index": 22,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              70,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 546.516475
+        },
+        {
+          "after": "stone",
+          "after_properties": {},
+          "after_state_id": 1,
+          "at": [
+            1,
+            72,
+            1
+          ],
+          "before": "air",
+          "bot_position_after": [
+            1.5,
+            72,
+            3.5
+          ],
+          "bot_position_before": [
+            1.5,
+            72,
+            3.5
+          ],
+          "desired_state": "minecraft:stone",
+          "id": "stone-y72-z1-x1",
+          "index": 34,
+          "item": "stone",
+          "qualified": true,
+          "reference": {
+            "at": [
+              1,
+              71,
+              1
+            ],
+            "face": [
+              0,
+              1,
+              0
+            ],
+            "kind": "prior-target"
+          },
+          "worker_elapsed_ms": 549.277231
+        }
+      ],
+      "bot_name": "SupraPar3",
+      "completed": true,
+      "last_packet": {
+        "name": "entity_head_rotation",
+        "state": "play"
+      },
+      "minecraft_data_version": "3.117.0",
+      "minecraft_protocol_version": "1.68.0",
+      "mineflayer_version": "4.39.0",
+      "negotiated_version": "26.3",
+      "packet_count": 9379,
+      "protocol_version": 777,
+      "requested_version": "26.3",
+      "schema": "supracraft.fixture-assisted-parallel-worker/v0.1"
+    }
+  ]
+}

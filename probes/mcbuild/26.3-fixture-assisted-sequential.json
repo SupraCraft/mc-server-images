@@ -1,0 +1,832 @@
+{
+  "controller": {
+    "fixture_support_cleanup": "server-console-setblock-air",
+    "inventory_provisioning": "server-console-clear-and-give",
+    "positioning": "server-console-teleport-with-temporary-barrier-support",
+    "receipts": [
+      {
+        "controller_prepare_ms": 0.084,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          0,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "foundation-0",
+        "index": 0,
+        "item_provisioned": "stone",
+        "position_requested": [
+          0,
+          70,
+          2
+        ],
+        "prepare_to_placed_total_ms": 597.495,
+        "prepared_to_placed_ms": 597.411,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.065,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          1,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "foundation-1",
+        "index": 1,
+        "item_provisioned": "stone",
+        "position_requested": [
+          1,
+          70,
+          2
+        ],
+        "prepare_to_placed_total_ms": 615.002,
+        "prepared_to_placed_ms": 614.937,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.063,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          2,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "foundation-2",
+        "index": 2,
+        "item_provisioned": "stone",
+        "position_requested": [
+          2,
+          70,
+          2
+        ],
+        "prepare_to_placed_total_ms": 615.868,
+        "prepared_to_placed_ms": 615.805,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.068,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          3,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "foundation-3",
+        "index": 3,
+        "item_provisioned": "stone",
+        "position_requested": [
+          3,
+          70,
+          2
+        ],
+        "prepare_to_placed_total_ms": 628.826,
+        "prepared_to_placed_ms": 628.758,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.066,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          4,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "foundation-4",
+        "index": 4,
+        "item_provisioned": "stone",
+        "position_requested": [
+          4,
+          70,
+          2
+        ],
+        "prepare_to_placed_total_ms": 615.692,
+        "prepared_to_placed_ms": 615.626,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.084,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          5,
+          69,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "foundation-5",
+        "index": 5,
+        "item_provisioned": "stone",
+        "position_requested": [
+          5,
+          70,
+          2
+        ],
+        "prepare_to_placed_total_ms": 626.888,
+        "prepared_to_placed_ms": 626.803,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.065,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          0,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "grass-default",
+        "index": 6,
+        "item_provisioned": "grass_block",
+        "position_requested": [
+          0,
+          71,
+          2
+        ],
+        "prepare_to_placed_total_ms": 507.945,
+        "prepared_to_placed_ms": 507.879,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.083,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          1,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "gravel-supported",
+        "index": 7,
+        "item_provisioned": "gravel",
+        "position_requested": [
+          1,
+          71,
+          2
+        ],
+        "prepare_to_placed_total_ms": 562.752,
+        "prepared_to_placed_ms": 562.669,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.055,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          2,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "lantern-upright",
+        "index": 8,
+        "item_provisioned": "lantern",
+        "position_requested": [
+          2,
+          71,
+          2
+        ],
+        "prepare_to_placed_total_ms": 550.072,
+        "prepared_to_placed_ms": 550.017,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.054,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          3,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "lamp-unlit",
+        "index": 9,
+        "item_provisioned": "redstone_lamp",
+        "position_requested": [
+          3,
+          71,
+          2
+        ],
+        "prepare_to_placed_total_ms": 551.289,
+        "prepared_to_placed_ms": 551.234,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.053,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          4,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "chest-south-single",
+        "index": 10,
+        "item_provisioned": "chest",
+        "position_requested": [
+          4,
+          71,
+          2
+        ],
+        "prepare_to_placed_total_ms": 551.781,
+        "prepared_to_placed_ms": 551.728,
+        "yaw_requested": 180.0
+      },
+      {
+        "controller_prepare_ms": 0.058,
+        "fixture_support": "minecraft:barrier",
+        "fixture_support_at": [
+          5,
+          70,
+          2
+        ],
+        "fixture_support_cleanup_requested": true,
+        "id": "ordinary-top",
+        "index": 11,
+        "item_provisioned": "stone",
+        "position_requested": [
+          5,
+          71,
+          2
+        ],
+        "prepare_to_placed_total_ms": 552.796,
+        "prepared_to_placed_ms": 552.738,
+        "yaw_requested": 180.0
+      }
+    ]
+  },
+  "explicit_exclusions": [
+    "pathfinding",
+    "survival-resource-acquisition",
+    "autonomous-inventory-planning"
+  ],
+  "minecraft": {
+    "edition": "java",
+    "protocol": 777,
+    "version": "26.3",
+    "world_version": 5023
+  },
+  "official_server_verified_actions": 12,
+  "official_server_verified_block_entities": 1,
+  "official_server_verified_fixture_support_cleanup": 12,
+  "plan": {
+    "actions": 12,
+    "schema": "mcbuild/v0.1-public-fixture",
+    "sha256": "f5e947a028ef4cb5e5526a4353e7015f7f639f3f437f777a015b61fb9d45ee88"
+  },
+  "qualified_capabilities": [
+    "execution.position.fixture-controller",
+    "inventory.provision.fixture-controller",
+    "plan.execute.sequential"
+  ],
+  "result": "qualified",
+  "schema": "supracraft.fixture-assisted-mcbuild-qualification/v0.1",
+  "status_protocol": 777,
+  "timing": {
+    "active_plan_ms": 6979.988,
+    "clock": "time.perf_counter_ns",
+    "controller_prepare_ms": [
+      0.084,
+      0.065,
+      0.063,
+      0.068,
+      0.066,
+      0.084,
+      0.065,
+      0.083,
+      0.055,
+      0.054,
+      0.053,
+      0.058
+    ],
+    "prepare_to_placed_total_ms": [
+      597.495,
+      615.002,
+      615.868,
+      628.826,
+      615.692,
+      626.888,
+      507.945,
+      562.752,
+      550.072,
+      551.289,
+      551.781,
+      552.796
+    ],
+    "prepared_to_placed_ms": [
+      597.411,
+      614.937,
+      615.805,
+      628.758,
+      615.626,
+      626.803,
+      507.879,
+      562.669,
+      550.017,
+      551.234,
+      551.728,
+      552.738
+    ],
+    "prepared_to_placed_semantics": "controller prepared acknowledgement through worker qualified placement receipt; includes IPC, worker convergence/equip, placeBlock, settle and bot-side observation"
+  },
+  "worker": {
+    "action_count": 12,
+    "actions": [
+      {
+        "after": "stone",
+        "after_properties": {},
+        "after_state_id": 1,
+        "at": [
+          0,
+          70,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          0.5,
+          70,
+          2.5
+        ],
+        "bot_position_before": [
+          0.5,
+          70,
+          2.5
+        ],
+        "desired_state": "minecraft:stone",
+        "id": "foundation-0",
+        "index": 0,
+        "item": "stone",
+        "qualified": true,
+        "reference": {
+          "at": [
+            0,
+            69,
+            0
+          ],
+          "face": [
+            0,
+            1,
+            0
+          ],
+          "kind": "external-bootstrap"
+        }
+      },
+      {
+        "after": "stone",
+        "after_properties": {},
+        "after_state_id": 1,
+        "at": [
+          1,
+          70,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          1.5,
+          70,
+          2.5
+        ],
+        "bot_position_before": [
+          1.5,
+          70,
+          2.5
+        ],
+        "desired_state": "minecraft:stone",
+        "id": "foundation-1",
+        "index": 1,
+        "item": "stone",
+        "qualified": true,
+        "reference": {
+          "at": [
+            0,
+            70,
+            0
+          ],
+          "face": [
+            1,
+            0,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "stone",
+        "after_properties": {},
+        "after_state_id": 1,
+        "at": [
+          2,
+          70,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          2.5,
+          70,
+          2.5
+        ],
+        "bot_position_before": [
+          2.5,
+          70,
+          2.5
+        ],
+        "desired_state": "minecraft:stone",
+        "id": "foundation-2",
+        "index": 2,
+        "item": "stone",
+        "qualified": true,
+        "reference": {
+          "at": [
+            1,
+            70,
+            0
+          ],
+          "face": [
+            1,
+            0,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "stone",
+        "after_properties": {},
+        "after_state_id": 1,
+        "at": [
+          3,
+          70,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          3.5,
+          70,
+          2.5
+        ],
+        "bot_position_before": [
+          3.5,
+          70,
+          2.5
+        ],
+        "desired_state": "minecraft:stone",
+        "id": "foundation-3",
+        "index": 3,
+        "item": "stone",
+        "qualified": true,
+        "reference": {
+          "at": [
+            2,
+            70,
+            0
+          ],
+          "face": [
+            1,
+            0,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "stone",
+        "after_properties": {},
+        "after_state_id": 1,
+        "at": [
+          4,
+          70,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          4.5,
+          70,
+          2.5
+        ],
+        "bot_position_before": [
+          4.5,
+          70,
+          2.5
+        ],
+        "desired_state": "minecraft:stone",
+        "id": "foundation-4",
+        "index": 4,
+        "item": "stone",
+        "qualified": true,
+        "reference": {
+          "at": [
+            3,
+            70,
+            0
+          ],
+          "face": [
+            1,
+            0,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "stone",
+        "after_properties": {},
+        "after_state_id": 1,
+        "at": [
+          5,
+          70,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          5.5,
+          70,
+          2.5
+        ],
+        "bot_position_before": [
+          5.5,
+          70,
+          2.5
+        ],
+        "desired_state": "minecraft:stone",
+        "id": "foundation-5",
+        "index": 5,
+        "item": "stone",
+        "qualified": true,
+        "reference": {
+          "at": [
+            4,
+            70,
+            0
+          ],
+          "face": [
+            1,
+            0,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "grass_block",
+        "after_properties": {
+          "snowy": "false"
+        },
+        "after_state_id": 9,
+        "at": [
+          0,
+          71,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          0.5,
+          71,
+          2.5
+        ],
+        "bot_position_before": [
+          0.5,
+          71,
+          2.5
+        ],
+        "desired_state": "minecraft:grass_block[snowy=false]",
+        "id": "grass-default",
+        "index": 6,
+        "item": "grass_block",
+        "qualified": true,
+        "reference": {
+          "at": [
+            0,
+            70,
+            0
+          ],
+          "face": [
+            0,
+            1,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "gravel",
+        "after_properties": {},
+        "after_state_id": 127,
+        "at": [
+          1,
+          71,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          1.5,
+          71,
+          2.5
+        ],
+        "bot_position_before": [
+          1.5,
+          71,
+          2.5
+        ],
+        "desired_state": "minecraft:gravel",
+        "id": "gravel-supported",
+        "index": 7,
+        "item": "gravel",
+        "qualified": true,
+        "reference": {
+          "at": [
+            1,
+            70,
+            0
+          ],
+          "face": [
+            0,
+            1,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "lantern",
+        "after_properties": {
+          "hanging": "false",
+          "waterlogged": "false"
+        },
+        "after_state_id": 24197,
+        "at": [
+          2,
+          71,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          2.5,
+          71,
+          2.5
+        ],
+        "bot_position_before": [
+          2.5,
+          71,
+          2.5
+        ],
+        "desired_state": "minecraft:lantern[hanging=false,waterlogged=false]",
+        "id": "lantern-upright",
+        "index": 8,
+        "item": "lantern",
+        "qualified": true,
+        "reference": {
+          "at": [
+            2,
+            70,
+            0
+          ],
+          "face": [
+            0,
+            1,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "redstone_lamp",
+        "after_properties": {
+          "lit": "false"
+        },
+        "after_state_id": 11214,
+        "at": [
+          3,
+          71,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          3.5,
+          71,
+          2.5
+        ],
+        "bot_position_before": [
+          3.5,
+          71,
+          2.5
+        ],
+        "desired_state": "minecraft:redstone_lamp[lit=false]",
+        "id": "lamp-unlit",
+        "index": 9,
+        "item": "redstone_lamp",
+        "qualified": true,
+        "reference": {
+          "at": [
+            3,
+            70,
+            0
+          ],
+          "face": [
+            0,
+            1,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "chest",
+        "after_properties": {
+          "facing": "south",
+          "type": "single",
+          "waterlogged": "false"
+        },
+        "after_state_id": 5550,
+        "at": [
+          4,
+          71,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          4.5,
+          71,
+          2.5
+        ],
+        "bot_position_before": [
+          4.5,
+          71,
+          2.5
+        ],
+        "desired_state": "minecraft:chest[facing=south,type=single,waterlogged=false]",
+        "id": "chest-south-single",
+        "index": 10,
+        "item": "chest",
+        "qualified": true,
+        "reference": {
+          "at": [
+            4,
+            70,
+            0
+          ],
+          "face": [
+            0,
+            1,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      },
+      {
+        "after": "stone",
+        "after_properties": {},
+        "after_state_id": 1,
+        "at": [
+          5,
+          71,
+          0
+        ],
+        "before": "air",
+        "bot_position_after": [
+          5.5,
+          71,
+          2.5
+        ],
+        "bot_position_before": [
+          5.5,
+          71,
+          2.5
+        ],
+        "desired_state": "minecraft:stone",
+        "id": "ordinary-top",
+        "index": 11,
+        "item": "stone",
+        "qualified": true,
+        "reference": {
+          "at": [
+            5,
+            70,
+            0
+          ],
+          "face": [
+            0,
+            1,
+            0
+          ],
+          "kind": "prior-target"
+        }
+      }
+    ],
+    "completed": true,
+    "last_packet": {
+      "name": "entity_status",
+      "state": "play"
+    },
+    "minecraft_data_version": "3.117.0",
+    "minecraft_protocol_version": "1.68.0",
+    "mineflayer_version": "4.39.0",
+    "negotiated_version": "26.3",
+    "packet_count": 5275,
+    "protocol_version": 777,
+    "requested_version": "26.3",
+    "schema": "supracraft.fixture-assisted-mcbuild-worker/v0.1"
+  }
+}

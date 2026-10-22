@@ -1,0 +1,101 @@
+name: Fixture-assisted ordinary MCBUILD stress on Java 26.3
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - probe/mcbuild-fixture-assisted-sequential
+    paths:
+      - .github/workflows/mcbuild-fixture-assisted-ordinary-stress.yml
+      - probes/mcbuild/fixture-assisted-ordinary-stress-plan.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mcbuild-fixture-assisted-ordinary-stress-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Static-check harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/probe_mcbuild_sequential_26_3.py
+          node --check tools/probe_mcbuild_sequential.js
+
+      - name: Assemble qualified experimental Prismarine base stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_root="/tmp/supracraft-prismarine-26.3"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
+
+      - name: Run bounded ordinary-stone stress rep
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p probes/mcbuild
+          python tools/probe_mcbuild_sequential_26_3.py \
+            --evidence probes/26.3-release-identity.json \
+            --plan probes/mcbuild/fixture-assisted-ordinary-stress-plan.json \
+            --output probes/mcbuild/26.3-fixture-assisted-ordinary-stress.json
+
+      - name: Publish stress evidence
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f probes/mcbuild/26.3-fixture-assisted-ordinary-stress.json ]]; then
+            {
+              echo "## Fixture-assisted ordinary MCBUILD stress / Java 26.3"
+              echo
+              echo '~~~json'
+              cat probes/mcbuild/26.3-fixture-assisted-ordinary-stress.json
+              echo '~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: mcbuild-fixture-assisted-ordinary-stress-26.3
+          path: probes/mcbuild/26.3-fixture-assisted-ordinary-stress.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Retain compact stress evidence
+        if: always() && github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f probes/mcbuild/26.3-fixture-assisted-ordinary-stress.json ]]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add probes/mcbuild/26.3-fixture-assisted-ordinary-stress.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "probe: record ordinary MCBUILD stress evidence"
+          git push origin "HEAD:$GITHUB_REF_NAME"
