@@ -3,7 +3,14 @@ import copy
 import json
 import unittest
 from tools.select_legacy_directed_sensor_probe import choose
-from test_scout_legacy_gameplay_mechanisms import fixture
+from test_scout_legacy_gameplay_mechanisms import fixture as legacy_fixture
+
+
+def fixture():
+    graph = legacy_fixture()
+    for node in graph["nodes"]:
+        node["position"] = [int(x) for x in node["node_id"].split(",")]
+    return graph
 
 
 class DirectedProbeTests(unittest.TestCase):
