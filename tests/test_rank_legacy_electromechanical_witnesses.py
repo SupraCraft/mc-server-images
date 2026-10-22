@@ -11,7 +11,8 @@ def sample():
         "schema":"supracraft-legacy-causal-machinery/1",
         "nodes":[
             {"node_id":"0,70,0","family":"redstone_wire","position":[0,70,0]},
-            {"node_id":"1,70,0","family":"repeater_off"},
+            {"node_id":"1,70,0","family":"repeater_off",
+             "metadata_semantics":{"facing_vector":[-1,0,0]}},
             {"node_id":"2,70,0","family":"sticky_piston"},
             {"node_id":"9,70,0","family":"chest",
              "command":{"body":"secret_command_must_not_escape"}},
@@ -58,13 +59,41 @@ class ElectromechanicalRecoveryTests(unittest.TestCase):
 
     def test_direct_wire_to_piston_recognized_only_when_named(self):
         d=sample()
+        d["nodes"].append({"node_id":"2,70,1","family":"redstone_wire",
+                           "position":[2,70,1]})
+        d["edges"]["physical_adjacency_candidates"].append({
+            "a":"2,70,1","b":"2,70,0"
+        })
         d["edges"]["direct_redstone_edges"]=[{
-            "source":"0,70,0","target":"2,70,0",
+            "source":"2,70,1","target":"2,70,0",
             "edge_type":"legacy_dust_direct_component_power"
         }]
         c=rank(d)["signatures"][0]
         self.assertEqual(c["direct_wire_to_piston_edges"],1)
         self.assertEqual(c["disposition"],"DIRECT_DUST_TO_PISTON_STATIC_CANDIDATE")
+
+    def test_far_away_fake_direct_redstone_edge_is_not_actuation(self):
+        d=sample()
+        d["edges"]["oriented_signal_candidates"]=[]
+        d["edges"]["direct_redstone_edges"]=[{
+            "source":"0,70,0","target":"2,70,0",
+            "edge_type":"legacy_dust_direct_component_power"
+        }]
+        self.assertEqual(rank(d)["signatures"][0]["direct_wire_to_piston_edges"],0)
+
+    def test_repeater_facing_opposite_direction_is_not_power_path(self):
+        d=sample()
+        d["nodes"][1]["metadata_semantics"]["facing_vector"]=[1,0,0]
+        row=rank(d)["signatures"][0]
+        self.assertEqual(row["oriented_repeater_to_piston_edges"],0)
+        self.assertEqual(row["oriented_wire_to_repeater_edges"],0)
+
+    def test_repeater_unknown_facing_is_not_power_path(self):
+        d=sample()
+        del d["nodes"][1]["metadata_semantics"]
+        row=rank(d)["signatures"][0]
+        self.assertEqual(row["oriented_repeater_to_piston_edges"],0)
+        self.assertEqual(row["oriented_wire_to_repeater_edges"],0)
 
     def test_direct_wrong_direction_fails_to_claim_power(self):
         d=sample()
