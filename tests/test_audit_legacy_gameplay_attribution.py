@@ -25,7 +25,7 @@ def fixture():
     paired={
       "schema":"supracraft-paired-legacy-runtime-probes/1","minecraft_version":"1.8.8",
       "paired_control_design":True,"probe_count":1,"results":[{
-        "probe":selection["selected"][0],
+        "probe":copy.deepcopy(selection["selected"][0]),
         "activation_method":"paired_exact_1.8.8_player_occupancy",
         "evidence":{"live_sensor_activation_observed":True,
                     "command_block_change_count":3},
@@ -115,6 +115,49 @@ class SourceAttributionTests(unittest.TestCase):
         r=audit(s,p)
         self.assertEqual(r["changed_target_with_competing_writer_count"],1)
         self.assertEqual(r["effect_observation_class"],"scoped_effect_unattributable_ambiguous_writers")
+
+    def test_target_verb_spoofed_as_mutator_rejected(self):
+        s,p=fixture()
+        # Both source and command-state receipts consistently describe a
+        # read-only query. The target row maliciously claims a setblock write.
+        ident=s["selected"][0]["candidate_component_commands"][0]
+        read_sha=hashlib.sha256(b"testforblock 2 0 0 minecraft:air").hexdigest()
+        ident["verb"]="testforblock"
+        ident["command_sha256"]=read_sha
+        record=p["results"][0]["execution_receipt"]["commands"][0]
+        for arm in ("control","activated"):
+            record[arm]["verb"]="testforblock"
+            record[arm]["sha256"]=read_sha
+        with self.assertRaisesRegex(ValueError,"target verb disagrees"):
+            audit(s,p)
+
+    def test_missing_source_fingerprint_rejected(self):
+        s,p=fixture()
+        s["selected"][0]["candidate_component_commands"][0]["command_sha256"]=None
+        with self.assertRaisesRegex(ValueError,"invalid source command fingerprint"):
+            audit(s,p)
+
+    def test_independent_input_alias_preserves_mismatch(self):
+        s,p=fixture()
+        p["results"][0]["probe"]["node_id"]="99,99,99"
+        self.assertEqual(s["selected"][0]["node_id"],"0,1,0")
+        with self.assertRaisesRegex(ValueError,"sensor identity mismatch"):
+            audit(s,p)
+
+    def test_source_join_unverified_is_explicit(self):
+        s,p=fixture()
+        result=audit(s,p)
+        self.assertEqual(result["selection_runtime_source_world_join"],
+                         "UNVERIFIED_NO_SHARED_PINNED_SOURCE_ID")
+        self.assertEqual(result["competing_world_writers_outside_selected_command_scope"],
+                         "UNKNOWN")
+        self.assertEqual(result["rule_promotion"],"HOLD")
+
+    def test_aggregates_omit_reversible_sensor_node_hash(self):
+        s,p=fixture()
+        result=audit(s,p)
+        self.assertNotIn("sensor_identity_sha256",result)
+        self.assertNotIn("node_id",result)
 
     def test_no_raw_coordinates_or_command_text_in_aggregate(self):
         s,p=fixture()
