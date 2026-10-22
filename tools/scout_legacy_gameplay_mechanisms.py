@@ -27,8 +27,8 @@ EDGE_BUCKETS = {
     "legacy_dust_direct_component_power": "electrical_to_component",
     "legacy_dust_downward_command_power": "electrical_to_programmable",
     "legacy_repeater_through_command_block_to_dust_power": "electrical_transport",
-    "authored_redstone_block_direct_power": "programmable_to_electrical",
-    "legacy_setblock_redstone_direct_power": "programmable_to_electrical",
+    "legacy_setblock_redstone_block_direct_command_power": "programmable_to_programmable",
+    "legacy_setblock_redstone_block_diode_rear_input": "programmable_to_electrical",
     "command_world_target": "programmable_world_target",
     "container_inventory_signal_read": "inventory_to_electrical",
     "open_emits_redstone_power_candidate": "inventory_to_electrical",
@@ -52,7 +52,8 @@ ALLOWED_BY_COLLECTION = {
         "conditional_predecessor_success_dependency",
     },
     "command_authored_redstone_edges": {
-        "authored_redstone_block_direct_power", "legacy_setblock_redstone_direct_power",
+        "legacy_setblock_redstone_block_direct_command_power",
+        "legacy_setblock_redstone_block_diode_rear_input",
     },
 }
 EDGE_GROUPS = {
@@ -69,6 +70,9 @@ SENSOR = {"lever", "stone_button", "wooden_button",
           "light_weighted_pressure_plate", "heavy_weighted_pressure_plate",
           "daylight_detector", "inverted_daylight_detector", "tripwire_hook"}
 COMMAND = {"command_block", "repeating_command_block", "chain_command_block"}
+# Target verbs with a direct authored world-state change, not read-only
+# tests, teleports, or world-target-looking commands.
+WORLD_EFFECT_VERBS = {"setblock", "fill", "clone", "summon"}
 ACTUATOR = {"piston", "sticky_piston", "iron_door", "wooden_door",
             "iron_trapdoor", "trapdoor", "fence_gate",
             "dispenser", "dropper", "redstone_lamp_on", "redstone_lamp_off",
@@ -153,7 +157,7 @@ def scout(graph, *, version):
                 wire_to_command[src].add(dst)
             if sf == "redstone_wire" and df in ACTUATOR and kind == "legacy_dust_direct_component_power":
                 wire_to_actuator[src].add(dst)
-        if collection == "command_world_targets":
+        if collection == "command_world_targets" and edge.get("verb") in WORLD_EFFECT_VERBS:
             command_targets.add(src)
             if dst is not None:
                 command_mutates_known_node.add(src)
@@ -178,7 +182,7 @@ def scout(graph, *, version):
         ("sensor_wire_actuator", sensor_actuator,
          "sensor -> adjacent dust -> actuator; actuation unproved"),
         ("wire_command_world_target", electrical_command_target,
-         "wire -> command -> syntactic world target; execution unproved"),
+         "wire -> command -> direct authored world-effect verb; execution unproved"),
     ]
     hypotheses = [
         {"family": family, "structural_path_count": count,
@@ -194,13 +198,14 @@ def scout(graph, *, version):
         "source_schema": SCHEMA,
         "source_graph_sha256": digest,
         "source_version": version,
+        "source_version_authority": "caller_claim_requires_independent_pinned_world_receipt",
         "analysis_level": "STATIC_CANDIDATE_ONLY",
         "native_execution": "NOT_RUN",
         "independent_acceptance": "NOT_RUN",
         "node_count": len(node_map),
         "edge_family_counts": dict(sorted(counts.items())),
         "unrecognized_edge_type_counts": dict(sorted(ignored.items())),
-        "unresolved_command_world_target_count":
+        "effect_target_outside_machinery_census_count":
             len(command_targets - command_mutates_known_node),
         "hypotheses": hypotheses,
         "next_oracle": "exact-original-version stimulated world readback before semantics or 26.3 uplift",
