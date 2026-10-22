@@ -126,6 +126,37 @@ class ElectromechanicalRecoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"target signature"):
             rank(d,signature="f"*64)
 
+    def test_same_family_count_signature_can_have_different_directional_topology(self):
+        d=sample()
+        # Clone the same component far away with identical edge-type counts,
+        # but reverse its repeater's authored orientation metadata.
+        clone_nodes=copy.deepcopy(d["nodes"][:3])
+        for node in clone_nodes:
+            pieces=[int(x) for x in node["node_id"].split(",")]
+            pieces[0]+=100
+            node["node_id"]=",".join(str(x) for x in pieces)
+            if "position" in node:
+                node["position"]=pieces
+            if node["family"]=="repeater_off":
+                node["metadata_semantics"]["facing_vector"]=[1,0,0]
+        d["nodes"].extend(clone_nodes)
+        for coll in ("physical_adjacency_candidates","oriented_signal_candidates"):
+            for edge in copy.deepcopy(d["edges"][coll]):
+                for key in ("a","b","source","target"):
+                    if key in edge:
+                        parts=[int(x) for x in edge[key].split(",")]
+                        parts[0]+=100
+                        edge[key]=",".join(str(x) for x in parts)
+                d["edges"][coll].append(edge)
+        output=rank(d)
+        self.assertEqual(output["mechanical_signature_count"],1)
+        self.assertEqual(output["mechanical_directional_subtype_count"],2)
+        self.assertEqual(output["mechanical_component_occurrences"],2)
+        self.assertEqual({r["disposition"] for r in output["signatures"]},{
+            "ORIENTED_REPEATER_TO_PISTON_STATIC_CANDIDATE",
+            "NO_NAMED_PISTON_INPUT"
+        })
+
     def test_no_world_coordinates_or_source_payload(self):
         d=sample()
         text=json.dumps(rank(d))
