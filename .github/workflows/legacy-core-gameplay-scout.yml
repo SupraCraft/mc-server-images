@@ -1,0 +1,130 @@
+name: Legacy CORE gameplay scout — pinned original $0
+on:
+  push:
+    branches:
+      - feat/legacy-gameplay-scout-20261022
+    paths:
+      - .github/workflows/legacy-core-gameplay-scout.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: legacy-core-gameplay-scout-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-scout:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out public pinned source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Preflight $0 / source-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.repository }}" = "SupraCraft/mc-server-images"
+          test "${{ github.event.repository.private }}" = "false"
+          python3 -m py_compile tools/scout_legacy_gameplay_mechanisms.py tools/analyze_legacy_causal_machinery.py
+          python3 -m unittest discover -s tests -p test_scout_legacy_gameplay_mechanisms.py -v
+      - name: Install bounded original-Anvil reader
+        run: python3 -m pip install --disable-pip-version-check 'nbtlib==2.0.4'
+      - name: Reacquire original CORE with exact historical SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p scratch out
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, urllib.request, zipfile
+          from tools.intake_open_reference_world import resolve_mediafire
+          PAGE = "https://www.mediafire.com/file/un9wjqh99u3uu37/CORE+-+by+UnlikelyWaffle+%5Bv1.4%5D.zip/file"
+          SHA = "61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          path = Path("scratch/core-original.zip")
+          url = resolve_mediafire(PAGE)
+          req = urllib.request.Request(url,headers={"User-Agent":"SupraCraft-reference-world-calibration/1"})
+          max_bytes = 12 * 1024 * 1024
+          with urllib.request.urlopen(req, timeout=90) as src, path.open("wb") as dst:
+              size = 0
+              sha = hashlib.sha256()
+              while True:
+                  data = src.read(128 * 1024)
+                  if not data: break
+                  size += len(data)
+                  if size > max_bytes: raise SystemExit("CORE input exceeded bounded original size")
+                  dst.write(data)
+                  sha.update(data)
+          if sha.hexdigest() != SHA:
+              raise SystemExit("CORE source SHA256 mismatch: no parsing/analysis authorized")
+          with zipfile.ZipFile(path) as archive:
+              info = archive.infolist()
+              if len(info)>10000 or sum(e.file_size for e in info)>250*1024*1024:
+                  raise SystemExit("unbounded original ZIP expansion")
+              if archive.testzip() is not None:
+                  raise SystemExit("corrupt original ZIP")
+              if not any(e.filename.endswith("/level.dat") or e.filename=="level.dat" for e in info):
+                  raise SystemExit("CORE world level.dat absent")
+              for e in info:
+                  pp=Path(e.filename)
+                  if pp.is_absolute() or ".." in pp.parts:
+                      raise SystemExit("unsafe original archive path")
+          print("CORE original world SHA256 verified:",SHA,"bytes:",size)
+          PY
+      - name: Recover original native legacy causal graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/analyze_legacy_causal_machinery.py \
+            --world-zip scratch/core-original.zip \
+            --output scratch/core-native-188-causal.json
+      - name: Derive privacy-bounded original-world gameplay hypotheses
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/scout_legacy_gameplay_mechanisms.py \
+            --graph scratch/core-native-188-causal.json \
+            --version 1.8.8 \
+            --output out/core-native-188-gameplay-scout.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path("out/core-native-188-gameplay-scout.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-gameplay-scout/1"
+          assert d["node_count"] > 3000
+          assert d["native_execution"]=="NOT_RUN"
+          assert d["analysis_level"]=="STATIC_CANDIDATE_ONLY"
+          assert all(h["status"]=="STRUCTURAL_CANDIDATE_ONLY" for h in d["hypotheses"])
+          assert not (set(d) & {"nodes", "edges", "command", "position", "world"})
+          receipt={
+             "schema":"supracraft-legacy-gameplay-scout-provenance/1",
+             "world_id":"reference.core.v1.4",
+             "source_original_sha256":"61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998",
+             "source_reference":"https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map",
+             "license":"CC-BY-SA-4.0",
+             "attribution":"CORE by UnlikelyWaffle; creator source page attribution required",
+             "original_runtime_version":"1.8.8 (historical corpus runtime; not executed in this run)",
+             "result_level":"static discovery only; runtime gameplay not observed",
+             "causal_graph_sha256":d["source_graph_sha256"],
+          }
+          Path("out/core-native-188-provenance.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          blob=p.read_text()+json.dumps(receipt)
+          for forbidden in ['"node_id"', '"target_position"', '"raw_actor"', '"command"', '"a": [', 'original-world.zip']:
+              assert forbidden not in blob, "privacy guard failure"
+          print("Derived-only CORE candidate families:",
+             json.dumps({h["family"]:h["structural_path_count"] for h in d["hypotheses"]},sort_keys=True))
+          PY
+      - name: Upload derived-only evidence (NEVER original world/raw causal graph)
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-v1.4-derived-gameplay-hypotheses
+          path: |
+            out/core-native-188-gameplay-scout.json
+            out/core-native-188-provenance.json
+          retention-days: 7
+          if-no-files-found: error
