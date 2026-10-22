@@ -1,0 +1,186 @@
+name: CORE directed gameplay witness — original 1.8.8 $0
+on:
+  push:
+    branches: [feat/legacy-gameplay-scout-20261022]
+    paths:
+      - .github/workflows/legacy-core-directed-native-188.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-directed-native-188-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  one-witness:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check restricted boundaries and regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.repository }}" = "SupraCraft/mc-server-images"
+          grep -F 'server-ip=127.0.0.1' tools/probe_legacy_reference_mechanisms.py
+          python3 -m py_compile tools/select_legacy_directed_sensor_probe.py
+          python3 -m py_compile tools/probe_legacy_reference_mechanisms.py
+          python3 -m unittest discover -s tests -p 'test_scout_legacy_gameplay_mechanisms.py' -v
+          python3 -m unittest discover -s tests -p 'test_select_legacy_directed_sensor_probe.py' -v
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned public dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check nbtlib==2.0.4
+          mkdir -p scratch/node
+          (
+             cd scratch/node
+             npm init -y >/dev/null
+             npm install --no-audit --no-fund --save-exact mineflayer@4.39.0
+          )
+          echo "NODE_PATH=$GITHUB_WORKSPACE/scratch/node/node_modules" >> "$GITHUB_ENV"
+          node --check tools/legacy_pressure_plate_player.js
+      - name: Acquire and verify frozen CC-BY-SA CORE source before parsing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,urllib.request,zipfile
+          from pathlib import Path
+          from tools.intake_open_reference_world import resolve_mediafire
+          expected="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          page="https://www.mediafire.com/file/un9wjqh99u3uu37/CORE+-+by+UnlikelyWaffle+%5Bv1.4%5D.zip/file"
+          path=Path("scratch/core-original.zip")
+          url=resolve_mediafire(page)
+          req=urllib.request.Request(url,headers={"User-Agent":"SupraCraft-reference-world-calibration/1"})
+          with urllib.request.urlopen(req,timeout=90) as src,path.open("wb") as dst:
+              h=hashlib.sha256(); n=0
+              while True:
+                  chunk=src.read(128*1024)
+                  if not chunk:break
+                  n+=len(chunk)
+                  if n>12*1024*1024:raise SystemExit("unbounded CORE download")
+                  h.update(chunk);dst.write(chunk)
+          if n!=6037389 or h.hexdigest()!=expected:
+              raise SystemExit("frozen original-world identity mismatch")
+          with zipfile.ZipFile(path) as z:
+              members=z.infolist()
+              if len(members)>10000 or sum(x.file_size for x in members)>250*1024*1024:
+                  raise SystemExit("unbounded archive")
+              if z.testzip():raise SystemExit("archive CRC failed")
+              for info in members:
+                  p=Path(info.filename)
+                  if p.is_absolute() or ".." in p.parts:raise SystemExit("archive traversal")
+          print("Exact creator original verified, 6037389 bytes, digest:",expected)
+          PY
+      - name: Select one graph-grounded directional witness, excluding mere adjacency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 tools/analyze_legacy_causal_machinery.py \
+            --world-zip scratch/core-original.zip \
+            --output scratch/core-graph.json > scratch/extraction-log.txt
+          python3 -m tools.select_legacy_directed_sensor_probe \
+            --graph scratch/core-graph.json \
+            --selection scratch/directed-selection.json \
+            --public-summary out/core-directed-sensor-selection.json
+      - name: Paired exact-original 1.8.8 server/client causal test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/probe_legacy_reference_mechanisms.py \
+            --version 1.8.8 \
+            --world-zip scratch/core-original.zip \
+            --selection scratch/directed-selection.json \
+            --limit 1 \
+            --player-client-script tools/legacy_pressure_plate_player.js \
+            --output scratch/paired-native-188.json > scratch/probe-private-log.txt
+      - name: Independently reduce raw trial to aggregate-only behavioral receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          selected=json.loads(Path("scratch/directed-selection.json").read_text())
+          private=json.loads(Path("scratch/paired-native-188.json").read_text())
+          identity=json.loads(Path("out/core-directed-sensor-selection.json").read_text())
+          assert private["minecraft_version"]=="1.8.8"
+          assert private["paired_control_design"] is True
+          assert private["probe_count"]==1 and len(private["results"])==1
+          row=private["results"][0]
+          assert row["probe"]["node_id"]==selected["selected"][0]["node_id"]
+          assert row["probe"]["family"]==identity["sensor_family"]
+          assert row["execution_receipt"]["schema"]=="supracraft-legacy-execution-receipt/1"
+          states=row["sensor_state"]
+          e=row["evidence"]
+          for key in ("sensor_state_change_observed","live_sensor_activation_observed",
+                      "runtime_effect_observed","world_target_actuation_observed"):
+              assert isinstance(e[key],bool)
+          actors=row["player_actor"]
+          if identity["player_occupancy_required"]:
+              for arm in ("control","activated"):
+                  assert actors[arm]["status"]=="ready"
+                  assert actors[arm]["minecraft_version"]=="1.8.8"
+          report={
+              "schema":"supracraft-original-gameplay-behavior-aggregate/1",
+              "source_sha256":"61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998",
+              "license":"CC-BY-SA-4.0",
+              "attribution":"CORE by UnlikelyWaffle; see creator's Minecraft Forum reference page",
+              "original_server_version":"1.8.8",
+              "original_protocol_version":47,
+              "paired_fresh_world_control":True,
+              "sensor_family":row["probe"]["family"],
+              "sensor_node_sha256":identity["sensor_node_sha256"],
+              "direct_command_candidate_count":identity["direct_command_candidate_count"],
+              "selection_kind":identity["selection_kind"],
+              "activation_method":row["activation_method"],
+              "player_actor_status":({k:actors[k]["status"] for k in ("control","activated")}
+                                      if identity["player_occupancy_required"] else "not_applicable"),
+              "sensor_state_change_observed":e["sensor_state_change_observed"],
+              "live_sensor_activation_observed":e["live_sensor_activation_observed"],
+              "command_block_change_count":e["command_block_change_count"],
+              "scoreboard_change_count":e["scoreboard_change_count"],
+              "world_target_change_count":e["world_target_change_count"],
+              "world_target_actuation_observed":e["world_target_actuation_observed"],
+              "client_feedback_delta_observed":e["client_feedback_delta_observed"],
+              "outcome_class":e["outcome_class"],
+              "qualification_level":"BOUNDED_ORIGINAL_VERSION_OBSERVATION_ONLY",
+              "mechanism_semantics_promoted":False,
+              "minecraft_26_3_uplift_qualified":False,
+          }
+          p=Path("out/core-directed-native-188-aggregate.json")
+          p.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          blob=p.read_text()
+          for forbidden in ('"node_id"','"position"','"command"','"target_position"',
+                            'private-test-actor','"world_target_changes"'):
+              assert forbidden not in blob,"raw evidence leakage"
+          print("Original-version paired result:",json.dumps({
+              k:report[k] for k in (
+                "sensor_family","activation_method","sensor_state_change_observed",
+                "live_sensor_activation_observed","command_block_change_count",
+                "world_target_change_count","outcome_class"
+              )},sort_keys=True))
+          PY
+      - name: Publish only source-credited derived behavioral results
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-v1.4-directed-native-188-derived-only
+          path: |
+            out/core-directed-sensor-selection.json
+            out/core-directed-native-188-aggregate.json
+          retention-days: 7
+          if-no-files-found: error

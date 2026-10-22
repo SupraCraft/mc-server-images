@@ -571,7 +571,7 @@ def run_trial(server_jar, source_zip, probe, trial_dir, activate, player_client_
         set_spawn(world,probe["position"])
     (trial_dir/"eula.txt").write_text("eula=true\n")
     (trial_dir/"server.properties").write_text("\n".join([
-      "online-mode=false","server-port=25579","level-name=world",
+      "online-mode=false","server-ip=127.0.0.1","server-port=25579","level-name=world",
       "enable-command-block=true","spawn-protection=0","max-players=1",
       "view-distance=6","difficulty=1","gamemode=2",
       "motd=SupraCraft paired legacy mechanism probe"
