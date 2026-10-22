@@ -33,6 +33,45 @@ def _digest(value: dict) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def _position(node: dict) -> tuple[int, int, int] | None:
+    """Only exact integral physical coordinates; no semantic assumption."""
+    raw = node.get("position")
+    identity = node.get("node_id", "")
+    try:
+        ids = tuple(int(x) for x in identity.split(","))
+    except (TypeError, ValueError):
+        return None
+    if len(ids) != 3:
+        return None
+    if raw is not None:
+        if not isinstance(raw, (list, tuple)) or len(raw) != 3:
+            return None
+        # Reject booleans/fractions and mismatched supplied source positions.
+        if any(type(v) is not int for v in raw) or tuple(raw) != ids:
+            return None
+    return ids
+
+
+def _horizontal_neighbor(a: dict, b: dict) -> bool:
+    pa, pb = _position(a), _position(b)
+    return pa is not None and pb is not None and (
+        pa[1] == pb[1] and abs(pa[0] - pb[0]) + abs(pa[2] - pb[2]) == 1
+    )
+
+
+def _oriented_port(repeater: dict, neighbor: dict, *, rear: bool) -> bool:
+    rp, np = _position(repeater), _position(neighbor)
+    delta = (repeater.get("metadata_semantics") or {}).get("facing_vector")
+    if rp is None or np is None or not isinstance(delta, list) or len(delta) != 3:
+        return False
+    if any(type(v) is not int for v in delta):
+        return False
+    if delta[1] != 0 or abs(delta[0])+abs(delta[2]) != 1:
+        return False
+    mult = 1 if rear else -1
+    return np == tuple(rp[i] + mult*delta[i] for i in range(3))
+
+
 def rank(graph: dict, *, signature: str | None = None) -> dict:
     if not isinstance(graph, dict) or graph.get("schema") != SOURCE_SCHEMA:
         raise ValueError("unsupported original-epoch graph schema")
@@ -119,12 +158,16 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
                 if b not in members:
                     continue
                 bf = by_id[b]["family"]
-                if kind == "direct_redstone_edges" and et == DIRECT_TYPE and af in WIRE and bf in PISTON:
+                if (kind == "direct_redstone_edges" and et == DIRECT_TYPE and
+                    af in WIRE and bf in PISTON and
+                    _horizontal_neighbor(by_id[a],by_id[b])):
                     direct.add((a,b))
                 if kind == "oriented_signal_candidates":
-                    if et == FRONT_TYPE and af in REPEATER and bf in PISTON:
+                    if (et == FRONT_TYPE and af in REPEATER and bf in PISTON and
+                            _oriented_port(by_id[a],by_id[b],rear=False)):
                         front.add((a,b))
-                    elif et == REAR_TYPE and af in WIRE and bf in REPEATER:
+                    elif (et == REAR_TYPE and af in WIRE and bf in REPEATER and
+                          _oriented_port(by_id[b],by_id[a],rear=True)):
                         rear.add((a,b))
                 if kind == "direct_redstone_edges" and et == DUST_TYPE and af in WIRE and bf in WIRE:
                     dust.add((a,b))
