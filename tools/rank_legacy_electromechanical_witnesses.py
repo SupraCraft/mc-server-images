@@ -192,18 +192,26 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
     if signature is not None and not units:
         raise ValueError("target signature has no qualifying electromechanical component")
 
+    # Original motif signatures aggregate *counts*, not topology. The same
+    # signature may contain genuinely different actuator-facing orientations.
+    # Split subtypes rather than silently overgeneralize or discard evidence.
     grouped = {}
+    count_keys = (
+        "direct_wire_to_piston_edges",
+        "oriented_repeater_to_piston_edges",
+        "oriented_wire_to_repeater_edges",
+        "direct_wire_to_wire_edges",
+    )
     for u in units:
-        sig = u["signature_sha256"]
-        if sig not in grouped:
-            grouped[sig] = {k:v for k,v in u.items() if k != "runtime_qualified"}
-            grouped[sig]["occurrences"] = 0
-        grouped[sig]["occurrences"] += 1
-        # Units of one signature must have the same structural features.
-        for key in ("direct_wire_to_piston_edges","oriented_repeater_to_piston_edges",
-                    "oriented_wire_to_repeater_edges","direct_wire_to_wire_edges"):
-            if grouped[sig][key] != u[key]:
-                raise ValueError("signature collision or inconsistent typed-edge topology")
+        key = (u["signature_sha256"], *(u[field] for field in count_keys))
+        if key not in grouped:
+            grouped[key] = {k:v for k,v in u.items() if k != "runtime_qualified"}
+            grouped[key]["occurrences"] = 0
+            grouped[key]["directional_subtype_sha256"] = _digest({
+                "signature_sha256": u["signature_sha256"],
+                "typed_port_candidate_counts": {k:u[k] for k in count_keys},
+            })
+        grouped[key]["occurrences"] += 1
 
     results = sorted(grouped.values(), key=lambda x: (
         0 if x["direct_wire_to_piston_edges"] else
@@ -214,7 +222,8 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
         "schema": SCHEMA,
         "source_graph_schema": SOURCE_SCHEMA,
         "analysis": "static_directional_candidate_only",
-        "mechanical_signature_count": len(results),
+        "mechanical_signature_count": len({u["signature_sha256"] for u in units}),
+        "mechanical_directional_subtype_count": len(results),
         "mechanical_component_occurrences": len(units),
         "signatures": results,
         "native_original_version_execution": "NOT_RUN",
