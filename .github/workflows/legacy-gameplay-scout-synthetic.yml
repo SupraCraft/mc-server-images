@@ -1,0 +1,33 @@
+name: Legacy gameplay scout — synthetic $0 CI
+on:
+  push:
+    branches:
+      - feat/legacy-gameplay-scout-20261022
+    paths:
+      - tools/scout_legacy_gameplay_mechanisms.py
+      - tests/test_scout_legacy_gameplay_mechanisms.py
+      - .github/workflows/legacy-gameplay-scout-synthetic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: legacy-gameplay-scout-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate scope and compile
+        run: |
+          test "${{ github.repository }}" = "SupraCraft/mc-server-images"
+          python3 -m py_compile tools/scout_legacy_gameplay_mechanisms.py tests/test_scout_legacy_gameplay_mechanisms.py
+      - name: Execute synthetic adversarial suite (no world fixtures)
+        run: python3 -m unittest discover -s tests -p test_scout_legacy_gameplay_mechanisms.py -v
