@@ -74,6 +74,13 @@ def audit(selection: dict, paired: dict) -> dict:
     }
     if len(candidate) != len(entries):
         raise ValueError("duplicate or malformed command IDs")
+    # Source authority must provide real SHA256 values; missing fingerprints
+    # must not silently equal missing runtime fingerprints.
+    if any(not isinstance(v.get("command_sha256"), str)
+           or len(v["command_sha256"]) != 64
+           or any(c not in "0123456789abcdef" for c in v["command_sha256"])
+           for v in candidate.values()):
+        raise ValueError("missing or invalid source command fingerprint")
 
     receipt = row.get("execution_receipt", {})
     if receipt.get("schema") != "supracraft-legacy-execution-receipt/1":
@@ -117,6 +124,10 @@ def audit(selection: dict, paired: dict) -> dict:
         if source not in scope:
             raise ValueError("unscoped target")
         verb = t.get("verb")
+        # Never let an untrusted target row self-assert that an unrelated
+        # read-only/teleport command is a direct block mutator.
+        if verb != candidate[source].get("verb") or verb != receipt_cmds[source]["control"].get("verb"):
+            raise ValueError("target verb disagrees with exact source command")
         if verb not in WRITERS and t.get("changed"):
             raise ValueError("claimed changed target from non-world-mutating command")
         expected_change = t.get("control") != t.get("activated")
@@ -160,7 +171,8 @@ def audit(selection: dict, paired: dict) -> dict:
         "source_version": "1.8.8",
         "evidence_class": "PAIRED_SOURCE_CORRELATION_NOT_CAUSAL_EXCLUSIVITY",
         "sensor_family": selected.get("family"),
-        "sensor_identity_sha256": hashlib.sha256(selected["node_id"].encode("utf-8")).hexdigest(),
+        # A plain hash of an enumerable coordinate is reversible; emit no
+        # location-derived identity in publicly retained result.
         "direct_candidate_command_count": len(candidate),
         "paired_changed_direct_command_count": len(verified_changed_commands),
         "all_local_command_change_count": int(evidence.get("command_block_change_count", 0)),
@@ -173,6 +185,8 @@ def audit(selection: dict, paired: dict) -> dict:
         "sensor_state_change_observed": True,
         "live_player_sensor_activation_observed": True,
         "exact_source_command_fingerprint_verified": True,
+        "selection_runtime_source_world_join": "UNVERIFIED_NO_SHARED_PINNED_SOURCE_ID",
+        "competing_world_writers_outside_selected_command_scope": "UNKNOWN",
         "original_world_effect_observed": bool(changed_rows),
         "native_command_execution_trace": "NOT_RUN",
         "exclusive_downstream_causality": "NOT_PROVEN",
