@@ -37,7 +37,7 @@ def fixture():
             ],
             "command_world_targets": [
                 {"source": "1,0,0", "target": None, "target_position": [900, 50, 4],
-                 "edge_type": "command_world_target"}
+                 "edge_type": "command_world_target", "verb": "setblock"}
             ],
             "command_chain_candidates": [],
             "repeater_command_block_conduction_edges": [],
@@ -105,6 +105,51 @@ class CandidateScoutTests(unittest.TestCase):
         output = json.dumps(scout(fixture(), version="1.8.8"))
         for forbidden in ["0,1,0", "target_position", "/secretworld", "private-test-actor"]:
             self.assertNotIn(forbidden, output)
+
+    def test_read_only_world_query_is_not_mutation(self):
+        f = fixture()
+        f["edges"]["command_world_targets"][0]["verb"] = "testforblock"
+        r = scout(f, version="1.8.8")
+        h = {i["family"]: i for i in r["hypotheses"]}
+        self.assertEqual(h["wire_command_world_target"]["structural_path_count"], 0)
+
+    def test_teleport_not_a_world_block_mutation(self):
+        f = fixture()
+        f["edges"]["command_world_targets"][0]["verb"] = "tp"
+        h = scout(f, version="1.8.8")["hypotheses"][-1]
+        self.assertEqual(h["structural_path_count"], 0)
+
+    def test_existing_source_authored_power_edge_recognized(self):
+        f = fixture()
+        f["edges"]["command_authored_redstone_edges"] = [
+            {"source": "1,0,0", "target": "2,1,0",
+             "edge_type": "legacy_setblock_redstone_block_direct_command_power",
+             "certainty": "strong"},
+            {"source": "1,0,0", "target": "2,1,0",
+             "edge_type": "legacy_setblock_redstone_block_diode_rear_input",
+             "certainty": "strong"},
+        ]
+        r = scout(f, version="1.8.8")
+        self.assertEqual(r["edge_family_counts"]["programmable_to_programmable"], 1)
+        self.assertEqual(r["edge_family_counts"]["programmable_to_electrical"], 1)
+
+    def test_false_alias_does_not_promote(self):
+        f = fixture()
+        f["edges"]["command_authored_redstone_edges"] = [
+            {"source": "1,0,0", "target": "2,1,0",
+             "edge_type": "authored_redstone_block_direct_power"}
+        ]
+        r = scout(f, version="1.8.8")
+        self.assertEqual(r["unrecognized_edge_type_counts"]["authored_redstone_block_direct_power"], 1)
+
+    def test_wrong_domain_edge_type_fails_closed(self):
+        f = fixture()
+        f["edges"]["container_comparator_reads"] = [
+            {"source": "1,0,0", "target": "2,1,0",
+             "edge_type": "legacy_dust_direct_component_power"}
+        ]
+        with self.assertRaises(ValueError):
+            scout(f, version="1.8.8")
 
     def test_deterministic_readback(self):
         f = fixture()
