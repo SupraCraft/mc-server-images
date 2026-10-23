@@ -121,6 +121,42 @@ class OriginalCloneSavedStateTests(unittest.TestCase):
             copy.deepcopy(g["edges"]["command_world_targets"][2]))
         self.assertEqual(clone_source_dest_pairs(g,sig),[])
 
+    def test_normal_clone_source_destination_same_volume_detected(self):
+        g,sig,cmds,_=self.fixture()
+        rows=g["edges"]["command_world_targets"]
+        rows[0]["target_position"]=[0,71,0]
+        rows[1]["target_position"]=[2,71,0]
+        raw="clone 0 71 0 2 71 0 0 71 0"
+        cid=g["nodes"][-1]["node_id"]
+        g["nodes"][-1]["command"]["sha256"]=hashlib.sha256(raw.encode()).hexdigest()
+        actual=audit(g,sig,{(0,71,0):(55,0)},{cid:raw})
+        self.assertEqual(actual["clone_volume_overlap_count"],1)
+        self.assertEqual(actual["identical_source_destination_coordinate_samples"],1)
+        self.assertEqual(actual["normal_clone_geometry_status"],
+                         "STATIC_CONFLICT_NORMAL_MODE_OVERLAP_OR_VOLUME")
+        self.assertEqual(actual["candidate_nonidentical_saved_pairs"],0)
+
+    def test_normal_clone_source_destination_disjoint(self):
+        g,sig,cmds,(src,dst)=self.fixture()
+        result=audit(g,sig,{src:(55,0),dst:(55,0)},cmds)
+        self.assertEqual(result["clone_volume_disjoint_count"],1)
+        self.assertEqual(result["clone_volume_overlap_count"],0)
+        self.assertEqual(result["identical_source_destination_coordinate_samples"],0)
+        self.assertEqual(result["normal_clone_geometry_status"],
+                         "NO_STATIC_OVERLAP_OR_VOLUME_VIOLATION")
+
+    def test_over_32768_clone_volume_is_not_admissible(self):
+        g,sig,_,_=self.fixture()
+        g["edges"]["command_world_targets"][0]["target_position"]=[100,70,100]
+        g["edges"]["command_world_targets"][1]["target_position"]=[50100,70,100]
+        raw="clone 100 70 100 50100 70 100 0 71 0"
+        cid=g["nodes"][-1]["node_id"]
+        g["nodes"][-1]["command"]["sha256"]=hashlib.sha256(raw.encode()).hexdigest()
+        out=audit(g,sig,{(100,70,100):(1,0),(0,71,0):(0,0)},{cid:raw})
+        self.assertEqual(out["clone_volume_over_32768_count"],1)
+        self.assertEqual(out["normal_clone_geometry_status"],
+                         "STATIC_CONFLICT_NORMAL_MODE_OVERLAP_OR_VOLUME")
+
     def test_private_source_and_target_positions_not_in_public_derivative(self):
         g,sig,cmds,(src,dest)=self.fixture()
         g["nodes"][-1]["command"]["body"]="ORIGINAL_SECRET"
