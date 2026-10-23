@@ -201,6 +201,55 @@ jobs:
               "clone_modes":d["source_clone_mode_counts"],
           },sort_keys=True))
           PY
+      - name: Compare saved original clone source and target block IDs and metadata (static only)
+        run: |
+          python -m tools.compare_legacy_piston_clone_saved_deltas \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-clone-saved-delta-static.json
+      - name: Independently verify original source-target saved parity and egress boundaries
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-clone-saved-delta-static.json")
+          o=json.loads(p.read_text())
+          assert o["schema"]=="supracraft-legacy-piston-clone-saved-delta/1"
+          assert o["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert o["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert o["verified_source_clone_commands"]==2
+          assert o["verified_clone_mask_mode"]=="replace"
+          assert o["verified_clone_execution_mode"]=="normal"
+          assert o["candidate_pair_samples"]==50, "pinned CORE source footprint changed"
+          assert o["resolved_saved_pairs"]+o["unresolved_saved_pairs"]==50
+          status=o["saved_state_equality_counts"]
+          assert set(status) <= {"exact_id_and_metadata_equal","same_id_different_metadata","different_block_id"}
+          assert sum(status.values())==o["resolved_saved_pairs"]
+          assert sum(o["source_material_class_counts"].values())==o["resolved_saved_pairs"]
+          assert sum(o["destination_material_class_counts"].values())==o["resolved_saved_pairs"]
+          assert sum(o["source_to_destination_class_pairs"].values())==o["resolved_saved_pairs"]
+          assert o["candidate_nonidentical_saved_pairs"]==status.get("same_id_different_metadata",0)+status.get("different_block_id",0)
+          assert o["candidate_world_write"]=="NOT_EXECUTED"
+          assert o["source_state_runtime_stability"]=="UNKNOWN"
+          assert o["piston_motion"]=="NOT_OBSERVED"
+          assert o["modern_26_3_equivalence"]=="NOT_RUN"
+          assert o["gameplay_promoted"] is False
+          for banned in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert banned not in p.read_text(), "raw source privacy failure"
+          print("CORE_CLONE_SAVED_PARITY_STATIC_ONLY",json.dumps({
+              "samples":o["candidate_pair_samples"],
+              "resolved":o["resolved_saved_pairs"],
+              "unknown":o["unresolved_saved_pairs"],
+              "source_materials":o["source_material_class_counts"],
+              "dest_materials":o["destination_material_class_counts"],
+              "saved_equal_or_change":status,
+              "potential_diff_pairs":o["candidate_nonidentical_saved_pairs"],
+              "class_pairs":o["source_to_destination_class_pairs"],
+              "native":"NOT_RUN"
+          },sort_keys=True))
+          PY
       - name: Independent saved-block aggregate privacy and source-custody guard
         run: |
           python - <<'PY'
@@ -307,5 +356,6 @@ jobs:
             derived/core-v1.4-piston-authored-inputs-static.json
             derived/core-v1.4-piston-clone-materials-static.json
             derived/core-v1.4-piston-clone-modes-static.json
+            derived/core-v1.4-piston-clone-saved-delta-static.json
             source/core/ATTRIBUTION.md
           retention-days: 14
