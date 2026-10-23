@@ -204,6 +204,20 @@ class ElectromechanicalRecoveryTests(unittest.TestCase):
         for secret in ("-1,70,0","-2,70,0","secret_command_must_not_escape",'"node_id"'):
             self.assertNotIn(secret,text)
 
+    def test_forged_distant_physical_adjacency_rejected(self):
+        d=sample()
+        d["edges"]["physical_adjacency_candidates"].append({
+            "a":"0,70,0","b":"9,70,0"
+        })
+        with self.assertRaisesRegex(ValueError,"exact face neighbor"):
+            rank(d)
+
+    def test_coordinate_spoof_in_physical_adjacency_rejected(self):
+        d=sample()
+        d["nodes"][0]["position"]=[700,70,0]
+        with self.assertRaisesRegex(ValueError,"exact face neighbor"):
+            rank(d)
+
     def test_source_schema_mismatch_rejected(self):
         d=sample();d["schema"]="unknown"
         with self.assertRaises(ValueError):rank(d)
