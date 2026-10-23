@@ -94,6 +94,13 @@ jobs:
                    "ORIENTED_REPEATER_TO_PISTON_STATIC_CANDIDATE",
                    "NO_NAMED_PISTON_INPUT"}
           assert o["signatures"] and all(x["disposition"] in allowed for x in o["signatures"])
+          # This source signature contains only dust, repeater and sticky piston.
+          # A local named sensor must not be inferred from an absent node.
+          assert all(x["upstream_named_sensor_count"] == 0 for x in o["signatures"])
+          assert all(x["source_input_status"] == "NO_NAMED_LOCAL_SENSOR_ON_TYPED_WIRE_PATH"
+                     for x in o["signatures"])
+          assert sum(x["occurrences"] for x in o["signatures"]) == 2
+          assert all(x["upstream_named_wire_count"] > 0 for x in o["signatures"])
           serialized=p.read_text()
           for private in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
               assert private not in serialized, "raw source/position privacy failure"
@@ -103,7 +110,10 @@ jobs:
               "outcomes":[{"disposition":x["disposition"],"count":x["occurrences"],
                            "direct":x["direct_wire_to_piston_edges"],
                            "front":x["oriented_repeater_to_piston_edges"],
-                           "rear":x["oriented_wire_to_repeater_edges"]} for x in o["signatures"]]
+                           "rear":x["oriented_wire_to_repeater_edges"],
+                           "upstream_wires":x["upstream_named_wire_count"],
+                           "upstream_sensors":x["upstream_named_sensor_count"],
+                           "source_input_status":x["source_input_status"]} for x in o["signatures"]]
           },sort_keys=True))
           PY
       - name: Fail-closed nonpromotion and derived-only checks
