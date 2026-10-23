@@ -13,7 +13,8 @@ def sample():
             {"node_id":"0,70,0","family":"redstone_wire","position":[0,70,0]},
             {"node_id":"1,70,0","family":"repeater_off",
              "metadata_semantics":{"facing_vector":[-1,0,0]}},
-            {"node_id":"2,70,0","family":"sticky_piston"},
+            {"node_id":"2,70,0","family":"sticky_piston",
+             "metadata_semantics":{"facing_vector":[1,0,0]}},
             {"node_id":"9,70,0","family":"chest",
              "command":{"body":"secret_command_must_not_escape"}},
         ],
@@ -103,6 +104,43 @@ class ElectromechanicalRecoveryTests(unittest.TestCase):
             "edge_type":"legacy_dust_direct_component_power"
         }]
         self.assertEqual(rank(d)["signatures"][0]["direct_wire_to_piston_edges"],0)
+
+    def test_head_facing_wire_is_not_piston_input(self):
+        d=sample()
+        d["nodes"].append({"node_id":"2,70,1","family":"redstone_wire",
+                           "position":[2,70,1]})
+        d["nodes"][2]["metadata_semantics"]["facing_vector"]=[0,0,1]
+        d["edges"]["physical_adjacency_candidates"].append({
+            "a":"2,70,1","b":"2,70,0"
+        })
+        d["edges"]["direct_redstone_edges"]=[{
+            "source":"2,70,1","target":"2,70,0",
+            "edge_type":"legacy_dust_direct_component_power"
+        }]
+        r=rank(d)["signatures"][0]
+        self.assertEqual(r["direct_wire_to_piston_edges"],0)
+        self.assertEqual(r["disposition"],"ORIENTED_REPEATER_TO_PISTON_STATIC_CANDIDATE")
+
+    def test_head_facing_repeater_is_not_piston_input(self):
+        d=sample()
+        d["nodes"][2]["metadata_semantics"]["facing_vector"]=[-1,0,0]
+        r=rank(d)["signatures"][0]
+        self.assertEqual(r["oriented_repeater_to_piston_edges"],0)
+        self.assertEqual(r["disposition"],"NO_NAMED_PISTON_INPUT")
+
+    def test_absent_piston_facing_blocks_claimed_direct_ports(self):
+        d=sample()
+        del d["nodes"][2]["metadata_semantics"]
+        r=rank(d)["signatures"][0]
+        self.assertEqual(r["oriented_repeater_to_piston_edges"],0)
+        self.assertEqual(r["disposition"],"NO_NAMED_PISTON_INPUT")
+
+    def test_invalid_piston_facing_blocks_claimed_direct_ports(self):
+        d=sample()
+        d["nodes"][2]["metadata_semantics"]["facing_vector"]=[1,0,1]
+        r=rank(d)["signatures"][0]
+        self.assertEqual(r["oriented_repeater_to_piston_edges"],0)
+        self.assertEqual(r["disposition"],"NO_NAMED_PISTON_INPUT")
 
     def test_source_schema_mismatch_rejected(self):
         d=sample();d["schema"]="unknown"
