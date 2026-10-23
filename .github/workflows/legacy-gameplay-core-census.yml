@@ -231,6 +231,12 @@ jobs:
           assert sum(o["destination_material_class_counts"].values())==o["resolved_saved_pairs"]
           assert sum(o["source_to_destination_class_pairs"].values())==o["resolved_saved_pairs"]
           assert o["candidate_nonidentical_saved_pairs"]==status.get("same_id_different_metadata",0)+status.get("different_block_id",0)
+          assert o["clone_volume_disjoint_count"]+o["clone_volume_overlap_count"]==2
+          assert o["clone_volume_over_32768_count"]>=0
+          assert 0 <= o["identical_source_destination_coordinate_samples"] <= o["candidate_pair_samples"]
+          assert o["normal_clone_geometry_status"] in {
+              "NO_STATIC_OVERLAP_OR_VOLUME_VIOLATION",
+              "STATIC_CONFLICT_NORMAL_MODE_OVERLAP_OR_VOLUME"}
           assert o["candidate_world_write"]=="NOT_EXECUTED"
           assert o["source_state_runtime_stability"]=="UNKNOWN"
           assert o["piston_motion"]=="NOT_OBSERVED"
@@ -246,6 +252,11 @@ jobs:
               "dest_materials":o["destination_material_class_counts"],
               "saved_equal_or_change":status,
               "potential_diff_pairs":o["candidate_nonidentical_saved_pairs"],
+              "volume_disjoint_count":o["clone_volume_disjoint_count"],
+              "volume_overlap_count":o["clone_volume_overlap_count"],
+              "oversized_clone_volume_count":o["clone_volume_over_32768_count"],
+              "source_same_destination_coordinate_samples":o["identical_source_destination_coordinate_samples"],
+              "normal_geometry":o["normal_clone_geometry_status"],
               "class_pairs":o["source_to_destination_class_pairs"],
               "native":"NOT_RUN"
           },sort_keys=True))
