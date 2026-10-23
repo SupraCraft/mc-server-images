@@ -130,6 +130,44 @@ jobs:
               "unresolved_spatial_commands":d["unresolved_spatial_commands"]
           },sort_keys=True))
           PY
+      - name: Original clone-source block cells for possible piston contact writes (static)
+        run: |
+          python -m tools.inspect_legacy_piston_clone_payloads \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-clone-materials-static.json
+      - name: Independently verify clone-source privacy and nonpromotion
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-clone-materials-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-piston-clone-source-material/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["candidate_clone_source_cell_samples"]>=2, "prior two-source clone overlap lost"
+          assert d["resolved_source_cell_samples"]+d["unresolved_source_cell_samples"]==d["candidate_clone_source_cell_samples"]
+          assert d["clone_command_execution"]=="NOT_OBSERVED"
+          assert d["clone_mask_replace_filter_modes"]=="UNVERIFIED"
+          assert d["original_piston_motion"]=="NOT_OBSERVED"
+          assert d["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          assert d["clone_could_place_power_source_static_only"] in {
+              "SAVED_REDSTONE_BLOCK_SOURCE_CANDIDATE",
+              "NO_SAVED_REDSTONE_BLOCK_IN_MAPPED_CLONE_CELLS"}
+          for private in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert private not in p.read_text(), "clone source egress violation"
+          print("CORE_CLONE_SOURCE_MATERIAL_STATIC_ONLY",json.dumps({
+              "source_cells":d["candidate_clone_source_cell_samples"],
+              "resolved":d["resolved_source_cell_samples"],
+              "unknown":d["unresolved_source_cell_samples"],
+              "material_classes":d["saved_source_material_class_counts"],
+              "source_candidate_class":d["clone_could_place_power_source_static_only"]
+          },sort_keys=True))
+          PY
       - name: Independent saved-block aggregate privacy and source-custody guard
         run: |
           python - <<'PY'
@@ -234,5 +272,6 @@ jobs:
             derived/core-v1.4-directional-piston-static.json
             derived/core-v1.4-piston-saved-power-snapshot.json
             derived/core-v1.4-piston-authored-inputs-static.json
+            derived/core-v1.4-piston-clone-materials-static.json
             source/core/ATTRIBUTION.md
           retention-days: 14
