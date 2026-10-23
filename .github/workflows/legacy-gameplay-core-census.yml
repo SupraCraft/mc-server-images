@@ -77,6 +77,42 @@ jobs:
             --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
             --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
             --output derived/core-v1.4-directional-piston-static.json
+      - name: Saved original block neighborhoods around source-verified piston wires (no native execution)
+        run: |
+          python -m tools.inspect_legacy_piston_snapshot_inputs \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-saved-power-snapshot.json
+      - name: Independent saved-block aggregate privacy and source-custody guard
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-saved-power-snapshot.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-piston-source-snapshot/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["component_count"]==2 and d["wire_occurrences"]==10
+          assert d["saved_six_face_contact_samples"]==60
+          assert d["unresolved_snapshot_contact_samples"]>=0
+          assert d["original_version_native_execution"]=="NOT_RUN"
+          assert d["actual_power_transfer"]=="NOT_OBSERVED"
+          assert d["causal_power_or_motion_proven"] is False
+          serialized=p.read_text()
+          for restricted in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert restricted not in serialized, "raw source/position privacy failure"
+          print("CORE_SOURCE_SNAPSHOT_STATIC_ONLY",json.dumps({
+              "wire_occurrences":d["wire_occurrences"],
+              "saved_adjacent_redstone_block_contacts":d["saved_adjacent_redstone_block_contacts"],
+              "source_class_contact_counts":d["source_class_contact_counts"],
+              "unresolved_snapshot_contact_samples":d["unresolved_snapshot_contact_samples"],
+              "saved_direct_block_source_status":d["saved_direct_block_source_status"],
+              "native":"NOT_RUN",
+          },sort_keys=True))
+          PY
       - name: Independently guard mechanical derivative, privacy and nonpromotion
         run: |
           python - <<'PY'
@@ -152,5 +188,6 @@ jobs:
           path: |
             derived/core-v1.4-gameplay-motifs.json
             derived/core-v1.4-directional-piston-static.json
+            derived/core-v1.4-piston-saved-power-snapshot.json
             source/core/ATTRIBUTION.md
           retention-days: 14
