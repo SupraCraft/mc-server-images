@@ -10,6 +10,8 @@ on:
       - 'tests/test_rank_legacy_electromechanical_witnesses.py'
       - 'tools/inspect_legacy_piston_snapshot_inputs.py'
       - 'tests/test_inspect_legacy_piston_snapshot_inputs.py'
+      - 'tools/audit_legacy_piston_authored_inputs.py'
+      - 'tests/test_audit_legacy_piston_authored_inputs.py'
       - '.github/workflows/legacy-gameplay-motif-discovery.yml'
   workflow_dispatch:
 
@@ -26,10 +28,12 @@ jobs:
         with:
           persist-credentials: false
       - name: Python syntax check
-        run: python3 -m py_compile tools/classify_legacy_gameplay_motifs.py tests/test_classify_legacy_gameplay_motifs.py tools/rank_legacy_electromechanical_witnesses.py tests/test_rank_legacy_electromechanical_witnesses.py tools/inspect_legacy_piston_snapshot_inputs.py tests/test_inspect_legacy_piston_snapshot_inputs.py
+        run: python3 -m py_compile tools/classify_legacy_gameplay_motifs.py tests/test_classify_legacy_gameplay_motifs.py tools/rank_legacy_electromechanical_witnesses.py tests/test_rank_legacy_electromechanical_witnesses.py tools/inspect_legacy_piston_snapshot_inputs.py tests/test_inspect_legacy_piston_snapshot_inputs.py tools/audit_legacy_piston_authored_inputs.py tests/test_audit_legacy_piston_authored_inputs.py
       - name: Synthetic hard negatives - no world, no network, no server
         run: python3 -m unittest discover -s tests -p 'test_classify_legacy_gameplay_motifs.py' -v
       - name: Exact-head directional piston port hard negatives (no external worlds)
         run: python3 -m unittest discover -s tests -p 'test_rank_legacy_electromechanical_witnesses.py' -v
       - name: Saved original block source survey - source-free synthetic only
         run: python3 -m unittest discover -s tests -p 'test_inspect_legacy_piston_snapshot_inputs.py' -v
+      - name: Original authored-command mechanical input joins - synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_audit_legacy_piston_authored_inputs.py' -v
