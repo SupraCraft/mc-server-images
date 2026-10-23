@@ -46,6 +46,14 @@ The synthetic negative suite covers false adjacency, reversed direction, mismatc
 - Any emitted `upstream_named_wire_count` and `upstream_named_sensor_count` are derived **aggregate counts only**; never export original world positions, source commands, node IDs or reversible coordinate hashes. Native stimulus/root selection must remain internal to an independently admitted original-world workcell.
 - Once exact-head updated tests and graph scan complete, link their immutable run/job/artifact SHA receipts in [#34](https://github.com/SupraCraft/mc-server-images/issues/34). No source status field is a gameplay primitive admission.
 
+## Saved original-world power-neighbor qualification (2026-10-23)
+
+The source-only pinned-CORE [run 39953417745](https://github.com/SupraCraft/mc-server-images/actions/runs/39953417745) qualified `tools/inspect_legacy_piston_snapshot_inputs.py` against the exact original CORE v1.4 ZIP and the identical frozen causal graph. It selected both piston components internally by the existing immutable motif signature, independently required count parity with the directional ranker, then read only the **six-face block neighbors of their 10 wire occurrences** in the stopped original 1.8.8 Anvil data. No server, client, player, original save modification, source command execution, or raw-coordinate egress occurred.
+
+Observed **60 of 60** neighbor contacts resolved from saved NBT; **zero** were legacy redstone block ID 152, lit or unlit redstone torches, levers, buttons or pressure plates. Result: `NO_SAVED_ADJACENT_REDSTONE_BLOCK_IN_SAMPLED_SIX_FACES`. The independent derived-only artifact is [12501850680](https://github.com/SupraCraft/mc-server-images/actions/runs/39953417745), ZIP SHA256 `2a4f911dc2c47ff9be1bcc7ab4ff595f5c3e60da0d15585d9411d46bb82f1963`, expires 2026-11-06 UTC. Exact public synthetic [run 39953258559](https://github.com/SupraCraft/mc-server-images/actions/runs/39953258559) passed **47/47** source-free tests (10 motif, 29 ranker, 8 saved-block inspector).
+
+**Limits:** This is an original *saved snapshot* and only immediate six-face contacts to dust. It does **not** prove absence of indirectly powered solid blocks, scheduled command-world mutation, quasi-connectivity, or a source activated only by an actual player or tick. It does **not** prove piston motion. Do not turn a static negative into an absence-of-gameplay claim. The next ordinary native approval gate remains separate; only a fresh copied official original Java 1.8.8 world with real sham/excitation readback can establish actuation and later 26.3 parity.
+
 ## Next independent original-world test (not yet authorized/executed)
 
 1. Select one exact original-world physical component internally, preserving the coordinate-bearing original graph in a bounded ephemeral runner. Resolve actual sensor/excitation *from source*, not by guessing an input. If no controllable input exists, stop and record structural UNKNOWN.
