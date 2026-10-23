@@ -250,6 +250,44 @@ jobs:
               "native":"NOT_RUN"
           },sort_keys=True))
           PY
+      - name: Source-backed clone activation edges and upstream sensor candidates only
+        run: |
+          python -m tools.audit_legacy_piston_clone_triggers \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-clone-trigger-candidates-static.json
+      - name: Independently verify clone trigger result custody and static-only scope
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-clone-trigger-candidates-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-clone-trigger-static/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["candidate_clone_count"]==2
+          assert 0 <= d["clones_with_typed_incoming"] <= 2
+          assert d["named_reachable_sensor_count"] >= 0
+          assert d["source_trigger_classification"] in {
+              "NAMED_LOCAL_SENSOR_TO_CLONE_STATIC_CANDIDATE",
+              "NAMED_DIRECT_CLONE_POWER_STATIC_CANDIDATE",
+              "NO_SUPPORTED_TYPED_CLONE_ACTIVATION_INPUT"}
+          assert d["runtime_clone_command_execution"]=="NOT_OBSERVED"
+          assert d["runtime_wire_power"]=="NOT_OBSERVED"
+          assert d["runtime_piston_motion"]=="NOT_OBSERVED"
+          assert d["modern_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          for banned in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert banned not in p.read_text(), "source coordinates/commands escaped"
+          print("CORE_CLONE_TRIGGER_STATIC_ONLY",json.dumps({
+              "clone_count":d["candidate_clone_count"],
+              "clones_with_typed_incoming":d["clones_with_typed_incoming"],
+              "incoming_edge_counts":d["named_typed_incoming_edge_counts"],
+              "upstream_wires":d["named_reachable_upstream_wire_count"],
+              "upstream_sensors":d["named_reachable_sensor_count"],
+              "input_classification":d["source_trigger_classification"]
+          },sort_keys=True))
+          PY
       - name: Independent saved-block aggregate privacy and source-custody guard
         run: |
           python - <<'PY'
@@ -357,5 +395,6 @@ jobs:
             derived/core-v1.4-piston-clone-materials-static.json
             derived/core-v1.4-piston-clone-modes-static.json
             derived/core-v1.4-piston-clone-saved-delta-static.json
+            derived/core-v1.4-piston-clone-trigger-candidates-static.json
             source/core/ATTRIBUTION.md
           retention-days: 14
