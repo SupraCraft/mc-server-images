@@ -3,7 +3,7 @@ import copy
 import json
 import unittest
 
-from tests.test_inspect_legacy_piston_snapshot_inputs import graph_fixture
+from test_inspect_legacy_piston_snapshot_inputs import graph_fixture
 from tools.rank_legacy_electromechanical_witnesses import rank
 from tools.audit_legacy_piston_authored_inputs import audit
 
