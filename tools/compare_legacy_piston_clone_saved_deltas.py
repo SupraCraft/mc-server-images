@@ -107,6 +107,46 @@ def classify_deltas(pairs: list, blocks: dict) -> dict:
     }
 
 
+def classify_clone_geometry(graph: dict, signature: str) -> dict:
+    """Original clone cuboids; output is aggregate and non-executable."""
+    ids={cid for cid,_ in map_clone_material_source_positions(graph,signature)}
+    candidates=defaultdict(list)
+    for row in graph["edges"].get("command_world_targets",[]):
+        if row.get("source") in ids and row.get("target_kind") in ROLES:
+            candidates[row["source"]].append(row)
+    overlap=0
+    oversized=0
+    disjoint=0
+    for cid in ids:
+        rows=candidates[cid]
+        if len(rows)!=3 or {r["target_kind"] for r in rows}!=ROLES:
+            raise ValueError("ambiguous original clone geometry")
+        roles={r["target_kind"]:_exact_integer_position(r.get("target_position"))
+               for r in rows}
+        if any(v is None for v in roles.values()):
+            raise ValueError("nonintegral clone volume geometry")
+        a,b,dest=roles["source_start"],roles["source_end"],roles["destination"]
+        lo=tuple(min(a[i],b[i]) for i in range(3))
+        hi=tuple(max(a[i],b[i]) for i in range(3))
+        width=tuple(hi[i]-lo[i]+1 for i in range(3))
+        if width[0]*width[1]*width[2]>32768:
+            oversized+=1
+        dst_hi=tuple(dest[i]+width[i]-1 for i in range(3))
+        if all(lo[i]<=dst_hi[i] and dest[i]<=hi[i] for i in range(3)):
+            overlap+=1
+        else:
+            disjoint+=1
+    return {
+        "clone_volume_disjoint_count":disjoint,
+        "clone_volume_overlap_count":overlap,
+        "clone_volume_over_32768_count":oversized,
+        "normal_clone_geometry_status":(
+            "STATIC_CONFLICT_NORMAL_MODE_OVERLAP_OR_VOLUME" if overlap or oversized
+            else "NO_STATIC_OVERLAP_OR_VOLUME_VIOLATION"
+        ),
+    }
+
+
 def audit(graph: dict, signature: str, blocks: dict,
           commands: dict) -> dict:
     pairs = clone_source_dest_pairs(graph, signature)
@@ -125,11 +165,14 @@ def audit(graph: dict, signature: str, blocks: dict,
         "verified_source_clone_commands":len(expected_ids),
         "verified_clone_mask_mode":"replace",
         "verified_clone_execution_mode":"normal",
+        **classify_clone_geometry(graph,signature),
+        "identical_source_destination_coordinate_samples":sum(src==dest for src,dest in pairs),
         **classify_deltas(pairs, blocks),
         "limitations":[
             "Original saved snapshots are not an executed clone and may be stale at runtime.",
             "Block ID and 4-bit metadata parity excludes tile entity NBT, entities and ticks.",
             "Potential differences establish a restoration/reconfiguration candidate only.",
+            "Normal-mode clone source/destination overlap and 32768-block cap are checked separately.",
             "Command activation, power propagation, piston movement and reset are NOT RUN.",
         ],
     }
@@ -234,6 +277,7 @@ def main():
         "resolved":result["resolved_saved_pairs"],
         "delta_classes":result["saved_state_equality_counts"],
         "candidate_not_equal":result["candidate_nonidentical_saved_pairs"],
+        "normal_geometry":result["normal_clone_geometry_status"],
         "source_materials":result["source_material_class_counts"],
         "destination_materials":result["destination_material_class_counts"],
         "native":"NOT_RUN",
