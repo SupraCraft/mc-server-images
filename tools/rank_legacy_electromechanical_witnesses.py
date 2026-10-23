@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 from tools.classify_legacy_gameplay_motifs import (
-    SOURCE_SCHEMA, domain, EDGE_KEYS,
+    SOURCE_SCHEMA, domain, EDGE_KEYS, SENSORS,
 )
 
 SCHEMA = "supracraft-legacy-electromechanical-witness-rank/1"
@@ -27,6 +27,7 @@ DIRECT_TYPE = "legacy_dust_direct_component_power"
 FRONT_TYPE = "oriented_front_output_candidate"
 DUST_TYPE = "legacy_dust_horizontal_connection"
 REAR_TYPE = "oriented_rear_input_candidate"
+SENSOR_TYPE = "legacy_sensor_direct_dust_power"
 
 
 def _digest(value: dict) -> str:
@@ -173,6 +174,7 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
         front = set()
         rear = set()
         dust = set()
+        sensors = set()
         for a in members:
             af = by_id[a]["family"]
             for kind, et, b in sources.get(a, []):
@@ -192,8 +194,35 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
                     elif (et == REAR_TYPE and af in WIRE and bf in REPEATER and
                           _oriented_port(by_id[b],by_id[a],rear=True)):
                         rear.add((a,b))
-                if kind == "direct_redstone_edges" and et == DUST_TYPE and af in WIRE and bf in WIRE:
+                if (kind == "direct_redstone_edges" and et == DUST_TYPE and
+                    af in WIRE and bf in WIRE and b in adj[a] and
+                    _horizontal_neighbor(by_id[a],by_id[b])):
                     dust.add((a,b))
+                if (kind == "direct_redstone_edges" and et == SENSOR_TYPE and
+                    af in SENSORS and bf in WIRE and b in adj[a] and
+                    _position(by_id[a]) is not None and _position(by_id[b]) is not None):
+                    sensors.add((a,b))
+
+        # Walk only valid named wire links BACK from a named sink input.
+        # A connected dust run is not a proven live-powered source.
+        upstream = defaultdict(set)
+        for a,b in dust:
+            upstream[b].add(a)
+        roots = {a for a,b in (direct | rear)}
+        reachable_wires = set(roots)
+        pending = list(roots)
+        while pending:
+            for src in upstream.get(pending.pop(), ()):
+                if src not in reachable_wires:
+                    reachable_wires.add(src)
+                    pending.append(src)
+        reachable_named_sensors = {a for a,b in sensors if b in reachable_wires}
+        if not roots:
+            input_status = "NO_NAMED_WIRE_TO_ACTUATOR_OR_REPEATER"
+        elif not reachable_named_sensors:
+            input_status = "NO_NAMED_LOCAL_SENSOR_ON_TYPED_WIRE_PATH"
+        else:
+            input_status = "NAMED_LOCAL_SENSOR_STATIC_CANDIDATE"
         if direct:
             disposition = "DIRECT_DUST_TO_PISTON_STATIC_CANDIDATE"
         elif front:
@@ -208,6 +237,9 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
             "oriented_repeater_to_piston_edges": len(front),
             "oriented_wire_to_repeater_edges": len(rear),
             "direct_wire_to_wire_edges": len(dust),
+            "upstream_named_wire_count": len(reachable_wires),
+            "upstream_named_sensor_count": len(reachable_named_sensors),
+            "source_input_status": input_status,
             "disposition": disposition,
             "runtime_qualified": False,
         })
@@ -224,6 +256,8 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
         "oriented_repeater_to_piston_edges",
         "oriented_wire_to_repeater_edges",
         "direct_wire_to_wire_edges",
+        "upstream_named_wire_count",
+        "upstream_named_sensor_count",
     )
     for u in units:
         key = (u["signature_sha256"], *(u[field] for field in count_keys))
@@ -233,6 +267,7 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
             grouped[key]["directional_subtype_sha256"] = _digest({
                 "signature_sha256": u["signature_sha256"],
                 "typed_port_candidate_counts": {k:u[k] for k in count_keys},
+                "source_input_status":u["source_input_status"],
             })
         grouped[key]["occurrences"] += 1
 
@@ -255,7 +290,8 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
         "metadata_caveat": (
             "Repeater port orientation is a graph candidate only; piston "
             "quasi-connectivity, hidden solid-block conduction, timing, chunk "
-            "load, piston head-face exclusion and dynamic wire power remain unqualified."
+            "load, piston head-face exclusion and dynamic wire power remain unqualified; "
+            "absence of a named local sensor is not absence of external or indirect power."
         ),
     }
 
