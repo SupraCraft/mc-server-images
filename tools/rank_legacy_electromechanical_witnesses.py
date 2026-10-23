@@ -115,6 +115,9 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
         a, b = row.get("a"), row.get("b")
         if a not in by_id or b not in by_id or a == b:
             raise ValueError("invalid adjacency endpoint")
+        pa, pb = _position(by_id[a]), _position(by_id[b])
+        if pa is None or pb is None or sum(abs(pa[i]-pb[i]) for i in range(3)) != 1:
+            raise ValueError("physical adjacency is not an exact face neighbor")
         adj[a].add(b)
         adj[b].add(a)
     if "physical_adjacency_candidates" not in edges:
