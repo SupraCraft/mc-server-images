@@ -34,6 +34,25 @@ def sample():
     }
 
 
+def with_named_sensor_path():
+    d=sample()
+    d["nodes"].extend([
+        {"node_id":"-1,70,0","family":"redstone_wire","position":[-1,70,0]},
+        {"node_id":"-2,70,0","family":"lever","position":[-2,70,0]},
+    ])
+    d["edges"]["physical_adjacency_candidates"].extend([
+        {"a":"-1,70,0","b":"0,70,0"},
+        {"a":"-2,70,0","b":"-1,70,0"},
+    ])
+    d["edges"]["direct_redstone_edges"]=[
+        {"source":"-1,70,0","target":"0,70,0",
+         "edge_type":"legacy_dust_horizontal_connection"},
+        {"source":"-2,70,0","target":"-1,70,0",
+         "edge_type":"legacy_sensor_direct_dust_power"},
+    ]
+    return d
+
+
 class ElectromechanicalRecoveryTests(unittest.TestCase):
     def test_repeater_to_sticky_piston_is_only_static(self):
         r=rank(sample())
@@ -141,6 +160,49 @@ class ElectromechanicalRecoveryTests(unittest.TestCase):
         r=rank(d)["signatures"][0]
         self.assertEqual(r["oriented_repeater_to_piston_edges"],0)
         self.assertEqual(r["disposition"],"NO_NAMED_PISTON_INPUT")
+
+    def test_baseline_no_local_sensor_is_not_live_stimulus(self):
+        r=rank(sample())
+        x=r["signatures"][0]
+        self.assertEqual(x["upstream_named_wire_count"],1)
+        self.assertEqual(x["upstream_named_sensor_count"],0)
+        self.assertEqual(x["source_input_status"],"NO_NAMED_LOCAL_SENSOR_ON_TYPED_WIRE_PATH")
+        self.assertFalse(r["causal_power_or_motion_proven"])
+
+    def test_named_sensor_upstream_through_two_wire_nodes_is_static_only(self):
+        r=rank(with_named_sensor_path())
+        x=r["signatures"][0]
+        self.assertEqual(x["upstream_named_wire_count"],2)
+        self.assertEqual(x["upstream_named_sensor_count"],1)
+        self.assertEqual(x["source_input_status"],"NAMED_LOCAL_SENSOR_STATIC_CANDIDATE")
+        self.assertEqual(r["native_original_version_execution"],"NOT_RUN")
+
+    def test_unconnected_spoof_sensor_source_is_not_reachable(self):
+        d=with_named_sensor_path()
+        # Fabricated typed edge skips actual adjacent sensor port.
+        d["edges"]["direct_redstone_edges"][1]["target"]="0,70,0"
+        x=rank(d)["signatures"][0]
+        self.assertEqual(x["upstream_named_wire_count"],2)
+        self.assertEqual(x["upstream_named_sensor_count"],0)
+
+    def test_reversed_sensor_wire_direction_does_not_prove_control(self):
+        d=with_named_sensor_path()
+        d["edges"]["direct_redstone_edges"][1]["source"]="-1,70,0"
+        d["edges"]["direct_redstone_edges"][1]["target"]="-2,70,0"
+        self.assertEqual(rank(d)["signatures"][0]["upstream_named_sensor_count"],0)
+
+    def test_missing_repeater_rear_disconnects_sensor_from_actuator(self):
+        d=with_named_sensor_path()
+        d["edges"]["oriented_signal_candidates"][0]["edge_type"]="unknown_rear"
+        x=rank(d)["signatures"][0]
+        self.assertEqual(x["upstream_named_wire_count"],0)
+        self.assertEqual(x["upstream_named_sensor_count"],0)
+        self.assertEqual(x["source_input_status"],"NO_NAMED_WIRE_TO_ACTUATOR_OR_REPEATER")
+
+    def test_named_sensor_path_never_leaks_source_ids_or_commands(self):
+        text=json.dumps(rank(with_named_sensor_path()))
+        for secret in ("-1,70,0","-2,70,0","secret_command_must_not_escape",'"node_id"'):
+            self.assertNotIn(secret,text)
 
     def test_source_schema_mismatch_rejected(self):
         d=sample();d["schema"]="unknown"
