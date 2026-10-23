@@ -108,6 +108,11 @@ jobs:
           assert d["piston_motion"]=="NOT_OBSERVED"
           assert d["minecraft_26_3_equivalence"]=="NOT_RUN"
           assert d["gameplay_promoted"] is False
+          assert d["spatial_footprint_interpretation"]=="POSSIBLE_TARGET_ONLY_MATERIAL_AND_EXECUTION_UNKNOWN"
+          for k in ("resolved_spatial_write_footprints","spatial_write_footprint_candidate_overlaps",
+                    "unresolved_spatial_commands"):
+              assert isinstance(d[k],dict) and all(isinstance(v,int) and v>=0 for v in d[k].values())
+          assert sum(d["spatial_write_footprint_candidate_overlaps"].values()) <= d["unsupported_fill_clone_execute_command_count"]
           assert d["source_dynamic_input_classification"] in {
               "SOURCE_AUTHORED_REDSTONE_BLOCK_CONTACT_STATIC_CANDIDATE",
               "NO_COMPACT_SOURCE_AUTHORED_REDSTONE_BLOCK_CONTACT"}
@@ -119,7 +124,10 @@ jobs:
               "compact_setblock_writes":d["source_authored_compact_setblock_write_count"],
               "unsupported_fill_clone_execute":d["unsupported_fill_clone_execute_command_count"],
               "relevant_write_counts":d["source_authored_relevant_write_counts"],
-              "unique_contact_positions":d["unique_six_face_positions_sampled"]
+              "unique_contact_positions":d["unique_six_face_positions_sampled"],
+              "resolved_spatial_footprints":d["resolved_spatial_write_footprints"],
+              "candidate_spatial_overlaps":d["spatial_write_footprint_candidate_overlaps"],
+              "unresolved_spatial_commands":d["unresolved_spatial_commands"]
           },sort_keys=True))
           PY
       - name: Independent saved-block aggregate privacy and source-custody guard
