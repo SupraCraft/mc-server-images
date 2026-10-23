@@ -6,6 +6,8 @@ on:
     paths:
       - 'tools/classify_legacy_gameplay_motifs.py'
       - 'tests/test_classify_legacy_gameplay_motifs.py'
+      - 'tools/rank_legacy_electromechanical_witnesses.py'
+      - 'tests/test_rank_legacy_electromechanical_witnesses.py'
       - '.github/workflows/legacy-gameplay-motif-discovery.yml'
   workflow_dispatch:
 
@@ -19,7 +21,11 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Python syntax check
-        run: python3 -m py_compile tools/classify_legacy_gameplay_motifs.py tests/test_classify_legacy_gameplay_motifs.py
+        run: python3 -m py_compile tools/classify_legacy_gameplay_motifs.py tests/test_classify_legacy_gameplay_motifs.py tools/rank_legacy_electromechanical_witnesses.py tests/test_rank_legacy_electromechanical_witnesses.py
       - name: Synthetic hard negatives - no world, no network, no server
         run: python3 -m unittest discover -s tests -p 'test_classify_legacy_gameplay_motifs.py' -v
+      - name: Exact-head directional piston port hard negatives (no external worlds)
+        run: python3 -m unittest discover -s tests -p 'test_rank_legacy_electromechanical_witnesses.py' -v
