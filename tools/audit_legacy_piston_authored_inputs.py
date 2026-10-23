@@ -20,6 +20,76 @@ SINK_FAMILIES = {"repeater_off", "repeater_on"}
 SOURCE_FAMILIES = {"command_block", "chain_command_block", "repeating_command_block"}
 
 
+def _exact_integer_position(raw):
+    """Return integral world coordinates or UNKNOWN, never round the source."""
+    import math
+    if not isinstance(raw, list) or len(raw) != 3:
+        return None
+    if any(type(v) not in (int, float) or not math.isfinite(v) or int(v) != v for v in raw):
+        return None
+    return tuple(int(v) for v in raw)
+
+
+def spatial_mutator_contacts(graph: dict, contacts: set) -> dict:
+    """Bounding-write candidates only, derived from existing trusted target kinds.
+
+    No source command parsing, command execution, expansion of huge fill volumes
+    or publication of map coordinates. Payload/material is NOT qualified.
+    """
+    records = graph["edges"].get("command_world_targets", [])
+    if not isinstance(records, list):
+        raise ValueError("invalid command world target collection")
+    groups = {}
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("malformed command target")
+        if record.get("target_kind") in {
+            "region_start","region_end","source_start","source_end","destination"
+        }:
+            groups.setdefault(record.get("source"), []).append(record)
+    resolved = Counter()
+    overlap = Counter()
+    unknown = Counter()
+    for node in graph["nodes"]:
+        if node.get("family") not in SOURCE_FAMILIES:
+            continue
+        verb = (node.get("command") or {}).get("verb")
+        if verb not in {"fill","clone","execute"}:
+            continue
+        if verb == "execute":
+            unknown["execute_nested_context"] += 1
+            continue
+        rows = groups.get(node["node_id"], [])
+        expected = ({"region_start","region_end"} if verb=="fill" else
+                    {"source_start","source_end","destination"})
+        kinds = [r.get("target_kind") for r in rows]
+        positions = {r.get("target_kind"):_exact_integer_position(r.get("target_position"))
+                     for r in rows}
+        if len(rows) != len(expected) or set(kinds) != expected or any(
+            positions.get(k) is None for k in expected
+        ):
+            unknown[verb+"_unresolved_bounds"] += 1
+            continue
+        if verb == "fill":
+            start,end = positions["region_start"],positions["region_end"]
+            lo=tuple(min(start[i],end[i]) for i in range(3))
+            hi=tuple(max(start[i],end[i]) for i in range(3))
+        else:
+            start,end,dest=(positions["source_start"],positions["source_end"],
+                            positions["destination"])
+            lo=dest
+            hi=tuple(dest[i]+abs(end[i]-start[i]) for i in range(3))
+        resolved[verb+"_resolved_target_footprint"] += 1
+        if any(all(lo[i]<=c[i]<=hi[i] for i in range(3)) for c in contacts):
+            overlap[verb+"_candidate_wire_contact_overlap"] += 1
+    return {
+        "resolved_spatial_write_footprints":dict(sorted(resolved.items())),
+        "spatial_write_footprint_candidate_overlaps":dict(sorted(overlap.items())),
+        "unresolved_spatial_commands":dict(sorted(unknown.items())),
+        "spatial_footprint_interpretation":"POSSIBLE_TARGET_ONLY_MATERIAL_AND_EXECUTION_UNKNOWN",
+    }
+
+
 def audit(graph: dict, signature: str) -> dict:
     wires_by_component = select_component_wires(graph, signature)
     ranked = rank(graph, signature=signature)
@@ -87,6 +157,7 @@ def audit(graph: dict, signature: str) -> dict:
             if target in rear_inputs:
                 counters[cls+"_repeater_rear_position"] += 1
 
+    spatial = spatial_mutator_contacts(graph, contacts)
     near_redstone = sum(v for k,v in counters.items() if k.startswith("redstone_block"))
     return {
         "schema": SCHEMA,
@@ -99,6 +170,7 @@ def audit(graph: dict, signature: str) -> dict:
         "source_authored_compact_setblock_write_count":write_count,
         "unsupported_fill_clone_execute_command_count":unsupported_command_count,
         "source_authored_relevant_write_counts":dict(sorted(counters.items())),
+        **spatial,
         "source_dynamic_input_classification":(
             "SOURCE_AUTHORED_REDSTONE_BLOCK_CONTACT_STATIC_CANDIDATE"
             if near_redstone else "NO_COMPACT_SOURCE_AUTHORED_REDSTONE_BLOCK_CONTACT"
@@ -110,7 +182,8 @@ def audit(graph: dict, signature: str) -> dict:
         "gameplay_promoted":False,
         "limitations":[
             "Only compact source-graph setblock redstone_block/air writes were resolved.",
-            "Fill, clone, execute, nested selectors and unmodeled commands remain UNKNOWN.",
+            "Fill/clone bounds only indicate possible targets; source payload and execution are UNKNOWN.",
+            "Execute, unresolved target semantics, nested selectors and unmodeled commands remain UNKNOWN.",
             "A written target is not a proof that the command executes.",
             "Indirect solid conduction, timing and quasi-connectivity remain UNKNOWN.",
             "Source coordinates and command text must not be exported.",
