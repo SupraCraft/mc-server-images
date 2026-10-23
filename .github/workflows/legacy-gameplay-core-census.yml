@@ -70,6 +70,42 @@ jobs:
           python tools/classify_legacy_gameplay_motifs.py \
             --graph ephemeral/legacy-core-causal-graph.json \
             --output derived/core-v1.4-gameplay-motifs.json
+      - name: Recover typed mechanical ports from pinned complete graph (static only)
+        run: |
+          python -m tools.rank_legacy_electromechanical_witnesses \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-directional-piston-static.json
+      - name: Independently guard mechanical derivative, privacy and nonpromotion
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-directional-piston-static.json")
+          o=json.loads(p.read_text())
+          assert o["schema"]=="supracraft-legacy-electromechanical-witness-rank/1"
+          assert o["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert o["mechanical_component_occurrences"]==2, "unexpected original structural census"
+          assert o["mechanical_signature_count"]==1
+          assert o["native_original_version_execution"]=="NOT_RUN"
+          assert o["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert o["causal_power_or_motion_proven"] is False
+          allowed={"DIRECT_DUST_TO_PISTON_STATIC_CANDIDATE",
+                   "ORIENTED_REPEATER_TO_PISTON_STATIC_CANDIDATE",
+                   "NO_NAMED_PISTON_INPUT"}
+          assert o["signatures"] and all(x["disposition"] in allowed for x in o["signatures"])
+          serialized=p.read_text()
+          for private in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert private not in serialized, "raw source/position privacy failure"
+          print("PINNED_CORE_DIRECTIONAL_STATIC_ONLY",json.dumps({
+              "occurrences":o["mechanical_component_occurrences"],
+              "directional_subtypes":o["mechanical_directional_subtype_count"],
+              "outcomes":[{"disposition":x["disposition"],"count":x["occurrences"],
+                           "direct":x["direct_wire_to_piston_edges"],
+                           "front":x["oriented_repeater_to_piston_edges"],
+                           "rear":x["oriented_wire_to_repeater_edges"]} for x in o["signatures"]]
+          },sort_keys=True))
+          PY
       - name: Fail-closed nonpromotion and derived-only checks
         run: |
           python - <<'PY'
@@ -105,5 +141,6 @@ jobs:
           name: core-188-gameplay-motif-derived-only
           path: |
             derived/core-v1.4-gameplay-motifs.json
+            derived/core-v1.4-directional-piston-static.json
             source/core/ATTRIBUTION.md
           retention-days: 14
