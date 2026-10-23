@@ -72,6 +72,27 @@ def _oriented_port(repeater: dict, neighbor: dict, *, rear: bool) -> bool:
     return np == tuple(rp[i] + mult*delta[i] for i in range(3))
 
 
+def _piston_non_head_input(source: dict, piston: dict) -> bool:
+    """Exclude the piston head face from ordinary direct-input candidates.
+
+    The Java 1.8.8 piston check skips the face it is extending toward.
+    This is only a static port filter: power shape, quasi-connectivity,
+    block updates and successful motion still require native observation.
+    """
+    sp, pp = _position(source), _position(piston)
+    meta = piston.get("metadata_semantics")
+    if sp is None or pp is None or not isinstance(meta, dict):
+        return False
+    facing = meta.get("facing_vector")
+    if not isinstance(facing, list) or len(facing) != 3:
+        return False
+    if any(type(v) is not int for v in facing):
+        return False
+    if sum(abs(v) for v in facing) != 1:
+        return False
+    return sp != tuple(pp[i] + facing[i] for i in range(3))
+
+
 def rank(graph: dict, *, signature: str | None = None) -> dict:
     if not isinstance(graph, dict) or graph.get("schema") != SOURCE_SCHEMA:
         raise ValueError("unsupported original-epoch graph schema")
@@ -160,11 +181,13 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
                 bf = by_id[b]["family"]
                 if (kind == "direct_redstone_edges" and et == DIRECT_TYPE and
                     af in WIRE and bf in PISTON and
-                    _horizontal_neighbor(by_id[a],by_id[b])):
+                    _horizontal_neighbor(by_id[a],by_id[b]) and
+                    _piston_non_head_input(by_id[a],by_id[b])):
                     direct.add((a,b))
                 if kind == "oriented_signal_candidates":
                     if (et == FRONT_TYPE and af in REPEATER and bf in PISTON and
-                            _oriented_port(by_id[a],by_id[b],rear=False)):
+                            _oriented_port(by_id[a],by_id[b],rear=False) and
+                            _piston_non_head_input(by_id[a],by_id[b])):
                         front.add((a,b))
                     elif (et == REAR_TYPE and af in WIRE and bf in REPEATER and
                           _oriented_port(by_id[b],by_id[a],rear=True)):
@@ -232,7 +255,7 @@ def rank(graph: dict, *, signature: str | None = None) -> dict:
         "metadata_caveat": (
             "Repeater port orientation is a graph candidate only; piston "
             "quasi-connectivity, hidden solid-block conduction, timing, chunk "
-            "load and dynamic wire power remain unqualified."
+            "load, piston head-face exclusion and dynamic wire power remain unqualified."
         ),
     }
 
