@@ -18,6 +18,7 @@ from tools.audit_legacy_piston_clone_triggers import audit as trigger_audit
 from tools.inspect_legacy_piston_clone_payloads import map_clone_material_source_positions
 from tools.compare_legacy_piston_clone_saved_deltas import read_saved_states
 from tools.rank_legacy_electromechanical_witnesses import _position
+from tools.audit_legacy_piston_authored_inputs import spatial_mutator_contacts
 from tools.inspect_legacy_piston_snapshot_inputs import DIRECTIONS, POWER_IDS
 
 SCHEMA = "supracraft-legacy-clone-input-root-snapshot/1"
@@ -158,6 +159,7 @@ def audit(graph,signature,blocks):
     neighbors=collect_neighborhoods(wires)
     outcome=classify_snapshot(wires,neighbors,blocks)
     outcomes=classify_authored_write_contacts(graph,wires,neighbors)
+    spatial=spatial_mutator_contacts(graph,wires|neighbors)
     return {
         "schema":SCHEMA,
         "analysis":"original_saved_six_wire_input_snapshot_and_compact_writes_only",
@@ -165,6 +167,7 @@ def audit(graph,signature,blocks):
         "clone_direct_typed_wire_ports":direct,
         **outcome,
         **outcomes,
+        **spatial,
         "indirect_opaque_conduction":"UNQUALIFIED",
         "dynamic_noncompact_commands":"UNRESOLVED",
         "runtime_wire_power":"NOT_OBSERVED",
@@ -176,6 +179,7 @@ def audit(graph,signature,blocks):
             "Saved Redstone-wire metadata is stopped-world evidence, not live power.",
             "Other neighboring block IDs are not classified as proven conductors.",
             "Only exact named original typed wire paths and compact setblock writes are audited.",
+            "Fill/clone static target footprints are geometry only; source material, execution and power remain unknown.",
             "Indirect solid conduction, dynamic fill/clone/execute, remote and scheduled writes remain unknown.",
         ],
     }
@@ -216,6 +220,7 @@ def main():
         "saved_wire_states":result["saved_upstream_wire_status_counts"],
         "neighbor_classes":result["saved_neighbor_class_counts"],
         "compact_contact_writes":result["compact_writes_at_or_near_clone_input"],
+        "spatial_write_overlaps":result["spatial_write_footprint_candidate_overlaps"],
         "native":"NOT_RUN",
     },sort_keys=True))
 
