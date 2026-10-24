@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/qualify_vanilla_datapack_player_263.py'
       - 'tests/test_qualify_vanilla_datapack_player_263.py'
+      - 'tests/test_op4n_anvil_decoder_263.py'
       - '.github/workflows/qualify-vanilla-263-datapack-player-world.yml'
   workflow_dispatch:
 permissions:
@@ -28,6 +29,13 @@ jobs:
           ref: 7f888b5829f4e5576d5ce512d86327348c43f01e
           path: .deps/accepted-producer
           persist-credentials: false
+      - name: Checkout immutable public Agent Dispatch Anvil decoder (NOT a native request)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: SemperSupra/agent-dispatch
+          ref: 3d761a11dbabfdb5de6aa059a2aedc954759179a
+          path: .deps/pinned-anvil
+          persist-credentials: false
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           distribution: temurin
@@ -39,7 +47,10 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C .deps/accepted-producer rev-parse HEAD)" = 7f888b5829f4e5576d5ce512d86327348c43f01e
+          test "$(git -C .deps/pinned-anvil rev-parse HEAD)" = 3d761a11dbabfdb5de6aa059a2aedc954759179a
           python3 -m py_compile tools/qualify_vanilla_datapack_player_263.py
+          python3 -m unittest discover -s tests -p 'test_op4n_anvil_decoder_263.py' -v
+          (cd .deps/pinned-anvil && python3 -m unittest tests.test_native_vanilla263_anvil_blocks -v)
           python3 -m unittest discover -s tests -p 'test_qualify_vanilla_datapack_player_263.py' -v
           python3 -m unittest discover -s tests -p 'test_qualify_vanilla_world_artifact_activation_263.py' -v
           node --check tools/probe_mineflayer_core_place.js
@@ -63,7 +74,8 @@ jobs:
             --candidate "$RUNNER_TEMP/op3c/lantern-restoration-26.3.zip" \
             --manifest "$RUNNER_TEMP/op3c/lantern-restoration-26.3.json" \
             --evidence probes/26.3-release-identity.json \
-            --out "$RUNNER_TEMP/op3c/player-world-receipt.json"
+            --out "$RUNNER_TEMP/op3c/player-world-receipt.json" \
+            --anvil-decoder-file .deps/pinned-anvil/scripts/qualify_native_vanilla263_anvil_blocks.py
           python3 - "$RUNNER_TEMP/op3c/player-world-receipt.json" <<'PY'
           import json,sys
           r=json.load(open(sys.argv[1]))
@@ -88,6 +100,20 @@ jobs:
             assert w["native_truenas_oracle_pass"] is False
             assert w["g4_three_checkpoint_world_pass"] is False
             assert w["physical_truenas_apply"]=="HOLD"
+          dec=r["op4n_pinned_anvil_decoder"]
+          assert set(dec)=={"preaction","candidate","rollback"}
+          hashes=[]
+          for stage in ("preaction","candidate","rollback"):
+            d=dec[stage]
+            print("real_26_3_anvil_decoder",stage,d["classification"],d.get("reason","NONE"))
+            assert d["native_truenas_g4_pass"] is False
+            assert d["classification"]=="STANDALONE_REAL_263_DECODER_MATCH", (stage,d["classification"],d.get("reason","NONE"))
+            assert d["stage"]==stage
+            assert d["region_bytes_published"] is False
+            assert isinstance(d["region_sha256"],str) and len(d["region_sha256"])==64
+            assert set(d["region_sha256"])<=set("0123456789abcdef")
+            hashes.append(d["region_sha256"])
+          assert len(set(hashes))==3, "REAL_ANVIL_STAGE_REGION_REPLAY_REFUSED"
           assert not r["stock_mojang_client_qualified"]
           assert not r["authenticated_account_qualified"]
           assert not r["collage_deployed"]

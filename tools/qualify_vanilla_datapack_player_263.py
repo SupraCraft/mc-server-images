@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
+import stat
 import uuid
 import json
 import os
@@ -142,8 +144,102 @@ def player_places_core(root: Path, proc: subprocess.Popen,
         # Never store worker stdout or an unsanitized world in public evidence.
 
 
+# These fixed codes are from the pinned public decoder source. Never retain
+# arbitrary exception strings or guest/world material in a public receipt.
+_ANVIL_REFUSALS = frozenset({
+    "NBT_SIZE", "NBT_TRUNCATED", "NBT_STRING_TOO_LONG",
+    "NBT_UTF8_INVALID", "NBT_RECURSION", "NBT_ARRAY_BOUNDS",
+    "NBT_LIST_BOUNDS", "NBT_TAG_UNSUPPORTED", "NBT_DUPLICATE_NAME",
+    "NBT_COMPOUND_TOO_LARGE", "NBT_ROOT_NOT_COMPOUND",
+    "NBT_TRAILING_BYTES", "REGION_FILE_BOUNDS",
+    "REGION_CHUNK_NOT_OWNED", "REGION_CHUNK_LENGTH_INVALID",
+    "REGION_COMPRESSION_UNSUPPORTED", "REGION_TRUNCATED",
+    "REGION_DECOMPRESS_BOUNDS", "REGION_WRONG_CHUNK",
+    "FIXTURE_COORDINATE_DRIFT", "SECTION_LIST_INVALID",
+    "SECTION_ID_AMBIGUOUS", "BLOCK_PALETTE_MISSING",
+    "BLOCK_PALETTE_INVALID", "BLOCK_DATA_REQUIRED",
+    "BLOCK_DATA_INVALID", "BLOCK_DATA_TRUNCATED",
+    "BLOCK_PALETTE_INDEX_INVALID", "SERVER_BLOCK_CONSEQUENCE_ABSENT",
+    "STAGE_NOT_ADMITTED",
+})
+
+
+def stopped_real_anvil_diagnostic(world: Path, stage: str, decoder) -> dict:
+    """Read only the exact stopped OP-3C region; no symlinks or bytes escape.
+
+    Each fixed directory is opened relative to its owning parent with
+    O_DIRECTORY|O_NOFOLLOW; the final file uses O_NOFOLLOW and fstat on the
+    *opened* descriptor, avoiding a symlink swap between stat and read.
+    The caller has already observed successful server stop at this checkpoint.
+    This is standalone source evidence, not a native TrueNAS guest receipt.
+    """
+    if stage not in ("preaction", "candidate", "rollback"):
+        return {"classification": "BAD_STAGE", "native_truenas_g4_pass": False}
+    components = ("dimensions", "minecraft", "overworld", "region")
+    parts = (world,) + tuple(
+        world.joinpath(*components[:n]) for n in range(1, len(components)+1))
+    fixed = world.joinpath(*components) / "r.0.0.mca"
+    if any(p.is_symlink() for p in (*parts, fixed)):
+        return {"classification": "REGION_SYMLINK_REFUSED",
+                "native_truenas_g4_pass": False,
+                "region_bytes_published": False}
+    try:
+        # This public disposable Linux workflow must support O_NOFOLLOW.
+        nofollow = os.O_NOFOLLOW
+        directory_flags = os.O_RDONLY | os.O_DIRECTORY | nofollow
+        dir_fd = os.open(world, directory_flags)
+        try:
+            for component in components:
+                next_fd = os.open(component, directory_flags, dir_fd=dir_fd)
+                os.close(dir_fd)
+                dir_fd = next_fd
+            fd = os.open("r.0.0.mca",
+                         os.O_RDONLY | nofollow | os.O_NONBLOCK, dir_fd=dir_fd)
+            try:
+                info = os.fstat(fd)
+                if (not stat.S_ISREG(info.st_mode) or
+                        not 8192 <= info.st_size <= 64 * 1024 * 1024):
+                    return {"classification": "REGION_FILE_BOUNDS",
+                            "native_truenas_g4_pass": False}
+                with os.fdopen(os.dup(fd), "rb") as handle:
+                    blob = handle.read(info.st_size + 1)
+                if len(blob) != info.st_size:
+                    return {"classification": "REGION_FILE_DRIFT",
+                            "native_truenas_g4_pass": False}
+            finally:
+                os.close(fd)
+        finally:
+            os.close(dir_fd)
+        region_sha = hashlib.sha256(blob).hexdigest()
+        witness = decoder(blob, stage)
+        if (type(witness) is not dict or
+                witness.get("classification") !=
+                    "UNTRUSTED_REGION_BYTES_DECODED_ONLY" or
+                witness.get("block_state_expectations_matched") is not True or
+                witness.get("stage") != stage or
+                witness.get("region_sha256") != region_sha or
+                witness.get("backend_independent_world_oracle_pass") is not False or
+                witness.get("native_guest_server_owned_bytes_proven") is not False):
+            return {"classification": "DECODER_UNEXPECTED_VERDICT",
+                    "native_truenas_g4_pass": False}
+        return {"classification": "STANDALONE_REAL_263_DECODER_MATCH",
+                "stage": stage, "native_truenas_g4_pass": False,
+                "region_sha256": region_sha,
+                "region_bytes_published": False}
+    except OSError:
+        return {"classification": "REGION_UNAVAILABLE",
+                "native_truenas_g4_pass": False}
+    except Exception as exc:
+        # Only fixed public decoder error codes are safe to emit.
+        code = str(exc)
+        return {"classification": "DECODER_REFUSED",
+                "reason": code if code in _ANVIL_REFUSALS else "UNCLASSIFIED",
+                "native_truenas_g4_pass": False,
+                "region_bytes_published": False}
+
+
 def execute(candidate: Path, manifest: dict, evidence: dict, *,
-            operator_setup: bool = False) -> dict:
+            operator_setup: bool = False, anvil_decoder=None) -> dict:
     accepted = validate_candidate(candidate, manifest)
     info = evidence["artifact_version_json"]
     require(info.get("id") == "26.3" and
@@ -166,11 +262,15 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
         snapshot = root / "snapshot" / "baseline-world"
         handles = []
         stages = []
+        decoder_observations = {}
         try:
             proc, log = launch(home, jar, evidence, "client-baseline", handles)
             configure_fixture(proc, log)
             require(stop_server(proc) == 0, "BASELINE_SAVE_STOP_FAILED")
             baseline_region = stopped_world_region_witness(active)
+            if anvil_decoder is not None:
+                decoder_observations["preaction"] = stopped_real_anvil_diagnostic(
+                    active, "preaction", anvil_decoder)
             stages.append("baseline_quiesced")
             baseline_sha = tree_hash(active)
             snapshot.parent.mkdir()
@@ -196,6 +296,9 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
             stages.append("player_placed_core_and_pack_reacted")
             require(stop_server(proc) == 0, "PLAYER_CANDIDATE_STOP_FAILED")
             candidate_region = stopped_world_region_witness(active)
+            if anvil_decoder is not None:
+                decoder_observations["candidate"] = stopped_real_anvil_diagnostic(
+                    active, "candidate", anvil_decoder)
             candidate_sha = tree_hash(active)
             require(candidate_sha != baseline_sha and staged.is_file(),
                     "ACTIVATED_WORLD_NOT_PERSISTED")
@@ -221,8 +324,22 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                    "OP3C_SAME_PLAYER_ACTION_NO_PACK_CONSEQUENCE")
             require(stop_server(proc) == 0, "PLAYER_ROLLBACK_STOP_FAILED")
             rollback_region = stopped_world_region_witness(active)
+            if anvil_decoder is not None:
+                decoder_observations["rollback"] = stopped_real_anvil_diagnostic(
+                    active, "rollback", anvil_decoder)
             stages.append("same_player_action_did_not_restore_without_pack")
 
+            if anvil_decoder is not None:
+                verified = [decoder_observations.get(k, {})
+                            for k in ("preaction", "candidate", "rollback")]
+                hashes = [v.get("region_sha256") for v in verified]
+                require(all(v.get("classification") ==
+                            "STANDALONE_REAL_263_DECODER_MATCH"
+                            for v in verified),
+                        "REAL_ANVIL_THREE_STAGE_DECODE_REFUSED")
+                require(all(type(h) is str and len(h) == 64 for h in hashes)
+                        and len(set(hashes)) == 3,
+                        "REAL_ANVIL_THREE_STAGE_REPLAY_REFUSED")
             return {
                 "schema": "supracraft.op3c-vanilla-client-world-artifact/1",
                 "classification": "REAL_OFFLINE_PLAYER_ACTION_CAUSAL_ARTIFACT_AND_ROLLBACK",
@@ -239,6 +356,8 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                     "candidate": candidate_region,
                     "rollback": rollback_region,
                 },
+                **({"op4n_pinned_anvil_decoder": decoder_observations}
+                   if anvil_decoder is not None else {}),
                 "candidate_world_sha256": candidate_sha,
                 "restored_world_sha256": restored_sha,
                 "stages": stages,
@@ -268,6 +387,52 @@ def execute(candidate: Path, manifest: dict, evidence: dict, *,
                     out.close()
 
 
+
+# No arbitrary RuntimeError/OS error text, paths, provider diagnostics or
+# credentials may be printed or retained by public hosted-runner artifacts.
+# Unknown first failures remain explicitly UNCLASSIFIED, never promoted.
+_OP3C_PUBLIC_FAILURE_CODES = frozenset({
+    "PINNED_ANVIL_DECODER_FILENAME_INVALID",
+    "PINNED_ANVIL_DECODER_UNAVAILABLE",
+    "VANILLA_SOURCE_VERSION_DRIFT",
+    "PROVEN_PLAYER_WORKER_MISSING",
+    "SERVER_SHA256_MISMATCH",
+    "BASELINE_SAVE_STOP_FAILED",
+    "BASELINE_SNAPSHOT_READBACK_MISMATCH",
+    "OVERWRITE_REFUSED",
+    "STAGED_CANDIDATE_DIGEST_MISMATCH",
+    "PLAYER_CANDIDATE_STOP_FAILED",
+    "ACTIVATED_WORLD_NOT_PERSISTED",
+    "ACTIVE_SERVER_RESTORE_REFUSED",
+    "FAILED_TO_ROLLBACK_EXACT_WORLD",
+    "PLAYER_ROLLBACK_STOP_FAILED",
+    "REAL_ANVIL_THREE_STAGE_DECODE_REFUSED",
+    "REAL_ANVIL_THREE_STAGE_REPLAY_REFUSED",
+    "PLAYER_RESULT_SCHEMA",
+    "PLAYER_PLACEMENT_NOT_PROVED",
+    "PLAYER_PROTOCOL_DRIFT",
+    "PLAYER_LOGIN_OR_SPAWN_UNPROVEN",
+    "PLAYER_BACKEND_JOIN_NOT_OBSERVED",
+    "OFFLINE_OPERATOR_BOT_COMMANDS_UNPROVEN",
+})
+
+
+def bounded_public_failure(exc: Exception) -> dict:
+    """Only fixed source-authored codes cross the public receipt boundary."""
+    code = (exc.args[0] if len(exc.args) == 1 and
+            type(exc.args[0]) is str else None)
+    accepted = (type(exc) is Refused and code in _OP3C_PUBLIC_FAILURE_CODES)
+    pin_error = (type(exc) is ValueError and code in {
+        "PINNED_ANVIL_DECODER_FILENAME_INVALID",
+        "PINNED_ANVIL_DECODER_UNAVAILABLE",
+    })
+    return {
+        "error_type": "Refused" if accepted else (
+            "ValueError" if pin_error else "UNCLASSIFIED"),
+        "failure": code if accepted or pin_error else "UNCLASSIFIED",
+    }
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--candidate", type=Path, required=True)
@@ -275,18 +440,30 @@ def main() -> int:
     p.add_argument("--evidence", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--operator-setup", action="store_true")
+    p.add_argument("--anvil-decoder-file", type=Path)
     args = p.parse_args()
     try:
+        decoder = None
+        if args.anvil_decoder_file is not None:
+            if args.anvil_decoder_file.name != "qualify_native_vanilla263_anvil_blocks.py":
+                raise ValueError("PINNED_ANVIL_DECODER_FILENAME_INVALID")
+            spec = importlib.util.spec_from_file_location(
+                "accepted_agent_dispatch_anvil_decoder", args.anvil_decoder_file)
+            if spec is None or spec.loader is None:
+                raise ValueError("PINNED_ANVIL_DECODER_UNAVAILABLE")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            decoder = module.inspect
         result = execute(args.candidate, json.loads(args.manifest.read_text()),
                          json.loads(args.evidence.read_text()),
-                         operator_setup=args.operator_setup)
+                         operator_setup=args.operator_setup,
+                         anvil_decoder=decoder)
         code = 0
     except Exception as exc:
         result = {
             "schema": "supracraft.op3c-vanilla-client-world-artifact/1",
             "classification": "FAIL",
-            "error_type": type(exc).__name__,
-            "failure": str(exc)[:250],
+            **bounded_public_failure(exc),
             "physical_truenas_apply": "HOLD",
             "operational_selection": False,
         }
