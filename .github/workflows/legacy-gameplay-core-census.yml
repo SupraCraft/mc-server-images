@@ -299,6 +299,47 @@ jobs:
               "input_classification":d["source_trigger_classification"]
           },sort_keys=True))
           PY
+      - name: Pinned original clone upstream wire roots and immediate saved power contacts
+        run: |
+          python -m tools.audit_legacy_clone_input_power_roots \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-clone-input-power-roots-static.json
+      - name: Independent clone-input power-root custody and unproven-runtime gate
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-clone-input-power-roots-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-clone-input-root-snapshot/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["clone_direct_typed_wire_ports"]==2
+          assert d["upstream_wire_count"]==6
+          assert sum(d["saved_upstream_wire_status_counts"].values())+d["unresolved_upstream_wire_states"]==6
+          assert d["resolved_six_face_neighbor_positions"]+d["unresolved_six_face_neighbor_positions"]==d["unique_six_face_neighbor_positions"]
+          assert sum(d["saved_neighbor_class_counts"].values())==d["resolved_six_face_neighbor_positions"]
+          assert d["indirect_opaque_conduction"]=="UNQUALIFIED"
+          assert d["dynamic_noncompact_commands"]=="UNRESOLVED"
+          assert d["runtime_wire_power"]=="NOT_OBSERVED"
+          assert d["runtime_command_activation"]=="NOT_OBSERVED"
+          assert d["runtime_piston_motion"]=="NOT_OBSERVED"
+          assert d["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          for banned in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert banned not in p.read_text(), "source data leaked"
+          print("CORE_INPUT_WIRE_ROOT_SNAPSHOT_STATIC_ONLY",json.dumps({
+              "wire_count":d["upstream_wire_count"],
+              "wire_saved_status":d["saved_upstream_wire_status_counts"],
+              "neighbors_resolved":d["resolved_six_face_neighbor_positions"],
+              "neighbor_classes":d["saved_neighbor_class_counts"],
+              "authored_contact_writes":d["compact_writes_at_or_near_clone_input"],
+              "runtime":"NOT_RUN"
+          },sort_keys=True))
+          PY
       - name: Independent saved-block aggregate privacy and source-custody guard
         run: |
           python - <<'PY'
@@ -407,5 +448,6 @@ jobs:
             derived/core-v1.4-piston-clone-modes-static.json
             derived/core-v1.4-piston-clone-saved-delta-static.json
             derived/core-v1.4-piston-clone-trigger-candidates-static.json
+            derived/core-v1.4-clone-input-power-roots-static.json
             source/core/ATTRIBUTION.md
           retention-days: 14
