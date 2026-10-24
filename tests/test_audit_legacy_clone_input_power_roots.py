@@ -73,17 +73,17 @@ class ClonePowerRootTests(unittest.TestCase):
 
     def test_malformed_source_authored_write_rejected(self):
         g,sig=fixture()
-        next(n for n in g["nodes"] if n["node_id"]=="50,70,50")["command"]={"verb":"setblock","authored_world_state_writes":[
+        g["nodes"].append({"node_id":"200,70,200","position":[200,70,200],"family":"command_block","command":{"verb":"setblock","authored_world_state_writes":[
             {"position":[True,71,50],"state_class":"redstone_block",
-             "write_kind":"setblock"}]}
+             "write_kind":"setblock"}]}})
         with self.assertRaisesRegex(ValueError,"untrusted authored target"):
             audit(g,sig,{})
 
     def test_exact_compact_authored_contact_is_static_candidate_only(self):
         g,sig=fixture()
-        next(n for n in g["nodes"] if n["node_id"]=="50,70,50")["command"]={"verb":"setblock","authored_world_state_writes":[
+        g["nodes"].append({"node_id":"200,70,200","position":[200,70,200],"family":"command_block","command":{"verb":"setblock","authored_world_state_writes":[
             {"position":[50,72,50],"state_class":"redstone_block",
-             "write_kind":"setblock"}]}
+             "write_kind":"setblock"}]}})
         out=audit(g,sig,{})
         self.assertEqual(out["compact_writes_at_or_near_clone_input"],
                          {"redstone_block_adjacent_upstream_wire":1})
