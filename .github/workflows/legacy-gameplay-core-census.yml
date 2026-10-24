@@ -1,0 +1,459 @@
+name: Legacy gameplay CORE derived motif census
+
+on:
+  push:
+    branches:
+      - feat/legacy-gameplay-motif-discovery-20261022
+    paths:
+      - '.github/workflows/legacy-gameplay-core-census.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-original-188-derived-only:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      SOURCE_SHA256: 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Enforce free/public source policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+      - name: Install existing pinned NBT parser
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+      - name: Validate the synthetic negative corpus first
+        run: python -m unittest discover -s tests -p 'test_classify_legacy_gameplay_motifs.py' -v
+      - name: Rehydrate only pinned CC-BY-SA CORE v1.4 original
+        run: |
+          python tools/intake_open_reference_world.py \
+            --world-id reference.core.v1.4 \
+            --mediafire-page 'https://www.mediafire.com/file/un9wjqh99u3uu37/CORE+-+by+UnlikelyWaffle+%5Bv1.4%5D.zip/file' \
+            --source-page 'https://www.minecraftforum.net/forums/mapping-and-modding-java-edition/maps/2432763-core-puzzle-adventure-map' \
+            --license 'CC-BY-SA-4.0' \
+            --attribution 'CORE by UnlikelyWaffle; source forum page and creator YouTube attribution requested.' \
+            --output-dir source/core
+      - name: Verify exact original artifact before decoding
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,os
+          p=pathlib.Path("source/core/original-world.zip")
+          r=json.loads(pathlib.Path("source/core/intake-receipt.json").read_text())
+          digest=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert digest==r["original_sha256"]==os.environ["SOURCE_SHA256"], "source hash mismatch"
+          assert r["license"]=="CC-BY-SA-4.0" and r["analysis_blind"] is True
+          assert r["human_feedback_labels_loaded"] is False
+          assert r["level_dat"]["region_file_count"] > 0
+          print("PINNED_ORIGINAL_PASS", digest)
+          PY
+      - name: Recover existing CORE v1.4 source-era causal graph
+        run: |
+          mkdir -p ephemeral derived
+          python tools/analyze_legacy_causal_machinery.py \
+            --world-zip source/core/original-world.zip \
+            --output ephemeral/legacy-core-causal-graph.json > ephemeral/legacy-graph-console.txt
+      - name: Extract aggregate motif signature candidates
+        run: |
+          python tools/classify_legacy_gameplay_motifs.py \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --output derived/core-v1.4-gameplay-motifs.json
+      - name: Recover typed mechanical ports from pinned complete graph (static only)
+        run: |
+          python -m tools.rank_legacy_electromechanical_witnesses \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-directional-piston-static.json
+      - name: Saved original block neighborhoods around source-verified piston wires (no native execution)
+        run: |
+          python -m tools.inspect_legacy_piston_snapshot_inputs \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-saved-power-snapshot.json
+      - name: Source-authored dynamic Redstone candidate join (never command execution)
+        run: |
+          python -m tools.audit_legacy_piston_authored_inputs \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-authored-inputs-static.json
+      - name: Independently guard authored-input derivative and UNKNOWN classification
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-authored-inputs-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-piston-authored-input-sources/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["qualified_component_count"]==2
+          assert d["wire_occurrences"]==10
+          assert d["original_native_execution"]=="NOT_RUN"
+          assert d["actual_redstone_power"]=="NOT_OBSERVED"
+          assert d["piston_motion"]=="NOT_OBSERVED"
+          assert d["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          assert d["spatial_footprint_interpretation"]=="POSSIBLE_TARGET_ONLY_MATERIAL_AND_EXECUTION_UNKNOWN"
+          for k in ("resolved_spatial_write_footprints","spatial_write_footprint_candidate_overlaps",
+                    "unresolved_spatial_commands"):
+              assert isinstance(d[k],dict) and all(isinstance(v,int) and v>=0 for v in d[k].values())
+          assert sum(d["spatial_write_footprint_candidate_overlaps"].values()) <= d["unsupported_fill_clone_execute_command_count"]
+          assert d["source_dynamic_input_classification"] in {
+              "SOURCE_AUTHORED_REDSTONE_BLOCK_CONTACT_STATIC_CANDIDATE",
+              "NO_COMPACT_SOURCE_AUTHORED_REDSTONE_BLOCK_CONTACT"}
+          text=p.read_text()
+          for forbidden in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert forbidden not in text, "raw input leakage"
+          print("CORE_AUTHORED_POWER_INPUT_STATIC_ONLY",json.dumps({
+              "classification":d["source_dynamic_input_classification"],
+              "compact_setblock_writes":d["source_authored_compact_setblock_write_count"],
+              "unsupported_fill_clone_execute":d["unsupported_fill_clone_execute_command_count"],
+              "relevant_write_counts":d["source_authored_relevant_write_counts"],
+              "unique_contact_positions":d["unique_six_face_positions_sampled"],
+              "resolved_spatial_footprints":d["resolved_spatial_write_footprints"],
+              "candidate_spatial_overlaps":d["spatial_write_footprint_candidate_overlaps"],
+              "unresolved_spatial_commands":d["unresolved_spatial_commands"]
+          },sort_keys=True))
+          PY
+      - name: Original clone-source block cells for possible piston contact writes (static)
+        run: |
+          python -m tools.inspect_legacy_piston_clone_payloads \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-clone-materials-static.json
+      - name: Independently verify clone-source privacy and nonpromotion
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-clone-materials-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-piston-clone-source-material/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["candidate_clone_source_cell_samples"]>=2, "prior two-source clone overlap lost"
+          assert d["resolved_source_cell_samples"]+d["unresolved_source_cell_samples"]==d["candidate_clone_source_cell_samples"]
+          assert d["clone_command_execution"]=="NOT_OBSERVED"
+          assert d["clone_mask_replace_filter_modes"]=="UNVERIFIED"
+          assert d["original_piston_motion"]=="NOT_OBSERVED"
+          assert d["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          assert d["clone_could_place_power_source_static_only"] in {
+              "SAVED_REDSTONE_BLOCK_SOURCE_CANDIDATE",
+              "NO_SAVED_REDSTONE_BLOCK_IN_MAPPED_CLONE_CELLS"}
+          for private in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert private not in p.read_text(), "clone source egress violation"
+          print("CORE_CLONE_SOURCE_MATERIAL_STATIC_ONLY",json.dumps({
+              "source_cells":d["candidate_clone_source_cell_samples"],
+              "resolved":d["resolved_source_cell_samples"],
+              "unknown":d["unresolved_source_cell_samples"],
+              "material_classes":d["saved_source_material_class_counts"],
+              "source_candidate_class":d["clone_could_place_power_source_static_only"]
+          },sort_keys=True))
+          PY
+      - name: Inspect original fingerprinted clone mask/move modes (ephemeral source-only)
+        run: |
+          python -m tools.inspect_legacy_piston_clone_modes \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-clone-modes-static.json
+      - name: Independently require mode-source identity and safe public reduction
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-clone-modes-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-piston-clone-mode-audit/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["candidate_clone_command_count"]==2, "unexpected pinned original candidate"
+          assert d["source_matched_clone_command_count"]==2 and d["missing_saved_clone_commands"]==0, "source command fingerprint/identity missing"
+          assert d["command_execution"]=="NOT_OBSERVED"
+          assert d["actual_target_write"]=="NOT_OBSERVED"
+          assert d["piston_motion"]=="NOT_OBSERVED"
+          assert d["modern_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          for private in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert private not in p.read_text(), "source-command material leak"
+          print("CORE_CLONE_SOURCE_MODE_STATIC_ONLY",json.dumps({
+              "matched":d["source_matched_clone_command_count"],
+              "mask_modes":d["source_mask_mode_counts"],
+              "clone_modes":d["source_clone_mode_counts"],
+          },sort_keys=True))
+          PY
+      - name: Compare saved original clone source and target block IDs and metadata (static only)
+        run: |
+          python -m tools.compare_legacy_piston_clone_saved_deltas \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-clone-saved-delta-static.json
+      - name: Independently verify original source-target saved parity and egress boundaries
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-clone-saved-delta-static.json")
+          o=json.loads(p.read_text())
+          assert o["schema"]=="supracraft-legacy-piston-clone-saved-delta/1"
+          assert o["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert o["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert o["verified_source_clone_commands"]==2
+          assert o["verified_clone_mask_mode"]=="replace"
+          assert o["verified_clone_execution_mode"]=="normal"
+          assert o["candidate_pair_samples"]==50, "pinned CORE source footprint changed"
+          assert o["resolved_saved_pairs"]+o["unresolved_saved_pairs"]==50
+          status=o["saved_state_equality_counts"]
+          assert set(status) <= {"exact_id_and_metadata_equal","same_id_different_metadata","different_block_id"}
+          assert sum(status.values())==o["resolved_saved_pairs"]
+          assert sum(o["source_material_class_counts"].values())==o["resolved_saved_pairs"]
+          assert sum(o["destination_material_class_counts"].values())==o["resolved_saved_pairs"]
+          assert sum(o["source_to_destination_class_pairs"].values())==o["resolved_saved_pairs"]
+          assert o["candidate_nonidentical_saved_pairs"]==status.get("same_id_different_metadata",0)+status.get("different_block_id",0)
+          assert o["clone_volume_disjoint_count"]+o["clone_volume_overlap_count"]==2
+          assert o["clone_volume_over_32768_count"]>=0
+          assert 0 <= o["identical_source_destination_coordinate_samples"] <= o["candidate_pair_samples"]
+          assert o["normal_clone_geometry_status"] in {
+              "NO_STATIC_OVERLAP_OR_VOLUME_VIOLATION",
+              "STATIC_CONFLICT_NORMAL_MODE_OVERLAP_OR_VOLUME"}
+          assert o["candidate_world_write"]=="NOT_EXECUTED"
+          assert o["source_state_runtime_stability"]=="UNKNOWN"
+          assert o["piston_motion"]=="NOT_OBSERVED"
+          assert o["modern_26_3_equivalence"]=="NOT_RUN"
+          assert o["gameplay_promoted"] is False
+          for banned in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert banned not in p.read_text(), "raw source privacy failure"
+          print("CORE_CLONE_SAVED_PARITY_STATIC_ONLY",json.dumps({
+              "samples":o["candidate_pair_samples"],
+              "resolved":o["resolved_saved_pairs"],
+              "unknown":o["unresolved_saved_pairs"],
+              "source_materials":o["source_material_class_counts"],
+              "dest_materials":o["destination_material_class_counts"],
+              "saved_equal_or_change":status,
+              "potential_diff_pairs":o["candidate_nonidentical_saved_pairs"],
+              "volume_disjoint_count":o["clone_volume_disjoint_count"],
+              "volume_overlap_count":o["clone_volume_overlap_count"],
+              "oversized_clone_volume_count":o["clone_volume_over_32768_count"],
+              "source_same_destination_coordinate_samples":o["identical_source_destination_coordinate_samples"],
+              "normal_geometry":o["normal_clone_geometry_status"],
+              "class_pairs":o["source_to_destination_class_pairs"],
+              "native":"NOT_RUN"
+          },sort_keys=True))
+          PY
+      - name: Source-backed clone activation edges and upstream sensor candidates only
+        run: |
+          python -m tools.audit_legacy_piston_clone_triggers \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-piston-clone-trigger-candidates-static.json
+      - name: Independently verify clone trigger result custody and static-only scope
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-clone-trigger-candidates-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-clone-trigger-static/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["candidate_clone_count"]==2
+          assert 0 <= d["clones_with_typed_incoming"] <= 2
+          assert d["named_reachable_sensor_count"] >= 0
+          assert d["source_trigger_classification"] in {
+              "NAMED_LOCAL_SENSOR_TO_CLONE_STATIC_CANDIDATE",
+              "NAMED_DIRECT_CLONE_POWER_STATIC_CANDIDATE",
+              "NO_SUPPORTED_TYPED_CLONE_ACTIVATION_INPUT"}
+          assert d["runtime_clone_command_execution"]=="NOT_OBSERVED"
+          assert d["runtime_wire_power"]=="NOT_OBSERVED"
+          assert d["runtime_piston_motion"]=="NOT_OBSERVED"
+          assert d["modern_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          for banned in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert banned not in p.read_text(), "source coordinates/commands escaped"
+          print("CORE_CLONE_TRIGGER_STATIC_ONLY",json.dumps({
+              "clone_count":d["candidate_clone_count"],
+              "clones_with_typed_incoming":d["clones_with_typed_incoming"],
+              "incoming_edge_counts":d["named_typed_incoming_edge_counts"],
+              "upstream_wires":d["named_reachable_upstream_wire_count"],
+              "upstream_sensors":d["named_reachable_sensor_count"],
+              "input_classification":d["source_trigger_classification"]
+          },sort_keys=True))
+          PY
+      - name: Pinned original clone upstream wire roots and immediate saved power contacts
+        run: |
+          python -m tools.audit_legacy_clone_input_power_roots \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --signature 2481c9098598b179b312d89dd7ef1d03b2401a2b1ae84dee5908e0eb6be50794 \
+            --output derived/core-v1.4-clone-input-power-roots-static.json
+      - name: Independent clone-input power-root custody and unproven-runtime gate
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-clone-input-power-roots-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-clone-input-root-snapshot/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["clone_direct_typed_wire_ports"]==2
+          assert d["upstream_wire_count"]==6
+          assert sum(d["saved_upstream_wire_status_counts"].values())+d["unresolved_upstream_wire_states"]==6
+          assert d["resolved_six_face_neighbor_positions"]+d["unresolved_six_face_neighbor_positions"]==d["unique_six_face_neighbor_positions"]
+          assert sum(d["saved_neighbor_class_counts"].values())==d["resolved_six_face_neighbor_positions"]
+          assert d["indirect_opaque_conduction"]=="UNQUALIFIED"
+          assert d["spatial_footprint_interpretation"]=="POSSIBLE_TARGET_ONLY_MATERIAL_AND_EXECUTION_UNKNOWN"
+          assert isinstance(d["spatial_write_footprint_candidate_overlaps"],dict)
+          assert isinstance(d["unresolved_spatial_commands"],dict)
+          assert all(v>=0 for v in d["spatial_write_footprint_candidate_overlaps"].values())
+          assert d["dynamic_noncompact_commands"]=="UNRESOLVED"
+          assert d["runtime_wire_power"]=="NOT_OBSERVED"
+          assert d["runtime_command_activation"]=="NOT_OBSERVED"
+          assert d["runtime_piston_motion"]=="NOT_OBSERVED"
+          assert d["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          for banned in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert banned not in p.read_text(), "source data leaked"
+          print("CORE_INPUT_WIRE_ROOT_SNAPSHOT_STATIC_ONLY",json.dumps({
+              "wire_count":d["upstream_wire_count"],
+              "wire_saved_status":d["saved_upstream_wire_status_counts"],
+              "neighbors_resolved":d["resolved_six_face_neighbor_positions"],
+              "neighbor_classes":d["saved_neighbor_class_counts"],
+              "authored_contact_writes":d["compact_writes_at_or_near_clone_input"],
+              "spatial_candidate_overlaps":d["spatial_write_footprint_candidate_overlaps"],
+              "unresolved_spatial":d["unresolved_spatial_commands"],
+              "runtime":"NOT_RUN"
+          },sort_keys=True))
+          PY
+      - name: Independent saved-block aggregate privacy and source-custody guard
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-piston-saved-power-snapshot.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-piston-source-snapshot/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["component_count"]==2 and d["wire_occurrences"]==10
+          assert d["saved_six_face_contact_samples"]==60
+          assert d["unresolved_snapshot_contact_samples"]>=0
+          assert d["original_version_native_execution"]=="NOT_RUN"
+          assert d["actual_power_transfer"]=="NOT_OBSERVED"
+          assert d["causal_power_or_motion_proven"] is False
+          serialized=p.read_text()
+          for restricted in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert restricted not in serialized, "raw source/position privacy failure"
+          print("CORE_SOURCE_SNAPSHOT_STATIC_ONLY",json.dumps({
+              "wire_occurrences":d["wire_occurrences"],
+              "saved_adjacent_redstone_block_contacts":d["saved_adjacent_redstone_block_contacts"],
+              "source_class_contact_counts":d["source_class_contact_counts"],
+              "unresolved_snapshot_contact_samples":d["unresolved_snapshot_contact_samples"],
+              "saved_direct_block_source_status":d["saved_direct_block_source_status"],
+              "native":"NOT_RUN",
+          },sort_keys=True))
+          PY
+      - name: Independently guard mechanical derivative, privacy and nonpromotion
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-directional-piston-static.json")
+          o=json.loads(p.read_text())
+          assert o["schema"]=="supracraft-legacy-electromechanical-witness-rank/1"
+          assert o["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert o["mechanical_component_occurrences"]==2, "unexpected original structural census"
+          assert o["mechanical_signature_count"]==1
+          assert o["native_original_version_execution"]=="NOT_RUN"
+          assert o["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert o["causal_power_or_motion_proven"] is False
+          allowed={"DIRECT_DUST_TO_PISTON_STATIC_CANDIDATE",
+                   "ORIENTED_REPEATER_TO_PISTON_STATIC_CANDIDATE",
+                   "NO_NAMED_PISTON_INPUT"}
+          assert o["signatures"] and all(x["disposition"] in allowed for x in o["signatures"])
+          # This source signature contains only dust, repeater and sticky piston.
+          # A local named sensor must not be inferred from an absent node.
+          assert all(x["upstream_named_sensor_count"] == 0 for x in o["signatures"])
+          assert all(x["source_input_status"] == "NO_NAMED_LOCAL_SENSOR_ON_TYPED_WIRE_PATH"
+                     for x in o["signatures"])
+          assert sum(x["occurrences"] for x in o["signatures"]) == 2
+          assert all(x["upstream_named_wire_count"] > 0 for x in o["signatures"])
+          serialized=p.read_text()
+          for private in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert private not in serialized, "raw source/position privacy failure"
+          print("PINNED_CORE_DIRECTIONAL_STATIC_ONLY",json.dumps({
+              "occurrences":o["mechanical_component_occurrences"],
+              "directional_subtypes":o["mechanical_directional_subtype_count"],
+              "outcomes":[{"disposition":x["disposition"],"count":x["occurrences"],
+                           "direct":x["direct_wire_to_piston_edges"],
+                           "front":x["oriented_repeater_to_piston_edges"],
+                           "rear":x["oriented_wire_to_repeater_edges"],
+                           "upstream_wires":x["upstream_named_wire_count"],
+                           "upstream_sensors":x["upstream_named_sensor_count"],
+                           "source_input_status":x["source_input_status"]} for x in o["signatures"]]
+          },sort_keys=True))
+          PY
+      - name: Fail-closed nonpromotion and derived-only checks
+        run: |
+          python - <<'PY'
+          import json,pathlib,hashlib,collections
+          graph=json.loads(pathlib.Path("ephemeral/legacy-core-causal-graph.json").read_text())
+          out=json.loads(pathlib.Path("derived/core-v1.4-gameplay-motifs.json").read_text())
+          assert graph["schema"]=="supracraft-legacy-causal-machinery/1"
+          assert out["node_count"]==graph["node_count"] and out["node_count"]>3000
+          assert out["signature_count"]>0 and out["connected_candidate_count"]>0
+          assert all(p["classification"]=="STATIC_CANDIDATE_ONLY" for p in out["patterns"])
+          assert not any(p["runtime_proven"] or p["uplift_accepted"] for p in out["patterns"])
+          serialized=json.dumps(out)
+          assert '"position"' not in serialized and '"command"' not in serialized
+          assert '"node_id"' not in serialized and '"target_position"' not in serialized
+          print(json.dumps({
+            "source_world_sha256": "61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998",
+            "graph_sha256": out["source_graph_sha256"],
+            "source_node_count":out["node_count"],
+            "connected_candidate_count":out["connected_candidate_count"],
+            "signature_count":out["signature_count"],
+            "cross_domain_signature_count":sum(p["cross_domain"] for p in out["patterns"]),
+            "representative_signature_classes": [
+               {"signature_sha256":p["signature_sha256"],"occurrences":p["occurrences"],
+                "domains":p["domains"],"candidate_edge_types":p["candidate_edge_types"]}
+               for p in sorted(out["patterns"],key=lambda p:(-p["occurrences"],p["signature_sha256"]))[:8]
+            ],
+            "acceptance":"STATIC_CANDIDATE_ONLY"
+          },indent=2,sort_keys=True))
+          PY
+      - name: Preserve only attributed aggregate derivatives
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-188-gameplay-motif-derived-only
+          path: |
+            derived/core-v1.4-gameplay-motifs.json
+            derived/core-v1.4-directional-piston-static.json
+            derived/core-v1.4-piston-saved-power-snapshot.json
+            derived/core-v1.4-piston-authored-inputs-static.json
+            derived/core-v1.4-piston-clone-materials-static.json
+            derived/core-v1.4-piston-clone-modes-static.json
+            derived/core-v1.4-piston-clone-saved-delta-static.json
+            derived/core-v1.4-piston-clone-trigger-candidates-static.json
+            derived/core-v1.4-clone-input-power-roots-static.json
+            source/core/ATTRIBUTION.md
+          retention-days: 14

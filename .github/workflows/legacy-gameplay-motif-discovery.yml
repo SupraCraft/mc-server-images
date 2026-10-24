@@ -1,0 +1,59 @@
+name: Legacy gameplay motif discovery - source only
+on:
+  push:
+    branches:
+      - feat/legacy-gameplay-motif-discovery-20261022
+    paths:
+      - 'tools/classify_legacy_gameplay_motifs.py'
+      - 'tests/test_classify_legacy_gameplay_motifs.py'
+      - 'tools/rank_legacy_electromechanical_witnesses.py'
+      - 'tests/test_rank_legacy_electromechanical_witnesses.py'
+      - 'tools/inspect_legacy_piston_snapshot_inputs.py'
+      - 'tests/test_inspect_legacy_piston_snapshot_inputs.py'
+      - 'tools/audit_legacy_piston_authored_inputs.py'
+      - 'tests/test_audit_legacy_piston_authored_inputs.py'
+      - 'tools/inspect_legacy_piston_clone_payloads.py'
+      - 'tests/test_inspect_legacy_piston_clone_payloads.py'
+      - 'tools/inspect_legacy_piston_clone_modes.py'
+      - 'tests/test_inspect_legacy_piston_clone_modes.py'
+      - 'tools/compare_legacy_piston_clone_saved_deltas.py'
+      - 'tests/test_compare_legacy_piston_clone_saved_deltas.py'
+      - 'tools/audit_legacy_piston_clone_triggers.py'
+      - 'tests/test_audit_legacy_piston_clone_triggers.py'
+      - 'tools/audit_legacy_clone_input_power_roots.py'
+      - 'tests/test_audit_legacy_clone_input_power_roots.py'
+      - '.github/workflows/legacy-gameplay-motif-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-only-motif-hard-negatives:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python syntax check
+        run: python3 -m py_compile tools/classify_legacy_gameplay_motifs.py tests/test_classify_legacy_gameplay_motifs.py tools/rank_legacy_electromechanical_witnesses.py tests/test_rank_legacy_electromechanical_witnesses.py tools/inspect_legacy_piston_snapshot_inputs.py tests/test_inspect_legacy_piston_snapshot_inputs.py tools/audit_legacy_piston_authored_inputs.py tests/test_audit_legacy_piston_authored_inputs.py tools/inspect_legacy_piston_clone_payloads.py tests/test_inspect_legacy_piston_clone_payloads.py tools/inspect_legacy_piston_clone_modes.py tests/test_inspect_legacy_piston_clone_modes.py tools/compare_legacy_piston_clone_saved_deltas.py tests/test_compare_legacy_piston_clone_saved_deltas.py tools/audit_legacy_piston_clone_triggers.py tests/test_audit_legacy_piston_clone_triggers.py tools/audit_legacy_clone_input_power_roots.py tests/test_audit_legacy_clone_input_power_roots.py
+      - name: Synthetic hard negatives - no world, no network, no server
+        run: python3 -m unittest discover -s tests -p 'test_classify_legacy_gameplay_motifs.py' -v
+      - name: Exact-head directional piston port hard negatives (no external worlds)
+        run: python3 -m unittest discover -s tests -p 'test_rank_legacy_electromechanical_witnesses.py' -v
+      - name: Saved original block source survey - source-free synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_inspect_legacy_piston_snapshot_inputs.py' -v
+      - name: Original authored-command mechanical input joins - synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_audit_legacy_piston_authored_inputs.py' -v
+      - name: Clone source material joins - synthetic source-free
+        run: python3 -m unittest discover -s tests -p 'test_inspect_legacy_piston_clone_payloads.py' -v
+      - name: Original clone mode metadata - synthetic fingerprint and privacy controls
+        run: python3 -m unittest discover -s tests -p 'test_inspect_legacy_piston_clone_modes.py' -v
+      - name: Original clone source-destination saved block and metadata parity - synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_compare_legacy_piston_clone_saved_deltas.py' -v
+      - name: Typed input routes into source-authored clone commands - synthetic
+        run: python3 -m unittest discover -s tests -p 'test_audit_legacy_piston_clone_triggers.py' -v
+      - name: Original six-wire clone-input root saved snapshots and compact write negatives
+        run: python3 -m unittest discover -s tests -p 'test_audit_legacy_clone_input_power_roots.py' -v
