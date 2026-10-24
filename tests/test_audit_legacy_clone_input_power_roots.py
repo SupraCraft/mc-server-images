@@ -73,7 +73,7 @@ class ClonePowerRootTests(unittest.TestCase):
 
     def test_malformed_source_authored_write_rejected(self):
         g,sig=fixture()
-        g["nodes"][-1]["command"]={"verb":"setblock","authored_world_state_writes":[
+        next(n for n in g["nodes"] if n["node_id"]=="50,70,50")["command"]={"verb":"setblock","authored_world_state_writes":[
             {"position":[True,71,50],"state_class":"redstone_block",
              "write_kind":"setblock"}]}
         with self.assertRaisesRegex(ValueError,"untrusted authored target"):
@@ -81,7 +81,7 @@ class ClonePowerRootTests(unittest.TestCase):
 
     def test_exact_compact_authored_contact_is_static_candidate_only(self):
         g,sig=fixture()
-        g["nodes"][-1]["command"]={"verb":"setblock","authored_world_state_writes":[
+        next(n for n in g["nodes"] if n["node_id"]=="50,70,50")["command"]={"verb":"setblock","authored_world_state_writes":[
             {"position":[50,72,50],"state_class":"redstone_block",
              "write_kind":"setblock"}]}
         out=audit(g,sig,{})
