@@ -105,6 +105,46 @@ class ClonePowerRootTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"duplicate"):
             audit(g,sig,{})
 
+    def test_fill_footprint_near_upstream_wire_is_only_possible_target(self):
+        g,sig=fixture()
+        g["nodes"].append({
+            "node_id":"300,70,300","position":[300,70,300],
+            "family":"command_block","command":{"verb":"fill"}})
+        g["edges"]["command_world_targets"].extend([
+            {"source":"300,70,300","target_kind":"region_start",
+             "target_position":[50,72,50]},
+            {"source":"300,70,300","target_kind":"region_end",
+             "target_position":[50,72,50]},
+        ])
+        o=audit(g,sig,{})
+        self.assertEqual(o["spatial_write_footprint_candidate_overlaps"],
+                         {"fill_candidate_wire_contact_overlap":1})
+        self.assertEqual(o["runtime_command_activation"],"NOT_OBSERVED")
+
+    def test_far_fill_footprint_is_not_a_source(self):
+        g,sig=fixture()
+        g["nodes"].append({
+            "node_id":"300,70,300","position":[300,70,300],
+            "family":"command_block","command":{"verb":"fill"}})
+        g["edges"]["command_world_targets"].extend([
+            {"source":"300,70,300","target_kind":"region_start",
+             "target_position":[1000,72,1000]},
+            {"source":"300,70,300","target_kind":"region_end",
+             "target_position":[1002,72,1002]},
+        ])
+        o=audit(g,sig,{})
+        self.assertEqual(o["spatial_write_footprint_candidate_overlaps"],{})
+        self.assertEqual(o["runtime_wire_power"],"NOT_OBSERVED")
+
+    def test_unresolved_execute_stays_unknown_after_spatial_scan(self):
+        g,sig=fixture()
+        g["nodes"].append({
+            "node_id":"300,70,300","position":[300,70,300],
+            "family":"command_block","command":{"verb":"execute"}})
+        o=audit(g,sig,{})
+        self.assertEqual(o["unresolved_spatial_commands"].get("execute_nested_context"),1)
+        self.assertEqual(o["dynamic_noncompact_commands"],"UNRESOLVED")
+
     def test_no_privileged_coordinates_or_commands_in_aggregate(self):
         g,sig=fixture()
         g["nodes"][0]["command"]={"body":"AUTHOR_PRIVATE"}
