@@ -81,7 +81,14 @@ def diode_output_candidates(graph,pos,verified,diode_ids):
     seen_commands=set()
     port_classes=Counter()
     max_wire_hops=0
-    for ident in diode_ids:
+    # Follow only explicitly recorded, collinear diode output -> rear input.
+    # Never assume a real tick, locked/unlocked diode, or actual power signal.
+    pending=deque((ident,0) for ident in diode_ids)
+    visited=set()
+    while pending:
+        ident,depth=pending.popleft()
+        if ident in visited:continue
+        visited.add(ident)
         n=byid[ident]
         facing=(n.get("metadata_semantics") or {}).get("facing_vector")
         q=tuple(n["position"])
@@ -115,6 +122,20 @@ def diode_output_candidates(graph,pos,verified,diode_ids):
                     if nxt not in visited:
                         visited.add(nxt)
                         q.append((nxt,depth+1))
+        elif family in {"repeater_on","repeater_off","comparator_on","comparator_off"}:
+            from_pos=tuple(n["position"])
+            next_facing=(downstream.get("metadata_semantics") or {}).get("facing_vector")
+            exact=(isinstance(next_facing,list) and len(next_facing)==3
+                   and all(type(v) is int for v in next_facing)
+                   and tuple(downstream["position"][i]+next_facing[i]
+                             for i in range(3))==from_pos)
+            if not exact:
+                port_classes["front_diode_wrong_rear_orientation"]+=1
+            elif depth>=32:
+                port_classes["front_diode_bounded_depth_exhausted"]+=1
+            else:
+                port_classes["front_diode_exact_serial_port_candidate"]+=1
+                pending.append((downstream["node_id"],depth+1))
         else:
             port_classes["other_front_component_not_followed"]+=1
             allow={"repeater_on","repeater_off","comparator_on","comparator_off",
@@ -124,6 +145,7 @@ def diode_output_candidates(graph,pos,verified,diode_ids):
                    "redstone_block","redstone_wire"}
             port_classes["unfollowed_front_family_"+(family if family in allow
                          else "other_known_machinery")]+=1
+    port_classes["distinct_original_diode_nodes_inspected"]=len(visited)
     return seen_commands,port_classes,max_wire_hops
 
 
@@ -346,6 +368,7 @@ def trace(graph,original):
             "Source graph edges imply possible power connections only, not actual propagation.",
             "Source-reachable command families do not establish corresponding author-described scene identity.",
             "Diode front port and dust path are source geometry, not measured powered propagation; no opaque conduction assumed.",
+            "Serial diode joins require output and next-stage input collinearity, not proof of actual timing/power.",
             "No raw commands, click text, positions, entity names, per-target identities or source hashes exported.",
         ],
     }
