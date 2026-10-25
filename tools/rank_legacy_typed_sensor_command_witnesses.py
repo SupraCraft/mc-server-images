@@ -74,6 +74,23 @@ def _is_typed(src,dst,edge):
     return None
 
 
+def _verb_effect_class(node):
+    """Only a coarse authored verb family, never command text or execution."""
+    raw=(node.get("command") or {}).get("verb")
+    if not isinstance(raw,str):
+        return "unknown_or_unclassified_verb"
+    verb=raw.lower().lstrip("/")
+    if verb in {"setblock","fill","clone"}:
+        return "world_block_mutation_verb"
+    if verb in {"scoreboard","testfor","testforblock","execute"}:
+        return "conditional_or_state_verb"
+    if verb in {"tp","teleport","summon","effect","give","clear"}:
+        return "player_or_entity_verb"
+    if verb in {"tellraw","say","title","playsound","particle"}:
+        return "presentation_verb"
+    return "unknown_or_unclassified_verb"
+
+
 def rank(graph):
     if not isinstance(graph,dict) or graph.get("schema")!=SOURCE_SCHEMA:
         raise ValueError("unaccepted source graph")
@@ -166,6 +183,10 @@ def rank(graph):
             unique_sources.add(a)
             matched_sinks.add(b)
             root_coverage[family]+=1
+    effect_classes=Counter()
+    for source,target,modality in accepted_routes:
+        category=("wire_path_" if modality=="wire_path" else "direct_support_")+byid[source]["family"]
+        effect_classes[category+"__"+_verb_effect_class(byid[target])]+=1
     return {
         "schema":SCHEMA,
         "analysis":"original_1_8_8_source_static_directional_sensor_command_paths",
@@ -173,6 +194,7 @@ def rank(graph):
         "rejected_typed_edge_counts":dict(sorted(rejected.items())),
         "accepted_sensor_command_path_counts":dict(sorted(paths.items())),
         "accepted_path_count":sum(paths.values()),
+        "source_command_effect_class_path_counts":dict(sorted(effect_classes.items())),
         "source_sensor_count":len(unique_sources),
         "target_command_count":len(matched_sinks),
         "sensor_family_path_counts":dict(sorted(root_coverage.items())),
@@ -188,6 +210,7 @@ def rank(graph):
             "Repeated sensor-to-command wiring routes are deduplicated by source, destination and modality.",
             "An accepted sensor-to-command path is not observed powered state or command execution.",
             "Source sensor actuation, author intent, runtime feedback and world-state changes are not proven.",
+            "Command verb classes are author-intent syntax categories, not an observed effect.",
             "Indirect opaque-solid conduction and dynamic command chains are incomplete.",
         ],
     }
