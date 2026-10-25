@@ -189,12 +189,15 @@ def summarize_subprograms(command_ids,typed_input_commands,links):
         a=root(a);b=root(b)
         if a!=b: parents[b]=a
     safe_links=set()
+    self_feedback=0
     for a,b,kind in links:
         if a not in present or b not in present:
             raise ValueError("subprogram edge references unverified source instruction")
         if kind not in {"redstone_power","scoreboard_objective","block_state_test","conditional_chain"}:
             raise ValueError("unqualified subprogram edge type")
-        if a==b: continue
+        if a==b:
+            self_feedback+=1
+            continue
         safe_links.add((a,b,kind))
         join(a,b)
     bygroup=defaultdict(set)
@@ -262,6 +265,7 @@ def summarize_subprograms(command_ids,typed_input_commands,links):
         "groups_without_known_direct_sensor_command_path":len(bygroup)-with_input,
         "source_group_size_bands":dict(sorted(bins.items())),
         "groups_containing_edge_families":dict(sorted(family_presence.items())),
+        "source_self_feedback_link_count":self_feedback,
         "source_directed_cycles_candidate_count":cyclic,
         "source_instruction_nodes_in_cycles":cyclic_nodes,
         "graph_semantics":"WEAK_GROUPS_AND_STRONGLY_CONNECTED_SOURCE_GRAPH_ONLY__NO_ACTIVATION_OR_PURPOSE",
