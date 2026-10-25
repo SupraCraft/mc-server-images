@@ -99,6 +99,19 @@ class AllGameplayChannelsTests(unittest.TestCase):
         self.assertEqual(allow_family("minecraft:witch",ENTITY_FAMILIES),"witch")
         self.assertEqual(allow_family("CustomMagicalTotem",ENTITY_FAMILIES),"unclassified")
 
+    def test_original_188_nbt_tile_ids_are_not_misclassified(self):
+        legacy={"Control":"control_commands","Music":"presentation_signals_and_art",
+                "Trap":"inventory_storage_transport","Cauldron":"magical_potions_enchanting",
+                "Airportal":"magical_potions_enchanting","Piston":"mechanical_kinematics",
+                "DLDetector":"electrical_signal_logic","FlowerPot":"presentation_signals_and_art"}
+        for old,expected in legacy.items():
+            with self.subTest(old_id=old):
+                counter,channels=inspect_tiles([{"id":old}])
+                self.assertEqual(counter["tile_unclassified"],0)
+                self.assertEqual(channels[expected],1)
+        ec,ech=inspect_entities([{"id":"MinecartCommandBlock"}])
+        self.assertEqual(ech["control_commands"],1)
+
     def test_riding_mounts_and_equipment_are_considered(self):
         ec,_=inspect_entities([{"id":"Boat","Riding":{}},
                                {"id":"Minecart","Equipment":[{"id":1}]}])
