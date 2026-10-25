@@ -362,6 +362,7 @@ jobs:
           assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
           assert d["analysis"]=="original_1_8_8_source_static_directional_sensor_command_paths"
           assert d["accepted_path_count"]==sum(d["accepted_sensor_command_path_counts"].values())
+          assert d["accepted_path_count"]==sum(d["source_command_effect_class_path_counts"].values())
           assert isinstance(d["duplicate_route_projections_discarded"],int) and d["duplicate_route_projections_discarded"]>=0
           assert d["source_sensor_count"]>=0 and d["target_command_count"]>=0
           assert d["runtime_native_sensor_activation"]=="NOT_RUN"
@@ -380,6 +381,7 @@ jobs:
               "accepted_path_count":d["accepted_path_count"],
               "duplicates_discarded":d["duplicate_route_projections_discarded"],
               "accepted_types":d["accepted_sensor_command_path_counts"],
+              "authored_effect_classes":d["source_command_effect_class_path_counts"],
               "native":"NOT_RUN",
           },sort_keys=True))
           PY
