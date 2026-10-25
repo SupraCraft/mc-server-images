@@ -191,6 +191,37 @@ class SensorCommandWitnessTests(unittest.TestCase):
                        '"node_id"','"position"','"target_position"'):
             self.assertNotIn(secret,o)
 
+    def test_world_mutation_command_verb_is_source_only_category(self):
+        g=fixture()
+        g["nodes"][-1]["command"]={"verb":"setblock","body":"PRIVATE_AUTHOR_BLOCK_ID"}
+        o=rank(g)
+        self.assertEqual(o["source_command_effect_class_path_counts"],
+                         {"wire_path_wooden_button__world_block_mutation_verb":1})
+        self.assertEqual(o["runtime_target_effect"],"NOT_OBSERVED")
+        self.assertNotIn("PRIVATE_AUTHOR_BLOCK_ID",json.dumps(o))
+
+    def test_unrecognized_authored_verb_stays_unknown(self):
+        g=fixture()
+        g["nodes"][-1]["command"]={"verb":"SECRET_CUSTOM_VERB"}
+        o=rank(g)
+        self.assertEqual(o["source_command_effect_class_path_counts"],
+                         {"wire_path_wooden_button__unknown_or_unclassified_verb":1})
+
+    def test_presentation_command_does_not_claim_player_feedback(self):
+        g=fixture()
+        g["nodes"][-1]["command"]={"verb":"tellraw"}
+        o=rank(g)
+        self.assertEqual(o["source_command_effect_class_path_counts"],
+                         {"wire_path_wooden_button__presentation_verb":1})
+        self.assertEqual(o["runtime_target_effect"],"NOT_OBSERVED")
+
+    def test_effect_class_totals_equal_deduplicated_witnesses(self):
+        g=fixture()
+        g["nodes"][-1]["command"]={"verb":"scoreboard"}
+        out=rank(g)
+        self.assertEqual(sum(out["source_command_effect_class_path_counts"].values()),
+                         out["accepted_path_count"])
+
     def test_source_schema_rejected(self):
         g=fixture()
         g["schema"]="unknown"
