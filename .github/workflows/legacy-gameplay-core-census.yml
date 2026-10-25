@@ -534,6 +534,50 @@ jobs:
               "native":"NOT_RUN"
           },sort_keys=True))
           PY
+      - name: Trace source-only click controls into exact downstream command and reset candidates
+        run: |
+          python -m tools.trace_legacy_core_ui_controls \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --output derived/core-v1.4-click-control-source-slices-aggregate.json
+      - name: Guard original click to exact command power interface and derived-only privacy
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("derived/core-v1.4-click-control-source-slices-aggregate.json").read_text())
+          assert d["schema"]=="supracraft-core-188-click-control-slices-aggregate/1"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_sha_verified_command_count"]==d["original_source_command_count"]==1445
+          assert d["authored_click_actions_matching_absolute_redstone_setblock"]==13
+          assert d["distinct_clicked_redstone_target_count"]==4
+          assert d["clicked_target_source_feature_counts"]["targets_has_independent_air_writer"]==4
+          assert d["clicked_target_source_feature_counts"]["targets_has_direct_command_port"]==4
+          assert d["clicked_target_source_feature_counts"]["targets_has_oriented_diode_rear_port"]==4
+          assert d["source_direct_power_reach_instruction_count_occurrences"]>=d["distinct_immediate_command_seeds_across_targets"]
+          assert d["source_power_reach_maximum_hops"]<=3
+          assert d["source_controller_reset_execution"]=="NOT_OBSERVED"
+          assert d["original_java_188_execution"]=="NOT_RUN"
+          assert d["creator_reported_blaze_control_relation"]=="NOT_ESTABLISHED_UNLESS_EXACT_SCENE_JOIN"
+          assert d["minecraft_263_equivalence"]=="NOT_RUN"
+          assert d["gameplay_primitive_promoted"] is False
+          text=json.dumps(d)
+          for forbidden in ('"position"','"target_position"','"node_id"','"command"',
+                            '"raw"','"selector"','"objective"','"value"',
+                            '"CustomName"','original-world.zip'):
+              assert forbidden not in text,"private authored source escaped custody"
+          print("CORE_EXACT_CHAT_CONTROL_SLICES_SOURCE_ONLY",json.dumps({
+             "click_actions":d["authored_click_actions_matching_absolute_redstone_setblock"],
+             "targets":d["distinct_clicked_redstone_target_count"],
+             "source_features":d["clicked_target_source_feature_counts"],
+             "downstream":d["source_reachable_command_verb_counts_occurrences"],
+             "reachable_entities":d["source_reachable_summon_entity_classes_occurrences"],
+             "candidate_links":d["source_connection_candidates"],
+             "native":"NOT_RUN"
+          },sort_keys=True))
+          PY
       - name: Census ALL original mechanical electrical inventory magic actors world and presentation channels
         run: |
           python -m tools.inventory_legacy_core_gameplay_channels \
@@ -694,5 +738,6 @@ jobs:
             derived/core-v1.4-all-source-purpose-hypotheses-aggregate.json
             derived/core-v1.4-all-gameplay-channels-aggregate.json
             derived/core-v1.4-command-control-dependencies-static.json
+            derived/core-v1.4-click-control-source-slices-aggregate.json
             source/core/ATTRIBUTION.md
           retention-days: 14
