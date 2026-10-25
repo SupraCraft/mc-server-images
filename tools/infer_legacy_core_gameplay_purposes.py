@@ -282,6 +282,11 @@ def source_intent(graph, raw_byid):
         else:
             target_patterns["same_class_multi_writer_unknown_intent"]+=1
     route_shared=0
+    sensor_reached_commands={b for a,b,mode in routes}
+    shared_targets_with_known_sensors=0
+    for tgt,writers in shared_targets.items():
+        if any(cid in sensor_reached_commands for cid,mat in writers):
+            shared_targets_with_known_sensors+=1
     for a,b,mode in routes:
         fam,mat,tgt=decoded[b]
         if fam=="single_block_configuration_candidate" and tgt in shared_targets:
@@ -307,6 +312,9 @@ def source_intent(graph, raw_byid):
         "route_inference_strength_counts":dict(sorted(route_inference.items())),
         "route_setblock_target_status_counts":dict(sorted(route_targets.items())),
         "all_source_setblock_shared_target_group_count":len(shared_targets),
+        "shared_target_group_with_known_typed_sensor_command_count":shared_targets_with_known_sensors,
+        "shared_target_group_without_known_typed_sensor_command_count":len(shared_targets)-shared_targets_with_known_sensors,
+        "original_command_blocks_without_qualified_sensor_route_count":len(expected_commands)-len(sensor_reached_commands),
         "shared_target_source_hypothesis_counts":dict(sorted(target_patterns.items())),
         "qualified_routes_to_shared_setblock_targets":route_shared,
         "unresolved_source_analysis_counts":dict(sorted(unverified.items())),
@@ -358,7 +366,11 @@ def main():
         "original_command_blocks":result["original_command_block_count"],
         "verified_command_blocks":result["original_commands_fingerprint_matched"],
         "hypotheses":result["route_purpose_hypothesis_counts"],
+        "whole_world_purpose_counts":result["original_command_purpose_candidate_counts"],
         "material_classes":result["setblock_source_material_class_route_counts"],
+        "shared_targets_with_typed_sensor":result["shared_target_group_with_known_typed_sensor_command_count"],
+        "shared_targets_without_typed_sensor":result["shared_target_group_without_known_typed_sensor_command_count"],
+        "command_blocks_without_typed_sensor":result["original_command_blocks_without_qualified_sensor_route_count"],
         "shared_target_groups":result["all_source_setblock_shared_target_group_count"],
         "shared_target_hypotheses":result["shared_target_source_hypothesis_counts"],
         "native":"NOT_RUN"
