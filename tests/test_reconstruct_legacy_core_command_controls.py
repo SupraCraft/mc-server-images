@@ -14,9 +14,10 @@ def make_graph(raw_commands):
     nodes=[]
     raw={}
     for i,command in enumerate(raw_commands):
-        cid=f"cmd_{i}"
+        origin=(10+i,65,20)
+        cid=",".join(str(v) for v in origin)
         nodes.append({
-            "node_id":cid,"family":"command_block","position":[10+i,65,20],
+            "node_id":cid,"family":"command_block","position":list(origin),
             "command":{"sha256":hashlib.sha256(command.encode()).hexdigest(),
                        "verb":command.strip().lstrip("/").split()[0].lower()},
         })
@@ -124,7 +125,7 @@ class LegacyCommandControlsTests(unittest.TestCase):
 
     def test_source_command_hash_mismatch_is_hard_refusal(self):
         g,r=make_graph(["scoreboard players set @p Z 1"])
-        r["cmd_0"]="scoreboard players set @p Z 999"
+        r["10,65,20"]="scoreboard players set @p Z 999"
         with self.assertRaisesRegex(ValueError,"partial/forged"):
             reconstruct(g,r)
 
@@ -140,9 +141,9 @@ class LegacyCommandControlsTests(unittest.TestCase):
     def test_command_chain_requires_known_command_endpoints(self):
         g,r=make_graph(["say A","say B"])
         g["edges"]["command_chain_candidates"].extend([
-            {"source":"cmd_0","target":"cmd_1","edge_type":"conditional_predecessor_success_dependency"},
-            {"source":"cmd_1","target":"foreign_3","edge_type":"conditional_predecessor_success_dependency"},
-            {"source":"cmd_0","target":"cmd_1","edge_type":"physical_adjacency_candidate"}])
+            {"source":"10,65,20","target":"11,65,20","edge_type":"conditional_predecessor_success_dependency"},
+            {"source":"11,65,20","target":"foreign_3","edge_type":"conditional_predecessor_success_dependency"},
+            {"source":"10,65,20","target":"11,65,20","edge_type":"physical_adjacency_candidate"}])
         out=reconstruct(g,r)
         self.assertEqual(out["source_direct_command_chain_candidate_edges"],1)
 
