@@ -135,7 +135,8 @@ class SourceClickTraceTests(unittest.TestCase):
         self.assertEqual(out["diode_source_geometry_downstream_verb_counts_occurrences"],{"summon":1})
         self.assertEqual(out["diode_source_geometry_downstream_ports"],
                          {"front_adjacent_command_candidate":1,
-                          "distinct_original_diode_nodes_inspected":1})
+                          "distinct_original_diode_nodes_inspected":1,
+                          "saved_repeater_delay_metadata_missing":1})
         graph["edges"]["oriented_signal_candidates"]=[]
         out=trace(graph,commands)
         self.assertEqual(out["clicked_targets_with_diode_geometry_candidate_blaze_summon"],0)
@@ -161,8 +162,18 @@ class SourceClickTraceTests(unittest.TestCase):
         self.assertEqual(out["diode_source_geometry_downstream_ports"],{
             "other_front_component_not_followed":1,
             "unfollowed_front_family_redstone_torch_on":1,
-            "distinct_original_diode_nodes_inspected":1})
+            "distinct_original_diode_nodes_inspected":1,
+            "saved_repeater_delay_metadata_missing":1})
         self.assertEqual(out["diode_source_geometry_downstream_verb_counts_occurrences"],{})
+
+    def test_saved_original_188_repeater_delays_are_metadata_not_runtime(self):
+        graph,commands=specimen()
+        graph["nodes"][-1]["metadata_semantics"]["delay_redstone_ticks"]=3
+        out=trace(graph,commands)
+        p=out["diode_source_geometry_downstream_ports"]
+        self.assertEqual(p["saved_repeater_delay_redstone_ticks_total"],3)
+        self.assertEqual(p["saved_repeater_delay_3_tick_count"],1)
+        self.assertEqual(out["original_java_188_execution"],"NOT_RUN")
 
     def test_two_stage_diode_exact_rear_then_command_front(self):
         graph,commands=specimen()
@@ -181,6 +192,7 @@ class SourceClickTraceTests(unittest.TestCase):
         self.assertEqual(d["clicked_targets_with_diode_geometry_candidate_blaze_summon"],1)
         self.assertEqual(d["diode_source_geometry_downstream_ports"],{
             "distinct_original_diode_nodes_inspected":2,
+            "saved_repeater_delay_metadata_missing":2,
             "front_diode_exact_serial_port_candidate":1,
             "front_adjacent_command_candidate":1})
         graph["nodes"][-2]["metadata_semantics"]["facing_vector"]=[1,0,0]
@@ -188,6 +200,7 @@ class SourceClickTraceTests(unittest.TestCase):
         self.assertEqual(d["clicked_targets_with_diode_geometry_candidate_blaze_summon"],0)
         self.assertEqual(d["diode_source_geometry_downstream_ports"],{
             "distinct_original_diode_nodes_inspected":1,
+            "saved_repeater_delay_metadata_missing":1,
             "front_diode_wrong_rear_orientation":1})
 
     def test_diode_front_dust_path_requires_strict_real_edges(self):
