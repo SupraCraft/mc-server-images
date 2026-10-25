@@ -37,7 +37,8 @@ SAFE_ENTITY={
     "wither":"wither","entityhorse":"horse","skeleton":"skeleton",
     "itemframe":"item_frame","primedtnt":"primed_tnt"
 }
-SELECTOR_SCORE=re.compile(r"(?<![A-Za-z0-9_])score_([A-Za-z0-9_.+-]{1,128})(?:_min)?=")
+SELECTOR_SCORE=re.compile(r"(?<![A-Za-z0-9_])score_([A-Za-z0-9_.+-]{1,128}?)(?:_min)?=")
+SELECTOR_TOKEN=re.compile(r"@[pare]\\[[^\\]\\r\\n]{0,2048}\\]")
 
 
 def _point(parts, start, origin):
@@ -74,7 +75,10 @@ def selector_reads(raw):
     # Selector score is a state read even when the verb is 'tp' or 'summon'.
     # Do not expose objective names, literal player/UUID, or selector parameters.
     if not isinstance(raw,str): return set()
-    return set(SELECTOR_SCORE.findall(raw))
+    out=set()
+    for token in SELECTOR_TOKEN.findall(raw):
+        out.update(SELECTOR_SCORE.findall(token))
+    return out
 
 
 def click_controls(raw):
