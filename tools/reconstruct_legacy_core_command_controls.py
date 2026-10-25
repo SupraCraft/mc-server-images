@@ -418,6 +418,22 @@ def reconstruct(graph, raw):
                     chat_world["click_power_target_rear_diode_input"]+=1
     if chat_world_points:
         chat_world["distinct_absolute_click_targets"]=len(chat_world_points)
+        for point in chat_world_points:
+            writers=point_writers.get(point,set())
+            classes=set()
+            for c in writers:
+                src_parts=verified[c][2]
+                if src_parts and src_parts[0]=="setblock" and len(src_parts)>4:
+                    classes.add(material_class(src_parts[4]))
+            if "air_removal_candidate" in classes:
+                chat_world["distinct_clicked_targets_with_authored_air_reset_candidate"]+=1
+            if "redstone_power_source_candidate" in classes:
+                chat_world["distinct_clicked_targets_with_authored_power_writer"]+=1
+            if len(writers)>1:
+                chat_world["distinct_clicked_targets_with_multiple_authored_writers"]+=1
+            if any(c in reached for c in writers):
+                chat_world["distinct_clicked_targets_with_named_sensor_input_to_writer"]+=1
+
     edges=graph.get("edges",{})
     command_ids=set(verified)
     # Graph links need exact source/target command identities, not adjacency.
