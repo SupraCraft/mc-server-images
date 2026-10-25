@@ -150,6 +150,18 @@ class SourceClickTraceTests(unittest.TestCase):
         out=trace(graph,commands)
         self.assertEqual(out["clicked_targets_with_diode_geometry_candidate_blaze_summon"],0)
 
+    def test_unfollowed_diode_front_component_has_allowlisted_diagnostic(self):
+        graph,commands=specimen()
+        graph["nodes"].append(node(22,65,20,"redstone_torch_on"))
+        graph["edges"]["oriented_signal_candidates"]=[
+            {"source":"21,65,20","target":"22,65,20",
+             "edge_type":"oriented_front_output_candidate"}]
+        out=trace(graph,commands)
+        self.assertEqual(out["diode_source_geometry_downstream_ports"],{
+            "other_front_component_not_followed":1,
+            "unfollowed_front_family_redstone_torch_on":1})
+        self.assertEqual(out["diode_source_geometry_downstream_verb_counts_occurrences"],{})
+
     def test_diode_front_dust_path_requires_strict_real_edges(self):
         graph,commands=specimen()
         spawn="summon ArmorStand 35 65 20"
