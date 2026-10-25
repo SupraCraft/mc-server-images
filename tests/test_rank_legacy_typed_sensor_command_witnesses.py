@@ -124,6 +124,47 @@ class SensorCommandWitnessTests(unittest.TestCase):
         ]
         self.assertEqual(rank(g)["accepted_path_count"],0)
 
+    def test_parallel_sensor_wire_ingress_is_one_sensor_command_witness(self):
+        g={"schema":"supracraft-legacy-causal-machinery/1",
+           "nodes":[node("wooden_pressure_plate",(0,70,0)),
+                    node("redstone_wire",(1,70,0)),
+                    node("redstone_wire",(0,70,1)),
+                    node("redstone_wire",(1,70,1)),
+                    node("command_block",(1,69,1))],
+           "edges":{"direct_redstone_edges":[
+               edge((0,70,0),(1,70,0),"legacy_sensor_direct_dust_power"),
+               edge((0,70,0),(0,70,1),"legacy_sensor_direct_dust_power"),
+               edge((1,70,0),(1,70,1),"legacy_dust_horizontal_connection"),
+               edge((0,70,1),(1,70,1),"legacy_dust_horizontal_connection"),
+               edge((1,70,1),(1,69,1),"legacy_dust_downward_command_power"),
+           ]}}
+        o=rank(g)
+        self.assertEqual(o["accepted_sensor_command_path_counts"],
+                         {"wire_path_wooden_pressure_plate":1})
+        self.assertEqual(o["source_sensor_count"],1)
+        self.assertEqual(o["target_command_count"],1)
+
+    def test_duplicate_original_named_edge_never_inflates_witness_count(self):
+        g=fixture()
+        g["edges"]["direct_redstone_edges"].append(
+            copy.deepcopy(g["edges"]["direct_redstone_edges"][0]))
+        o=rank(g)
+        self.assertEqual(o["accepted_path_count"],1)
+        self.assertEqual(o["source_sensor_count"],1)
+
+    def test_repeated_direct_support_projection_is_not_multiple_mechanics(self):
+        g={"schema":"supracraft-legacy-causal-machinery/1","nodes":[
+            node("wooden_button",(0,70,0),
+                 metadata_semantics={"support_vector":[1,0,0]}),
+            node("command_block",(1,70,0))],
+           "edges":{"direct_redstone_edges":[
+               edge((0,70,0),(1,70,0),"legacy_button_attached_support_power"),
+               edge((0,70,0),(1,70,0),"legacy_button_attached_support_power"),
+           ]}}
+        o=rank(g)
+        self.assertEqual(o["accepted_path_count"],1)
+        self.assertEqual(o["duplicate_route_projections_discarded"],1)
+
     def test_duplicate_node_id_fails_closed(self):
         g=fixture()
         g["nodes"].append(copy.deepcopy(g["nodes"][0]))
