@@ -75,7 +75,7 @@ def trace(graph,original):
         nodes[n["node_id"]]=n
 
     authors=defaultdict(set)
-    click_events=defaultdict(set)
+    click_events=defaultdict(list)
     original_writers=defaultdict(set)
     writer_kinds=defaultdict(set)
     for cid,(n,raw,parts) in verified.items():
@@ -94,7 +94,7 @@ def trace(graph,original):
             p=_static_absolute_point(vals,1)
             if p is None or _material_command(vals)!=POWER_MATERIAL:
                 continue
-            click_events[p].add(value)
+            click_events[p].append((cid,value))
             authors[p].add(cid)
     # Reject independently implausible claimed completeness.
     if len(click_events)>1000:
