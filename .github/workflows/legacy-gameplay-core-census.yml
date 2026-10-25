@@ -346,6 +346,41 @@ jobs:
               "runtime":"NOT_RUN"
           },sort_keys=True))
           PY
+      - name: Source-only directed legacy sensor to command witness ranking
+        run: |
+          python -m tools.rank_legacy_typed_sensor_command_witnesses \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --output derived/core-v1.4-typed-sensor-command-candidates-static.json
+      - name: Independently guard typed sensor/command source evidence and no-promotion boundary
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("derived/core-v1.4-typed-sensor-command-candidates-static.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="supracraft-legacy-typed-sensor-command-candidates/1"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["analysis"]=="original_1_8_8_source_static_directional_sensor_command_paths"
+          assert d["accepted_path_count"]==sum(d["accepted_sensor_command_path_counts"].values())
+          assert d["source_sensor_count"]>=0 and d["target_command_count"]>=0
+          assert d["runtime_native_sensor_activation"]=="NOT_RUN"
+          assert d["exclusive_command_causality"]=="NOT_PROVEN"
+          assert d["runtime_target_effect"]=="NOT_OBSERVED"
+          assert d["modern_26_3_parity"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          text=p.read_text()
+          for forbidden in ('"node_id"','"position"','"command"','"target_position"','original-world.zip'):
+              assert forbidden not in text, "private original source leak"
+          print("CORE_DIRECTED_SENSOR_COMMAND_STATIC_ONLY",json.dumps({
+              "typed_edges":d["typed_edge_counts"],
+              "rejected":d["rejected_typed_edge_counts"],
+              "source_sensor_count":d["source_sensor_count"],
+              "target_command_count":d["target_command_count"],
+              "accepted_path_count":d["accepted_path_count"],
+              "accepted_types":d["accepted_sensor_command_path_counts"],
+              "native":"NOT_RUN",
+          },sort_keys=True))
+          PY
       - name: Independent saved-block aggregate privacy and source-custody guard
         run: |
           python - <<'PY'
@@ -455,5 +490,6 @@ jobs:
             derived/core-v1.4-piston-clone-saved-delta-static.json
             derived/core-v1.4-piston-clone-trigger-candidates-static.json
             derived/core-v1.4-clone-input-power-roots-static.json
+            derived/core-v1.4-typed-sensor-command-candidates-static.json
             source/core/ATTRIBUTION.md
           retention-days: 14
