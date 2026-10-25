@@ -505,6 +505,10 @@ jobs:
           assert click.get("click_setblock_absolute_point",0)+click.get("click_setblock_non_absolute_or_incomplete",0)==click.get("click_run_setblock",0)
           assert click.get("click_power_target_adjacent_legacy_command",0)<=click.get("click_target_adjacent_legacy_command",0)
           assert click.get("click_exact_target_also_written_by_command_block",0)<=click.get("click_setblock_absolute_point",0)
+          assert click.get("distinct_clicked_targets_with_authored_air_reset_candidate",0)<=click.get("distinct_absolute_click_targets",0)
+          assert click.get("distinct_clicked_targets_with_authored_power_writer",0)<=click.get("distinct_absolute_click_targets",0)
+          assert click.get("distinct_clicked_targets_with_multiple_authored_writers",0)<=click.get("distinct_absolute_click_targets",0)
+          assert click.get("distinct_clicked_targets_with_named_sensor_input_to_writer",0)<=click.get("distinct_absolute_click_targets",0)
           assert d["dependency_proof"]=="EXACT_SOURCE_SCORE_OBJECTIVE_OR_BLOCK_POINT_JOIN__NOT_RUNTIME"
           assert d["click_event_execution"]=="NOT_RUN"
           assert d["original_native"]=="NOT_RUN"
