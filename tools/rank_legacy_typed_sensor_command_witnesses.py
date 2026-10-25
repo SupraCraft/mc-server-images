@@ -121,16 +121,28 @@ def rank(graph):
     root_coverage=Counter()
     unique_sources=set()
     matched_sinks=set()
+    accepted_routes=set()  # Ephemeral identity-based unique (sensor,command,modality)
     bounded=0
+    duplicate_routes=0
+    # One directed walk per sensor, not per sensor-wire starting edge. This
+    # prevents fan-in/fan-out wiring from fabricating extra "mechanisms".
+    starts=defaultdict(set)
     for a,b in by_kind["sensor_wire"]:
+        starts[a].add(b)
+    for a,roots in starts.items():
         sensor=byid[a]
-        distances={b:0}
-        q=deque([b])
+        distances={root:0 for root in roots}
+        q=deque(sorted(roots))
         while q:
             now=q.popleft()
             depth=distances[now]
             for cmd in sink[now]:
                 category="wire_path_"+sensor["family"]
+                key=(a,cmd,"wire_path")
+                if key in accepted_routes:
+                    duplicate_routes+=1
+                    continue
+                accepted_routes.add(key)
                 paths[category]+=1
                 unique_sources.add(a)
                 matched_sinks.add(cmd)
@@ -144,6 +156,11 @@ def rank(graph):
                     q.append(nxt)
     for kind in ("button_command_support","plate_command_support"):
         for a,b in by_kind[kind]:
+            key=(a,b,kind)
+            if key in accepted_routes:
+                duplicate_routes+=1
+                continue
+            accepted_routes.add(key)
             family=byid[a]["family"]
             paths["direct_support_"+family]+=1
             unique_sources.add(a)
@@ -160,6 +177,7 @@ def rank(graph):
         "target_command_count":len(matched_sinks),
         "sensor_family_path_counts":dict(sorted(root_coverage.items())),
         "bounded_wire_walk_events":bounded,
+        "duplicate_route_projections_discarded":duplicate_routes,
         "runtime_native_sensor_activation":"NOT_RUN",
         "exclusive_command_causality":"NOT_PROVEN",
         "runtime_target_effect":"NOT_OBSERVED",
@@ -167,6 +185,7 @@ def rank(graph):
         "gameplay_promoted":False,
         "limitations":[
             "Only exact typed directed source graph paths; no generic proximity shortcuts.",
+            "Repeated sensor-to-command wiring routes are deduplicated by source, destination and modality.",
             "An accepted sensor-to-command path is not observed powered state or command execution.",
             "Source sensor actuation, author intent, runtime feedback and world-state changes are not proven.",
             "Indirect opaque-solid conduction and dynamic command chains are incomplete.",
