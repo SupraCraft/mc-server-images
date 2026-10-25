@@ -471,6 +471,49 @@ jobs:
               "routes":d["directed_source_witness_count"],
               "source_only":True},sort_keys=True))
           PY
+      - name: Census ALL original mechanical electrical inventory magic actors world and presentation channels
+        run: |
+          python -m tools.inventory_legacy_core_gameplay_channels \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --output derived/core-v1.4-all-gameplay-channels-aggregate.json
+      - name: Independently verify whole-source gameplay channel breadth and privacy
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("derived/core-v1.4-all-gameplay-channels-aggregate.json").read_text())
+          assert d["schema"]=="supracraft-legacy-core-gameplay-channel-census/1"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["source_chunk_count"]>0
+          must={"mechanical_kinematics","electrical_signal_logic","magical_potions_enchanting",
+                "inventory_storage_transport","entities_actor_spawning",
+                "environmental_hazard_physics","traversal_navigation",
+                "presentation_signals_and_art","control_commands",
+                "multiplayer_progression_state"}
+          assert set(d["channel_status"])==must
+          assert sum(d["channel_saved_block_instance_counts"].values())>0
+          assert d["runtime_physical_motion"]=="NOT_OBSERVED"
+          assert d["runtime_power_transfer"]=="NOT_OBSERVED"
+          assert d["runtime_item_transfers"]=="NOT_OBSERVED"
+          assert d["runtime_potions_magic"]=="NOT_OBSERVED"
+          assert d["runtime_actor_behavior"]=="NOT_OBSERVED"
+          assert d["modern_26_3_parity"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          txt=json.dumps(d)
+          for forbidden in ('"node_id"','"position"','"target_position"','"command"',
+                            '"Items"','"CustomName"','"id"','original-world.zip'):
+              assert forbidden not in txt, "source or authored data leaked"
+          print("CORE_ALL_CHANNEL_COVERAGE_SOURCE_ONLY",json.dumps({
+              "chunk_count":d["source_chunk_count"],
+              "channels":d["channel_status"],
+              "tile_evidence":d["allowlisted_tile_evidence_counts"],
+              "entity_evidence":d["allowlisted_entity_evidence_counts"],
+              "native":"NOT_RUN"
+          },sort_keys=True))
+          PY
       - name: Independent saved-block aggregate privacy and source-custody guard
         run: |
           python - <<'PY'
@@ -583,5 +626,6 @@ jobs:
             derived/core-v1.4-typed-sensor-command-candidates-static.json
             derived/core-v1.4-button-setblock-target-selection-static.json
             derived/core-v1.4-all-source-purpose-hypotheses-aggregate.json
+            derived/core-v1.4-all-gameplay-channels-aggregate.json
             source/core/ATTRIBUTION.md
           retention-days: 14
