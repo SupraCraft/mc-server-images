@@ -1,0 +1,163 @@
+"""Synthetic historical CORE command-disassembly oracles; no original world."""
+from __future__ import annotations
+import hashlib
+import json
+import unittest
+
+from tools.reconstruct_legacy_core_command_controls import (
+    click_controls, scoreboard_access, selector_reads, nested_execute,
+    reconstruct
+)
+
+
+def make_graph(raw_commands):
+    nodes=[]
+    raw={}
+    for i,command in enumerate(raw_commands):
+        cid=f"cmd_{i}"
+        nodes.append({
+            "node_id":cid,"family":"command_block","position":[10+i,65,20],
+            "command":{"sha256":hashlib.sha256(command.encode()).hexdigest(),
+                       "verb":command.strip().lstrip("/").split()[0].lower()},
+        })
+        raw[cid]=command
+    return {
+        "schema":"supracraft-legacy-causal-machinery/1",
+        "nodes":nodes,
+        "family_counts":{"command_block":len(nodes),"redstone_wire":2,"repeater_off":1,
+                         "wooden_button":1},
+        "edges":{"direct_redstone_edges":[],"command_chain_candidates":[]}
+    },raw
+
+
+class LegacyCommandControlsTests(unittest.TestCase):
+    def test_exact_scoreboard_writer_reader_join(self):
+        g,r=make_graph([
+            "scoreboard players set @p privateQuest 1",
+            "scoreboard players test @a privateQuest 1 9"
+        ])
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_command_count"],2)
+        self.assertEqual(out["scoreboard_state_objectives_with_exact_read_write"],1)
+        self.assertEqual(out["scoreboard_exact_cross_command_possible_edges"],1)
+        self.assertNotIn("privateQuest",json.dumps(out))
+        self.assertFalse(out["gameplay_promoted"])
+
+    def test_cross_command_different_objectives_do_not_join(self):
+        g,r=make_graph([
+            "scoreboard players set @p objectiveA 1",
+            "scoreboard players test @p objectiveB 1 9"
+        ])
+        out=reconstruct(g,r)
+        self.assertEqual(out["scoreboard_exact_cross_command_possible_edges"],0)
+
+    def test_selector_is_real_state_read_not_just_verb(self):
+        g,r=make_graph([
+            "scoreboard players add @p innerValue 1",
+            "tp @a[score_innerValue_min=3] 7 66 7"
+        ])
+        out=reconstruct(g,r)
+        self.assertEqual(out["scoreboard_exact_cross_command_possible_edges"],1)
+        self.assertEqual(out["source_state_read_commands"],1)
+
+    def test_dialogue_literal_score_tag_is_not_a_selector(self):
+        g,r=make_graph([
+            "scoreboard players add @p Trap 1",
+            'tellraw @p {"text":"hint: score_Trap_min=2"}'
+        ])
+        out=reconstruct(g,r)
+        self.assertEqual(out["scoreboard_exact_cross_command_possible_edges"],0)
+
+    def test_exact_setblock_writer_to_testforblock_read(self):
+        g,r=make_graph([
+            "setblock ~10 ~1 ~ minecraft:redstone_block",
+            "testforblock 20 66 20 minecraft:redstone_block"
+        ])
+        out=reconstruct(g,r)
+        self.assertEqual(out["block_states_written_and_tested_exact_point_count"],1)
+        self.assertEqual(out["block_state_exact_cross_command_possible_edges"],1)
+
+    def test_wrong_point_is_not_linked(self):
+        g,r=make_graph([
+            "setblock ~10 ~1 ~ minecraft:redstone_block",
+            "testforblock 20 66 21 minecraft:redstone_block"
+        ])
+        out=reconstruct(g,r)
+        self.assertEqual(out["block_state_exact_cross_command_possible_edges"],0)
+
+    def test_nested_clickable_json_is_an_authored_player_control(self):
+        msg='tellraw @p {"text":"Look", "extra":[{"text":"Go","clickEvent":{"action":"run_command","value":"/scoreboard players set @p privateFlag 1"}}]}'
+        g,r=make_graph([msg,"scoreboard players test @p privateFlag 1 2"])
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_clickable_chat_counts"]["action_run_command"],1)
+        self.assertEqual(out["source_clickable_chat_counts"]["run_verb_scoreboard"],1)
+        self.assertEqual(out["source_chat_to_scoreboard_candidate_counts"]["click_score_reference_matched_existing_objective"],1)
+        self.assertEqual(out["click_event_execution"],"NOT_RUN")
+        self.assertNotIn("privateFlag",json.dumps(out))
+        self.assertNotIn("Look",json.dumps(out))
+
+    def test_malformed_tellraw_does_not_fabricate_controls(self):
+        g,r=make_graph(["tellraw @p {bad json"])
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_clickable_chat_counts"]["tellraw_malformed_json"],1)
+        self.assertNotIn("action_run_command",out["source_clickable_chat_counts"])
+
+    def test_click_url_not_source_execution(self):
+        g,r=make_graph(['tellraw @p {"text":"Site","clickEvent":{"action":"open_url","value":"https://private.invalid/"}}'])
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_clickable_chat_counts"]["action_open_url"],1)
+        self.assertEqual(out["source_chat_to_scoreboard_candidate_counts"],{})
+        self.assertNotIn("private.invalid",json.dumps(out))
+
+    def test_nested_original_execute_detect_static_only(self):
+        self.assertEqual(nested_execute(
+            "execute @e[type=ArmorStand] ~ ~ ~ detect ~ ~-1 ~ stone 0 scoreboard players set @p A 1".split()),
+            ("detect","scoreboard"))
+        self.assertEqual(nested_execute("execute @e ~ ~ ~".split()),
+                         ("malformed_or_short",None))
+
+    def test_scoreboard_op_target_is_write_and_rhs_is_read(self):
+        reader,writer=scoreboard_access(
+            "scoreboard players operation @p target += @e[type=ArmorStand] donor".split())
+        self.assertEqual(reader,{"target","donor"})
+        self.assertEqual(writer,{"target"})
+
+    def test_source_command_hash_mismatch_is_hard_refusal(self):
+        g,r=make_graph(["scoreboard players set @p Z 1"])
+        r["cmd_0"]="scoreboard players set @p Z 999"
+        with self.assertRaisesRegex(ValueError,"partial/forged"):
+            reconstruct(g,r)
+
+    def test_unrecognized_source_features_do_not_promote_story(self):
+        g,r=make_graph(["summon Blaze 0 60 0", "gamemode spectator @p",
+                         "effect @p speed 5 1"])
+        out=reconstruct(g,r)
+        status=out["author_claim_source_feature_status"]["creator_blaze_potion_click_control"]
+        self.assertEqual(status["source_candidate_feature_families_unresolved"],["click_run_command"])
+        self.assertEqual(status["candidate_relation"],"SOURCE_FEATURE_INVENTORY_ONLY_NO_VERIFIED_SCENE_JOIN")
+        self.assertFalse(status["native_runtime_verified"])
+
+    def test_command_chain_requires_known_command_endpoints(self):
+        g,r=make_graph(["say A","say B"])
+        g["edges"]["command_chain_candidates"].extend([
+            {"source":"cmd_0","target":"cmd_1","edge_type":"conditional_predecessor_success_dependency"},
+            {"source":"cmd_1","target":"foreign_3","edge_type":"conditional_predecessor_success_dependency"},
+            {"source":"cmd_0","target":"cmd_1","edge_type":"physical_adjacency_candidate"}])
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_direct_command_chain_candidate_edges"],1)
+
+    def test_duplicate_graph_identifiers_fail_closed(self):
+        g,r=make_graph(["say A"])
+        g["nodes"].append(g["nodes"][0])
+        with self.assertRaises(ValueError):
+            reconstruct(g,r)
+
+    def test_selector_parsing_rejects_spoofed_words(self):
+        self.assertEqual(selector_reads('say score_secret_min=9'),set())
+        self.assertEqual(selector_reads('tp @p[score_secret_min=9] ~ ~ ~'),{"secret"})
+        self.assertEqual(selector_reads('tp @a[score_alpha=1,score_beta_min=4] ~ ~ ~'),
+                         {"alpha","beta"})
+
+
+if __name__=="__main__":
+    unittest.main()
