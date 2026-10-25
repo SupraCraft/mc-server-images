@@ -38,7 +38,7 @@ SAFE_ENTITY={
     "itemframe":"item_frame","primedtnt":"primed_tnt"
 }
 SELECTOR_SCORE=re.compile(r"(?<![A-Za-z0-9_])score_([A-Za-z0-9_.+-]{1,128}?)(?:_min)?=")
-SELECTOR_TOKEN=re.compile(r"@[pare]\\[[^\\]\\r\\n]{0,2048}\\]")
+SELECTOR_TOKEN=re.compile(r"@[pare]\[[^\]\r\n]{0,2048}\]")
 
 
 def _point(parts, start, origin):
