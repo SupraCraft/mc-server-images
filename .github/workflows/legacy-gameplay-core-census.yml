@@ -488,6 +488,9 @@ jobs:
           assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
           assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
           assert d["source_chunk_count"]>0
+          # 1.8.8 original source uses legacy TileEntity id Control, not command_block.
+          assert d["allowlisted_tile_evidence_counts"].get("tile_control",0)==1445
+          assert d["allowlisted_tile_evidence_counts"].get("tile_unclassified",0)<1485
           must={"mechanical_kinematics","electrical_signal_logic","magical_potions_enchanting",
                 "inventory_storage_transport","entities_actor_spawning",
                 "environmental_hazard_physics","traversal_navigation",
