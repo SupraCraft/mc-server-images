@@ -221,6 +221,9 @@ def trace(graph,original):
     diode_entities=Counter()
     diode_output_ports=Counter()
     diode_max_wire_hops=0
+    diode_chain_stage_histogram=Counter()
+    diode_saved_delay_sum_histogram=Counter()
+    diode_terminal_control_semantics=Counter()
     entity_reached=Counter()
     feedback=Counter()
     source_unknown=Counter()
@@ -258,10 +261,39 @@ def trace(graph,original):
         diode_commands,diode_ports,wire_hops=diode_output_candidates(
             graph,pos,verified,diodes)
         diode_output_ports.update(diode_ports)
+        diode_chain_stage_histogram[str(
+            diode_ports.get("distinct_original_diode_nodes_inspected",0))]+=1
+        diode_saved_delay_sum_histogram[str(
+            diode_ports.get("saved_repeater_delay_redstone_ticks_total",0))]+=1
         diode_max_wire_hops=max(diode_max_wire_hops,wire_hops)
         for cid in diode_commands:
             cmd=verified[cid][2]
             diode_verbs[_safe_verb(cmd)]+=1
+            if _safe_verb(cmd)=="tp":
+                target=cmd[1] if len(cmd)>=2 else ""
+                if target.startswith("@e"):
+                    label="selector_entity"
+                    if "type=Blaze" in target or "type=blaze" in target:
+                        label="selector_entity_blaze"
+                elif target.startswith("@p"):
+                    label="nearest_player"
+                elif target.startswith("@a"):
+                    label="all_players"
+                elif target.startswith("@r"):
+                    label="random_player"
+                else:
+                    label="coordinates_or_literal_target_unknown"
+                diode_terminal_control_semantics["teleport_"+label]+=1
+                diode_terminal_control_semantics[
+                    "teleport_relative_arg_present" if any(
+                        v.startswith("~") for v in cmd[1:])
+                    else "teleport_no_relative_arg"]+=1
+            if _safe_verb(cmd)=="tellraw":
+                raw=verified[cid][1]
+                controls=click_controls(raw)
+                diode_terminal_control_semantics[
+                    "terminal_tellraw_clickable" if controls and controls["actions"]
+                    else "terminal_tellraw_no_click_event"]+=1
             if _safe_verb(cmd)=="summon":
                 diode_entities["summon_"+_entity_action(cmd)]+=1
         if diode_commands:
@@ -348,6 +380,9 @@ def trace(graph,original):
                                                  for x in target_profiles),default=0),
         "diode_source_geometry_downstream_ports":dict(sorted(diode_output_ports.items())),
         "diode_source_geometry_wire_path_max_hops":diode_max_wire_hops,
+        "diode_source_geometry_stage_count_histogram_by_clicked_target":dict(sorted(diode_chain_stage_histogram.items())),
+        "diode_source_geometry_saved_delay_redstone_ticks_histogram_by_clicked_target":dict(sorted(diode_saved_delay_sum_histogram.items())),
+        "diode_source_geometry_terminal_control_semantics":dict(sorted(diode_terminal_control_semantics.items())),
         "diode_source_geometry_downstream_verb_counts_occurrences":
              dict(sorted(diode_verbs.items())),
         "diode_source_geometry_downstream_summon_entity_counts_occurrences":
@@ -421,6 +456,9 @@ def main():
         "diode_ports":result["diode_source_geometry_downstream_ports"],
         "diode_verbs":result["diode_source_geometry_downstream_verb_counts_occurrences"],
         "diode_entities":result["diode_source_geometry_downstream_summon_entity_counts_occurrences"],
+        "diode_stage_hist":result["diode_source_geometry_stage_count_histogram_by_clicked_target"],
+        "diode_saved_delays":result["diode_source_geometry_saved_delay_redstone_ticks_histogram_by_clicked_target"],
+        "terminal_semantics":result["diode_source_geometry_terminal_control_semantics"],
         "native":"NOT_RUN"},sort_keys=True))
 
 
