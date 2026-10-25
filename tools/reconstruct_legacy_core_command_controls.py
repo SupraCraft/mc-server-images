@@ -268,6 +268,45 @@ def reconstruct(graph, raw):
         if item.get("source") in command_ids and item.get("target") in command_ids:
             if item.get("edge_type") in {"chain_facing_successor_candidate","conditional_predecessor_success_dependency"}:
                 typed_chain_pairs.add((item["source"],item["target"],item["edge_type"]))
+    # Original-authored block writes can *power other instructions* or diode
+    # inputs. Independently inspect the exact source write and destination port
+    # rather than treating all proximity to a redstone block as conduction.
+    authored_edges=Counter()
+    authored_pairs=set()
+    byid={n["node_id"]:n for n in graph.get("nodes",[])}
+    for e in edges.get("command_authored_redstone_edges",[]):
+        if not isinstance(e,dict):
+            raise ValueError("malformed authored power edge")
+        kind=e.get("edge_type")
+        if kind not in {"legacy_setblock_redstone_block_direct_command_power",
+                        "legacy_setblock_redstone_block_diode_rear_input"}:
+            continue
+        a,b=e.get("source"),e.get("target")
+        if a not in verified or b not in byid:
+            raise ValueError("source-unsupported authored redstone edge")
+        src,_,parts=verified[a]
+        p=_point(parts,1,tuple(src["position"]))
+        material=parts[4].lower() if len(parts)>4 else ""
+        if (not p or not (material=="152" or material in
+                          {"minecraft:redstone_block","redstone_block"})
+             or list(p)!=e.get("authored_target_position")):
+            raise ValueError("authored power edge lacks exact original command support")
+        dst=byid[b]
+        q=tuple(dst["position"])
+        if kind=="legacy_setblock_redstone_block_direct_command_power":
+            if b not in verified or sum(abs(u-v) for u,v in zip(p,q))!=1:
+                raise ValueError("unauthenticated direct powered command adjacency")
+        else:
+            if dst["family"] not in {"repeater_on","repeater_off","comparator_on","comparator_off"}:
+                raise ValueError("authored diode target family invalid")
+            facing=(dst.get("metadata_semantics") or {}).get("facing_vector")
+            if not isinstance(facing,list) or len(facing)!=3 or any(type(v) is not int for v in facing):
+                raise ValueError("no exact diode input direction")
+            if tuple(q[i]+facing[i] for i in range(3))!=p:
+                raise ValueError("diode rear does not match authored point")
+        authored_pairs.add((a,b,kind))
+    for _,_,kind in authored_pairs:
+        authored_edges[kind]+=1
     graph_family=graph.get("family_counts",{})
     if graph_family.get("redstone_wire",0)>0:
         features.add("redstone_clock_component") if graph_family.get("repeater_on",0)+graph_family.get("repeater_off",0)>0 else None
@@ -302,6 +341,8 @@ def reconstruct(graph, raw):
         "block_states_written_and_tested_exact_point_count":len(set(point_readers)&set(point_writers)),
         "block_state_exact_cross_command_possible_edges":len(exact_point_pairs),
         "source_direct_command_chain_candidate_edges":len(typed_chain_pairs),
+        "source_authored_power_dependency_counts":dict(sorted(authored_edges.items())),
+        "source_authored_power_dependency_total":len(authored_pairs),
         "typed_chain_edge_family_counts":dict(sorted(Counter(t for _,_,t in typed_chain_pairs).items())),
         "command_family_counts":dict(sorted(roles.items())),
         "source_clickable_chat_counts":dict(sorted(click.items())),
