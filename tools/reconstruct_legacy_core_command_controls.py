@@ -16,7 +16,8 @@ from pathlib import Path
 import re
 
 from tools.infer_legacy_core_gameplay_purposes import (
-    commands_from_pinned_zip, normalize_command, resolve_xyz, typed_routes
+    commands_from_pinned_zip, normalize_command, resolve_xyz, typed_routes,
+    material_class
 )
 
 SCHEMA="supracraft-core-188-control-program-static-aggregate/1"
@@ -39,6 +40,17 @@ SAFE_ENTITY={
 }
 SELECTOR_SCORE=re.compile(r"(?<![A-Za-z0-9_])score_([A-Za-z0-9_.+-]{1,128}?)(?:_min)?=")
 SELECTOR_TOKEN=re.compile(r"@[pare]\[[^\]\r\n]{0,2048}\]")
+
+
+def _static_absolute_point(parts, start):
+    # Click action command execution origin is the player, not a command block.
+    # Never resolve '~' against the authoring command tile location.
+    if len(parts)<start+3: return None
+    vals=parts[start:start+3]
+    if not all(re.fullmatch(r"-?[0-9]+",v) for v in vals):
+        return None
+    point=tuple(int(v) for v in vals)
+    return point if 0<=point[1]<256 else None
 
 
 def _point(parts, start, origin):
@@ -251,6 +263,11 @@ def reconstruct(graph, raw):
     # Explicit actionable chat commands are potential *player* input edges,
     # never observations of clicks. Resolve only exact objective cross-references.
     chat_score=Counter()
+    chat_world=Counter()
+    chat_world_points=set()
+    physical_nodes={tuple(n["position"]):n for n in graph.get("nodes",[])
+                    if isinstance(n.get("position"),list) and len(n["position"])==3}
+    neighbors=((1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1))
     for origin_id,action,verb,value in parsed_actions:
         v,parts=normalize_command(value)
         if action=="run_command":
@@ -264,6 +281,42 @@ def reconstruct(graph, raw):
                     break
             if verb=="gamemode": chat_score["click_mode_change_candidate"]+=1
             if verb in {"tp","teleport"}: chat_score["click_relocation_candidate"]+=1
+            if verb=="setblock":
+                chat_world["click_run_setblock"]+=1
+                point=_static_absolute_point(parts,1)
+                if point is None or len(parts)<5:
+                    chat_world["click_setblock_non_absolute_or_incomplete"]+=1
+                    continue
+                chat_world["click_setblock_absolute_point"]+=1
+                chat_world_points.add(point)
+                family=material_class(parts[4])
+                chat_world["click_material_"+family]+=1
+                if point in point_writers:
+                    chat_world["click_exact_target_also_written_by_command_block"]+=1
+                if point in point_readers:
+                    chat_world["click_exact_target_also_tested_by_command_block"]+=1
+                command_neighbors=False
+                diode_neighbors=False
+                for delta in neighbors:
+                    adjacent=tuple(point[i]+delta[i] for i in range(3))
+                    node=physical_nodes.get(adjacent)
+                    if node and node.get("family")=="command_block":
+                        command_neighbors=True
+                    if node and node.get("family") in {
+                            "repeater_on","repeater_off","comparator_on","comparator_off"}:
+                        facing=(node.get("metadata_semantics") or {}).get("facing_vector")
+                        if isinstance(facing,list) and len(facing)==3 and all(
+                                type(v) is int for v in facing) and (
+                                tuple(adjacent[i]+facing[i] for i in range(3))==point):
+                            diode_neighbors=True
+                if command_neighbors:
+                    chat_world["click_target_adjacent_legacy_command"]+=1
+                    if family=="redstone_power_source_candidate":
+                        chat_world["click_power_target_adjacent_legacy_command"]+=1
+                if diode_neighbors and family=="redstone_power_source_candidate":
+                    chat_world["click_power_target_rear_diode_input"]+=1
+    if chat_world_points:
+        chat_world["distinct_absolute_click_targets"]=len(chat_world_points)
     edges=graph.get("edges",{})
     command_ids=set(verified)
     # Graph links need exact source/target command identities, not adjacency.
@@ -353,6 +406,7 @@ def reconstruct(graph, raw):
         "command_family_counts":dict(sorted(roles.items())),
         "source_clickable_chat_counts":dict(sorted(click.items())),
         "source_chat_to_scoreboard_candidate_counts":dict(sorted(chat_score.items())),
+        "source_click_to_world_static_candidate_counts":dict(sorted(chat_world.items())),
         "source_state_operand_counts":dict(sorted(query.items())),
         "author_claim_source_feature_status":story_status,
         "dependency_proof":"EXACT_SOURCE_SCORE_OBJECTIVE_OR_BLOCK_POINT_JOIN__NOT_RUNTIME",
@@ -407,6 +461,7 @@ def main():
         "nested_execute":result["command_family_counts"],
         "state_operands":result["source_state_operand_counts"],
         "chat_score":result["source_chat_to_scoreboard_candidate_counts"],
+        "chat_world":result["source_click_to_world_static_candidate_counts"],
         "native":"NOT_RUN",
     },sort_keys=True))
 
