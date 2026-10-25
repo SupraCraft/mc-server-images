@@ -166,6 +166,23 @@ class SourceClickTraceTests(unittest.TestCase):
             "saved_repeater_delay_metadata_missing":1})
         self.assertEqual(out["diode_source_geometry_downstream_verb_counts_occurrences"],{})
 
+    def test_terminal_teleport_selector_and_delay_histogram_do_not_leak_raw(self):
+        graph,commands=specimen()
+        tp="tp @e[type=Blaze] ~ ~1 ~"
+        graph["nodes"].append(node(22,65,20,"command_block",tp))
+        commands["22,65,20"]=tp
+        graph["nodes"][-2]["metadata_semantics"]["delay_redstone_ticks"]=4
+        graph["edges"]["oriented_signal_candidates"]=[
+            {"source":"21,65,20","target":"22,65,20",
+             "edge_type":"oriented_front_output_candidate"}]
+        out=trace(graph,commands)
+        self.assertEqual(out["diode_source_geometry_stage_count_histogram_by_clicked_target"],{"1":1})
+        self.assertEqual(out["diode_source_geometry_saved_delay_redstone_ticks_histogram_by_clicked_target"],{"4":1})
+        self.assertEqual(out["diode_source_geometry_terminal_control_semantics"],{
+            "teleport_selector_entity_blaze":1,"teleport_relative_arg_present":1})
+        self.assertNotIn("@e[type=Blaze]",json.dumps(out))
+        self.assertFalse(out["gameplay_primitive_promoted"])
+
     def test_saved_original_188_repeater_delays_are_metadata_not_runtime(self):
         graph,commands=specimen()
         graph["nodes"][-1]["metadata_semantics"]["delay_redstone_ticks"]=3
