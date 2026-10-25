@@ -185,6 +185,10 @@ def source_intent(graph, raw_byid):
     for cid in expected_commands:
         n=nodes[cid]
         raw=raw_byid.get(cid)
+        fingerprint=(n.get("command") or {}).get("sha256")
+        if raw is not None and (not isinstance(fingerprint,str) or
+                                hashlib.sha256(raw.encode("utf-8")).hexdigest()!=fingerprint):
+            raw=None
         if raw is None:
             unverified["original_command_text_sha_or_tile_missing"]+=1
             decoded[cid]=("unverified_source_command",None,None)
