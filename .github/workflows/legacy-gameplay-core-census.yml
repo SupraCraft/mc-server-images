@@ -568,6 +568,7 @@ jobs:
           assert sum(d["diode_source_geometry_stage_count_histogram_by_clicked_target"].values())==4
           assert sum(d["diode_source_geometry_saved_delay_redstone_ticks_histogram_by_clicked_target"].values())==4
           assert sum(d["diode_source_geometry_downstream_verb_counts_occurrences"].values())>=4
+          assert sum(v for k,v in d["diode_source_geometry_terminal_control_semantics"].items() if k.startswith("teleport_entity_type_") or k.startswith("teleport_entity_selector_type_") or k.startswith("teleport_negated_entity_type_") or k.startswith("teleport_all_entities_") or k.startswith("teleport_unparsed_entity_selector"))==1
           assert d["source_link_evidence"]=="EXACT_STATIC_CLICK_BLOCK_TARGET_ORIENTED_POWER_PORT_AUTHORED_COMMAND_EDGE"
           assert d["source_controller_reset_execution"]=="NOT_OBSERVED"
           assert d["original_java_188_execution"]=="NOT_RUN"
