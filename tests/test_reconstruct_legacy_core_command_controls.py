@@ -153,6 +153,44 @@ class LegacyCommandControlsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             reconstruct(g,r)
 
+    def test_click_setblock_absolute_reaches_neighbor_command_port_only_as_candidate(self):
+        click='tellraw @p {"text":"Power", "clickEvent":{"action":"run_command","value":"/setblock 12 65 20 minecraft:redstone_block"}}'
+        g,r=make_graph([click,"say Response"])
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_click_to_world_static_candidate_counts"],
+                         {"click_material_redstone_power_source_candidate":1,
+                          "click_power_target_adjacent_legacy_command":1,
+                          "click_run_setblock":1,
+                          "click_setblock_absolute_point":1,
+                          "click_target_adjacent_legacy_command":1,
+                          "distinct_absolute_click_targets":1})
+        self.assertEqual(out["original_native"],"NOT_RUN")
+
+    def test_click_world_absolute_target_shared_with_authored_writer(self):
+        click='tellraw @p {"text":"Power", "clickEvent":{"action":"run_command","value":"/setblock 40 65 40 minecraft:air"}}'
+        g,r=make_graph([click,"setblock 40 65 40 minecraft:redstone_block"])
+        out=reconstruct(g,r)
+        self.assertEqual(
+            out["source_click_to_world_static_candidate_counts"]["click_exact_target_also_written_by_command_block"],1)
+        self.assertEqual(
+            out["source_click_to_world_static_candidate_counts"]["click_material_air_removal_candidate"],1)
+
+    def test_click_relative_target_must_not_borrow_command_block_origin(self):
+        click='tellraw @p {"text":"Power", "clickEvent":{"action":"run_command","value":"/setblock ~ ~ ~ minecraft:redstone_block"}}'
+        g,r=make_graph([click,"say Response"])
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_click_to_world_static_candidate_counts"],
+                         {"click_run_setblock":1,
+                          "click_setblock_non_absolute_or_incomplete":1})
+
+    def test_click_air_at_command_neighbor_is_not_power_signal(self):
+        click='tellraw @p {"text":"Off", "clickEvent":{"action":"run_command","value":"/setblock 12 65 20 air"}}'
+        g,r=make_graph([click,"say Response"])
+        out=reconstruct(g,r)
+        d=out["source_click_to_world_static_candidate_counts"]
+        self.assertEqual(d["click_target_adjacent_legacy_command"],1)
+        self.assertNotIn("click_power_target_adjacent_legacy_command",d)
+
     def test_exact_authored_redstone_power_into_command_is_static_edge(self):
         g,r=make_graph(["setblock 12 65 20 minecraft:redstone_block","say Activated"])
         g["edges"]["command_authored_redstone_edges"]=[
