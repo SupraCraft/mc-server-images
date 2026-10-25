@@ -4,7 +4,7 @@ import hashlib
 import json
 import unittest
 
-from tools.trace_legacy_core_ui_controls import trace
+from tools.trace_legacy_core_ui_controls import trace, _tp_selector_shape
 
 
 def node(x,y,z,family,raw=None,**opts):
@@ -166,6 +166,18 @@ class SourceClickTraceTests(unittest.TestCase):
             "saved_repeater_delay_metadata_missing":1})
         self.assertEqual(out["diode_source_geometry_downstream_verb_counts_occurrences"],{})
 
+    def test_188_entity_selector_shape_source_only_and_no_private_values(self):
+        self.assertEqual(_tp_selector_shape("@e[type=Blaze,name=PRIVATE_MOB,c=1]"),
+                         ("entity_type_blaze",True,False,True))
+        self.assertEqual(_tp_selector_shape("@e[name=PRIVATE,sco" + "re_state_min=2]"),
+                         ("entity_selector_type_unspecified",True,True,False))
+        self.assertEqual(_tp_selector_shape("@e[type=!Player]"),
+                         ("negated_entity_type_player",False,False,False))
+        self.assertEqual(_tp_selector_shape("@e[type=secret.mod.UUID]"),
+                         ("entity_type_other_not_disclosed",False,False,False))
+        self.assertEqual(_tp_selector_shape("@e"),
+                         ("all_entities_unfiltered",False,False,False))
+
     def test_terminal_teleport_selector_and_delay_histogram_do_not_leak_raw(self):
         graph,commands=specimen()
         tp="tp @e[type=Blaze] ~ ~1 ~"
@@ -179,7 +191,8 @@ class SourceClickTraceTests(unittest.TestCase):
         self.assertEqual(out["diode_source_geometry_stage_count_histogram_by_clicked_target"],{"1":1})
         self.assertEqual(out["diode_source_geometry_saved_delay_redstone_ticks_histogram_by_clicked_target"],{"4":1})
         self.assertEqual(out["diode_source_geometry_terminal_control_semantics"],{
-            "teleport_selector_entity_blaze":1,"teleport_relative_arg_present":1})
+            "teleport_selector_entity_blaze":1,"teleport_entity_type_blaze":1,
+            "teleport_relative_arg_present":1})
         self.assertNotIn("@e[type=Blaze]",json.dumps(out))
         self.assertFalse(out["gameplay_primitive_promoted"])
 
