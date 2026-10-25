@@ -184,9 +184,17 @@ def rank(graph):
             matched_sinks.add(b)
             root_coverage[family]+=1
     effect_classes=Counter()
+    mutation_verbs=Counter()
     for source,target,modality in accepted_routes:
         category=("wire_path_" if modality=="wire_path" else "direct_support_")+byid[source]["family"]
-        effect_classes[category+"__"+_verb_effect_class(byid[target])]+=1
+        effect_class=_verb_effect_class(byid[target])
+        effect_classes[category+"__"+effect_class]+=1
+        if effect_class=="world_block_mutation_verb":
+            raw=(byid[target].get("command") or {}).get("verb")
+            verb=raw.lower().lstrip("/") if isinstance(raw,str) else "unknown"
+            if verb not in {"setblock","fill","clone"}:
+                raise ValueError("unqualified world mutation verb")
+            mutation_verbs[category+"__"+verb]+=1
     return {
         "schema":SCHEMA,
         "analysis":"original_1_8_8_source_static_directional_sensor_command_paths",
@@ -195,6 +203,7 @@ def rank(graph):
         "accepted_sensor_command_path_counts":dict(sorted(paths.items())),
         "accepted_path_count":sum(paths.values()),
         "source_command_effect_class_path_counts":dict(sorted(effect_classes.items())),
+        "original_mutation_verb_path_counts":dict(sorted(mutation_verbs.items())),
         "source_sensor_count":len(unique_sources),
         "target_command_count":len(matched_sinks),
         "sensor_family_path_counts":dict(sorted(root_coverage.items())),
@@ -211,6 +220,7 @@ def rank(graph):
             "An accepted sensor-to-command path is not observed powered state or command execution.",
             "Source sensor actuation, author intent, runtime feedback and world-state changes are not proven.",
             "Command verb classes are author-intent syntax categories, not an observed effect.",
+            "Only three allowlisted block-mutating verb names are counted; no command payload is serialized.",
             "Indirect opaque-solid conduction and dynamic command chains are incomplete.",
         ],
     }
