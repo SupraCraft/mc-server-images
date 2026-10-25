@@ -18,7 +18,36 @@ import zipfile
 
 from tools.rank_legacy_typed_sensor_command_witnesses import _is_typed, rank
 from tools.audit_legacy_piston_authored_inputs import _exact_integer_position
-from tools.analyze_legacy_causal_machinery import normalize_command, resolve_xyz
+import math
+import re
+
+NUMBER = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$")
+
+
+def normalize_command(source):
+    text=source.strip()
+    if text.startswith("/"): text=text[1:]
+    parts=text.split()
+    return (parts[0].lower() if parts else ""), parts
+
+
+def resolve_xyz(tokens, origin):
+    # Same original-era standalone tilde/absolute arithmetic as pinned
+    # extractor, intentionally independent of nbtlib in source-free CI.
+    if len(tokens)!=3: return None
+    out=[]
+    for token, ref in zip(tokens,origin):
+        if token.startswith("~"):
+            rest=token[1:]
+            if rest and not NUMBER.fullmatch(rest): return None
+            val=ref+(float(rest) if rest else 0)
+        else:
+            if not NUMBER.fullmatch(token): return None
+            val=float(token)
+        if not math.isfinite(val): return None
+        out.append(int(val) if float(val).is_integer() else val)
+    return tuple(out)
+
 
 SCHEMA = "supracraft-legacy-core-purpose-inference-aggregate/1"
 KNOWN_OPS = {"setblock", "fill", "clone", "tp", "teleport", "summon",
