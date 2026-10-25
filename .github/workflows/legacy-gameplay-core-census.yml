@@ -452,6 +452,8 @@ jobs:
           assert sum(d["route_sensor_purpose_hypothesis_counts"].values())==90
           assert d["original_command_block_count"]>=89
           assert d["original_commands_fingerprint_matched"]<=d["original_command_block_count"]
+          assert d["shared_target_group_with_known_typed_sensor_command_count"]+d["shared_target_group_without_known_typed_sensor_command_count"]==d["all_source_setblock_shared_target_group_count"]
+          assert d["original_command_blocks_without_qualified_sensor_route_count"]==d["original_command_block_count"]-d["distinct_reached_original_command_blocks"]
           assert d["runtime_source_actuation"]=="NOT_RUN"
           assert d["runtime_authored_command_execution"]=="NOT_OBSERVED"
           assert d["runtime_target_effect"]=="NOT_OBSERVED"
