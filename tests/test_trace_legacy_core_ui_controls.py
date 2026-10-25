@@ -122,6 +122,54 @@ class SourceClickTraceTests(unittest.TestCase):
         self.assertEqual(out["authored_click_actions_matching_absolute_redstone_setblock"],2)
         self.assertEqual(out["unique_source_authoring_commands_with_matching_click_controls"],2)
 
+    def test_diode_output_front_to_actor_requires_recorded_oriented_edge(self):
+        graph,commands=specimen()
+        spawned="summon Blaze 28 70 20"
+        graph["nodes"].append(node(22,65,20,"command_block",spawned))
+        commands["22,65,20"]=spawned
+        graph["edges"]["oriented_signal_candidates"]=[
+            {"source":"21,65,20","target":"22,65,20",
+             "edge_type":"oriented_front_output_candidate"}]
+        out=trace(graph,commands)
+        self.assertEqual(out["clicked_targets_with_diode_geometry_candidate_blaze_summon"],1)
+        self.assertEqual(out["diode_source_geometry_downstream_verb_counts_occurrences"],{"summon":1})
+        self.assertEqual(out["diode_source_geometry_downstream_ports"],
+                         {"front_adjacent_command_candidate":1})
+        graph["edges"]["oriented_signal_candidates"]=[]
+        out=trace(graph,commands)
+        self.assertEqual(out["clicked_targets_with_diode_geometry_candidate_blaze_summon"],0)
+
+    def test_diode_wrong_front_edge_does_not_count_nearby_actor(self):
+        graph,commands=specimen()
+        spawned="summon Blaze 28 70 20"
+        graph["nodes"].append(node(22,65,20,"command_block",spawned))
+        commands["22,65,20"]=spawned
+        graph["edges"]["oriented_signal_candidates"]=[
+            {"source":"21,65,20","target":"19,65,20",
+             "edge_type":"oriented_front_output_candidate"}]
+        out=trace(graph,commands)
+        self.assertEqual(out["clicked_targets_with_diode_geometry_candidate_blaze_summon"],0)
+
+    def test_diode_front_dust_path_requires_strict_real_edges(self):
+        graph,commands=specimen()
+        spawn="summon ArmorStand 35 65 20"
+        graph["nodes"].append(node(23,65,20,"command_block",spawn))
+        graph["nodes"].append(node(22,65,20,"redstone_wire"))
+        commands["23,65,20"]=spawn
+        graph["edges"]["oriented_signal_candidates"]=[
+            {"source":"21,65,20","target":"22,65,20",
+             "edge_type":"oriented_front_output_candidate"}]
+        graph["edges"]["direct_redstone_edges"]=[
+            {"source":"22,65,20","target":"23,65,20",
+             "edge_type":"legacy_dust_direct_component_power"}]
+        out=trace(graph,commands)
+        self.assertEqual(out["diode_source_geometry_downstream_ports"],{"front_wire_candidate":1})
+        self.assertEqual(out["diode_source_geometry_downstream_summon_entity_counts_occurrences"],
+                         {"summon_armorstand":1})
+        graph["edges"]["direct_redstone_edges"][0]["edge_type"]="physical_adjacency_candidate"
+        out=trace(graph,commands)
+        self.assertEqual(out["diode_source_geometry_downstream_summon_entity_counts_occurrences"],{})
+
     def test_not_all_actor_spawns_are_reachable_from_controller(self):
         graph,commands=specimen()
         extra="summon ArmorStand 15 70 10"
