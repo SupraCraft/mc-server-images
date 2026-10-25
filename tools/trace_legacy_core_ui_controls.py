@@ -90,7 +90,15 @@ def diode_output_candidates(graph,pos,verified,diode_ids):
         if ident in visited:continue
         visited.add(ident)
         n=byid[ident]
-        facing=(n.get("metadata_semantics") or {}).get("facing_vector")
+        sem=n.get("metadata_semantics") or {}
+        if n["family"] in {"repeater_on","repeater_off"}:
+            delay=sem.get("delay_redstone_ticks")
+            if type(delay) is int and 1<=delay<=4:
+                port_classes["saved_repeater_delay_"+str(delay)+"_tick_count"]+=1
+                port_classes["saved_repeater_delay_redstone_ticks_total"]+=delay
+            else:
+                port_classes["saved_repeater_delay_metadata_missing"]+=1
+        facing=sem.get("facing_vector")
         q=tuple(n["position"])
         if not (isinstance(facing,list) and len(facing)==3 and
                 all(type(x) is int for x in facing)):
@@ -112,16 +120,16 @@ def diode_output_candidates(graph,pos,verified,diode_ids):
         elif family=="redstone_wire":
             port_classes["front_wire_candidate"]+=1
             q=deque([(downstream["node_id"],0)])
-            visited={downstream["node_id"]}
+            seen_wires={downstream["node_id"]}
             while q:
-                wire,depth=q.popleft()
+                wire,wire_depth=q.popleft()
                 seen_commands.update(sinks.get(wire,set()))
-                max_wire_hops=max(max_wire_hops,depth)
-                if depth>=96: continue
+                max_wire_hops=max(max_wire_hops,wire_depth)
+                if wire_depth>=96: continue
                 for nxt in wires.get(wire,set()):
-                    if nxt not in visited:
-                        visited.add(nxt)
-                        q.append((nxt,depth+1))
+                    if nxt not in seen_wires:
+                        seen_wires.add(nxt)
+                        q.append((nxt,wire_depth+1))
         elif family in {"repeater_on","repeater_off","comparator_on","comparator_off"}:
             from_pos=tuple(n["position"])
             next_facing=(downstream.get("metadata_semantics") or {}).get("facing_vector")
@@ -369,6 +377,7 @@ def trace(graph,original):
             "Source-reachable command families do not establish corresponding author-described scene identity.",
             "Diode front port and dust path are source geometry, not measured powered propagation; no opaque conduction assumed.",
             "Serial diode joins require output and next-stage input collinearity, not proof of actual timing/power.",
+            "Original saved repeater delays describe configured nominal tick delays, not elapsed runtime or actual signal travel.",
             "No raw commands, click text, positions, entity names, per-target identities or source hashes exported.",
         ],
     }
