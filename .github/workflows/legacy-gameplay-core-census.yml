@@ -471,6 +471,48 @@ jobs:
               "routes":d["directed_source_witness_count"],
               "source_only":True},sort_keys=True))
           PY
+      - name: Source-only original CORE command and player UI control disassembly
+        run: |
+          python -m tools.reconstruct_legacy_core_command_controls \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --output derived/core-v1.4-command-control-dependencies-static.json
+      - name: Independent strict source proof and disassembly egress guard
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("derived/core-v1.4-command-control-dependencies-static.json").read_text())
+          assert d["schema"]=="supracraft-core-188-control-program-static-aggregate/1"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["original_commands_sha_verified"]==d["source_command_count"]==1445
+          assert d["qualified_directed_sensor_routes"]==90
+          assert d["reached_original_command_blocks"]==89
+          assert d["scoreboard_exact_cross_command_possible_edges"]>=0
+          assert d["block_state_exact_cross_command_possible_edges"]>=0
+          assert d["dependency_proof"]=="EXACT_SOURCE_SCORE_OBJECTIVE_OR_BLOCK_POINT_JOIN__NOT_RUNTIME"
+          assert d["click_event_execution"]=="NOT_RUN"
+          assert d["original_native"]=="NOT_RUN"
+          assert d["mechanism_purpose"]=="UNPROVEN"
+          assert d["gameplay_promoted"] is False
+          assert d["original_world_18_to_263_parity"]=="NOT_RUN"
+          serialized=json.dumps(d)
+          for restricted in ('"node_id"','"position"','"target_position"','"command"',
+                             '"raw"','"selector"','"objective"','"CustomName"',
+                             '"value"','original-world.zip'):
+              assert restricted not in serialized, "authored original source leaked"
+          print("CORE_188_DISASSEMBLY_SOURCE_ONLY",json.dumps({
+              "source_commands":d["source_command_count"],
+              "score_join_objectives":d["scoreboard_state_objectives_with_exact_read_write"],
+              "score_edges":d["scoreboard_exact_cross_command_possible_edges"],
+              "block_join_points":d["block_states_written_and_tested_exact_point_count"],
+              "block_edges":d["block_state_exact_cross_command_possible_edges"],
+              "click_actions":d["source_clickable_chat_counts"],
+              "native":"NOT_RUN"
+          },sort_keys=True))
+          PY
       - name: Census ALL original mechanical electrical inventory magic actors world and presentation channels
         run: |
           python -m tools.inventory_legacy_core_gameplay_channels \
@@ -630,5 +672,6 @@ jobs:
             derived/core-v1.4-button-setblock-target-selection-static.json
             derived/core-v1.4-all-source-purpose-hypotheses-aggregate.json
             derived/core-v1.4-all-gameplay-channels-aggregate.json
+            derived/core-v1.4-command-control-dependencies-static.json
             source/core/ATTRIBUTION.md
           retention-days: 14
