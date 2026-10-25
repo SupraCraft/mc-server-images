@@ -494,6 +494,10 @@ jobs:
           assert d["block_state_exact_cross_command_possible_edges"]>=0
           assert d["source_authored_power_dependency_total"]>=0
           assert d["source_authored_power_dependency_total"]==sum(d["source_authored_power_dependency_counts"].values())
+          click=d["source_click_to_world_static_candidate_counts"]
+          assert click.get("click_setblock_absolute_point",0)+click.get("click_setblock_non_absolute_or_incomplete",0)==click.get("click_run_setblock",0)
+          assert click.get("click_power_target_adjacent_legacy_command",0)<=click.get("click_target_adjacent_legacy_command",0)
+          assert click.get("click_exact_target_also_written_by_command_block",0)<=click.get("click_setblock_absolute_point",0)
           assert d["dependency_proof"]=="EXACT_SOURCE_SCORE_OBJECTIVE_OR_BLOCK_POINT_JOIN__NOT_RUNTIME"
           assert d["click_event_execution"]=="NOT_RUN"
           assert d["original_native"]=="NOT_RUN"
@@ -514,6 +518,7 @@ jobs:
               "click_actions":d["source_clickable_chat_counts"],
               "authored_redstone":d["source_authored_power_dependency_counts"],
               "source_operand_counts":d["source_state_operand_counts"],
+              "click_to_world":d["source_click_to_world_static_candidate_counts"],
               "native":"NOT_RUN"
           },sort_keys=True))
           PY
