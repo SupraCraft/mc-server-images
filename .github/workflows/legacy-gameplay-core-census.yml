@@ -429,6 +429,46 @@ jobs:
               "rejections":d["selection_rejection_reason_counts"],
               "native":"NOT_RUN"},sort_keys=True))
           PY
+      - name: Review every original CORE command and every typed gameplay candidate (no native execution)
+        run: |
+          python -m tools.infer_legacy_core_gameplay_purposes \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --output derived/core-v1.4-all-source-purpose-hypotheses-aggregate.json
+      - name: Independently guard full-source purpose coverage and private source custody
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("derived/core-v1.4-all-source-purpose-hypotheses-aggregate.json").read_text())
+          assert d["schema"]=="supracraft-legacy-core-purpose-inference-aggregate/1"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["directed_source_witness_count"]==90
+          assert d["distinct_reached_original_command_blocks"]==89
+          assert d["distinct_source_sensors"]==49
+          assert sum(d["route_purpose_hypothesis_counts"].values())==90
+          assert sum(d["route_sensor_purpose_hypothesis_counts"].values())==90
+          assert d["original_command_block_count"]>=89
+          assert d["original_commands_fingerprint_matched"]<=d["original_command_block_count"]
+          assert d["runtime_source_actuation"]=="NOT_RUN"
+          assert d["runtime_authored_command_execution"]=="NOT_OBSERVED"
+          assert d["runtime_target_effect"]=="NOT_OBSERVED"
+          assert d["original_player_intent"]=="NOT_PROVEN"
+          assert d["causal_exclusivity"]=="NOT_PROVEN"
+          assert d["minecraft_26_3_equivalence"]=="NOT_RUN"
+          assert d["gameplay_primitive_promoted"] is False
+          serialized=json.dumps(d)
+          for forbidden in ('"node_id"','"position"','"target_position"','"command"','"raw"',
+                            '"custom_name"','"original-world.zip"'):
+              assert forbidden not in serialized,"original source privacy boundary violation"
+          print("CORE_FULL_PURPOSE_CUSTODY_PASS",json.dumps({
+              "original_command_blocks":d["original_command_block_count"],
+              "fingerprinted":d["original_commands_fingerprint_matched"],
+              "routes":d["directed_source_witness_count"],
+              "source_only":True},sort_keys=True))
+          PY
       - name: Independent saved-block aggregate privacy and source-custody guard
         run: |
           python - <<'PY'
@@ -540,5 +580,6 @@ jobs:
             derived/core-v1.4-clone-input-power-roots-static.json
             derived/core-v1.4-typed-sensor-command-candidates-static.json
             derived/core-v1.4-button-setblock-target-selection-static.json
+            derived/core-v1.4-all-source-purpose-hypotheses-aggregate.json
             source/core/ATTRIBUTION.md
           retention-days: 14
