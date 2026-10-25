@@ -117,6 +117,13 @@ def diode_output_candidates(graph,pos,verified,diode_ids):
                         q.append((nxt,depth+1))
         else:
             port_classes["other_front_component_not_followed"]+=1
+            allow={"repeater_on","repeater_off","comparator_on","comparator_off",
+                   "redstone_torch_off","redstone_torch_on","hopper","dispenser",
+                   "dropper","piston","sticky_piston","redstone_lamp_off",
+                   "redstone_lamp_on","note_block","wooden_door","iron_door",
+                   "redstone_block","redstone_wire"}
+            port_classes["unfollowed_front_family_"+(family if family in allow
+                         else "other_known_machinery")]+=1
     return seen_commands,port_classes,max_wire_hops
 
 
