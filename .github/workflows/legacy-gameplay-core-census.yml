@@ -558,6 +558,10 @@ jobs:
           assert d["clicked_target_source_feature_counts"]["targets_has_oriented_diode_rear_port"]==4
           assert d["source_direct_power_reach_instruction_count_occurrences"]>=d["distinct_immediate_command_seeds_across_targets"]
           assert d["source_power_reach_maximum_hops"]<=3
+          assert d["diode_source_geometry_wire_path_max_hops"]<=96
+          assert d["clicked_targets_with_diode_geometry_candidate_blaze_summon"]<=d["distinct_clicked_redstone_target_count"]
+          assert sum(d["diode_source_geometry_downstream_ports"].values())>=0
+          assert d["source_link_evidence"]=="EXACT_STATIC_CLICK_BLOCK_TARGET_ORIENTED_POWER_PORT_AUTHORED_COMMAND_EDGE"
           assert d["source_controller_reset_execution"]=="NOT_OBSERVED"
           assert d["original_java_188_execution"]=="NOT_RUN"
           assert d["creator_reported_blaze_control_relation"]=="NOT_ESTABLISHED_UNLESS_EXACT_SCENE_JOIN"
@@ -575,6 +579,9 @@ jobs:
              "downstream":d["source_reachable_command_verb_counts_occurrences"],
              "reachable_entities":d["source_reachable_summon_entity_classes_occurrences"],
              "candidate_links":d["source_connection_candidates"],
+             "diode_ports":d["diode_source_geometry_downstream_ports"],
+             "diode_verbs":d["diode_source_geometry_downstream_verb_counts_occurrences"],
+             "diode_entities":d["diode_source_geometry_downstream_summon_entity_counts_occurrences"],
              "native":"NOT_RUN"
           },sort_keys=True))
           PY
