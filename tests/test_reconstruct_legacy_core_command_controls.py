@@ -210,6 +210,14 @@ class LegacyCommandControlsTests(unittest.TestCase):
         self.assertEqual(
             out["source_click_to_world_static_candidate_counts"]["click_material_air_removal_candidate"],1)
 
+    def test_click_power_and_other_author_command_air_share_reset_target(self):
+        click='tellraw @p {"text":"Activate","clickEvent":{"action":"run_command","value":"/setblock 40 65 40 minecraft:redstone_block"}}'
+        g,r=make_graph([click,"setblock 40 65 40 minecraft:air"])
+        d=reconstruct(g,r)["source_click_to_world_static_candidate_counts"]
+        self.assertEqual(d["distinct_clicked_targets_with_authored_air_reset_candidate"],1)
+        self.assertNotIn("distinct_clicked_targets_with_authored_power_writer",d)
+        self.assertEqual(d["click_exact_target_also_written_by_command_block"],1)
+
     def test_click_relative_target_must_not_borrow_command_block_origin(self):
         click='tellraw @p {"text":"Power", "clickEvent":{"action":"run_command","value":"/setblock ~ ~ ~ minecraft:redstone_block"}}'
         g,r=make_graph([click,"say Response"])
