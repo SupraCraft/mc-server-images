@@ -217,7 +217,8 @@ class SourceClickTraceTests(unittest.TestCase):
              "edge_type":"legacy_dust_direct_component_power"}]
         out=trace(graph,commands)
         self.assertEqual(out["diode_source_geometry_downstream_ports"],{"front_wire_candidate":1,
-                          "distinct_original_diode_nodes_inspected":1})
+                          "distinct_original_diode_nodes_inspected":1,
+                          "saved_repeater_delay_metadata_missing":1})
         self.assertEqual(out["diode_source_geometry_downstream_summon_entity_counts_occurrences"],
                          {"summon_armorstand":1})
         graph["edges"]["direct_redstone_edges"][0]["edge_type"]="physical_adjacency_candidate"
