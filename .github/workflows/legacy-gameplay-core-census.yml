@@ -561,6 +561,7 @@ jobs:
           assert d["diode_source_geometry_wire_path_max_hops"]<=96
           assert d["clicked_targets_with_diode_geometry_candidate_blaze_summon"]<=d["distinct_clicked_redstone_target_count"]
           assert sum(d["diode_source_geometry_downstream_ports"].values())>=0
+          assert d["diode_source_geometry_downstream_ports"].get("other_front_component_not_followed",0)>=0
           assert d["source_link_evidence"]=="EXACT_STATIC_CLICK_BLOCK_TARGET_ORIENTED_POWER_PORT_AUTHORED_COMMAND_EDGE"
           assert d["source_controller_reset_execution"]=="NOT_OBSERVED"
           assert d["original_java_188_execution"]=="NOT_RUN"
