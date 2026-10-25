@@ -563,6 +563,8 @@ jobs:
           assert sum(d["diode_source_geometry_downstream_ports"].values())>=0
           assert d["diode_source_geometry_downstream_ports"].get("other_front_component_not_followed",0)>=0
           assert d["diode_source_geometry_downstream_ports"].get("distinct_original_diode_nodes_inspected",0)>=d["distinct_clicked_redstone_target_count"]
+          assert d["diode_source_geometry_downstream_ports"].get("saved_repeater_delay_metadata_missing",0)==0
+          assert d["diode_source_geometry_downstream_ports"].get("saved_repeater_delay_redstone_ticks_total",0)>=d["diode_source_geometry_downstream_ports"].get("distinct_original_diode_nodes_inspected",0)
           assert d["source_link_evidence"]=="EXACT_STATIC_CLICK_BLOCK_TARGET_ORIENTED_POWER_PORT_AUTHORED_COMMAND_EDGE"
           assert d["source_controller_reset_execution"]=="NOT_OBSERVED"
           assert d["original_java_188_execution"]=="NOT_RUN"
