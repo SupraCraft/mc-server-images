@@ -23,7 +23,7 @@ SCHEMA="supracraft-core-188-control-program-static-aggregate/1"
 ALLOWED_CLICK={"run_command","suggest_command","open_url","change_page"}
 STORY_FEATURES={
     "creator_end_dialogue_clock_presence_skull":{
-        "testfor_entity","skull_or_head_summon","presentation_message","redstone_clock_component"
+        "testfor_entity","skull_or_head_summon","presentation_message","source_clock_loop_verified"
     },
     "creator_blaze_potion_click_control":{
         "blaze_summon","click_run_command","gamemode_change","effect_change"
@@ -223,7 +223,12 @@ def reconstruct(graph, raw):
                 click["action_"+action]+=1
                 if action=="run_command":
                     features.add("click_run_command")
-                    allowed=trigger if trigger in {"scoreboard","tp","teleport","gamemode","tellraw","effect","kill"} else "other"
+                    allowed=trigger if trigger in {
+                        "scoreboard","tp","teleport","gamemode","tellraw",
+                        "effect","kill","execute","setblock","fill","clone",
+                        "trigger","summon","give","clear","say","title",
+                        "testfor","testforblock","particle","playsound"
+                    } else "other"
                     click["run_verb_"+allowed]+=1
                 if action in {"run_command","suggest_command"}:
                     parsed_actions.append((cid,action,trigger,value))
@@ -308,8 +313,9 @@ def reconstruct(graph, raw):
     for _,_,kind in authored_pairs:
         authored_edges[kind]+=1
     graph_family=graph.get("family_counts",{})
-    if graph_family.get("redstone_wire",0)>0:
-        features.add("redstone_clock_component") if graph_family.get("repeater_on",0)+graph_family.get("repeater_off",0)>0 else None
+    if graph_family.get("redstone_wire",0)>0 and (
+            graph_family.get("repeater_on",0)+graph_family.get("repeater_off",0)>0):
+        features.add("physical_wire_and_repeater_co_present_not_clock_verified")
     # Presence of saved physical props via graph is a necessary but never
     # sufficient condition; actual individual rooms not joined in this pass.
     if graph_family.get("wooden_button",0)+graph_family.get("stone_button",0)>0:
@@ -397,6 +403,10 @@ def main():
         "block_target_joined":result["block_states_written_and_tested_exact_point_count"],
         "block_cross_command_edges":result["block_state_exact_cross_command_possible_edges"],
         "click_counts":result["source_clickable_chat_counts"],
+        "power_edges":result["source_authored_power_dependency_counts"],
+        "nested_execute":result["command_family_counts"],
+        "state_operands":result["source_state_operand_counts"],
+        "chat_score":result["source_chat_to_scoreboard_candidate_counts"],
         "native":"NOT_RUN",
     },sort_keys=True))
 
