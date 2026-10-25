@@ -52,6 +52,35 @@ def _entity_action(parts):
     return name if name in ALLOWED_ENTITIES else "other"
 
 
+def _tp_selector_shape(token):
+    """Only bounded Java 1.8 entity-selector shape, never selector values."""
+    if not token.startswith("@e"):
+        return "not_entity_selector",False,False,False
+    if token=="@e":
+        return "all_entities_unfiltered",False,False,False
+    if not (token.startswith("@e[") and token.endswith("]") and len(token)<2048):
+        return "unparsed_entity_selector",False,False,False
+    body=token[3:-1]
+    parts=[s.strip() for s in body.split(",")]
+    filters={}
+    for part in parts:
+        if "=" not in part: continue
+        k,v=part.split("=",1)
+        if k in {"type","name","team","tag","c","r","rm"} or k.startswith("score_"):
+            filters[k]=v
+    ent=filters.get("type")
+    if ent is None:
+        cls="entity_selector_type_unspecified"
+    else:
+        value=ent.lstrip("!").split(":")[-1].lower().replace("_","")
+        if value in {"blaze","armorstand","villager","item","skeleton","player"}:
+            cls="entity_type_"+value
+        else:
+            cls="entity_type_other_not_disclosed"
+        if ent.startswith("!"): cls="negated_"+cls
+    return cls,("name" in filters),any(k.startswith("score_") for k in filters),("c" in filters)
+
+
 def _safe_verb(parts):
     v=parts[0] if parts else ""
     return v if v in ALLOWED_VERBS else "unknown_or_invalid"
@@ -284,6 +313,12 @@ def trace(graph,original):
                 else:
                     label="coordinates_or_literal_target_unknown"
                 diode_terminal_control_semantics["teleport_"+label]+=1
+                if label.startswith("selector_entity"):
+                    typ,has_name,has_score,has_count=_tp_selector_shape(target)
+                    diode_terminal_control_semantics["teleport_"+typ]+=1
+                    if has_name: diode_terminal_control_semantics["teleport_name_filter_present"]+=1
+                    if has_score: diode_terminal_control_semantics["teleport_score_filter_present"]+=1
+                    if has_count: diode_terminal_control_semantics["teleport_count_filter_present"]+=1
                 diode_terminal_control_semantics[
                     "teleport_relative_arg_present" if any(
                         v.startswith("~") for v in cmd[1:])
