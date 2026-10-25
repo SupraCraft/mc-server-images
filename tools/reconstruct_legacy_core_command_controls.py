@@ -171,6 +171,103 @@ def _sha_verified_commands(graph, raw):
     return result, expected, bad
 
 
+def summarize_subprograms(command_ids,typed_input_commands,links):
+    """Aggregate weak command dependency groups, not physical game mechanisms.
+
+    A scoreboard-objective match need not be the same player's score. An authored
+    Redstone contact need not receive runtime power. Cycles are merely graph
+    loops, not observed clocks. No node identity is returned.
+    """
+    present=set(command_ids)
+    parents={n:n for n in present}
+    def root(n):
+        while parents[n]!=n:
+            parents[n]=parents[parents[n]]
+            n=parents[n]
+        return n
+    def join(a,b):
+        a=root(a);b=root(b)
+        if a!=b: parents[b]=a
+    safe_links=set()
+    for a,b,kind in links:
+        if a not in present or b not in present:
+            raise ValueError("subprogram edge references unverified source instruction")
+        if kind not in {"redstone_power","scoreboard_objective","block_state_test","conditional_chain"}:
+            raise ValueError("unqualified subprogram edge type")
+        if a==b: continue
+        safe_links.add((a,b,kind))
+        join(a,b)
+    bygroup=defaultdict(set)
+    for a,b,kind in safe_links:
+        bygroup[root(a)].update((a,b))
+    bygroup_edges=defaultdict(set)
+    for a,b,kind in safe_links:
+        bygroup_edges[root(a)].add(kind)
+    bins=Counter()
+    size_max=0
+    with_input=0
+    family_presence=Counter()
+    graph_nodes=set()
+    forward=defaultdict(set)
+    reverse=defaultdict(set)
+    for a,b,kind in safe_links:
+        graph_nodes.update((a,b))
+        forward[a].add(b)
+        reverse[b].add(a)
+    for k, nodes in bygroup.items():
+        size=len(nodes)
+        size_max=max(size_max,size)
+        bucket="size2" if size==2 else "size3_to_5" if size<=5 else "size6_to_12" if size<=12 else "size13_plus"
+        bins[bucket]+=1
+        if nodes & typed_input_commands: with_input+=1
+        for family in bygroup_edges[k]:
+            family_presence[family]+=1
+    # Iterative Kosaraju SCC; never follow generic source-world adjacency.
+    visited=set()
+    order=[]
+    for source in graph_nodes:
+        if source in visited: continue
+        stack=[(source,False)]
+        while stack:
+            n,exit_event=stack.pop()
+            if exit_event:
+                order.append(n)
+                continue
+            if n in visited:
+                continue
+            visited.add(n)
+            stack.append((n,True))
+            stack.extend((v,False) for v in forward.get(n,set()) if v not in visited)
+    visited.clear()
+    cyclic=0
+    cyclic_nodes=0
+    for source in reversed(order):
+        if source in visited: continue
+        group=set()
+        stack=[source]
+        while stack:
+            n=stack.pop()
+            if n in visited: continue
+            visited.add(n)
+            group.add(n)
+            stack.extend(v for v in reverse.get(n,set()) if v not in visited)
+        if len(group)>1:
+            cyclic+=1
+            cyclic_nodes+=len(group)
+    return {
+        "source_connected_instruction_groups":len(bygroup),
+        "linked_instruction_count":len(graph_nodes),
+        "largest_source_link_group_instruction_count":size_max,
+        "groups_with_known_direct_sensor_command_path":with_input,
+        "groups_without_known_direct_sensor_command_path":len(bygroup)-with_input,
+        "source_group_size_bands":dict(sorted(bins.items())),
+        "groups_containing_edge_families":dict(sorted(family_presence.items())),
+        "source_directed_cycles_candidate_count":cyclic,
+        "source_instruction_nodes_in_cycles":cyclic_nodes,
+        "graph_semantics":"WEAK_GROUPS_AND_STRONGLY_CONNECTED_SOURCE_GRAPH_ONLY__NO_ACTIVATION_OR_PURPOSE",
+    }
+
+
 def reconstruct(graph, raw):
     verified, expected, bad=_sha_verified_commands(graph,raw)
     # Every source command must match. Never infer from incomplete original.
@@ -365,6 +462,12 @@ def reconstruct(graph, raw):
         authored_pairs.add((a,b,kind))
     for _,_,kind in authored_pairs:
         authored_edges[kind]+=1
+    logical_links={(a,b,"scoreboard_objective") for a,b in exact_score_pairs}
+    logical_links.update((a,b,"block_state_test") for a,b in exact_point_pairs)
+    logical_links.update((a,b,"redstone_power") for a,b,k in authored_pairs
+                         if k=="legacy_setblock_redstone_block_direct_command_power")
+    logical_links.update((a,b,"conditional_chain") for a,b,k in typed_chain_pairs)
+    subprograms=summarize_subprograms(command_ids,reached,logical_links)
     graph_family=graph.get("family_counts",{})
     if graph_family.get("redstone_wire",0)>0 and (
             graph_family.get("repeater_on",0)+graph_family.get("repeater_off",0)>0):
@@ -400,6 +503,7 @@ def reconstruct(graph, raw):
         "block_states_written_and_tested_exact_point_count":len(set(point_readers)&set(point_writers)),
         "block_state_exact_cross_command_possible_edges":len(exact_point_pairs),
         "source_direct_command_chain_candidate_edges":len(typed_chain_pairs),
+        "source_static_instruction_grouping":subprograms,
         "source_authored_power_dependency_counts":dict(sorted(authored_edges.items())),
         "source_authored_power_dependency_total":len(authored_pairs),
         "typed_chain_edge_family_counts":dict(sorted(Counter(t for _,_,t in typed_chain_pairs).items())),
@@ -462,6 +566,7 @@ def main():
         "state_operands":result["source_state_operand_counts"],
         "chat_score":result["source_chat_to_scoreboard_candidate_counts"],
         "chat_world":result["source_click_to_world_static_candidate_counts"],
+        "instruction_groups":result["source_static_instruction_grouping"],
         "native":"NOT_RUN",
     },sort_keys=True))
 
