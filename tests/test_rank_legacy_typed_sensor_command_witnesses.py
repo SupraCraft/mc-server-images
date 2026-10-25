@@ -222,6 +222,25 @@ class SensorCommandWitnessTests(unittest.TestCase):
         self.assertEqual(sum(out["source_command_effect_class_path_counts"].values()),
                          out["accepted_path_count"])
 
+    def test_allowed_world_mutation_verb_counts_match_coarse_family(self):
+        for verb in ("setblock","fill","clone"):
+            with self.subTest(verb=verb):
+                g=fixture()
+                g["nodes"][-1]["command"]={"verb":verb,"body":"SECRET"}
+                o=rank(g)
+                self.assertEqual(o["original_mutation_verb_path_counts"],
+                                 {"wire_path_wooden_button__"+verb:1})
+                self.assertEqual(sum(o["original_mutation_verb_path_counts"].values()),
+                                 o["accepted_path_count"])
+                self.assertNotIn("SECRET",json.dumps(o))
+
+    def test_nonmutating_verb_not_misclassified_as_block_change(self):
+        g=fixture()
+        g["nodes"][-1]["command"]={"verb":"tellraw"}
+        out=rank(g)
+        self.assertEqual(out["original_mutation_verb_path_counts"],{})
+        self.assertEqual(out["accepted_path_count"],1)
+
     def test_source_schema_rejected(self):
         g=fixture()
         g["schema"]="unknown"
