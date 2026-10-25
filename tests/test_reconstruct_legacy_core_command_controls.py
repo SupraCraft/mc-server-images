@@ -153,6 +153,42 @@ class LegacyCommandControlsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             reconstruct(g,r)
 
+    def test_exact_authored_redstone_power_into_command_is_static_edge(self):
+        g,r=make_graph(["setblock 12 65 20 minecraft:redstone_block","say Activated"])
+        g["edges"]["command_authored_redstone_edges"]=[
+            {"source":"10,65,20","target":"11,65,20",
+             "edge_type":"legacy_setblock_redstone_block_direct_command_power",
+             "authored_target_position":[12,65,20]}]
+        out=reconstruct(g,r)
+        self.assertEqual(out["source_authored_power_dependency_total"],1)
+        self.assertEqual(out["source_authored_power_dependency_counts"],
+                         {"legacy_setblock_redstone_block_direct_command_power":1})
+        self.assertEqual(out["original_native"],"NOT_RUN")
+
+    def test_forged_power_edge_fails_closed(self):
+        g,r=make_graph(["setblock 12 65 20 redstone_block","say Activated"])
+        g["edges"]["command_authored_redstone_edges"]=[
+            {"source":"10,65,20","target":"11,65,20",
+             "edge_type":"legacy_setblock_redstone_block_direct_command_power",
+             "authored_target_position":[13,65,20]}]
+        with self.assertRaisesRegex(ValueError,"exact original"):
+            reconstruct(g,r)
+
+    def test_exact_redstone_diode_rear_edge_requires_orientation(self):
+        g,r=make_graph(["setblock 13 65 20 152"])
+        g["nodes"].append({
+            "node_id":"12,65,20","position":[12,65,20],
+            "family":"repeater_off","metadata_semantics":{"facing_vector":[1,0,0]}
+        })
+        g["edges"]["command_authored_redstone_edges"]=[
+            {"source":"10,65,20","target":"12,65,20",
+             "edge_type":"legacy_setblock_redstone_block_diode_rear_input",
+             "authored_target_position":[13,65,20]}]
+        self.assertEqual(reconstruct(g,r)["source_authored_power_dependency_total"],1)
+        g["nodes"][-1]["metadata_semantics"]["facing_vector"]=[-1,0,0]
+        with self.assertRaisesRegex(ValueError,"diode rear"):
+            reconstruct(g,r)
+
     def test_selector_parsing_rejects_spoofed_words(self):
         self.assertEqual(selector_reads('say score_secret_min=9'),set())
         self.assertEqual(selector_reads('tp @p[score_secret_min=9] ~ ~ ~'),{"secret"})
