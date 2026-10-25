@@ -57,6 +57,69 @@ def _safe_verb(parts):
     return v if v in ALLOWED_VERBS else "unknown_or_invalid"
 
 
+def diode_output_candidates(graph,pos,verified,diode_ids):
+    """Strongly oriented source geometry, weaker physical propagation hypothesis.
+
+    Requires a *recorded* source-facing output edge, then exact typed dust links.
+    Horizontal dust joins do not have a proved runtime propagation direction.
+    Never promote these results to proven cause, native actuation or puzzle.
+    """
+    from tools.rank_legacy_typed_sensor_command_witnesses import _is_typed
+    byid={n["node_id"]:n for n in graph["nodes"]}
+    oriented=set()
+    for e in graph.get("edges",{}).get("oriented_signal_candidates",[]):
+        if e.get("edge_type")=="oriented_front_output_candidate":
+            oriented.add((e.get("source"),e.get("target")))
+    wires=defaultdict(set)
+    sinks=defaultdict(set)
+    for e in graph.get("edges",{}).get("direct_redstone_edges",[]):
+        a,b=e.get("source"),e.get("target")
+        if a not in byid or b not in byid:continue
+        kind=_is_typed(byid[a],byid[b],e)
+        if kind=="wire_wire": wires[a].add(b)
+        if kind=="wire_command" and b in verified:sinks[a].add(b)
+    seen_commands=set()
+    port_classes=Counter()
+    max_wire_hops=0
+    for ident in diode_ids:
+        n=byid[ident]
+        facing=(n.get("metadata_semantics") or {}).get("facing_vector")
+        q=tuple(n["position"])
+        if not (isinstance(facing,list) and len(facing)==3 and
+                all(type(x) is int for x in facing)):
+            raise ValueError("diode without signed original facing")
+        front=tuple(q[i]-facing[i] for i in range(3))
+        downstream=pos.get(front)
+        if downstream is None:
+            port_classes["front_without_named_graph_node"]+=1
+            continue
+        if (ident,downstream["node_id"]) not in oriented:
+            # Don't invent missing source-backed edge even if geometry happens
+            # to match a neighboring coordinate.
+            port_classes["front_missing_recorded_oriented_edge"]+=1
+            continue
+        family=downstream["family"]
+        if family=="command_block" and downstream["node_id"] in verified:
+            seen_commands.add(downstream["node_id"])
+            port_classes["front_adjacent_command_candidate"]+=1
+        elif family=="redstone_wire":
+            port_classes["front_wire_candidate"]+=1
+            q=deque([(downstream["node_id"],0)])
+            visited={downstream["node_id"]}
+            while q:
+                wire,depth=q.popleft()
+                seen_commands.update(sinks.get(wire,set()))
+                max_wire_hops=max(max_wire_hops,depth)
+                if depth>=96: continue
+                for nxt in wires.get(wire,set()):
+                    if nxt not in visited:
+                        visited.add(nxt)
+                        q.append((nxt,depth+1))
+        else:
+            port_classes["other_front_component_not_followed"]+=1
+    return seen_commands,port_classes,max_wire_hops
+
+
 def trace(graph,original):
     """Compute private relationships, emit aggregate-only mechanism evidence."""
     # Reuse existing independent full-dataset source reconstruction and graph
@@ -117,6 +180,10 @@ def trace(graph,original):
     reset_classes=Counter()
     seeds_global=set()
     verbs_reached=Counter()
+    diode_verbs=Counter()
+    diode_entities=Counter()
+    diode_output_ports=Counter()
+    diode_max_wire_hops=0
     entity_reached=Counter()
     feedback=Counter()
     source_unknown=Counter()
@@ -151,6 +218,20 @@ def trace(graph,original):
                         if _material_command(verified[cid][2])==AUTHOR_RESET}),
             "source_command_seeds":len(seed),
         }
+        diode_commands,diode_ports,wire_hops=diode_output_candidates(
+            graph,pos,verified,diodes)
+        diode_output_ports.update(diode_ports)
+        diode_max_wire_hops=max(diode_max_wire_hops,wire_hops)
+        for cid in diode_commands:
+            cmd=verified[cid][2]
+            diode_verbs[_safe_verb(cmd)]+=1
+            if _safe_verb(cmd)=="summon":
+                diode_entities["summon_"+_entity_action(cmd)]+=1
+        if diode_commands:
+            source_reachable["targets_with_diode_source_geometry_commands"]+=1
+        profile["diode_output_command_count"]=len(diode_commands)
+        profile["diode_output_blaze"]=any(
+            _entity_action(verified[cid][2])=="blaze" for cid in diode_commands)
         target_profiles.append(profile)
         seeds_global.update(seed)
         if not seed: source_unknown["no_exact_adjacent_command"]+=1
@@ -228,6 +309,14 @@ def trace(graph,original):
         "source_power_reach_size_bands":dict(sorted(size_bands.items())),
         "source_power_reach_maximum_hops":max((x["maximum_authored_power_hops"]
                                                  for x in target_profiles),default=0),
+        "diode_source_geometry_downstream_ports":dict(sorted(diode_output_ports.items())),
+        "diode_source_geometry_wire_path_max_hops":diode_max_wire_hops,
+        "diode_source_geometry_downstream_verb_counts_occurrences":
+             dict(sorted(diode_verbs.items())),
+        "diode_source_geometry_downstream_summon_entity_counts_occurrences":
+             dict(sorted(diode_entities.items())),
+        "clicked_targets_with_diode_geometry_candidate_blaze_summon":
+             sum(bool(x["diode_output_blaze"]) for x in target_profiles),
         "source_reachable_command_verb_counts_occurrences":dict(sorted(verbs_reached.items())),
         "source_reachable_summon_entity_classes_occurrences":
              dict(sorted(entity_reached.items())),
@@ -249,6 +338,7 @@ def trace(graph,original):
             "A source-authored air writer to the same target is potential reset, not proven event order.",
             "Source graph edges imply possible power connections only, not actual propagation.",
             "Source-reachable command families do not establish corresponding author-described scene identity.",
+            "Diode front port and dust path are source geometry, not measured powered propagation; no opaque conduction assumed.",
             "No raw commands, click text, positions, entity names, per-target identities or source hashes exported.",
         ],
     }
@@ -289,6 +379,9 @@ def main():
         "downstream_verbs":result["source_reachable_command_verb_counts_occurrences"],
         "entities":result["source_reachable_summon_entity_classes_occurrences"],
         "feedback":result["source_reachable_player_feedback_command_counts_occurrences"],
+        "diode_ports":result["diode_source_geometry_downstream_ports"],
+        "diode_verbs":result["diode_source_geometry_downstream_verb_counts_occurrences"],
+        "diode_entities":result["diode_source_geometry_downstream_summon_entity_counts_occurrences"],
         "native":"NOT_RUN"},sort_keys=True))
 
 
