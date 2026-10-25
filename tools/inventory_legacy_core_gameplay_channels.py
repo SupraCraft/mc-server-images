@@ -50,6 +50,12 @@ ENTITY_FAMILIES={
     "minecartfurnace":"mechanical_kinematics",
     "boat":"traversal_navigation",
     "arrow":"entities_actor_spawning",
+    "minecartcommandblock":"control_commands",
+    "minecartcommand":"control_commands",
+    "minecartspawner":"entities_actor_spawning",
+    "villagergolem":"entities_actor_spawning",
+    "wither":"magical_potions_enchanting",
+    "enderdragon":"entities_actor_spawning",
 }
 TILE_FAMILIES={
     "chest":"inventory_storage_transport",
@@ -71,6 +77,15 @@ TILE_FAMILIES={
     "commandblock":"control_commands",
     "comparator":"electrical_signal_logic",
     "enchanttable":"magical_potions_enchanting",
+    # Verified pre-1.11 Java tile IDs; these are not modern namespaced IDs.
+    "control":"control_commands",
+    "music":"presentation_signals_and_art",
+    "trap":"inventory_storage_transport",
+    "cauldron":"magical_potions_enchanting",
+    "airportal":"magical_potions_enchanting",
+    "piston":"mechanical_kinematics",
+    "dldetector":"electrical_signal_logic",
+    "flowerpot":"presentation_signals_and_art",
 }
 # No arbitrary names from source ever appear in public keys.
 def allow_family(raw, known):
