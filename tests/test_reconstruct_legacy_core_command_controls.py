@@ -6,7 +6,7 @@ import unittest
 
 from tools.reconstruct_legacy_core_command_controls import (
     click_controls, scoreboard_access, selector_reads, nested_execute,
-    reconstruct
+    reconstruct, summarize_subprograms
 )
 
 
@@ -152,6 +152,41 @@ class LegacyCommandControlsTests(unittest.TestCase):
         g["nodes"].append(g["nodes"][0])
         with self.assertRaises(ValueError):
             reconstruct(g,r)
+
+    def test_exact_static_subprograms_partition_by_dependency_not_proximity(self):
+        nodes={"A","B","C","D","E"}
+        links={("A","B","redstone_power"),("B","C","block_state_test"),
+               ("D","E","scoreboard_objective")}
+        out=summarize_subprograms(nodes,{"A"},links)
+        self.assertEqual(out["source_connected_instruction_groups"],2)
+        self.assertEqual(out["linked_instruction_count"],5)
+        self.assertEqual(out["largest_source_link_group_instruction_count"],3)
+        self.assertEqual(out["groups_with_known_direct_sensor_command_path"],1)
+        self.assertEqual(out["groups_without_known_direct_sensor_command_path"],1)
+        self.assertEqual(out["source_group_size_bands"],{"size2":1,"size3_to_5":1})
+        self.assertEqual(out["source_directed_cycles_candidate_count"],0)
+        self.assertNotIn('"A"',json.dumps(out))
+
+    def test_source_directional_cycles_do_not_imply_runtime_clock(self):
+        out=summarize_subprograms({"A","B","C"},set(),{
+            ("A","B","scoreboard_objective"),
+            ("B","A","redstone_power"),
+            ("B","C","block_state_test")})
+        self.assertEqual(out["source_directed_cycles_candidate_count"],1)
+        self.assertEqual(out["source_instruction_nodes_in_cycles"],2)
+        self.assertIn("NO_ACTIVATION_OR_PURPOSE",out["graph_semantics"])
+
+    def test_unqualified_dependency_is_rejected(self):
+        with self.assertRaisesRegex(ValueError,"unqualified"):
+            summarize_subprograms({"A","B"},set(),{("A","B","same_chunk_proximity")})
+        with self.assertRaisesRegex(ValueError,"unverified"):
+            summarize_subprograms({"A"},set(),{("A","OTHER","redstone_power")})
+
+    def test_disjoint_commands_do_not_fabricate_group(self):
+        out=summarize_subprograms({"A","B"},set(),set())
+        self.assertEqual(out["source_connected_instruction_groups"],0)
+        self.assertEqual(out["linked_instruction_count"],0)
+        self.assertEqual(out["largest_source_link_group_instruction_count"],0)
 
     def test_click_setblock_absolute_reaches_neighbor_command_port_only_as_candidate(self):
         click='tellraw @p {"text":"Power", "clickEvent":{"action":"run_command","value":"/setblock 12 65 20 minecraft:redstone_block"}}'
