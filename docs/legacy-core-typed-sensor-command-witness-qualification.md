@@ -34,6 +34,12 @@ The strongest independent next class is 25 original wooden-button-to-command wit
 - [Effect/verb-class synthetic run 40149694245](https://github.com/SupraCraft/mc-server-images/actions/runs/40149694245) **148/148 PASS**, including command text and provenance redaction.
 - [Latest pinned original source run 40149703363](https://github.com/SupraCraft/mc-server-images/actions/runs/40149703363), job 121038443623 COMPLETE/SUCCESS, original ZIP and graph SHA verified. Reproduced 90 unique routes, 57/24/9 source-authored verb classes. Public safe attributed artifact 12581886876, SHA256 27f13817f8d30c7665f12aa7194fdde23e3c89f007ae282af5cd84caf747359d, expires 2026-11-08 01:12:35 UTC. No raw world or source commands included.
 
+## Final exact authored block-mutation verb discriminator (2026-10-25)
+
+An additional source-only allowlisted original command-verb read distinguished the 57 static block-mutation path types without disclosing source command text: wooden-button direct support **25 setblock, 0 fill, 0 clone**; pressure-plate direct support **10 setblock, 1 fill, 1 clone**; pressure-plate via wire **11 setblock, 6 fill, 3 clone**. Totals: **46 setblock, 7 fill, 4 clone**. These counts partition authored *syntax*, not actual command completion, exclusive causality or saved/live block changes. A repeated target command may be shared by alternative path modalities. Exact result frozen original [run 40149894959](https://github.com/SupraCraft/mc-server-images/actions/runs/40149894959), job 121039025643, COMPLETE/SUCCESS; source-only adversarial [run 40149882430](https://github.com/SupraCraft/mc-server-images/actions/runs/40149882430) **150/150 PASS**. Attributed derived-only artifact 12582142992, SHA256 69b8619521df00f91f962173d900fc5d11880e41c469f1d00383b50af1ed84c2, expires **2026-11-08 01:15:32 UTC**.
+
+**Priority refined:** original physically attached **wooden button → source-fingerprinted command block → single-block setblock syntax**; **25 static candidates**. A bounded exact input/output target selection is the next READY source-only step if it is necessary to construct an actual qualified one-use original-era trial. Do not infer player actuation, target mutation, exclusive cause, reusability or game semantics from authored syntax alone.
+
 ## Next bounded trial contract (NOT admitted)
 
 1. Select a single internally source-verified wooden-button-supported command with a safely observable authored world-block mutation verb. Keep original coordinates and command SHA inside the admitted workcell; do not export or guess them.
