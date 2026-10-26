@@ -667,6 +667,8 @@ jobs:
           assert d["semantic_admission"]=="NOT_ADMITTED"
           assert d["modern_263_parity"]=="NOT_RUN"
           assert d["mechanisms"]["dr_h_finale"]["source_story_chain_proven"] is False
+          assert d["mechanisms"]["dr_h_finale"]["input"]["dr_h_referencing_command_paths"]==2
+          assert "author_dialogue_paths" not in d["mechanisms"]["dr_h_finale"]["input"]
           assert d["mechanisms"]["chess_head_hint"]["exact_chess_puzzle_source_chain_proven"] is False
           assert d["mechanisms"]["clickable_redstone_controller"]["reset"]["target_count"]==4
           assert d["mechanisms"]["clickable_redstone_controller"]["input"]["action_count"]==13
