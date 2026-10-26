@@ -240,6 +240,18 @@ def _read_item_shape(item):
     return "skull_negative_count",True
 
 
+def normalize_legacy_unquoted_item_ids(payload):
+    """Narrow in-memory compatibility transform, NOT original NBT evidence.
+
+    Changes only unquoted id:minecraft namespace item values into quoted
+    SNBT string values. Never rewrites source world or arbitrary values.
+    """
+    token=re.compile(
+        r'(?<![A-Za-z0-9_])(\bid\s*:\s*)(minecraft:[A-Za-z0-9_.\-/]+)'
+        r'(?=\s*[,}\]])',re.I)
+    return token.sub(lambda m:m.group(1)+'"'+m.group(2)+'"',payload)
+
+
 def armorstand_summon_item_shapes(raw,parser):
     """Parse original standalone SNBT only when the approved custody parser is present.
 
@@ -252,24 +264,39 @@ def armorstand_summon_item_shapes(raw,parser):
     beginning=raw.find("{")
     if beginning<0:return {"summon_without_compound":1}
     payload=raw[beginning:]
+    compatible_parse=False
+    normalized_candidate_present=False
     try:
         nbt=parser(payload)
     except Exception as exc:
-        # Errors can contain private parser input. NEVER emit str(exc).
-        # Only an allowlisted exception *class* and coarse lexical symptoms.
-        allowed={"ValueError","TypeError","KeyError","IndexError",
-                 "AttributeError","InvalidLiteral","InvalidToken",
-                 "InvalidTag","UnexpectedToken","SyntaxError"}
-        category=type(exc).__name__
-        if category not in allowed:category="other_parse_exception"
-        return {
-            "source_snbt_parse_unresolved":1,
-            "source_snbt_parser_error_class_"+category:1,
-            "source_snbt_payload_braces_unbalanced" if payload.count("{")!=payload.count("}")
-              else "source_snbt_payload_braces_balanced":1,
-            "source_snbt_payload_square_brackets_unbalanced" if payload.count("[")!=payload.count("]")
-              else "source_snbt_payload_square_brackets_balanced":1,
-        }
+        # Old source syntax may use bare namespaced item IDs. Modern nbtlib
+        # may reject them. This does NOT rewrite or execute original world.
+        amended=normalize_legacy_unquoted_item_ids(payload)
+        normalized_candidate_present=(amended!=payload)
+        if normalized_candidate_present and type(exc).__name__=="InvalidLiteral":
+            try:
+                nbt=parser(amended)
+                compatible_parse=True
+            except Exception as second_error:
+                exc=second_error
+        if not compatible_parse:
+            # Never serialize errors/messages: they may include private source.
+            allowed={"ValueError","TypeError","KeyError","IndexError",
+                     "AttributeError","InvalidLiteral","InvalidToken",
+                     "InvalidTag","UnexpectedToken","SyntaxError"}
+            category=type(exc).__name__
+            if category not in allowed:category="other_parse_exception"
+            return {
+                "source_snbt_parse_unresolved":1,
+                "source_snbt_parser_error_class_"+category:1,
+                "source_snbt_compat_item_id_normalization_attempted" if
+                    normalized_candidate_present else
+                    "source_snbt_no_eligible_unquoted_item_id_normalization":1,
+                "source_snbt_payload_braces_unbalanced" if payload.count("{")!=payload.count("}")
+                  else "source_snbt_payload_braces_balanced":1,
+                "source_snbt_payload_square_brackets_unbalanced" if payload.count("[")!=payload.count("]")
+                  else "source_snbt_payload_square_brackets_balanced":1,
+            }
     if not hasattr(nbt,"get"):return {"source_snbt_not_compound":1}
     equipment=nbt.get("Equipment")
     if equipment is None:
@@ -277,6 +304,8 @@ def armorstand_summon_item_shapes(raw,parser):
     if not hasattr(equipment,"__iter__"):
         return {"source_snbt_equipment_nonlist":1}
     counter=Counter({"source_snbt_parsed_equipment":1})
+    if compatible_parse:
+        counter["source_snbt_compat_item_id_normalized_parse_success"]+=1
     for slot in equipment:
         classification,is_skull=_read_item_shape(slot)
         counter["equipment_slot_"+classification]+=1
@@ -531,6 +560,7 @@ def analyze(graph,original,nbt=None):
             "Names and selector equality do not prove that the same actor or exact player slot is alive/selected at runtime.",
             "Global skull, particle, armor stand and scoreboard counts do not prove a chess or ending scene.",
             "Missing Count in source SNBT is not proof of an observed zero-count item or original-version engine default.",
+            "Modern-parser compatibility-normalized success is not proof the unmodified original command parsed in Java 1.8.8.",
             "Shared source sensor and compatible entity types cannot establish same runtime actor instance or execution order.",
             "Only SHA-qualified command and typed graph edges are eligible for source static joins.",
             "Mechanics may exist via physical/Redstone/inventory/AI behavior absent author commands.",
