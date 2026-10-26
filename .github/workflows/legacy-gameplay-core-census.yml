@@ -614,6 +614,10 @@ jobs:
           assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
           assert d["original_commands_sha_verified"]==1445
           assert d["source_verification"]=="EVERY_ORIGINAL_COMMAND_SHA_MATCHED"
+          assert d["qualified_sensor_to_command_route_count"]==90
+          assert isinstance(d["qualified_sensor_to_scene_command_path_counts"],dict)
+          assert isinstance(d["entity_selector_source_detail_counts"],dict)
+          assert d["entity_named_selector_potential_shared_presence_kill_signatures"]>=0
           assert d["command_static_links"]["edge_authority"]=="EXACT_ORIGINAL_AUTHORED_POWER_OR_COMMAND_CHAIN_STATIC"
           assert d["command_static_links"]["actual_command_execution"]=="NOT_OBSERVED"
           assert d["saved_actor_inventory_evidence"].get("saved_armor_stand_instances",0)==952
@@ -632,6 +636,8 @@ jobs:
               "creator_cues":d["creator_story_cue_command_counts"],
               "exact_scene_join_classes":d["command_static_links"]["bounded_source_command_class_join_counts"],
               "shared_actor_selector_candidate_count":d["entity_named_selector_potential_shared_presence_kill_signatures"],
+              "selector_details":d["entity_selector_source_detail_counts"],
+              "typed_sensor_scene_paths":d["qualified_sensor_to_scene_command_path_counts"],
               "saved_actor_inventory":d["saved_actor_inventory_evidence"],
               "native":"NOT_RUN"
           },sort_keys=True))
