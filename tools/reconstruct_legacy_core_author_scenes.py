@@ -172,6 +172,105 @@ def shared_dr_h_sensor_effects(routes,classes,verified):
     return dict(sorted(out.items()))
 
 
+def _kill_type_filter(parts):
+    """Private source-only parse: exact positive 1.8 @e[type=...] operand."""
+    if not parts or parts[0]!="kill" or len(parts)<2:
+        return None,"missing_or_implicit"
+    token=parts[1]
+    if not (token.startswith("@e[") and token.endswith("]")):
+        return None,"not_bounded_entity_selector"
+    match=TYPE_PARAM.search(token[3:-1])
+    if not match: return None,"no_type_filter"
+    raw=match.group(1).strip()
+    if not raw or raw.startswith("!"):
+        return None,"negated_or_empty_type"
+    return raw.lower().split(":")[-1].replace("_",""),"positive_type_filter"
+
+
+def same_sensor_actor_type_compatibility(routes,classes,verified):
+    """Only source type compatibility of co-rooted author commands, never actor identity."""
+    groups=defaultdict(lambda:{"summon":set(),"kill":set()})
+    for sensor,cid,_ in routes:
+        roles=classes.get(cid,set())
+        if "dr_h_author_text_cue" in roles and verified[cid][2][0]=="summon":
+            groups[sensor]["summon"].add(cid)
+        if "entity_kill" in roles:
+            groups[sensor]["kill"].add(cid)
+    out=Counter()
+    for items in groups.values():
+        if not items["summon"] or not items["kill"]:continue
+        out["shared_input_groups_with_summon_and_kill"]+=1
+        for sid in items["summon"]:
+            summoned=verified[sid][2]
+            summoned_type=(summoned[1].lower().split(":")[-1].replace("_","")
+                           if len(summoned)>=2 else None)
+            out["summon_original_custom_name_field_present" if
+                re.search(r"(?i)\bCustomName\s*:",verified[sid][1]) else
+                "summon_original_custom_name_field_absent"]+=1
+            for kid in items["kill"]:
+                target_type,filter_status=_kill_type_filter(verified[kid][2])
+                out["paired_kill_selector_"+filter_status]+=1
+                if not summoned_type or not target_type:
+                    out["source_type_join_UNRESOLVED"]+=1
+                elif summoned_type==target_type:
+                    out["source_spawn_and_kill_type_compatible"]+=1
+                else:
+                    out["source_spawn_and_kill_type_disjoint"]+=1
+    return dict(sorted(out.items()))
+
+
+def _read_item_shape(item):
+    """Parse already-decoded original NBT item only; no item values are returned."""
+    def unpack(v):
+        if hasattr(v,"unpack"):
+            try:return v.unpack()
+            except Exception:return v
+        return v
+    if not hasattr(item,"get"):return "non_compound",False
+    identity=str(unpack(item.get("id",""))).lower().split(":")[-1]
+    if identity not in {"skull","skull_item"} and identity!="397":
+        return "other_item",False
+    if "Count" not in item:
+        return "skull_without_count_tag",True
+    try: count=int(unpack(item["Count"]))
+    except (TypeError,ValueError):
+        return "skull_count_unparseable",True
+    if count==0:return "skull_explicit_zero_count",True
+    if count>0:return "skull_explicit_positive_count",True
+    return "skull_negative_count",True
+
+
+def armorstand_summon_item_shapes(raw,parser):
+    """Parse original standalone SNBT only when the approved custody parser is present.
+
+    The parser is injected in synthetic tests and supplied by existing nbtlib
+    only in pinned original workcell. Failure is explicit, not an inferred item.
+    """
+    verb,parts=normalize_command(raw)
+    if verb!="summon" or len(parts)<2 or safe_entity_type(parts[1])!="armorstand":
+        return {"not_armorstand_summon":1}
+    beginning=raw.find("{")
+    if beginning<0:return {"summon_without_compound":1}
+    try:
+        nbt=parser(raw[beginning:])
+    except (ValueError,TypeError,KeyError,IndexError,AttributeError):
+        return {"source_snbt_parse_unresolved":1}
+    if not hasattr(nbt,"get"):return {"source_snbt_not_compound":1}
+    equipment=nbt.get("Equipment")
+    if equipment is None:
+        return {"source_snbt_without_equipment_field":1}
+    if not hasattr(equipment,"__iter__"):
+        return {"source_snbt_equipment_nonlist":1}
+    counter=Counter({"source_snbt_parsed_equipment":1})
+    for slot in equipment:
+        classification,is_skull=_read_item_shape(slot)
+        counter["equipment_slot_"+classification]+=1
+        if is_skull:counter["equipment_skull_slot_seen"]+=1
+    if not counter["equipment_skull_slot_seen"]:
+        counter["no_parsed_skull_slot"]+=1
+    return dict(sorted(counter.items()))
+
+
 def source_exact_join_audit(graph,verified,classes):
     """Only directed graph edges independently attributable to original commands."""
     directed=set()
@@ -363,6 +462,20 @@ def analyze(graph,original,nbt=None):
             strict_scene_inputs["typed_sensor_to_"+role]+=1
     if len(routes)!=reference["accepted_path_count"]:
         raise ValueError("strict source sensor witness count mismatch")
+    # Source SNBT parser is supplied only from already approved original
+    # custody; source-free CI invokes the pure classification with an injected parser.
+    original_skull_shapes=Counter()
+    try:
+        from nbtlib import parse_nbt
+    except ImportError:
+        parse_nbt=None
+    for cid,(node,raw,parts) in verified.items():
+        if "armor_stand_summon_with_skull_token" not in classes[cid]:
+            continue
+        if parse_nbt is None:
+            original_skull_shapes["source_snbt_parser_unavailable"]+=1
+            continue
+        original_skull_shapes.update(armorstand_summon_item_shapes(raw,parse_nbt))
     # Two commands using the same named selector does not mean their operations
     # execute in the same scene or resolve to the same living entity.
     return {
@@ -378,6 +491,8 @@ def analyze(graph,original,nbt=None):
         "qualified_sensor_to_command_route_count":len(routes),
         "distinct_strict_sensor_shared_scene_role_counts":summarize_shared_strict_input_roots(routes,classes),
         "shared_dr_h_typed_sensor_action_classes":shared_dr_h_sensor_effects(routes,classes,verified),
+        "same_sensor_original_actor_type_compatibility":same_sensor_actor_type_compatibility(routes,classes,verified),
+        "armorstand_original_summon_snbt_shape_counts":dict(sorted(original_skull_shapes.items())),
         "command_static_links":exact,
         "saved_actor_inventory_evidence":nbt or {},
         "dr_h_finale":{
@@ -400,6 +515,8 @@ def analyze(graph,original,nbt=None):
             "Matching author story terms is evidence of authored dialogue, not a valid 1.8.8 causal edge.",
             "Names and selector equality do not prove that the same actor or exact player slot is alive/selected at runtime.",
             "Global skull, particle, armor stand and scoreboard counts do not prove a chess or ending scene.",
+            "Missing Count in source SNBT is not proof of an observed zero-count item or original-version engine default.",
+            "Shared source sensor and compatible entity types cannot establish same runtime actor instance or execution order.",
             "Only SHA-qualified command and typed graph edges are eligible for source static joins.",
             "Mechanics may exist via physical/Redstone/inventory/AI behavior absent author commands.",
             "Creator's published later v1.4.1 behavior cannot be projected into pinned v1.4 without version parity.",
@@ -443,6 +560,8 @@ def main():
         "command_classes":result["source_command_family_counts"],
         "exact_static_links":result["command_static_links"]["bounded_source_command_class_join_counts"],
         "saved_actor_inventory":result["saved_actor_inventory_evidence"],
+        "dr_h_actor_type_join":result["same_sensor_original_actor_type_compatibility"],
+        "armorstand_snbt_shape":result["armorstand_original_summon_snbt_shape_counts"],
         "native":"NOT_RUN",
     },sort_keys=True))
 
