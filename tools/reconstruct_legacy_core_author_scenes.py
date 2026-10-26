@@ -97,9 +97,34 @@ def source_command_families(original):
     if "summon_armorstand" in classes:
         if "skull_token_in_action" in classes:
             classes.add("armor_stand_summon_with_skull_token")
+            if not re.search(r"(?i)\bcount\s*:",raw):
+                classes.add("armor_stand_summon_skull_without_explicit_any_count")
         if re.search(r"(?i)\bcount\s*:\s*0[bBsS]?\b",raw):
             classes.add("armor_stand_summon_with_zero_count_token")
     return classes
+
+
+def summarize_shared_strict_input_roots(routes,classes):
+    """Same independently typed sensor drives different source instruction roles.
+
+    Shared source input is a candidate shared stimulus. It is not a command
+    order, actual power state, actor match, or verified gameplay event.
+    """
+    roots=defaultdict(set)
+    for sensor,command,mode in routes:
+        for role in classes.get(command,set()):
+            if role in {"dr_h_author_text_cue","entity_kill","entity_presence_gate",
+                        "smoke_hint_candidate","summon_armorstand",
+                        "armor_stand_summon_with_skull_token","chess_author_text_cue"}:
+                roots[role].add(sensor)
+    comparisons={
+        "dr_h_text_and_entity_kill":("dr_h_author_text_cue","entity_kill"),
+        "dr_h_text_and_presence_gate":("dr_h_author_text_cue","entity_presence_gate"),
+        "smoke_hint_and_armor_stand_spawn":("smoke_hint_candidate","summon_armorstand"),
+        "chess_text_and_armor_stand_skull_spawn":(
+            "chess_author_text_cue","armor_stand_summon_with_skull_token"),
+    }
+    return {label:len(roots[a]&roots[b]) for label,(a,b) in comparisons.items()}
 
 
 def source_exact_join_audit(graph,verified,classes):
@@ -306,6 +331,7 @@ def analyze(graph,original,nbt=None):
         "entity_selector_source_detail_counts":dict(sorted(selector_detail.items())),
         "qualified_sensor_to_scene_command_path_counts":dict(sorted(strict_scene_inputs.items())),
         "qualified_sensor_to_command_route_count":len(routes),
+        "distinct_strict_sensor_shared_scene_role_counts":summarize_shared_strict_input_roots(routes,classes),
         "command_static_links":exact,
         "saved_actor_inventory_evidence":nbt or {},
         "dr_h_finale":{
