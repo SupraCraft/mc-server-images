@@ -72,8 +72,8 @@ def compile_ir(story,control):
     finale={
         "label":"Dr. H finale and ending progression",
         "inference_tier":"CREATOR_EXTERNAL_SPEC_WITH_DISJOINT_SOURCE_COMPONENTS",
-        "input":{"kind":"qualified_named_sensor_paths_into_source_clues",
-                 "author_dialogue_paths":routes.get("typed_sensor_to_dr_h_author_text_cue",0),
+        "input":{"kind":"qualified_typed_sensor_paths_into_dr_h_referencing_commands",
+                 "dr_h_referencing_command_paths":routes.get("typed_sensor_to_dr_h_author_text_cue",0),
                  "entity_removal_paths":routes.get("typed_sensor_to_entity_kill",0),
                  "same_strict_sensor_for_both":shared.get("dr_h_text_and_entity_kill",0)},
         "state":{"kind":"possible_actor_presence_gate_not_exclusively_attributed",
@@ -83,7 +83,7 @@ def compile_ir(story,control):
         "output":{"kind":"author_reported_actor_death_skull_and_branch_UNVERIFIED",
                   "global_kill_commands":source.get("entity_kill",0),
                   "global_skull_token_actions":source.get("skull_token_in_action",0)},
-        "feedback":{"kind":"story_dialogue_source_cues",
+        "feedback":{"kind":"story_reference_in_original_command_body",
                     "source_commands_with_dr_h_reference":source.get("dr_h_author_text_cue",0)},
         "reset":{"kind":"unknown","verified":False},
         "source_story_chain_proven":False,
@@ -158,7 +158,7 @@ def main():
     print("CORE_SAFE_CREATOR_MECHANISM_IR",json.dumps({
         "schema":SCHEMA,"count":result["mechanism_count"],
         "controller_inputs":result["mechanisms"]["clickable_redstone_controller"]["input"]["action_count"],
-        "dr_h_dialogue_sensor_routes":result["mechanisms"]["dr_h_finale"]["input"]["author_dialogue_paths"],
+        "dr_h_reference_sensor_routes":result["mechanisms"]["dr_h_finale"]["input"]["dr_h_referencing_command_paths"],
         "chess_dynamic_head_actions":result["mechanisms"]["chess_head_hint"]["state"]["skull_bearing_armor_stand_summon_commands"],
         "native":"NOT_RUN",
     },sort_keys=True))
