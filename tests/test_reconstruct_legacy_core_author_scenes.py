@@ -123,6 +123,38 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
                          "NOT_VERIFIED_BY_GLOBAL_COMPONENT_PRESENCE")
         self.assertEqual(out["command_static_links"]["bounded_source_command_class_join_counts"],{})
 
+    def test_smoke_hint_has_qualified_original_button_input_only_with_typed_edge(self):
+        graph,raw=fixture(["particle smoke 10 65 20 0 0 0 0 1"])
+        graph["nodes"].append({"node_id":"10,64,20","position":[10,64,20],
+                               "family":"wooden_button",
+                               "metadata_semantics":{"support_vector":[0,1,0]}})
+        graph["edges"]["direct_redstone_edges"]=[{
+            "source":"10,64,20","target":"10,65,20",
+            "edge_type":"legacy_button_attached_support_power"}]
+        out=analyze(graph,raw)
+        self.assertEqual(out["qualified_sensor_to_scene_command_path_counts"],
+                         {"typed_sensor_to_smoke_hint_candidate":1,
+                          "typed_sensor_to_particle_feedback":1})
+        self.assertEqual(out["qualified_sensor_to_command_route_count"],1)
+        graph["edges"]["direct_redstone_edges"][0]["edge_type"]="physical_adjacency_candidate"
+        out=analyze(graph,raw)
+        self.assertEqual(out["qualified_sensor_to_scene_command_path_counts"],{})
+
+    def test_dynamic_armorstand_skull_and_zero_count_are_source_syntax_only(self):
+        c=source_command_families(
+            'summon ArmorStand ~ ~ ~ {Equipment:[{id:"minecraft:skull",Count:0b}]}')
+        self.assertIn("armor_stand_summon_with_skull_token",c)
+        self.assertIn("armor_stand_summon_with_zero_count_token",c)
+        c=source_command_families("summon ArmorStand ~ ~ ~")
+        self.assertNotIn("armor_stand_summon_with_skull_token",c)
+
+    def test_alternate_armoritems_supported_without_claiming_original_version(self):
+        level={"Entities":[{"id":"ArmorStand","ArmorItems":[{"id":"minecraft:skull",
+                         "Count":0}]}],"TileEntities":[]}
+        d=dict(inspect_saved_scene_chunk(level))
+        self.assertEqual(d["saved_armor_stands_with_alternate_armoritems"],1)
+        self.assertEqual(d["saved_armor_stand_zero_count_skull_slots"],1)
+
     def test_original_source_sha_tamper_refused(self):
         g,r=fixture(["tellraw @p hello"])
         r["10,65,20"]="tellraw @p forged"
