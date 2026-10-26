@@ -617,6 +617,7 @@ jobs:
           assert d["qualified_sensor_to_command_route_count"]==90
           assert isinstance(d["qualified_sensor_to_scene_command_path_counts"],dict)
           assert set(d["distinct_strict_sensor_shared_scene_role_counts"])=={"dr_h_text_and_entity_kill","dr_h_text_and_presence_gate","smoke_hint_and_armor_stand_spawn","chess_text_and_armor_stand_skull_spawn"}
+          assert d["shared_dr_h_typed_sensor_action_classes"].get("shared_sensor_count",0)==d["distinct_strict_sensor_shared_scene_role_counts"]["dr_h_text_and_entity_kill"]
           assert isinstance(d["entity_selector_source_detail_counts"],dict)
           assert d["entity_named_selector_potential_shared_presence_kill_signatures"]>=0
           assert d["command_static_links"]["edge_authority"]=="EXACT_ORIGINAL_AUTHORED_POWER_OR_COMMAND_CHAIN_STATIC"
@@ -640,6 +641,7 @@ jobs:
               "selector_details":d["entity_selector_source_detail_counts"],
               "typed_sensor_scene_paths":d["qualified_sensor_to_scene_command_path_counts"],
               "strict_shared_sensor_roles":d["distinct_strict_sensor_shared_scene_role_counts"],
+              "dr_h_shared_source_action_class":d["shared_dr_h_typed_sensor_action_classes"],
               "saved_actor_inventory":d["saved_actor_inventory_evidence"],
               "native":"NOT_RUN"
           },sort_keys=True))
