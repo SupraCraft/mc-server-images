@@ -251,10 +251,25 @@ def armorstand_summon_item_shapes(raw,parser):
         return {"not_armorstand_summon":1}
     beginning=raw.find("{")
     if beginning<0:return {"summon_without_compound":1}
+    payload=raw[beginning:]
     try:
-        nbt=parser(raw[beginning:])
-    except (ValueError,TypeError,KeyError,IndexError,AttributeError):
-        return {"source_snbt_parse_unresolved":1}
+        nbt=parser(payload)
+    except Exception as exc:
+        # Errors can contain private parser input. NEVER emit str(exc).
+        # Only an allowlisted exception *class* and coarse lexical symptoms.
+        allowed={"ValueError","TypeError","KeyError","IndexError",
+                 "AttributeError","InvalidLiteral","InvalidToken",
+                 "InvalidTag","UnexpectedToken","SyntaxError"}
+        category=type(exc).__name__
+        if category not in allowed:category="other_parse_exception"
+        return {
+            "source_snbt_parse_unresolved":1,
+            "source_snbt_parser_error_class_"+category:1,
+            "source_snbt_payload_braces_unbalanced" if payload.count("{")!=payload.count("}")
+              else "source_snbt_payload_braces_balanced":1,
+            "source_snbt_payload_square_brackets_unbalanced" if payload.count("[")!=payload.count("]")
+              else "source_snbt_payload_square_brackets_balanced":1,
+        }
     if not hasattr(nbt,"get"):return {"source_snbt_not_compound":1}
     equipment=nbt.get("Equipment")
     if equipment is None:
