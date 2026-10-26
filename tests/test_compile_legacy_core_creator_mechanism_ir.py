@@ -25,7 +25,16 @@ def fixtures():
                    "dr_h_text_and_entity_kill":0},
                entity_named_selector_potential_shared_presence_kill_signatures=0,
                command_static_links={"bounded_source_command_class_join_counts":{}},
-               saved_actor_inventory_evidence={"saved_armor_stand_instances":952})
+               saved_actor_inventory_evidence={"saved_armor_stand_instances":952},
+               chess_source_effect_target_geometry={
+                   "geometry_proof":"COMMAND_AUTHORED_EFFECT_COORDINATES_ONLY",
+                   "shared_scene_or_control_flow":"NOT_ESTABLISHED_BY_SPATIAL_OVERLAP",
+                   "particle_emission_and_spawn":"NOT_OBSERVED",
+                   "source_smoke_particle_effect_targets_resolved":5,
+                   "source_skull_armorstand_spawn_targets_resolved":8,
+                   "source_effect_to_spawn_nearest_distance_bands":{
+                       "within_3_blocks":1,"more_than_16_blocks":4}
+               })
     control=dict(base,schema=CONTROL,source_sha_verified_command_count=1445,
                  original_java_188_execution="NOT_RUN",gameplay_primitive_promoted=False,
                  clicked_target_source_feature_counts={"targets_has_independent_air_writer":4},
@@ -60,6 +69,28 @@ class MechanismIrTests(unittest.TestCase):
         self.assertNotIn('"node_id"',raw)
         self.assertNotIn('"selector"',raw)
         self.assertNotIn('"target_position"',raw)
+
+    def test_nearby_chess_effect_cannot_promote_a_puzzle(self):
+        s,c=fixtures()
+        d=compile_ir(s,c)
+        chess=d["mechanisms"]["chess_head_hint"]
+        self.assertEqual(chess["original_source_effect_target_geometry"][
+            "source_effect_to_spawn_nearest_distance_bands"],
+            {"within_3_blocks":1,"more_than_16_blocks":4})
+        self.assertFalse(chess["exact_chess_puzzle_source_chain_proven"])
+        self.assertEqual(chess["original_source_effect_target_geometry"][
+            "shared_scene_or_control_flow"],"NOT_ESTABLISHED_BY_SPATIAL_OVERLAP")
+
+    def test_spatial_source_context_may_not_lie_about_native_action(self):
+        s,c=fixtures()
+        s["chess_source_effect_target_geometry"]["particle_emission_and_spawn"]="RAN"
+        with self.assertRaisesRegex(ValueError,"unsupported chess gameplay admission"):
+            compile_ir(s,c)
+        s,c=fixtures()
+        s["chess_source_effect_target_geometry"][
+            "source_effect_to_spawn_nearest_distance_bands"]["same_coordinate"]=100
+        with self.assertRaisesRegex(ValueError,"denominator mismatch"):
+            compile_ir(s,c)
 
     def test_pinned_source_custody_rejects_mismatched_world(self):
         s,c=fixtures()
