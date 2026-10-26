@@ -644,6 +644,41 @@ jobs:
               "native":"NOT_RUN"
           },sort_keys=True))
           PY
+      - name: Compile source-only original controller, Dr H and chess typed mechanism IR
+        run: |
+          python -m tools.compile_legacy_core_creator_mechanism_ir \
+            --story derived/core-v1.4-creator-finale-chess-source-evidence.json \
+            --controller derived/core-v1.4-click-control-source-slices-aggregate.json \
+            --output derived/core-v1.4-three-creator-mechanism-hypotheses-ir.json
+      - name: Independently guard three-audience creator hypotheses against false gameplay admission
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("derived/core-v1.4-three-creator-mechanism-hypotheses-ir.json").read_text())
+          assert d["schema"]=="supracraft-legacy-core-mechanism-hypotheses-ir/1"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["mechanism_count"]==3
+          assert d["proven_gameplay_mechanism_count"]==0
+          assert d["original_native"]=="NOT_RUN"
+          assert d["semantic_admission"]=="NOT_ADMITTED"
+          assert d["modern_263_parity"]=="NOT_RUN"
+          assert d["mechanisms"]["dr_h_finale"]["source_story_chain_proven"] is False
+          assert d["mechanisms"]["chess_head_hint"]["exact_chess_puzzle_source_chain_proven"] is False
+          assert d["mechanisms"]["clickable_redstone_controller"]["reset"]["target_count"]==4
+          assert d["mechanisms"]["clickable_redstone_controller"]["input"]["action_count"]==13
+          txt=json.dumps(d)
+          for bad in ('"node_id"','"position"','"target_position"','"command"',
+                      '"selector"','"objective"','"value"','"CustomName"','original-world.zip'):
+              assert bad not in txt,"raw source escaped typed IR"
+          print("CORE_CREATOR_MECHANISM_IR_SOURCE_ONLY",json.dumps({
+              "count":d["mechanism_count"],
+              "controller_inputs":d["mechanisms"]["clickable_redstone_controller"]["input"],
+              "dr_h_static_sensor_inputs":d["mechanisms"]["dr_h_finale"]["input"],
+              "chess_source_state":d["mechanisms"]["chess_head_hint"]["state"],
+              "native":"NOT_RUN"
+          },sort_keys=True))
+          PY
       - name: Census ALL original mechanical electrical inventory magic actors world and presentation channels
         run: |
           python -m tools.inventory_legacy_core_gameplay_channels \
@@ -806,5 +841,6 @@ jobs:
             derived/core-v1.4-command-control-dependencies-static.json
             derived/core-v1.4-click-control-source-slices-aggregate.json
             derived/core-v1.4-creator-finale-chess-source-evidence.json
+            derived/core-v1.4-three-creator-mechanism-hypotheses-ir.json
             source/core/ATTRIBUTION.md
           retention-days: 14
