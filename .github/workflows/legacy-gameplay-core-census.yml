@@ -596,6 +596,46 @@ jobs:
              "native":"NOT_RUN"
           },sort_keys=True))
           PY
+      - name: Original creator finale and chess source instruction/entity/NBT audit
+        run: |
+          python -m tools.reconstruct_legacy_core_author_scenes \
+            --graph ephemeral/legacy-core-causal-graph.json \
+            --source-zip source/core/original-world.zip \
+            --expected-graph-sha256 5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5 \
+            --expected-source-sha256 61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998 \
+            --output derived/core-v1.4-creator-finale-chess-source-evidence.json
+      - name: Independently reject false finale/chess causal or source custody promotion
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("derived/core-v1.4-creator-finale-chess-source-evidence.json").read_text())
+          assert d["schema"]=="supracraft-core-188-creator-scenes-static/1"
+          assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
+          assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
+          assert d["original_commands_sha_verified"]==1445
+          assert d["source_verification"]=="EVERY_ORIGINAL_COMMAND_SHA_MATCHED"
+          assert d["command_static_links"]["edge_authority"]=="EXACT_ORIGINAL_AUTHORED_POWER_OR_COMMAND_CHAIN_STATIC"
+          assert d["command_static_links"]["actual_command_execution"]=="NOT_OBSERVED"
+          assert d["saved_actor_inventory_evidence"].get("saved_armor_stand_instances",0)==952
+          assert d["dr_h_finale"]["clock_actual_behavior"]=="NOT_OBSERVED"
+          assert d["chess"]["player_hint_activation"]=="NOT_OBSERVED"
+          assert d["original_java_188_native"]=="NOT_RUN"
+          assert d["modern_minecraft_263_parity"]=="NOT_RUN"
+          assert d["gameplay_promoted"] is False
+          txt=json.dumps(d)
+          for name in ('"node_id"','"position"','"target_position"','"command"',
+                       '"raw"','"selector"','"objective"','"value"','"CustomName"',
+                       'original-world.zip'):
+              assert name not in txt, "source custody/author NBT escape"
+          print("CORE_CREATOR_SCENES_SOURCE_ONLY",json.dumps({
+              "command_families":d["source_command_family_counts"],
+              "creator_cues":d["creator_story_cue_command_counts"],
+              "exact_scene_join_classes":d["command_static_links"]["bounded_source_command_class_join_counts"],
+              "shared_actor_selector_candidate_count":d["entity_named_selector_potential_shared_presence_kill_signatures"],
+              "saved_actor_inventory":d["saved_actor_inventory_evidence"],
+              "native":"NOT_RUN"
+          },sort_keys=True))
+          PY
       - name: Census ALL original mechanical electrical inventory magic actors world and presentation channels
         run: |
           python -m tools.inventory_legacy_core_gameplay_channels \
@@ -757,5 +797,6 @@ jobs:
             derived/core-v1.4-all-gameplay-channels-aggregate.json
             derived/core-v1.4-command-control-dependencies-static.json
             derived/core-v1.4-click-control-source-slices-aggregate.json
+            derived/core-v1.4-creator-finale-chess-source-evidence.json
             source/core/ATTRIBUTION.md
           retention-days: 14
