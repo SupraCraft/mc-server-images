@@ -18,7 +18,7 @@ import tempfile
 import zipfile
 
 from tools.infer_legacy_core_gameplay_purposes import (
-    commands_from_pinned_zip, normalize_command
+    commands_from_pinned_zip, normalize_command, typed_routes
 )
 from tools.reconstruct_legacy_core_command_controls import (
     _sha_verified_commands, reconstruct, scoreboard_access, selector_reads
@@ -94,6 +94,11 @@ def source_command_families(original):
         classes.add("dr_h_author_text_cue")
     if CHESS_CUE.search(raw):
         classes.add("chess_author_text_cue")
+    if "summon_armorstand" in classes:
+        if "skull_token_in_action" in classes:
+            classes.add("armor_stand_summon_with_skull_token")
+        if re.search(r"(?i)\bcount\s*:\s*0[bBsS]?\b",raw):
+            classes.add("armor_stand_summon_with_zero_count_token")
     return classes
 
 
@@ -177,12 +182,19 @@ def inspect_saved_scene_chunk(level):
         if item.get("CustomName") is not None:
             result["saved_armor_stand_custom_names_redacted"]+=1
         equipment=item.get("Equipment") or item.get("HandItems") or []
+        alt_armor=item.get("ArmorItems") or []
+        if alt_armor:
+            result["saved_armor_stands_with_alternate_armoritems"]+=1
+        if not equipment and alt_armor:
+            equipment=alt_armor
         if not isinstance(equipment,(list,tuple)) and type(equipment).__name__ not in {"List","ListTag"}:
             continue
         if len(equipment)>0:
             result["saved_armor_stands_with_equipment_entries"]+=1
         zero=False
         head=False
+        if item.get("HandItems"):
+            result["saved_armor_stands_with_handitems_field"]+=1
         for slot in equipment:
             if not hasattr(slot,"get"):continue
             try: count=int(plain(slot.get("Count",0)))
@@ -241,6 +253,7 @@ def analyze(graph,original,nbt=None):
         raise ValueError("unmatched source command SHA")
     classes={}
     actors=defaultdict(set)
+    selector_detail=Counter()
     commands=Counter()
     scenes=Counter()
     selectors_by_role=defaultdict(set)
@@ -252,14 +265,34 @@ def analyze(graph,original,nbt=None):
         selector=source_selector_signature(raw)
         if "entity_presence_gate" in cc:
             selectors_by_role["presence_gate"].update(selector)
+            if selector: selector_detail["named_presence_gate_commands"]+=1
+            if any(DR_CUE.search(name) for name,_ in selector):
+                selector_detail["named_dr_h_presence_gate_commands"]+=1
         if "entity_kill" in cc:
             selectors_by_role["kill"].update(selector)
+            if selector:selector_detail["named_kill_commands"]+=1
+            if any(DR_CUE.search(name) for name,_ in selector):
+                selector_detail["named_dr_h_kill_commands"]+=1
         for sig in selector:
             actors[sig].add(cid)
         if "dr_h_author_text_cue" in cc: scenes["dr_h_cue_commands"]+=1
         if "chess_author_text_cue" in cc:scenes["chess_cue_commands"]+=1
     common=selectors_by_role["presence_gate"] & selectors_by_role["kill"]
     exact=source_exact_join_audit(graph,verified,classes)
+    # Existing independently qualified strict sensor wiring supplies an
+    # evidence class independent of author prose / component co-presence.
+    routes,reference=typed_routes(graph)
+    strict_scene_inputs=Counter()
+    categories={
+        "entity_presence_gate","entity_kill","smoke_hint_candidate",
+        "skull_token_in_action","summon_armorstand","chess_author_text_cue",
+        "dr_h_author_text_cue","dialogue","particle_feedback"
+    }
+    for sensor,cid,kind in routes:
+        for role in classes[cid] & categories:
+            strict_scene_inputs["typed_sensor_to_"+role]+=1
+    if len(routes)!=reference["accepted_path_count"]:
+        raise ValueError("strict source sensor witness count mismatch")
     # Two commands using the same named selector does not mean their operations
     # execute in the same scene or resolve to the same living entity.
     return {
@@ -270,6 +303,9 @@ def analyze(graph,original,nbt=None):
         "creator_story_cue_command_counts":dict(sorted(scenes.items())),
         "entity_named_selector_potential_shared_presence_kill_signatures":len(common),
         "entity_named_selector_signature_total":len(actors),
+        "entity_selector_source_detail_counts":dict(sorted(selector_detail.items())),
+        "qualified_sensor_to_scene_command_path_counts":dict(sorted(strict_scene_inputs.items())),
+        "qualified_sensor_to_command_route_count":len(routes),
         "command_static_links":exact,
         "saved_actor_inventory_evidence":nbt or {},
         "dr_h_finale":{
