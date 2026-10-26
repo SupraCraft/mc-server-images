@@ -691,6 +691,12 @@ jobs:
           assert isinstance(d["mechanisms"]["dr_h_finale"]["same_sensor_actor_type_comparison"],dict)
           assert isinstance(d["mechanisms"]["chess_head_hint"]["original_summon_snbt_item_count_evidence"],dict)
           assert d["mechanisms"]["chess_head_hint"]["exact_chess_puzzle_source_chain_proven"] is False
+          cg=d["mechanisms"]["chess_head_hint"]["original_source_effect_target_geometry"]
+          assert cg["shared_scene_or_control_flow"]=="NOT_ESTABLISHED_BY_SPATIAL_OVERLAP"
+          assert cg["particle_emission_and_spawn"]=="NOT_OBSERVED"
+          assert cg["source_smoke_particle_effect_targets_resolved"]==5
+          assert cg["source_skull_armorstand_spawn_targets_resolved"]==8
+          assert sum(cg["source_effect_to_spawn_nearest_distance_bands"].values())==5
           assert d["mechanisms"]["clickable_redstone_controller"]["reset"]["target_count"]==4
           assert d["mechanisms"]["clickable_redstone_controller"]["input"]["action_count"]==13
           txt=json.dumps(d)
@@ -702,6 +708,7 @@ jobs:
               "controller_inputs":d["mechanisms"]["clickable_redstone_controller"]["input"],
               "dr_h_static_sensor_inputs":d["mechanisms"]["dr_h_finale"]["input"],
               "chess_source_state":d["mechanisms"]["chess_head_hint"]["state"],
+              "chess_spatial_evidence_noncausal":d["mechanisms"]["chess_head_hint"]["original_source_effect_target_geometry"],
               "native":"NOT_RUN"
           },sort_keys=True))
           PY
