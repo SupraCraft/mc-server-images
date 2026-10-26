@@ -162,7 +162,13 @@ def source_exact_join_audit(graph,verified,classes):
 
 def inspect_saved_scene_chunk(level):
     """Synthetic-testable NBT-only source evidence; no actor identity or location."""
-    from tools.analyze_legacy_causal_machinery import plain
+    # Keep synthetic/no-world CI dependency-free; source-custody parser is
+    # imported only when opening the pinned original file in its approved cell.
+    def plain(v):
+        if hasattr(v,"unpack"):
+            try: return v.unpack()
+            except Exception: pass
+        return v
     result=Counter()
     for item in level.get("Entities",[]):
         if safe_entity_type(str(plain(item.get("id",""))))!="armorstand":
