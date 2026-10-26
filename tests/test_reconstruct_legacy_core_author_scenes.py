@@ -5,7 +5,8 @@ import unittest
 
 from tools.reconstruct_legacy_core_author_scenes import (
     SCHEMA, analyze, source_command_families, source_selector_signature,
-    inspect_saved_scene_chunk, source_exact_join_audit, summarize_shared_strict_input_roots
+    inspect_saved_scene_chunk, source_exact_join_audit, summarize_shared_strict_input_roots,
+    classify_legacy_kill_subject, shared_dr_h_sensor_effects
 )
 
 
@@ -174,6 +175,36 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
         self.assertIn("armor_stand_summon_with_skull_token",c)
         self.assertIn("armor_stand_summon_skull_without_explicit_any_count",c)
         self.assertNotIn("armor_stand_summon_with_zero_count_token",c)
+
+    def test_dr_h_shared_sensor_kill_subject_type_only_no_entity_identity(self):
+        d={
+            "c1":(None,'tellraw @p {"text":"Dr. H"}',
+                  ["tellraw","@p",'{"text":"Dr. H"}']),
+            "c2":(None,"kill @e[type=Villager,name=PRIVATE]",
+                  ["kill","@e[type=Villager,name=PRIVATE]"]),
+        }
+        labels={"c1":{"dr_h_author_text_cue"},"c2":{"entity_kill"}}
+        obs=shared_dr_h_sensor_effects(
+            [("sensor1","c1","direct_support"),
+             ("sensor1","c2","direct_support")],labels,d)
+        self.assertEqual(obs,{
+            "shared_sensor_count":1,
+            "dr_h_cue_verb_tellraw":1,
+            "removal_target_entity_selector_with_name_filter":1})
+        self.assertNotIn("PRIVATE",json.dumps(obs))
+        self.assertNotIn("sensor1",json.dumps(obs))
+
+    def test_kill_subject_shape_no_names(self):
+        self.assertEqual(classify_legacy_kill_subject(["kill"]),
+                         "implicit_executor_self")
+        self.assertEqual(classify_legacy_kill_subject(
+            ["kill","@e[type=Zombie,r=10]"]),"entity_selector_with_type_filter")
+        self.assertEqual(classify_legacy_kill_subject(
+            ["kill","@e[r=10]"]),"entity_selector_other_filters")
+        self.assertEqual(classify_legacy_kill_subject(
+            ["kill","@p"]),"nearest_player_selector")
+        self.assertEqual(classify_legacy_kill_subject(
+            ["kill","PRIVATE_PERSON"]),"literal_target_not_disclosed")
 
     def test_original_source_sha_tamper_refused(self):
         g,r=fixture(["tellraw @p hello"])
