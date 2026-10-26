@@ -5,7 +5,7 @@ import unittest
 
 from tools.reconstruct_legacy_core_author_scenes import (
     SCHEMA, analyze, source_command_families, source_selector_signature,
-    inspect_saved_scene_chunk, source_exact_join_audit
+    inspect_saved_scene_chunk, source_exact_join_audit, summarize_shared_strict_input_roots
 )
 
 
@@ -154,6 +154,26 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
         d=dict(inspect_saved_scene_chunk(level))
         self.assertEqual(d["saved_armor_stands_with_alternate_armoritems"],1)
         self.assertEqual(d["saved_armor_stand_zero_count_skull_slots"],1)
+
+    def test_distinct_verified_sensor_identity_shared_roles_only(self):
+        classes={"c1":{"dr_h_author_text_cue"}, "c2":{"entity_kill"},
+                 "c3":{"entity_kill"}, "c4":{"smoke_hint_candidate"},
+                 "c5":{"summon_armorstand","armor_stand_summon_with_skull_token"}}
+        routes=[("s1","c1","direct_support"),("s1","c2","direct_support"),
+                ("s2","c3","direct_support"),("s2","c4","direct_support"),
+                ("s3","c5","wire_path")]
+        x=summarize_shared_strict_input_roots(routes,classes)
+        self.assertEqual(x["dr_h_text_and_entity_kill"],1)
+        self.assertEqual(x["smoke_hint_and_armor_stand_spawn"],0)
+        self.assertEqual(x["chess_text_and_armor_stand_skull_spawn"],0)
+        self.assertNotIn("s1",json.dumps(x))
+
+    def test_summoned_skull_missing_count_is_not_proof_of_zero_count(self):
+        raw='summon ArmorStand ~ ~ ~ {Equipment:[{id:"minecraft:skull"}]}'
+        c=source_command_families(raw)
+        self.assertIn("armor_stand_summon_with_skull_token",c)
+        self.assertIn("armor_stand_summon_skull_without_explicit_any_count",c)
+        self.assertNotIn("armor_stand_summon_with_zero_count_token",c)
 
     def test_original_source_sha_tamper_refused(self):
         g,r=fixture(["tellraw @p hello"])
