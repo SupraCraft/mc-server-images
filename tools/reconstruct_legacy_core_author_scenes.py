@@ -315,6 +315,60 @@ def armorstand_summon_item_shapes(raw,parser):
     return dict(sorted(counter.items()))
 
 
+def chess_source_effect_geometry(verified,classes):
+    """Original command target overlap for chess candidates, not causal proof.
+
+    Compute only ephemeral exact coordinates from SHA-verified source command
+    origins. 1.8 summon uses xyz at [2:5]; particle uses xyz at [2:5].
+    Never return any actual coordinate, raw command, node identity, or pairing.
+    """
+    from tools.infer_legacy_core_gameplay_purposes import resolve_xyz
+    smoke=[]
+    heads=[]
+    failures=Counter()
+    for ident,(node,raw,parts) in verified.items():
+        role=classes.get(ident,set())
+        if "smoke_hint_candidate" not in role and (
+             "armor_stand_summon_with_skull_token" not in role):
+            continue
+        if not isinstance(node.get("position"),list) or len(node["position"])!=3:
+            raise ValueError("original command node position not independently supported")
+        origin=tuple(node["position"])
+        # This function only handles commands with direct coordinate operands.
+        # A nested execute has a *dynamic* execution origin: leave unresolved.
+        if len(parts)<5 or parts[0] not in {"particle","summon"}:
+            failures["unsupported_syntax_or_command_origin"]+=1
+            continue
+        point=resolve_xyz(parts[2:5],origin)
+        if point is None:
+            failures["non_resolvable_author_target"]+=1
+            continue
+        if "smoke_hint_candidate" in role:smoke.append(point)
+        if "armor_stand_summon_with_skull_token" in role:heads.append(point)
+    histogram=Counter()
+    if not heads:
+        histogram["smoke_without_saved_head_spawn_target_candidates"]=len(smoke)
+    for origin in smoke:
+        d2=min((sum((a-b)**2 for a,b in zip(origin,target))
+                for target in heads),default=None)
+        if d2 is None:continue
+        histogram["same_coordinate" if d2==0 else
+                  "within_3_blocks" if d2<=9 else
+                  "within_16_blocks" if d2<=256 else
+                  "more_than_16_blocks"]+=1
+    return {
+        "source_smoke_particle_effect_targets_resolved":len(smoke),
+        "source_skull_armorstand_spawn_targets_resolved":len(heads),
+        "source_effect_to_spawn_nearest_distance_bands":
+             dict(sorted(histogram.items())),
+        "source_target_coordinate_parse_failures":
+             dict(sorted(failures.items())),
+        "geometry_proof":"COMMAND_AUTHORED_EFFECT_COORDINATES_ONLY",
+        "shared_scene_or_control_flow":"NOT_ESTABLISHED_BY_SPATIAL_OVERLAP",
+        "particle_emission_and_spawn":"NOT_OBSERVED",
+    }
+
+
 def source_exact_join_audit(graph,verified,classes):
     """Only directed graph edges independently attributable to original commands."""
     directed=set()
@@ -536,6 +590,7 @@ def analyze(graph,original,nbt=None):
         "distinct_strict_sensor_shared_scene_role_counts":summarize_shared_strict_input_roots(routes,classes),
         "shared_dr_h_typed_sensor_action_classes":shared_dr_h_sensor_effects(routes,classes,verified),
         "same_sensor_original_actor_type_compatibility":same_sensor_actor_type_compatibility(routes,classes,verified),
+        "chess_source_effect_target_geometry":chess_source_effect_geometry(verified,classes),
         "armorstand_original_summon_snbt_shape_counts":dict(sorted(original_skull_shapes.items())),
         "command_static_links":exact,
         "saved_actor_inventory_evidence":nbt or {},
@@ -607,6 +662,7 @@ def main():
         "saved_actor_inventory":result["saved_actor_inventory_evidence"],
         "dr_h_actor_type_join":result["same_sensor_original_actor_type_compatibility"],
         "armorstand_snbt_shape":result["armorstand_original_summon_snbt_shape_counts"],
+        "chess_effect_target_geometry":result["chess_source_effect_target_geometry"],
         "native":"NOT_RUN",
     },sort_keys=True))
 
