@@ -47,6 +47,15 @@ def compile_ir(story,control):
     shared=story["distinct_strict_sensor_shared_scene_role_counts"]
     join=story["command_static_links"]["bounded_source_command_class_join_counts"]
     saved=story["saved_actor_inventory_evidence"]
+    geometry=story.get("chess_source_effect_target_geometry")
+    if geometry is not None:
+        if (geometry.get("shared_scene_or_control_flow")!="NOT_ESTABLISHED_BY_SPATIAL_OVERLAP"
+            or geometry.get("particle_emission_and_spawn")!="NOT_OBSERVED"
+            or geometry.get("geometry_proof")!="COMMAND_AUTHORED_EFFECT_COORDINATES_ONLY"):
+            raise ValueError("unsupported chess gameplay admission from geometry")
+        if (sum(geometry["source_effect_to_spawn_nearest_distance_bands"].values())>
+            geometry["source_smoke_particle_effect_targets_resolved"]):
+            raise ValueError("source chess geometric effect denominator mismatch")
 
     controller={
         "label":"Four-channel Redstone chat interface",
@@ -112,6 +121,7 @@ def compile_ir(story,control):
         "reset":{"kind":"unknown","verified":False},
         "exact_chess_puzzle_source_chain_proven":False,
         "original_summon_snbt_item_count_evidence":story.get("armorstand_original_summon_snbt_shape_counts",{}),
+        "original_source_effect_target_geometry":geometry or {"evidence":"UNAVAILABLE_NOT_INFERRED"},
         "original_saved_skull_count_zero_claim":"NOT_INFERRED_FROM_MISSING_EQUIPMENT",
         "unverified":["skull_pickup_count_zero_behavior","hint_and_piece_matching",
                       "source_version_parity","actual_puzzle_winning_condition"],
