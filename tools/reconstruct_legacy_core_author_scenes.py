@@ -164,40 +164,40 @@ def inspect_saved_scene_chunk(level):
     """Synthetic-testable NBT-only source evidence; no actor identity or location."""
     from tools.analyze_legacy_causal_machinery import plain
     result=Counter()
-        for item in level.get("Entities",[]):
-            if safe_entity_type(str(plain(item.get("id",""))))!="armorstand":
-                continue
-            result["saved_armor_stand_instances"]+=1
-            if item.get("CustomName") is not None:
-                result["saved_armor_stand_custom_names_redacted"]+=1
-            equipment=item.get("Equipment") or item.get("HandItems") or []
-            if not isinstance(equipment,(list,tuple)) and type(equipment).__name__ not in {"List","ListTag"}:
-                continue
-            if len(equipment)>0:
-                result["saved_armor_stands_with_equipment_entries"]+=1
-            zero=False
-            head=False
-            for slot in equipment:
-                if not hasattr(slot,"get"):continue
-                try: count=int(plain(slot.get("Count",0)))
-                except (TypeError,ValueError):count=-1
-                try: numeric=int(plain(slot.get("id",-1)))
-                except (TypeError,ValueError):numeric=-1
-                item_id=str(plain(slot.get("id",""))).lower()
-                if numeric==397 or item_id.endswith(":skull") or item_id=="skull":
-                    head=True
-                    result["saved_armor_stand_skull_equipment_slots"]+=1
-                    if count==0:
-                        zero=True
-                        result["saved_armor_stand_zero_count_skull_slots"]+=1
-            if head:result["saved_armor_stands_with_skull_equipment"]+=1
-            if zero:result["saved_armor_stands_with_zero_count_skull"]+=1
-        for te in level.get("TileEntities",[]):
-            ident=str(plain(te.get("id",""))).lower()
-            if ident in {"skull","minecraft:skull"}:
-                result["saved_skull_block_tile_entities"]+=1
-            if ident in {"sign","minecraft:sign"}:
-                result["saved_signs_author_text_redacted"]+=1
+    for item in level.get("Entities",[]):
+        if safe_entity_type(str(plain(item.get("id",""))))!="armorstand":
+            continue
+        result["saved_armor_stand_instances"]+=1
+        if item.get("CustomName") is not None:
+            result["saved_armor_stand_custom_names_redacted"]+=1
+        equipment=item.get("Equipment") or item.get("HandItems") or []
+        if not isinstance(equipment,(list,tuple)) and type(equipment).__name__ not in {"List","ListTag"}:
+            continue
+        if len(equipment)>0:
+            result["saved_armor_stands_with_equipment_entries"]+=1
+        zero=False
+        head=False
+        for slot in equipment:
+            if not hasattr(slot,"get"):continue
+            try: count=int(plain(slot.get("Count",0)))
+            except (TypeError,ValueError):count=-1
+            try: numeric=int(plain(slot.get("id",-1)))
+            except (TypeError,ValueError):numeric=-1
+            item_id=str(plain(slot.get("id",""))).lower()
+            if numeric==397 or item_id.endswith(":skull") or item_id=="skull":
+                head=True
+                result["saved_armor_stand_skull_equipment_slots"]+=1
+                if count==0:
+                    zero=True
+                    result["saved_armor_stand_zero_count_skull_slots"]+=1
+        if head:result["saved_armor_stands_with_skull_equipment"]+=1
+        if zero:result["saved_armor_stands_with_zero_count_skull"]+=1
+    for te in level.get("TileEntities",[]):
+        ident=str(plain(te.get("id",""))).lower()
+        if ident in {"skull","minecraft:skull"}:
+            result["saved_skull_block_tile_entities"]+=1
+        if ident in {"sign","minecraft:sign"}:
+            result["saved_signs_author_text_redacted"]+=1
     return result
 
 
