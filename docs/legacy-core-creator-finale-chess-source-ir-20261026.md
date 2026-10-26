@@ -61,6 +61,17 @@ The [creator/user evidence dossier](legacy-core-author-player-walkthrough-eviden
 - [Final pinned read-only source-only original CORE GHA **40324244403**](https://github.com/SupraCraft/mc-server-images/actions/runs/40324244403), exact tested HEAD **fcde161728663923130f093473889333a650a88a**, job **121576709822**: **COMPLETED/SUCCESS**, complete 1,445 SHA matches, 90 known strict typed sensor routes, original saved-NBT actor evidence, privacy/nonpromotion and three-entry IR passed.
 - GitHub-derived **aggregate-only artifact 12649959285**, archive digest **sha256:031f3159ce64286e63b73ba668798aa3cdde6646061f06b2e8b457d191184f34**, expires **2026-11-09 12:40:27 UTC**. No original raw commands, per-actor names, coords, reversible IDs, world source or video transferred.
 
+## Final source-only qualification after Dr. H semantic correction
+
+The amended IR names **Dr. H-referencing command paths**, not `author_dialogue_paths`. The original source-connected shared input was independently found to feed a **`summon` instruction with a Dr. H reference** and a **type-filtered `kill @e[...]` candidate**. The entity type/name itself is not published, and the summon/kill pair is **not** proven to act on one individual, run together, or constitute the final scene. The original full finale sequence and chess hint trigger are still unproven.
+
+**Current verified exact runs:**
+- [Free public source-free synthetic **40325212196**](https://github.com/SupraCraft/mc-server-images/actions/runs/40325212196): **263/263 PASS**, exact source-free test HEAD `3a09dca7fdeffcbdcf961af6153b78e6cf2f1a4b`. Retains hard negatives on unsafe author-cue interpretation and forged source links.
+- [Free public pinned original read-only **40325243744**](https://github.com/SupraCraft/mc-server-images/actions/runs/40325243744): **COMPLETED/SUCCESS**, executed HEAD `223ca46a10e6ca1c4bf2e17ea34f7fef46004b9c`, job `121580135143`, including SHA parity, NBT source, 90 typed routes, redacted Dr. H shared sensor action, three-entry source IR, no native execution, privacy and no-promotion.
+- Source-credited derivative artifact **12649859274**, digest `sha256:6b4ad2d7b7fa06622af8b68156c635f835d4308702e24421ffdec5832af9f00d`, expires **2026-11-09 12:48:14 UTC**. Raw original commands, positions, tile/actor names, inventory, and source are not exported.
+
+**First failures:** `F-107-SCENE-NBT-010` synthetic environment's missing `nbtlib` corrected via dependency-free NBT scalar fixture helper; `F-107-SCENE-LABEL-011` overstatement that a Dr. H reference meant dialogue corrected and regression-gated in the public CI. No original Java native execution or deployment occurred.
+
 ## Next source-only discriminating experiments (READY)
 
 1. **Dr. H:** within the same approved source cell, start from the *one exact common sensor* feeding original **summon** and type-filtered **kill**. Compare the summoned source actor category with the removal selector type under original 1.8 syntax; determine whether any exact actor identity/dataflow links the two. Do not infer a dialogue event from the Dr. H reference alone. Do **not** assert kill order, actor identity, finale ending or clock behavior from common root alone. Emit safe aggregate only.
