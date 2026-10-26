@@ -618,6 +618,7 @@ jobs:
           assert isinstance(d["qualified_sensor_to_scene_command_path_counts"],dict)
           assert set(d["distinct_strict_sensor_shared_scene_role_counts"])=={"dr_h_text_and_entity_kill","dr_h_text_and_presence_gate","smoke_hint_and_armor_stand_spawn","chess_text_and_armor_stand_skull_spawn"}
           assert d["shared_dr_h_typed_sensor_action_classes"].get("shared_sensor_count",0)==d["distinct_strict_sensor_shared_scene_role_counts"]["dr_h_text_and_entity_kill"]
+          assert sum(v for k,v in d["shared_dr_h_typed_sensor_action_classes"].items() if k.startswith("dr_h_cue_verb_"))>=d["shared_dr_h_typed_sensor_action_classes"].get("shared_sensor_count",0)
           assert isinstance(d["entity_selector_source_detail_counts"],dict)
           assert d["entity_named_selector_potential_shared_presence_kill_signatures"]>=0
           assert d["command_static_links"]["edge_authority"]=="EXACT_ORIGINAL_AUTHORED_POWER_OR_COMMAND_CHAIN_STATIC"
