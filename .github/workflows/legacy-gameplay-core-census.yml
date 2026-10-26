@@ -613,6 +613,13 @@ jobs:
           assert d["source_world_sha256"]=="61092508c78f5dbe36b03a9d0bdb202c5ddfe71f1aada58d62ae81ae93f5a998"
           assert d["source_graph_sha256"]=="5a5c25a31e2bcdec1f2d7d18cc4dedfc87c5a43e53cab4529e5bcdac0452efb5"
           assert d["original_commands_sha_verified"]==1445
+          geometry=d["chess_source_effect_target_geometry"]
+          assert geometry["geometry_proof"]=="COMMAND_AUTHORED_EFFECT_COORDINATES_ONLY"
+          assert geometry["shared_scene_or_control_flow"]=="NOT_ESTABLISHED_BY_SPATIAL_OVERLAP"
+          assert geometry["particle_emission_and_spawn"]=="NOT_OBSERVED"
+          assert geometry["source_smoke_particle_effect_targets_resolved"]+geometry["source_target_coordinate_parse_failures"].get("non_resolvable_author_target",0)<=d["source_command_family_counts"].get("smoke_hint_candidate",0)+d["source_command_family_counts"].get("armor_stand_summon_with_skull_token",0)
+          assert geometry["source_skull_armorstand_spawn_targets_resolved"]<=d["source_command_family_counts"].get("armor_stand_summon_with_skull_token",0)
+          assert sum(geometry["source_effect_to_spawn_nearest_distance_bands"].values())<=geometry["source_smoke_particle_effect_targets_resolved"]
           assert d["source_verification"]=="EVERY_ORIGINAL_COMMAND_SHA_MATCHED"
           assert d["qualified_sensor_to_command_route_count"]==90
           assert isinstance(d["qualified_sensor_to_scene_command_path_counts"],dict)
@@ -654,6 +661,7 @@ jobs:
               "dr_h_shared_source_action_class":d["shared_dr_h_typed_sensor_action_classes"],
               "dr_h_actor_type_relation":d["same_sensor_original_actor_type_compatibility"],
               "chess_skull_source_nbt_shapes":d["armorstand_original_summon_snbt_shape_counts"],
+              "chess_effect_target_geometry":d["chess_source_effect_target_geometry"],
               "saved_actor_inventory":d["saved_actor_inventory_evidence"],
               "native":"NOT_RUN"
           },sort_keys=True))
