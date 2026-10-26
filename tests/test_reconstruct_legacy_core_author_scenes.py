@@ -194,6 +194,20 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
         self.assertNotIn("PRIVATE",json.dumps(obs))
         self.assertNotIn("sensor1",json.dumps(obs))
 
+    def test_shared_original_source_actor_summon_not_falsely_labeled_dialogue(self):
+        verified={
+            "a":(None,"summon Villager ~ ~ ~ {CustomName:Dr.H}",
+                 ["summon","Villager","~","~","~","{CustomName:Dr.H}"]),
+            "b":(None,"kill @e[type=Villager]",
+                 ["kill","@e[type=Villager]"])
+        }
+        grouped=shared_dr_h_sensor_effects(
+            [("root","a","direct_support"),("root","b","direct_support")],
+            {"a":{"dr_h_author_text_cue"},"b":{"entity_kill"}},verified)
+        self.assertEqual(grouped["dr_h_cue_verb_summon"],1)
+        self.assertEqual(grouped["removal_target_entity_selector_with_type_filter"],1)
+        self.assertNotIn("Dr.H",json.dumps(grouped))
+
     def test_kill_subject_shape_no_names(self):
         self.assertEqual(classify_legacy_kill_subject(["kill"]),
                          "implicit_executor_self")
