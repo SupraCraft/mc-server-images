@@ -53,7 +53,7 @@ class MechanismIrTests(unittest.TestCase):
         self.assertEqual(ir["semantic_admission"],"NOT_ADMITTED")
         self.assertEqual(ir["mechanisms"]["clickable_redstone_controller"]["timing"]
                          ["stage_count_histogram"],{"9":2,"16":1,"18":1})
-        self.assertEqual(ir["mechanisms"]["dr_h_finale"]["input"]["author_dialogue_paths"],2)
+        self.assertEqual(ir["mechanisms"]["dr_h_finale"]["input"]["dr_h_referencing_command_paths"],2)
         self.assertEqual(ir["mechanisms"]["chess_head_hint"]["state"]
                          ["skull_bearing_armor_stand_summon_commands"],8)
         raw=json.dumps(ir)
