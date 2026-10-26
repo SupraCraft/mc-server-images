@@ -127,6 +127,50 @@ def summarize_shared_strict_input_roots(routes,classes):
     return {label:len(roots[a]&roots[b]) for label,(a,b) in comparisons.items()}
 
 
+def classify_legacy_kill_subject(parts):
+    """Classify original /kill operand; do not export selectors or names."""
+    if not parts or parts[0]!="kill":return "not_kill"
+    if len(parts)==1:return "implicit_executor_self"
+    subject=parts[1]
+    if subject.startswith("@e"):
+        if subject=="@e":return "all_entities_selector"
+        if not (subject.startswith("@e[") and subject.endswith("]")):
+            return "malformed_entity_selector"
+        raw=subject[3:-1]
+        has_type=TYPE_PARAM.search(raw) is not None
+        has_name=NAME_PARAM.search(raw) is not None
+        if has_name:return "entity_selector_with_name_filter"
+        if has_type:return "entity_selector_with_type_filter"
+        return "entity_selector_other_filters"
+    if subject.startswith("@p"):return "nearest_player_selector"
+    if subject.startswith("@a"):return "all_players_selector"
+    if subject.startswith("@r"):return "random_player_selector"
+    if subject.startswith("@"):return "unknown_selector"
+    return "literal_target_not_disclosed"
+
+
+def shared_dr_h_sensor_effects(routes,classes,verified):
+    """Only a known typed sensor root shared by Dr H text and kill action."""
+    sensor_to_dialogue=defaultdict(set)
+    sensor_to_removal=defaultdict(set)
+    for sensor,cid,mode in routes:
+        roles=classes.get(cid,set())
+        if "dr_h_author_text_cue" in roles:sensor_to_dialogue[sensor].add(cid)
+        if "entity_kill" in roles:sensor_to_removal[sensor].add(cid)
+    keys=set(sensor_to_dialogue)&set(sensor_to_removal)
+    out=Counter()
+    for sensor in keys:
+        out["shared_sensor_count"]+=1
+        for cid in sensor_to_dialogue[sensor]:
+            op=verified[cid][2][0]
+            out["dr_h_cue_verb_"+(op if op in {"say","tellraw","title","kill","testfor"}
+                                  else "other")]+=1
+        for cid in sensor_to_removal[sensor]:
+            kind=classify_legacy_kill_subject(verified[cid][2])
+            out["removal_target_"+kind]+=1
+    return dict(sorted(out.items()))
+
+
 def source_exact_join_audit(graph,verified,classes):
     """Only directed graph edges independently attributable to original commands."""
     directed=set()
@@ -332,6 +376,7 @@ def analyze(graph,original,nbt=None):
         "qualified_sensor_to_scene_command_path_counts":dict(sorted(strict_scene_inputs.items())),
         "qualified_sensor_to_command_route_count":len(routes),
         "distinct_strict_sensor_shared_scene_role_counts":summarize_shared_strict_input_roots(routes,classes),
+        "shared_dr_h_typed_sensor_action_classes":shared_dr_h_sensor_effects(routes,classes,verified),
         "command_static_links":exact,
         "saved_actor_inventory_evidence":nbt or {},
         "dr_h_finale":{
