@@ -163,8 +163,9 @@ def shared_dr_h_sensor_effects(routes,classes,verified):
         out["shared_sensor_count"]+=1
         for cid in sensor_to_dialogue[sensor]:
             op=verified[cid][2][0]
-            out["dr_h_cue_verb_"+(op if op in {"say","tellraw","title","kill","testfor"}
-                                  else "other")]+=1
+            out["dr_h_cue_verb_"+(op if op in {"say","tellraw","title","kill","testfor",
+                    "summon","execute","scoreboard","setblock","tp","teleport",
+                    "particle","playsound","gamemode"} else "other")]+=1
         for cid in sensor_to_removal[sensor]:
             kind=classify_legacy_kill_subject(verified[cid][2])
             out["removal_target_"+kind]+=1
