@@ -87,6 +87,7 @@ def compile_ir(story,control):
                     "source_commands_with_dr_h_reference":source.get("dr_h_author_text_cue",0)},
         "reset":{"kind":"unknown","verified":False},
         "source_story_chain_proven":False,
+        "same_sensor_actor_type_comparison":story.get("same_sensor_original_actor_type_compatibility",{}),
         "exact_directed_join_classes":{k:v for k,v in join.items() if k in
              {"dr_h_cue_to_presence_gate","presence_gate_to_skull_action_token",
               "presence_gate_to_dialogue"}},
@@ -110,6 +111,7 @@ def compile_ir(story,control):
                     "commands_with_chess_reference":source.get("chess_author_text_cue",0)},
         "reset":{"kind":"unknown","verified":False},
         "exact_chess_puzzle_source_chain_proven":False,
+        "original_summon_snbt_item_count_evidence":story.get("armorstand_original_summon_snbt_shape_counts",{}),
         "original_saved_skull_count_zero_claim":"NOT_INFERRED_FROM_MISSING_EQUIPMENT",
         "unverified":["skull_pickup_count_zero_behavior","hint_and_piece_matching",
                       "source_version_parity","actual_puzzle_winning_condition"],
