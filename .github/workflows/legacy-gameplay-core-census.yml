@@ -625,6 +625,9 @@ jobs:
           skull=d["armorstand_original_summon_snbt_shape_counts"]
           assert skull.get("source_snbt_parser_unavailable",0)==0
           assert sum(skull.get(k,0) for k in ("source_snbt_parsed_equipment","source_snbt_parse_unresolved","source_snbt_not_compound","source_snbt_without_equipment_field","source_snbt_equipment_nonlist","summon_without_compound"))==d["source_command_family_counts"]["armor_stand_summon_with_skull_token"]==8
+          assert sum(v for k,v in skull.items() if k.startswith("source_snbt_parser_error_class_"))<=8
+          assert skull.get("source_snbt_payload_braces_balanced",0)+skull.get("source_snbt_payload_braces_unbalanced",0)<=8
+          assert skull.get("source_snbt_payload_square_brackets_balanced",0)+skull.get("source_snbt_payload_square_brackets_unbalanced",0)<=8
           assert isinstance(d["entity_selector_source_detail_counts"],dict)
           assert d["entity_named_selector_potential_shared_presence_kill_signatures"]>=0
           assert d["command_static_links"]["edge_authority"]=="EXACT_ORIGINAL_AUTHORED_POWER_OR_COMMAND_CHAIN_STATIC"
