@@ -297,6 +297,18 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
         self.assertEqual(out,{"source_snbt_parse_unresolved":1})
         self.assertNotIn("no_parsed_skull_slot",out)
 
+    def test_source_snbt_parser_error_diagnostics_are_nonreversible(self):
+        def failed(payload):
+            raise ValueError("Private: {Equipment:[{id:secret}]} -- private coords")
+        out=armorstand_summon_item_shapes(
+            'summon ArmorStand ~ ~ ~ {Equipment:[{id:secret}]}',failed)
+        self.assertEqual(out["source_snbt_parse_unresolved"],1)
+        self.assertEqual(out["source_snbt_parser_error_class_ValueError"],1)
+        self.assertEqual(out["source_snbt_payload_braces_balanced"],1)
+        self.assertEqual(out["source_snbt_payload_square_brackets_balanced"],1)
+        self.assertNotIn("secret",json.dumps(out))
+        self.assertNotIn("Private",json.dumps(out))
+
     def test_original_source_sha_tamper_refused(self):
         g,r=fixture(["tellraw @p hello"])
         r["10,65,20"]="tellraw @p forged"
