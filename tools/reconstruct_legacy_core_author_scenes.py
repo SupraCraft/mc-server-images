@@ -346,7 +346,7 @@ def chess_source_effect_geometry(verified,classes):
         if "smoke_hint_candidate" in role:smoke.append(point)
         if "armor_stand_summon_with_skull_token" in role:heads.append(point)
     histogram=Counter()
-    if not heads:
+    if not heads and smoke:
         histogram["smoke_without_saved_head_spawn_target_candidates"]=len(smoke)
     for origin in smoke:
         d2=min((sum((a-b)**2 for a,b in zip(origin,target))
