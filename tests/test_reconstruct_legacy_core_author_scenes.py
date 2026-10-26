@@ -6,7 +6,9 @@ import unittest
 from tools.reconstruct_legacy_core_author_scenes import (
     SCHEMA, analyze, source_command_families, source_selector_signature,
     inspect_saved_scene_chunk, source_exact_join_audit, summarize_shared_strict_input_roots,
-    classify_legacy_kill_subject, shared_dr_h_sensor_effects
+    classify_legacy_kill_subject, shared_dr_h_sensor_effects,
+    _kill_type_filter, same_sensor_actor_type_compatibility,
+    _read_item_shape, armorstand_summon_item_shapes
 )
 
 
@@ -219,6 +221,81 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
             ["kill","@p"]),"nearest_player_selector")
         self.assertEqual(classify_legacy_kill_subject(
             ["kill","PRIVATE_PERSON"]),"literal_target_not_disclosed")
+
+    def test_shared_dr_h_exact_positive_actor_type_matches_without_claiming_actor(self):
+        verified={
+            "spawn":(None,"summon Villager ~ ~ ~ {CustomName:Secret}",
+                     ["summon","Villager","~","~","~","{CustomName:Secret}"]),
+            "kill":(None,"kill @e[type=minecraft:Villager]",
+                    ["kill","@e[type=minecraft:Villager]"])}
+        labels={"spawn":{"dr_h_author_text_cue"},"kill":{"entity_kill"}}
+        routes=[("sensor","spawn","direct_support"),
+                ("sensor","kill","direct_support")]
+        out=same_sensor_actor_type_compatibility(routes,labels,verified)
+        self.assertEqual(out["source_spawn_and_kill_type_compatible"],1)
+        self.assertEqual(out["summon_original_custom_name_field_present"],1)
+        self.assertEqual(out["shared_input_groups_with_summon_and_kill"],1)
+        self.assertNotIn("Villager",json.dumps(out))
+        self.assertNotIn("Secret",json.dumps(out))
+
+    def test_shared_sensor_type_mismatch_and_negated_kill_are_distinct(self):
+        v={
+            "a":(None,"summon Villager ~ ~ ~",["summon","Villager"]),
+            "b":(None,"kill @e[type=Blaze]",["kill","@e[type=Blaze]"])}
+        labels={"a":{"dr_h_author_text_cue"},"b":{"entity_kill"}}
+        roots=[("s","a","direct_support"),("s","b","direct_support")]
+        out=same_sensor_actor_type_compatibility(roots,labels,v)
+        self.assertEqual(out["source_spawn_and_kill_type_disjoint"],1)
+        v["b"]=(None,"kill @e[type=!Villager]",["kill","@e[type=!Villager]"])
+        out=same_sensor_actor_type_compatibility(roots,labels,v)
+        self.assertEqual(out["source_type_join_UNRESOLVED"],1)
+        self.assertEqual(out["paired_kill_selector_negated_or_empty_type"],1)
+
+    def test_different_sensor_is_not_same_actor_control(self):
+        verified={"a":(None,"summon Villager",["summon","Villager"]),
+                  "b":(None,"kill @e[type=Villager]",["kill","@e[type=Villager]"])}
+        out=same_sensor_actor_type_compatibility(
+            [("s1","a","direct_support"),("s2","b","direct_support")],
+            {"a":{"dr_h_author_text_cue"},"b":{"entity_kill"}},verified)
+        self.assertEqual(out,{})
+
+    def test_malformed_kill_selector_fails_to_unresolved_without_guessing(self):
+        self.assertEqual(_kill_type_filter(["kill","@e[type=Villager"])[1],
+                         "not_bounded_entity_selector")
+        self.assertEqual(_kill_type_filter(["kill","@e[type=!Blaze]"])[1],
+                         "negated_or_empty_type")
+        self.assertEqual(_kill_type_filter(["kill","@e[name=secret]"])[1],
+                         "no_type_filter")
+
+    def test_skull_nbt_decoded_compound_missing_vs_zero_vs_positive(self):
+        self.assertEqual(_read_item_shape({"id":"minecraft:skull"})[0],
+                         "skull_without_count_tag")
+        self.assertEqual(_read_item_shape({"id":"minecraft:skull","Count":0})[0],
+                         "skull_explicit_zero_count")
+        self.assertEqual(_read_item_shape({"id":397,"Count":2})[0],
+                         "skull_explicit_positive_count")
+        self.assertEqual(_read_item_shape({"id":"minecraft:stone","Count":0})[0],
+                         "other_item")
+
+    def test_injected_snbt_parser_tracks_equipment_skull_missing_count(self):
+        calls=[]
+        def parser(snbt):
+            calls.append(snbt)
+            return {"Equipment":[{"id":"minecraft:skull"},{"id":"minecraft:stone","Count":2}]}
+        cmd='summon ArmorStand ~ ~ ~ {Equipment:[{id:"minecraft:skull"}]}'
+        out=armorstand_summon_item_shapes(cmd,parser)
+        self.assertEqual(out["source_snbt_parsed_equipment"],1)
+        self.assertEqual(out["equipment_slot_skull_without_count_tag"],1)
+        self.assertEqual(out["equipment_skull_slot_seen"],1)
+        self.assertTrue(calls[0].startswith("{Equipment:"))
+        self.assertNotIn("minecraft:skull",json.dumps(out))
+
+    def test_malformed_source_snbt_not_promoted_to_absent_skull(self):
+        def broken(snbt):raise ValueError("unsupported source")
+        out=armorstand_summon_item_shapes(
+            'summon ArmorStand ~ ~ ~ {Equipment:[}',broken)
+        self.assertEqual(out,{"source_snbt_parse_unresolved":1})
+        self.assertNotIn("no_parsed_skull_slot",out)
 
     def test_original_source_sha_tamper_refused(self):
         g,r=fixture(["tellraw @p hello"])
