@@ -27,7 +27,7 @@ An independent source-free [`tools/compile_legacy_core_creator_mechanism_ir.py`]
 
 **Source-directed joins and meaningful negative evidence:** the current permitted exact original authored command→command graph links provide **no complete Dr. H dialogue→presence→kill→skull→final dialogue chain** and **no complete chess textual cue→smoke hint→armor-stand state chain**. Exact matching named entity selector shared by `testfor`/ `kill` was **not found** under the bounded 1.8 source parser; named-selector readback and player/actor binding remain unknown. This is a coverage and causal-qualification conclusion, **not proof those puzzles were absent or broken**.
 
-The independently validated original typed sensor graph did reveal **two accepted sensor→Dr. H-referencing command paths** and **two accepted sensor→entity-removal command paths**. **One distinct sensor is common to both categories**, yielding a genuine **source-static shared input** to an author-text and removal action. That is not a command execution order or proof the removed entity is Dr. H. It is the highest value next original source trace target.
+The independently validated original typed sensor graph did reveal **two accepted sensor→Dr. H-referencing command paths** and **two accepted sensor→entity-removal command paths**. **One distinct sensor is common to both categories**, yielding a genuine **source-static shared input** to an original **Dr. H-referencing summon** and an **entity type-filtered kill** action. That is not a command execution order or proof the removed entity is Dr. H. It is the highest value next original source trace target.
 
 ### Three-audience IR contract
 
@@ -42,12 +42,16 @@ All audiences read the same [aggregate typed IR producer](../tools/compile_legac
 | Candidate | Input | Source state/action | Feedback | Reset | Admission |
 |---|---|---|---|---|---|
 | Four-channel chat/Redstone controller | 13 clickable actions / 4 targets | Four saved target sites, 9/9/16/18 repeater-stage chains, three terminal `tellraw` and one entity-selector `tp` | Four immediate `tellraw` candidates, three delayed `tellraw` terminal instructions | Four exact source-authored `air` writers | **SOURCE_TYPED_PROGRAM_SKELETON**, actual activation UNKNOWN |
-| Dr. H finale | Two strict routes to Dr. H text + two to entity kill; one common sensor | Global 30 presence / 43 kill operations; exact full ending chain unresolved | 48 original Dr. H text commands, author-reported final scene | UNKNOWN | **CREATOR_INTENT + PARTIAL EXACT INPUT** |
+| Dr. H finale | Two strict routes to Dr. H-referencing commands + two to entity kill; one sensor shared by a **summon** and **type-filtered kill** | Global 30 presence / 43 kill operations; exact full ending chain unresolved | 48 original commands referencing Dr. H, not necessarily dialogue; author-reported final scene | UNKNOWN | **CREATOR_INTENT + PARTIAL EXACT INPUT** |
 | Chess | Creator claims hint and piece placement; original typed path to smoke not yet proved | Eight original skull-bearing armor-stand summon commands, 952 saved armor stands | Five smoke-particle commands, one explicit chess textual cue | UNKNOWN | **CREATOR_INTENT + EXACT ACTION COMPOSITION**, complete puzzle not proved |
 
 ## Prior art and historical oracle use
 
 The [creator/user evidence dossier](legacy-core-author-player-walkthrough-evidence-20261025.md) identifies historical writer explanations, puzzle defects, final story flow and chess hint/armor-stand presentation. We treat them as **EXTERNAL_AUTHOR_CLAIM** or **PLAYER_REPORTED_FAILURE**, not executable source code and not native v1.4 observation. Original v1.4.1 publication (October 2015) postdates the pinned v1.4 release. Zero-count skull bug is compatible with eight missing explicit `Count` tags in original armor-stand commands, but the original 1.8 parser/historic runtime default and scene-specific use still need independent verification.
+
+## Follow-up first failure: source reference is not automatically dialogue
+
+**F-107-SCENE-LABEL-011**: the first IR represented the two Dr. H-referencing typed source paths as `author_dialogue_paths`. The original-world strict shared-sensor audit instead proved that one companion command is **`summon`** and the sibling operation is **`kill` with an entity-type-filtered selector**. Reclassified IR to `dr_h_referencing_command_paths` and changed its input evidence type to `qualified_typed_sensor_paths_into_dr_h_referencing_commands`. The summoned entity and killed entity are not yet exactly joined; author identity, script order and ending progression are **UNPROVEN**. This eliminates an agent-facing semantic overclaim.
 
 ## Verification, first failures and corrective actions
 
@@ -59,7 +63,7 @@ The [creator/user evidence dossier](legacy-core-author-player-walkthrough-eviden
 
 ## Next source-only discriminating experiments (READY)
 
-1. **Dr. H:** within the same approved source cell, start from the *one exact common sensor* and slice its original authored downstream command and world-state mutations. Determine selector family/actor-state and whether named/scoreboard/Redstone condition supports creator-described Dr. H dialogue and actor removal. Do **not** assert kill order, actor identity, finale ending or clock behavior from common root alone. Emit safe aggregate only.
+1. **Dr. H:** within the same approved source cell, start from the *one exact common sensor* feeding original **summon** and type-filtered **kill**. Compare the summoned source actor category with the removal selector type under original 1.8 syntax; determine whether any exact actor identity/dataflow links the two. Do not infer a dialogue event from the Dr. H reference alone. Do **not** assert kill order, actor identity, finale ending or clock behavior from common root alone. Emit safe aggregate only.
 2. **Chess:** inspect original eight skull-bearing armor-stand `summon` argument/NBT structure and original item Count defaults; attempt exact typed input/target joins from the five smoke particle hints to author story and skull actor state (not generic map proximity). Distinguish pinned v1.4 authored NBT, saved world, and later v1.4.1 author bug report.
 3. **Global multichannel coverage:** preserve existing 10-channel mechanical/electrical/inventory/magic/environment/actor/traversal/presentation/command/progression denominators and unknowns. Reuse the newly qualified IR and validators; avoid duplicating previous broad scans without a new discriminator.
 4. **Future native plan only:** after separately authorized original Java 1.8.8 runtime and physical owner gates, one minimal input/no-input/reset comparison would discriminate these reconstructed hypotheses. Existing PR #108 explicit native attribution write refusal is **not** an admission and may **never** be bypassed through a different workflow, runner or actor.
