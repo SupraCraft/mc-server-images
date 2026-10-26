@@ -619,6 +619,12 @@ jobs:
           assert set(d["distinct_strict_sensor_shared_scene_role_counts"])=={"dr_h_text_and_entity_kill","dr_h_text_and_presence_gate","smoke_hint_and_armor_stand_spawn","chess_text_and_armor_stand_skull_spawn"}
           assert d["shared_dr_h_typed_sensor_action_classes"].get("shared_sensor_count",0)==d["distinct_strict_sensor_shared_scene_role_counts"]["dr_h_text_and_entity_kill"]
           assert sum(v for k,v in d["shared_dr_h_typed_sensor_action_classes"].items() if k.startswith("dr_h_cue_verb_"))>=d["shared_dr_h_typed_sensor_action_classes"].get("shared_sensor_count",0)
+          compare=d["same_sensor_original_actor_type_compatibility"]
+          assert compare.get("shared_input_groups_with_summon_and_kill",0)==d["shared_dr_h_typed_sensor_action_classes"].get("shared_sensor_count",0)
+          assert sum(compare.get(k,0) for k in ("source_spawn_and_kill_type_compatible","source_spawn_and_kill_type_disjoint","source_type_join_UNRESOLVED"))>=compare.get("shared_input_groups_with_summon_and_kill",0)
+          skull=d["armorstand_original_summon_snbt_shape_counts"]
+          assert skull.get("source_snbt_parser_unavailable",0)==0
+          assert sum(skull.get(k,0) for k in ("source_snbt_parsed_equipment","source_snbt_parse_unresolved","source_snbt_not_compound","source_snbt_without_equipment_field","source_snbt_equipment_nonlist","summon_without_compound"))==d["source_command_family_counts"]["armor_stand_summon_with_skull_token"]==8
           assert isinstance(d["entity_selector_source_detail_counts"],dict)
           assert d["entity_named_selector_potential_shared_presence_kill_signatures"]>=0
           assert d["command_static_links"]["edge_authority"]=="EXACT_ORIGINAL_AUTHORED_POWER_OR_COMMAND_CHAIN_STATIC"
@@ -643,6 +649,8 @@ jobs:
               "typed_sensor_scene_paths":d["qualified_sensor_to_scene_command_path_counts"],
               "strict_shared_sensor_roles":d["distinct_strict_sensor_shared_scene_role_counts"],
               "dr_h_shared_source_action_class":d["shared_dr_h_typed_sensor_action_classes"],
+              "dr_h_actor_type_relation":d["same_sensor_original_actor_type_compatibility"],
+              "chess_skull_source_nbt_shapes":d["armorstand_original_summon_snbt_shape_counts"],
               "saved_actor_inventory":d["saved_actor_inventory_evidence"],
               "native":"NOT_RUN"
           },sort_keys=True))
@@ -669,6 +677,8 @@ jobs:
           assert d["mechanisms"]["dr_h_finale"]["source_story_chain_proven"] is False
           assert d["mechanisms"]["dr_h_finale"]["input"]["dr_h_referencing_command_paths"]==2
           assert "author_dialogue_paths" not in d["mechanisms"]["dr_h_finale"]["input"]
+          assert isinstance(d["mechanisms"]["dr_h_finale"]["same_sensor_actor_type_comparison"],dict)
+          assert isinstance(d["mechanisms"]["chess_head_hint"]["original_summon_snbt_item_count_evidence"],dict)
           assert d["mechanisms"]["chess_head_hint"]["exact_chess_puzzle_source_chain_proven"] is False
           assert d["mechanisms"]["clickable_redstone_controller"]["reset"]["target_count"]==4
           assert d["mechanisms"]["clickable_redstone_controller"]["input"]["action_count"]==13
