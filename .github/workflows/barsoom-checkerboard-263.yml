@@ -14,9 +14,15 @@ concurrency:
   cancel-in-progress: false
 jobs:
   checkerboard:
+    name: four-cell-native-seed-${{ matrix.seed }}
     if: github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        seed: [1811001, 4242424242]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -32,22 +38,19 @@ jobs:
           python3 -m unittest tools/test_barsoom_checkerboard_263.py -v
           mkdir -p "$RUNNER_TEMP/barsoom-checkerboard"
           python3 fixtures/barsoom/provinces/gen_checkerboard_263.py --output "$RUNNER_TEMP/barsoom-checkerboard/pack.zip" --receipt "$RUNNER_TEMP/barsoom-checkerboard/static.json"
-      - name: Exact-version native two-seed geographic feature qualification
+      - name: Exact-version native four parity cells for independent seed
         run: |
           set -euo pipefail
-          for seed in 1811001 4242424242; do
-            python3 tools/qualify_barsoom_checkerboard_263.py --evidence probes/26.3-release-identity.json --seed "$seed" --out "$RUNNER_TEMP/barsoom-checkerboard/native-$seed.json"
-          done
+          python3 tools/qualify_barsoom_checkerboard_263.py --evidence probes/26.3-release-identity.json --seed "${{ matrix.seed }}" --out "$RUNNER_TEMP/barsoom-checkerboard/native-${{ matrix.seed }}.json"
       - name: Retain exact-revision positive and first-failure receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: barsoom-checkerboard-native-263
+          name: barsoom-checkerboard-four-cell-${{ matrix.seed }}
           path: |
             ${{ runner.temp }}/barsoom-checkerboard/static.json
-            ${{ runner.temp }}/barsoom-checkerboard/native-1811001.json
-            ${{ runner.temp }}/barsoom-checkerboard/native-4242424242.json
+            ${{ runner.temp }}/barsoom-checkerboard/native-${{ matrix.seed }}.json
           retention-days: 14
           if-no-files-found: warn
       - if: always()
-        run: echo 'Two fresh-world seeds, same-world mixed biomes, read-only vegetation census; not Mojang graphical HIL or production.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'Independent fresh-world seed on a separate public runner; four checkerboard parity cells with read-only native biome/vegetation census, not Mojang graphical HIL or production.' >> "$GITHUB_STEP_SUMMARY"

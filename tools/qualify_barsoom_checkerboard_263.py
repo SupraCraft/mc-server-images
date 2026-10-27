@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Native two-province checkerboard acceptance harness; requires repo dependencies.
+"""Native two-biome four-parity-cell checkerboard acceptance harness.
 
-Runs separate seeds in fresh temporary worlds on the official Java 26.3 server,
-never touching existing saves or manually placing vegetation.
+Each independently run seed uses a fresh disposable official Java 26.3 world.
+Never touches existing saves or manually places vegetation. No stock-client HIL.
 """
 from __future__ import annotations
 import argparse
@@ -27,7 +27,7 @@ from probe_core_restoration_datapack_26_3 import send, stop_server, server_error
 from qualify_barsoom_preset_263 import status_ready, prove
 from qualify_vanilla_world_artifact_activation_263 import require
 
-REGIONS = [(64, 64), (192, 64)]
+REGIONS = [(64, 64), (192, 64), (64, 192), (192, 192)]
 REGION_RADIUS = 16
 
 
@@ -107,6 +107,7 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                 require(not server_error_lines(log), "NATIVE_DATA_PACK_LOAD_ERROR")
                 steps.append("native_preset_and_biome_registry_loaded")
                 observations={}
+                sites=[]
                 for n,(x,z) in enumerate(REGIONS):
                     send(proc, f"forceload add {x-20} {z-20} {x+19} {z+19}")
                     time.sleep(.8)
@@ -115,13 +116,24 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                         prove(proc,log,
                               f"execute positioned {x+dx} 0 {z+dz} positioned over world_surface if biome ~ ~ ~ {expected_biome}",
                               f"SITE_{n}_OFFSET_{dx}_{dz}_BIOME")
-                    observations[expected_biome]=census(proc,log,(x,z),f"CB_{seed}_{n}_")
+                    observed=census(proc,log,(x,z),f"CB_{seed}_{n}_")
+                    # Preserve the legacy first-site per-biome summary for consumers;
+                    # add all four independent parity witnesses without overwriting.
+                    observations.setdefault(expected_biome,observed)
+                    sites.append({"site_index":n,"biome":expected_biome,**observed})
                     steps.append(f"seed_{seed}_region_{n}_biome_and_plant_witness")
-                scarlet=observations["barsoom_habitat:scarlet_wastes"]["dead_bush_columns"]
-                vanilla=observations["minecraft:badlands"]["dead_bush_columns"]
-                require(scarlet > vanilla and scarlet >= 30,
-                        f"SPATIAL_AUTOGEN_NOT_DIFFERENTIATED:{scarlet}:{vanilla}")
+                scarlet=[site["dead_bush_columns"] for site in sites
+                         if site["biome"]=="barsoom_habitat:scarlet_wastes"]
+                vanilla=[site["dead_bush_columns"] for site in sites
+                         if site["biome"]=="minecraft:badlands"]
+                require(len(scarlet)==2 and len(vanilla)==2,
+                        "FOUR_CELL_BIOME_PARITY_INVALID")
+                # Require both Scarlet parity cells to beat both vanilla
+                # controls, not merely a favorable mean or one hot spot.
+                require(min(scarlet)>max(vanilla) and min(scarlet)>=30,
+                        f"FOUR_CELL_AUTOGEN_NOT_DIFFERENTIATED:{scarlet}:{vanilla}")
                 steps.append("same_world_positive_and_negative_biome_differentiated")
+                steps.append("four_parity_cells_independently_censused")
                 require(stop_server(proc)==0,"GRACEFUL_STOP_FAILURE")
                 steps.append("graceful_stop")
             finally:
@@ -132,6 +144,7 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                 "parent_pack_sha256":PARENT_SHA256,"regions":observations,
                 "native_biomes_in_one_world":True,"explicit_place_feature_calls":0,
                 "manual_terrain_changes":0,"existing_save_mutations":False,
+                "four_parity_cells_verified":True,"sites":sites,
                 "production_deployment":"HOLD"}
 
 

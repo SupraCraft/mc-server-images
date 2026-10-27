@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Pure/static checkerboard v0 acceptance (NOT a native Minecraft claim)."""
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -59,6 +60,30 @@ class CheckerboardTests(unittest.TestCase):
             for x in range(cx-16,cx+16):
                 for z in range(cz-16,cz+16):
                     self.assertEqual(biome_at(x,z),expected)
+
+    def test_native_probe_visits_all_four_checkerboard_parity_cells(self):
+        # Inspect the native script's declared fixed sites without importing
+        # runtime network/server dependencies into the pure static test.
+        probe=ROOT/"tools"/"qualify_barsoom_checkerboard_263.py"
+        syntax=ast.parse(probe.read_text(encoding="utf-8"))
+        declared=[node for node in syntax.body if isinstance(node,ast.Assign)
+                  and any(isinstance(target,ast.Name) and target.id=="REGIONS"
+                          for target in node.targets)]
+        self.assertEqual(len(declared),1)
+        sites=ast.literal_eval(declared[0].value)
+        self.assertEqual(sites,[(64,64),(192,64),(64,192),(192,192)])
+        self.assertEqual([biome_at(x,z) for x,z in sites],
+                         [BIOMES[0],BIOMES[1],BIOMES[1],BIOMES[0]])
+        self.assertEqual(len(set(sites)),4)
+
+    def test_four_parity_cell_census_stays_clear_of_biome_boundaries(self):
+        for cx,cz in ((64,64),(192,64),(64,192),(192,192)):
+            b=biome_at(cx,cz)
+            for dx,dz in ((-12,0),(12,0),(0,-12),(0,12)):
+                self.assertEqual(biome_at(cx+dx,cz+dz),b)
+        # Both x and z stripe transitions reverse parity independently.
+        self.assertNotEqual(biome_at(127,64),biome_at(128,64))
+        self.assertNotEqual(biome_at(64,127),biome_at(64,128))
 
     def test_parent_custody_exact(self):
         self.assertEqual(set(PARENT_SHA256),{"terrain","habitat","scarlet"})
