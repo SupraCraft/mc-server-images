@@ -172,8 +172,27 @@ def shared_dr_h_sensor_effects(routes,classes,verified):
     return dict(sorted(out.items()))
 
 
+def _vanilla_188_actor_type(token):
+    """Source-only qualified entity type spelling, not native actor evidence.
+
+    Accept the unqualified 1.8 type spelling or the explicit minecraft:
+    namespace. Never strip an arbitrary foreign namespace: another issuer's
+    matching local name is not evidence of the same vanilla actor type.
+    """
+    if not isinstance(token,str):
+        return None
+    raw=token.strip().lower()
+    if ":" in raw:
+        namespace,raw=raw.split(":",1)
+        if namespace!="minecraft":
+            return None
+    if not re.fullmatch(r"[a-z][a-z0-9_]*",raw):
+        return None
+    return raw.replace("_","")
+
+
 def _kill_type_filter(parts):
-    """Private source-only parse: exact positive 1.8 @e[type=...] operand."""
+    """Private source-only parse: bounded positive vanilla 1.8 actor type."""
     if not parts or parts[0]!="kill" or len(parts)<2:
         return None,"missing_or_implicit"
     token=parts[1]
@@ -184,7 +203,10 @@ def _kill_type_filter(parts):
     raw=match.group(1).strip()
     if not raw or raw.startswith("!"):
         return None,"negated_or_empty_type"
-    return raw.lower().split(":")[-1].replace("_",""),"positive_type_filter"
+    actor_type=_vanilla_188_actor_type(raw)
+    if actor_type is None:
+        return None,"unqualified_type_namespace_or_syntax"
+    return actor_type,"positive_type_filter"
 
 
 def same_sensor_actor_type_compatibility(routes,classes,verified):
@@ -202,7 +224,7 @@ def same_sensor_actor_type_compatibility(routes,classes,verified):
         out["shared_input_groups_with_summon_and_kill"]+=1
         for sid in items["summon"]:
             summoned=verified[sid][2]
-            summoned_type=(summoned[1].lower().split(":")[-1].replace("_","")
+            summoned_type=(_vanilla_188_actor_type(summoned[1])
                            if len(summoned)>=2 else None)
             out["summon_original_custom_name_field_present" if
                 re.search(r"(?i)\bCustomName\s*:",verified[sid][1]) else
