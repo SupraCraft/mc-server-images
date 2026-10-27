@@ -267,6 +267,52 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
         self.assertEqual(_kill_type_filter(["kill","@e[name=secret]"])[1],
                          "no_type_filter")
 
+    def test_foreign_kill_namespace_cannot_alias_vanilla_summon_type(self):
+        # A foreign namespace with a matching local spelling is not evidence
+        # of the same 1.8 vanilla actor class or a runtime actor identity.
+        verified={
+            "spawn":(None,"summon Villager ~ ~ ~ {CustomName:DrH}",
+                     ["summon","Villager"]),
+            "kill":(None,"kill @e[type=foreign:Villager]",
+                    ["kill","@e[type=foreign:Villager]"])}
+        classes={"spawn":{"dr_h_author_text_cue"},"kill":{"entity_kill"}}
+        routes=[("root","spawn","direct_support"),
+                ("root","kill","direct_support")]
+        out=same_sensor_actor_type_compatibility(routes,classes,verified)
+        self.assertEqual(out["shared_input_groups_with_summon_and_kill"],1)
+        self.assertEqual(out["paired_kill_selector_unqualified_type_namespace_or_syntax"],1)
+        self.assertEqual(out["source_type_join_UNRESOLVED"],1)
+        self.assertNotIn("source_spawn_and_kill_type_compatible",out)
+        self.assertNotIn("foreign:Villager",json.dumps(out))
+
+    def test_foreign_summon_is_unresolved_but_native_188_namespace_still_matches(self):
+        verified={
+            "spawn":(None,"summon foreign:Villager ~ ~ ~ {CustomName:DrH}",
+                     ["summon","foreign:Villager"]),
+            "kill":(None,"kill @e[type=Villager]",
+                    ["kill","@e[type=Villager]"])}
+        classes={"spawn":{"dr_h_author_text_cue"},"kill":{"entity_kill"}}
+        routes=[("root","spawn","direct_support"),
+                ("root","kill","direct_support")]
+        out=same_sensor_actor_type_compatibility(routes,classes,verified)
+        self.assertEqual(out["source_type_join_UNRESOLVED"],1)
+        self.assertNotIn("source_spawn_and_kill_type_compatible",out)
+        verified["spawn"]=(None,"summon minecraft:Villager ~ ~ ~ {CustomName:DrH}",
+                           ["summon","minecraft:Villager"])
+        out=same_sensor_actor_type_compatibility(routes,classes,verified)
+        self.assertEqual(out["source_spawn_and_kill_type_compatible"],1)
+        self.assertNotIn("source_type_join_UNRESOLVED",out)
+
+    def test_unsupported_namespace_syntax_does_not_become_actor_type(self):
+        for invalid in ("minecraft:", "minecraft:Villager:Other",
+                        "other:Villager", "minecraft:Villager!"):
+            typ,status=_kill_type_filter(["kill",f"@e[type={invalid}]"])
+            self.assertIsNone(typ)
+            self.assertEqual(status,"unqualified_type_namespace_or_syntax")
+        self.assertEqual(_kill_type_filter(
+            ["kill","@e[type=minecraft:Villager]"]),
+            ("villager","positive_type_filter"))
+
     def test_skull_nbt_decoded_compound_missing_vs_zero_vs_positive(self):
         self.assertEqual(_read_item_shape({"id":"minecraft:skull"})[0],
                          "skull_without_count_tag")
