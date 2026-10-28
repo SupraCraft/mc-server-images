@@ -28,6 +28,13 @@ from qualify_barsoom_preset_263 import status_ready, prove
 from qualify_vanilla_world_artifact_activation_263 import require
 
 REGIONS = [(64, 64), (192, 64), (64, 192), (192, 192)]
+# Independent geographic controls outside the original positive-only x/z quadrant.
+NEGATIVE_REGIONS = [(-64, 64), (-64, -64), (64, -64), (-192, 64)]
+# Exact native stripe transition witnesses in both positive and negative space.
+BOUNDARY_PAIRS = [
+    ((127, 64), (128, 64)), ((64, 127), (64, 128)),
+    ((-1, 64), (0, 64)), ((64, -1), (64, 0)),
+]
 REGION_RADIUS = 16
 
 
@@ -134,6 +141,39 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                         f"FOUR_CELL_AUTOGEN_NOT_DIFFERENTIATED:{scarlet}:{vanilla}")
                 steps.append("same_world_positive_and_negative_biome_differentiated")
                 steps.append("four_parity_cells_independently_censused")
+                # Separate negative-quadrant source-vs-native geographic
+                # falsification. These sentinels do not need a second plant
+                # census; original four-site plant sample remains unchanged.
+                negative_sites=[]
+                for n,(x,z) in enumerate(NEGATIVE_REGIONS):
+                    expected=biome_at(x,z)
+                    for dx,dz in ((0,0),(-12,0),(12,0),(0,-12),(0,12)):
+                        prove(proc,log,
+                              f"execute positioned {x+dx} 0 {z+dz} positioned over world_surface if biome ~ ~ ~ {expected}",
+                              f"NEG_SITE_{n}_OFFSET_{dx}_{dz}_BIOME")
+                    negative_sites.append({"center":[x,z],"expected_biome":expected,
+                                           "native_biome_predicates":5})
+                require(len(negative_sites)==4 and len({
+                    item["expected_biome"] for item in negative_sites})==2,
+                    "NEGATIVE_GEOGRAPHY_PARITY_INVALID")
+                steps.append("four_negative_coordinate_regions_native_verified")
+
+                # A center-only probe can miss off-by-one boundaries. Require
+                # the exact adjacent blocks across +128 and zero boundaries
+                # to be different under the model and match native lookup.
+                boundary_pairs=[]
+                for n,((ax,az),(bx,bz)) in enumerate(BOUNDARY_PAIRS):
+                    left,right=biome_at(ax,az),biome_at(bx,bz)
+                    require(left!=right,"BOUNDARY_ORACLE_NOT_DISCRIMINATING")
+                    for side,(x,z,expected) in enumerate(
+                            ((ax,az,left),(bx,bz,right))):
+                        prove(proc,log,
+                              f"execute positioned {x} 0 {z} positioned over world_surface if biome ~ ~ ~ {expected}",
+                              f"BOUNDARY_{n}_SIDE_{side}_BIOME")
+                    boundary_pairs.append({"cells":[[ax,az],[bx,bz]],
+                                           "biomes":[left,right],
+                                           "native_biome_predicates":2})
+                steps.append("eight_boundary_side_predicates_native_verified")
                 require(stop_server(proc)==0,"GRACEFUL_STOP_FAILURE")
                 steps.append("graceful_stop")
             finally:
@@ -145,6 +185,8 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                 "native_biomes_in_one_world":True,"explicit_place_feature_calls":0,
                 "manual_terrain_changes":0,"existing_save_mutations":False,
                 "four_parity_cells_verified":True,"sites":sites,
+                "negative_geography_verified":True,"negative_sites":negative_sites,
+                "native_boundary_verified":True,"boundary_pairs":boundary_pairs,
                 "production_deployment":"HOLD"}
 
 
