@@ -107,16 +107,16 @@ class CheckerboardTests(unittest.TestCase):
             for dx,dz in ((0,0),(-12,0),(12,0),(0,-12),(0,12)):
                 self.assertEqual(biome_at(cx+dx,cz+dz),biome_at(cx,cz))
 
-    def test_boundary_pairs_cross_exact_native_stripe_boundaries(self):
+    def test_boundary_pairs_have_guard_bands_around_native_stripe_boundaries(self):
         pairs=native_literal('BOUNDARY_PAIRS')
         self.assertEqual(len(pairs),4)
         for left,right in pairs:
-            self.assertEqual(abs(left[0]-right[0])+abs(left[1]-right[1]),1)
+            self.assertEqual(abs(left[0]-right[0])+abs(left[1]-right[1]),16)
             self.assertNotEqual(biome_at(*left),biome_at(*right))
-        self.assertEqual(pairs[0],((127,64),(128,64)))
-        self.assertEqual(pairs[1],((64,127),(64,128)))
-        self.assertEqual(pairs[2],((-1,64),(0,64)))
-        self.assertEqual(pairs[3],((64,-1),(64,0)))
+        self.assertEqual(pairs[0],((120,64),(136,64)))
+        self.assertEqual(pairs[1],((64,120),(64,136)))
+        self.assertEqual(pairs[2],((-8,64),(8,64)))
+        self.assertEqual(pairs[3],((64,-8),(64,8)))
 
     def test_native_negative_and_boundary_probes_force_load_before_predicates(self):
         # Source-free ordering oracle for the first failure on public run
