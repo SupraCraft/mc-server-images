@@ -1,4 +1,4 @@
-name: Barsoom Java 26.3 two-province checkerboard admission
+name: Barsoom Java 26.3 four-cell checkerboard admission
 on:
   pull_request:
     paths:
@@ -24,7 +24,7 @@ jobs:
       matrix:
         seed: [1811001, 4242424242]
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5 node24
         with:
           persist-credentials: false
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -44,7 +44,7 @@ jobs:
           python3 tools/qualify_barsoom_checkerboard_263.py --evidence probes/26.3-release-identity.json --seed "${{ matrix.seed }}" --out "$RUNNER_TEMP/barsoom-checkerboard/native-${{ matrix.seed }}.json"
       - name: Retain exact-revision positive and first-failure receipts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6 node24
         with:
           name: barsoom-checkerboard-four-cell-${{ matrix.seed }}
           path: |
