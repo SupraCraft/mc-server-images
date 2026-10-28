@@ -85,6 +85,29 @@ class CheckerboardTests(unittest.TestCase):
         self.assertNotEqual(biome_at(127,64),biome_at(128,64))
         self.assertNotEqual(biome_at(64,127),biome_at(64,128))
 
+    def test_negative_centers_include_both_biomes_and_four_quadrants(self):
+        import qualify_barsoom_checkerboard_263 as native
+        centers=native.NEGATIVE_REGIONS
+        self.assertEqual(centers,[(-64,64),(-64,-64),(64,-64),(-192,64)])
+        self.assertEqual(
+            [biome_at(*pt) for pt in centers],
+            [BIOMES[1],BIOMES[0],BIOMES[1],BIOMES[0]])
+        for cx,cz in centers:
+            for dx,dz in ((0,0),(-12,0),(12,0),(0,-12),(0,12)):
+                self.assertEqual(biome_at(cx+dx,cz+dz),biome_at(cx,cz))
+
+    def test_boundary_pairs_cross_exact_native_stripe_boundaries(self):
+        import qualify_barsoom_checkerboard_263 as native
+        pairs=native.BOUNDARY_PAIRS
+        self.assertEqual(len(pairs),4)
+        for left,right in pairs:
+            self.assertEqual(abs(left[0]-right[0])+abs(left[1]-right[1]),1)
+            self.assertNotEqual(biome_at(*left),biome_at(*right))
+        self.assertEqual(pairs[0],((127,64),(128,64)))
+        self.assertEqual(pairs[1],((64,127),(64,128)))
+        self.assertEqual(pairs[2],((-1,64),(0,64)))
+        self.assertEqual(pairs[3],((64,-1),(64,0)))
+
     def test_parent_custody_exact(self):
         self.assertEqual(set(PARENT_SHA256),{"terrain","habitat","scarlet"})
         self.assertTrue(all(len(v)==64 and all(c in "0123456789abcdef" for c in v) for v in PARENT_SHA256.values()))
