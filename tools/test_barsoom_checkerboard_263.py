@@ -13,6 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "fixtures/barsoom/provinces"))
 from gen_checkerboard_263 import BIOMES, PARENT_SHA256, PRESET_ID, SCALE, biome_at, build, cell_size
 
+def native_literal(name):
+    # Read declared native control constants without importing a module that
+    # depends on server/network helpers unavailable in pure static CI.
+    source=ast.parse((ROOT/"tools"/"qualify_barsoom_checkerboard_263.py").read_text(encoding="utf-8"))
+    definitions=[node.value for node in source.body if isinstance(node,ast.Assign)
+                 and any(isinstance(target,ast.Name) and target.id==name
+                         for target in node.targets)]
+    if len(definitions)!=1:
+        raise AssertionError("native control constant missing or ambiguous")
+    return ast.literal_eval(definitions[0])
+
+
 class CheckerboardTests(unittest.TestCase):
     def test_zip_bit_reproducibility(self):
         with tempfile.TemporaryDirectory() as d:
@@ -86,8 +98,7 @@ class CheckerboardTests(unittest.TestCase):
         self.assertNotEqual(biome_at(64,127),biome_at(64,128))
 
     def test_negative_centers_include_both_biomes_and_four_quadrants(self):
-        import qualify_barsoom_checkerboard_263 as native
-        centers=native.NEGATIVE_REGIONS
+        centers=native_literal('NEGATIVE_REGIONS')
         self.assertEqual(centers,[(-64,64),(-64,-64),(64,-64),(-192,64)])
         self.assertEqual(
             [biome_at(*pt) for pt in centers],
@@ -97,8 +108,7 @@ class CheckerboardTests(unittest.TestCase):
                 self.assertEqual(biome_at(cx+dx,cz+dz),biome_at(cx,cz))
 
     def test_boundary_pairs_cross_exact_native_stripe_boundaries(self):
-        import qualify_barsoom_checkerboard_263 as native
-        pairs=native.BOUNDARY_PAIRS
+        pairs=native_literal('BOUNDARY_PAIRS')
         self.assertEqual(len(pairs),4)
         for left,right in pairs:
             self.assertEqual(abs(left[0]-right[0])+abs(left[1]-right[1]),1)
