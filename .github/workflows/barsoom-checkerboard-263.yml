@@ -1,4 +1,4 @@
-name: Barsoom Java 26.3 negative-coordinate and boundary qualification
+name: Barsoom Java 26.3 negative-coordinate and guarded biome boundary
 on:
   pull_request:
     paths:
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   checkerboard:
-    name: native-negative-boundary-seed-${{ matrix.seed }}
+    name: native-guarded-boundary-seed-${{ matrix.seed }}
     if: github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -46,11 +46,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6 node24
         with:
-          name: barsoom-negative-boundary-${{ matrix.seed }}
+          name: barsoom-negative-guarded-boundary-${{ matrix.seed }}
           path: |
             ${{ runner.temp }}/barsoom-checkerboard/static.json
             ${{ runner.temp }}/barsoom-checkerboard/native-${{ matrix.seed }}.json
           retention-days: 14
           if-no-files-found: warn
       - if: always()
-        run: echo 'Independent disposable native seed; four positive plant cells plus four negative-coordinate biome controls and four exact transition pairs, no stock-client HIL or production.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'Independent disposable native seed; four positive plant cells plus four negative-coordinate biome controls and four guarded transition-flank pairs, no stock-client HIL or production.' >> "$GITHUB_STEP_SUMMARY"
