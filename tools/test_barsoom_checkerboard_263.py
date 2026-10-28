@@ -118,6 +118,20 @@ class CheckerboardTests(unittest.TestCase):
         self.assertEqual(pairs[2],((-1,64),(0,64)))
         self.assertEqual(pairs[3],((64,-1),(64,0)))
 
+    def test_native_negative_and_boundary_probes_force_load_before_predicates(self):
+        # Source-free ordering oracle for the first failure on public run
+        # 40650369861: a valid server returns 'position not loaded' unless
+        # every added geographic target is force-loaded in the new world.
+        native=(ROOT/"tools"/"qualify_barsoom_checkerboard_263.py").read_text(encoding="utf-8")
+        for section_start in ("for n,(x,z) in enumerate(NEGATIVE_REGIONS):",
+                              "for n,((ax,az),(bx,bz)) in enumerate(BOUNDARY_PAIRS):"):
+            section=native.split(section_start,1)
+            self.assertEqual(len(section),2)
+            probe=section[1]
+            self.assertIn("forceload add",probe)
+            self.assertLess(probe.index("forceload add"),
+                            probe.index("prove(proc,log"))
+
     def test_parent_custody_exact(self):
         self.assertEqual(set(PARENT_SHA256),{"terrain","habitat","scarlet"})
         self.assertTrue(all(len(v)==64 and all(c in "0123456789abcdef" for c in v) for v in PARENT_SHA256.values()))
