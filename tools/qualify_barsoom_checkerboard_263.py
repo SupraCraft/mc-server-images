@@ -28,6 +28,18 @@ from qualify_barsoom_preset_263 import status_ready, prove
 from qualify_vanilla_world_artifact_activation_263 import require
 
 REGIONS = [(64, 64), (192, 64), (64, 192), (192, 192)]
+# Independent geographic controls outside the original positive-only x/z quadrant.
+NEGATIVE_REGIONS = [(-64, 64), (-64, -64), (64, -64), (-192, 64)]
+# A biome source's noise-biome quart boundary is NOT necessarily the visible
+# block-by-block biome boundary: LevelReader.getBiome uses seeded, jittered
+# nearby quart sampling. The 127/128 and -1/0 predicates were falsified by
+# actual Java 26.3 in two independent seeds. Use symmetric, source-grounded
+# eight-block guard bands around each nominal stripe transition, and keep
+# the one-block mismatch as a documented first failure (not an engine bug).
+BOUNDARY_PAIRS = [
+    ((120, 64), (136, 64)), ((64, 120), (64, 136)),
+    ((-8, 64), (8, 64)), ((64, -8), (64, 8)),
+]
 REGION_RADIUS = 16
 
 
@@ -134,6 +146,47 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                         f"FOUR_CELL_AUTOGEN_NOT_DIFFERENTIATED:{scarlet}:{vanilla}")
                 steps.append("same_world_positive_and_negative_biome_differentiated")
                 steps.append("four_parity_cells_independently_censused")
+                # Separate negative-quadrant source-vs-native geographic
+                # falsification. These sentinels do not need a second plant
+                # census; original four-site plant sample remains unchanged.
+                negative_sites=[]
+                for n,(x,z) in enumerate(NEGATIVE_REGIONS):
+                    # Unlike the original four sites, negative regions are
+                    # outside the spawn/generation radius and MUST be loaded
+                    # before official native biome predicates are meaningful.
+                    send(proc, f"forceload add {x-20} {z-20} {x+19} {z+19}")
+                    time.sleep(.8)
+                    expected=biome_at(x,z)
+                    for dx,dz in ((0,0),(-12,0),(12,0),(0,-12),(0,12)):
+                        prove(proc,log,
+                              f"execute positioned {x+dx} 0 {z+dz} positioned over world_surface if biome ~ ~ ~ {expected}",
+                              f"NEG_SITE_{n}_OFFSET_{dx}_{dz}_BIOME")
+                    negative_sites.append({"center":[x,z],"expected_biome":expected,
+                                           "native_biome_predicates":5})
+                require(len(negative_sites)==4 and len({
+                    item["expected_biome"] for item in negative_sites})==2,
+                    "NEGATIVE_GEOGRAPHY_PARITY_INVALID")
+                steps.append("four_negative_coordinate_regions_native_verified")
+
+                # A center-only probe can miss off-by-one boundaries. Require
+                # boundary flanks across +128 and zero transitions to differ
+                # under the model and match the *jittered native* lookup.
+                # A one-block exact-boundary claim was falsified.
+                boundary_pairs=[]
+                for n,((ax,az),(bx,bz)) in enumerate(BOUNDARY_PAIRS):
+                    send(proc, f"forceload add {min(ax,bx)-4} {min(az,bz)-4} {max(ax,bx)+4} {max(az,bz)+4}")
+                    time.sleep(.8)
+                    left,right=biome_at(ax,az),biome_at(bx,bz)
+                    require(left!=right,"BOUNDARY_ORACLE_NOT_DISCRIMINATING")
+                    for side,(x,z,expected) in enumerate(
+                            ((ax,az,left),(bx,bz,right))):
+                        prove(proc,log,
+                              f"execute positioned {x} 0 {z} positioned over world_surface if biome ~ ~ ~ {expected}",
+                              f"BOUNDARY_{n}_SIDE_{side}_BIOME")
+                    boundary_pairs.append({"cells":[[ax,az],[bx,bz]],
+                                           "biomes":[left,right],
+                                           "native_biome_predicates":2})
+                steps.append("eight_guarded_boundary_flank_predicates_native_verified")
                 require(stop_server(proc)==0,"GRACEFUL_STOP_FAILURE")
                 steps.append("graceful_stop")
             finally:
@@ -145,6 +198,8 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                 "native_biomes_in_one_world":True,"explicit_place_feature_calls":0,
                 "manual_terrain_changes":0,"existing_save_mutations":False,
                 "four_parity_cells_verified":True,"sites":sites,
+                "negative_geography_verified":True,"negative_sites":negative_sites,
+                "guarded_boundary_flanks_verified":True,"boundary_pairs":boundary_pairs,
                 "production_deployment":"HOLD"}
 
 

@@ -13,6 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "fixtures/barsoom/provinces"))
 from gen_checkerboard_263 import BIOMES, PARENT_SHA256, PRESET_ID, SCALE, biome_at, build, cell_size
 
+def native_literal(name):
+    # Read declared native control constants without importing a module that
+    # depends on server/network helpers unavailable in pure static CI.
+    source=ast.parse((ROOT/"tools"/"qualify_barsoom_checkerboard_263.py").read_text(encoding="utf-8"))
+    definitions=[node.value for node in source.body if isinstance(node,ast.Assign)
+                 and any(isinstance(target,ast.Name) and target.id==name
+                         for target in node.targets)]
+    if len(definitions)!=1:
+        raise AssertionError("native control constant missing or ambiguous")
+    return ast.literal_eval(definitions[0])
+
+
 class CheckerboardTests(unittest.TestCase):
     def test_zip_bit_reproducibility(self):
         with tempfile.TemporaryDirectory() as d:
@@ -84,6 +96,41 @@ class CheckerboardTests(unittest.TestCase):
         # Both x and z stripe transitions reverse parity independently.
         self.assertNotEqual(biome_at(127,64),biome_at(128,64))
         self.assertNotEqual(biome_at(64,127),biome_at(64,128))
+
+    def test_negative_centers_include_both_biomes_and_four_quadrants(self):
+        centers=native_literal('NEGATIVE_REGIONS')
+        self.assertEqual(centers,[(-64,64),(-64,-64),(64,-64),(-192,64)])
+        self.assertEqual(
+            [biome_at(*pt) for pt in centers],
+            [BIOMES[1],BIOMES[0],BIOMES[1],BIOMES[0]])
+        for cx,cz in centers:
+            for dx,dz in ((0,0),(-12,0),(12,0),(0,-12),(0,12)):
+                self.assertEqual(biome_at(cx+dx,cz+dz),biome_at(cx,cz))
+
+    def test_boundary_pairs_have_guard_bands_around_native_stripe_boundaries(self):
+        pairs=native_literal('BOUNDARY_PAIRS')
+        self.assertEqual(len(pairs),4)
+        for left,right in pairs:
+            self.assertEqual(abs(left[0]-right[0])+abs(left[1]-right[1]),16)
+            self.assertNotEqual(biome_at(*left),biome_at(*right))
+        self.assertEqual(pairs[0],((120,64),(136,64)))
+        self.assertEqual(pairs[1],((64,120),(64,136)))
+        self.assertEqual(pairs[2],((-8,64),(8,64)))
+        self.assertEqual(pairs[3],((64,-8),(64,8)))
+
+    def test_native_negative_and_boundary_probes_force_load_before_predicates(self):
+        # Source-free ordering oracle for the first failure on public run
+        # 40650369861: a valid server returns 'position not loaded' unless
+        # every added geographic target is force-loaded in the new world.
+        native=(ROOT/"tools"/"qualify_barsoom_checkerboard_263.py").read_text(encoding="utf-8")
+        for section_start in ("for n,(x,z) in enumerate(NEGATIVE_REGIONS):",
+                              "for n,((ax,az),(bx,bz)) in enumerate(BOUNDARY_PAIRS):"):
+            section=native.split(section_start,1)
+            self.assertEqual(len(section),2)
+            probe=section[1]
+            self.assertIn("forceload add",probe)
+            self.assertLess(probe.index("forceload add"),
+                            probe.index("prove(proc,log"))
 
     def test_parent_custody_exact(self):
         self.assertEqual(set(PARENT_SHA256),{"terrain","habitat","scarlet"})
