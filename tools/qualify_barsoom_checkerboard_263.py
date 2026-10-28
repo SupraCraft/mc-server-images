@@ -146,6 +146,11 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                 # census; original four-site plant sample remains unchanged.
                 negative_sites=[]
                 for n,(x,z) in enumerate(NEGATIVE_REGIONS):
+                    # Unlike the original four sites, negative regions are
+                    # outside the spawn/generation radius and MUST be loaded
+                    # before official native biome predicates are meaningful.
+                    send(proc, f"forceload add {x-20} {z-20} {x+19} {z+19}")
+                    time.sleep(.8)
                     expected=biome_at(x,z)
                     for dx,dz in ((0,0),(-12,0),(12,0),(0,-12),(0,12)):
                         prove(proc,log,
@@ -163,6 +168,8 @@ def run(evidence: dict, seed: int, steps: list[str]) -> dict:
                 # to be different under the model and match native lookup.
                 boundary_pairs=[]
                 for n,((ax,az),(bx,bz)) in enumerate(BOUNDARY_PAIRS):
+                    send(proc, f"forceload add {min(ax,bx)-4} {min(az,bz)-4} {max(ax,bx)+4} {max(az,bz)+4}")
+                    time.sleep(.8)
                     left,right=biome_at(ax,az),biome_at(bx,bz)
                     require(left!=right,"BOUNDARY_ORACLE_NOT_DISCRIMINATING")
                     for side,(x,z,expected) in enumerate(
