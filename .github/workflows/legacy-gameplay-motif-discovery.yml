@@ -1,0 +1,94 @@
+name: Legacy gameplay motif discovery - source only
+on:
+  push:
+    branches:
+      - feat/legacy-gameplay-motif-discovery-20261022
+    paths:
+      - 'tools/classify_legacy_gameplay_motifs.py'
+      - 'tests/test_classify_legacy_gameplay_motifs.py'
+      - 'tools/rank_legacy_electromechanical_witnesses.py'
+      - 'tests/test_rank_legacy_electromechanical_witnesses.py'
+      - 'tools/inspect_legacy_piston_snapshot_inputs.py'
+      - 'tests/test_inspect_legacy_piston_snapshot_inputs.py'
+      - 'tools/audit_legacy_piston_authored_inputs.py'
+      - 'tests/test_audit_legacy_piston_authored_inputs.py'
+      - 'tools/inspect_legacy_piston_clone_payloads.py'
+      - 'tests/test_inspect_legacy_piston_clone_payloads.py'
+      - 'tools/inspect_legacy_piston_clone_modes.py'
+      - 'tests/test_inspect_legacy_piston_clone_modes.py'
+      - 'tools/compare_legacy_piston_clone_saved_deltas.py'
+      - 'tests/test_compare_legacy_piston_clone_saved_deltas.py'
+      - 'tools/audit_legacy_piston_clone_triggers.py'
+      - 'tests/test_audit_legacy_piston_clone_triggers.py'
+      - 'tools/audit_legacy_clone_input_power_roots.py'
+      - 'tests/test_audit_legacy_clone_input_power_roots.py'
+      - 'tools/rank_legacy_typed_sensor_command_witnesses.py'
+      - 'tests/test_rank_legacy_typed_sensor_command_witnesses.py'
+      - 'tools/select_legacy_button_setblock_target.py'
+      - 'tests/test_select_legacy_button_setblock_target.py'
+      - 'tools/infer_legacy_core_gameplay_purposes.py'
+      - 'tests/test_infer_legacy_core_gameplay_purposes.py'
+      - 'tools/inventory_legacy_core_gameplay_channels.py'
+      - 'tests/test_inventory_legacy_core_gameplay_channels.py'
+      - 'tools/reconstruct_legacy_core_command_controls.py'
+      - 'tests/test_reconstruct_legacy_core_command_controls.py'
+      - 'tools/trace_legacy_core_ui_controls.py'
+      - 'tests/test_trace_legacy_core_ui_controls.py'
+      - 'tools/reconstruct_legacy_core_author_scenes.py'
+      - 'tests/test_reconstruct_legacy_core_author_scenes.py'
+      - 'tools/compile_legacy_core_creator_mechanism_ir.py'
+      - 'tests/test_compile_legacy_core_creator_mechanism_ir.py'
+      - 'tests/test_chess_source_effect_geometry.py'
+      - '.github/workflows/legacy-gameplay-motif-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-only-motif-hard-negatives:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5, upstream node24
+        with:
+          persist-credentials: false
+      - name: Python syntax check
+        run: python3 -m py_compile tools/classify_legacy_gameplay_motifs.py tests/test_classify_legacy_gameplay_motifs.py tools/rank_legacy_electromechanical_witnesses.py tests/test_rank_legacy_electromechanical_witnesses.py tools/inspect_legacy_piston_snapshot_inputs.py tests/test_inspect_legacy_piston_snapshot_inputs.py tools/audit_legacy_piston_authored_inputs.py tests/test_audit_legacy_piston_authored_inputs.py tools/inspect_legacy_piston_clone_payloads.py tests/test_inspect_legacy_piston_clone_payloads.py tools/inspect_legacy_piston_clone_modes.py tests/test_inspect_legacy_piston_clone_modes.py tools/compare_legacy_piston_clone_saved_deltas.py tests/test_compare_legacy_piston_clone_saved_deltas.py tools/audit_legacy_piston_clone_triggers.py tests/test_audit_legacy_piston_clone_triggers.py tools/audit_legacy_clone_input_power_roots.py tests/test_audit_legacy_clone_input_power_roots.py tools/rank_legacy_typed_sensor_command_witnesses.py tests/test_rank_legacy_typed_sensor_command_witnesses.py tools/select_legacy_button_setblock_target.py tests/test_select_legacy_button_setblock_target.py tools/infer_legacy_core_gameplay_purposes.py tests/test_infer_legacy_core_gameplay_purposes.py tools/inventory_legacy_core_gameplay_channels.py tests/test_inventory_legacy_core_gameplay_channels.py tools/reconstruct_legacy_core_command_controls.py tests/test_reconstruct_legacy_core_command_controls.py tools/trace_legacy_core_ui_controls.py tests/test_trace_legacy_core_ui_controls.py tools/reconstruct_legacy_core_author_scenes.py tests/test_reconstruct_legacy_core_author_scenes.py tools/compile_legacy_core_creator_mechanism_ir.py tests/test_compile_legacy_core_creator_mechanism_ir.py tests/test_chess_source_effect_geometry.py
+      - name: Synthetic hard negatives - no world, no network, no server
+        run: python3 -m unittest discover -s tests -p 'test_classify_legacy_gameplay_motifs.py' -v
+      - name: Exact-head directional piston port hard negatives (no external worlds)
+        run: python3 -m unittest discover -s tests -p 'test_rank_legacy_electromechanical_witnesses.py' -v
+      - name: Saved original block source survey - source-free synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_inspect_legacy_piston_snapshot_inputs.py' -v
+      - name: Original authored-command mechanical input joins - synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_audit_legacy_piston_authored_inputs.py' -v
+      - name: Clone source material joins - synthetic source-free
+        run: python3 -m unittest discover -s tests -p 'test_inspect_legacy_piston_clone_payloads.py' -v
+      - name: Original clone mode metadata - synthetic fingerprint and privacy controls
+        run: python3 -m unittest discover -s tests -p 'test_inspect_legacy_piston_clone_modes.py' -v
+      - name: Original clone source-destination saved block and metadata parity - synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_compare_legacy_piston_clone_saved_deltas.py' -v
+      - name: Typed input routes into source-authored clone commands - synthetic
+        run: python3 -m unittest discover -s tests -p 'test_audit_legacy_piston_clone_triggers.py' -v
+      - name: Original six-wire clone-input root saved snapshots and compact write negatives
+        run: python3 -m unittest discover -s tests -p 'test_audit_legacy_clone_input_power_roots.py' -v
+      - name: Distinct original sensor-command directional witness qualification - synthetic only
+        run: python3 -m unittest discover -s tests -p 'test_rank_legacy_typed_sensor_command_witnesses.py' -v
+      - name: Source-free original button target selection hard negatives
+        run: python3 -m unittest discover -s tests -p 'test_select_legacy_button_setblock_target.py' -v
+      - name: Source-free whole-map semantic hypothesis classifier hard negatives
+        run: python3 -m unittest discover -s tests -p 'test_infer_legacy_core_gameplay_purposes.py' -v
+      - name: Alternative mechanical electrical inventory magic actor environment and presentation hard negatives
+        run: python3 -m unittest discover -s tests -p 'test_inventory_legacy_core_gameplay_channels.py' -v
+      - name: Synthetic original-era control-flow disassembly with click and state hard negatives
+        run: python3 -m unittest discover -s tests -p 'test_reconstruct_legacy_core_command_controls.py' -v
+      - name: Synthetic independent player clicked source-power-control semantics
+        run: python3 -m unittest discover -s tests -p 'test_trace_legacy_core_ui_controls.py' -v
+      - name: Synthetic original creator Dr H ending and chess NBT logic hard negatives
+        run: python3 -m unittest discover -s tests -p 'test_reconstruct_legacy_core_author_scenes.py' -v
+      - name: Compile source-free three-audience CORE creator mechanism hypothesis IR fixtures
+        run: python3 -m unittest discover -s tests -p 'test_compile_legacy_core_creator_mechanism_ir.py' -v
+      - name: Independent source-only chess target coordinate overlap hard negatives
+        run: python3 -m unittest discover -s tests -p 'test_chess_source_effect_geometry.py' -v
