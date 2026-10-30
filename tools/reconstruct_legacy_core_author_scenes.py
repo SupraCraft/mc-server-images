@@ -40,7 +40,12 @@ NAME_PARAM=re.compile(r"(?:^|,)\s*name\s*=\s*([^,\]]{1,128})",re.I)
 TYPE_PARAM=re.compile(r"(?:^|,)\s*type\s*=\s*([^,\]]{1,128})",re.I)
 
 def safe_entity_type(raw):
-    value=(raw or "").lower().split(":")[-1].replace("_","").lstrip("!")
+    """Only bounded positive vanilla spellings identify original 1.8 actors.
+
+    A foreign namespace or a negated selector is not a vanilla summon type,
+    even when its local token happens to spell ArmorStand or Villager.
+    """
+    value=_vanilla_188_actor_type(raw)
     return value if value in ALLOWED_ENTITY_TYPES else "other_or_unspecified"
 
 
