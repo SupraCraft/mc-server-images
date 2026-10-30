@@ -24,7 +24,13 @@ def compile_ir(story,control):
             raise ValueError(name+" schema mismatch")
         if value.get("source_world_sha256")!=PIN_WORLD or value.get("source_graph_sha256")!=PIN_GRAPH:
             raise ValueError(name+" immutable original source pin mismatch")
-        if value.get("gameplay_promoted") is not False and value.get("gameplay_primitive_promoted") is not False:
+        # Each schema owns an explicit source-only verdict; a sibling flag
+        # cannot mask a true, malformed, or missing owned verdict.
+        required = "gameplay_promoted" if name == "story" else "gameplay_primitive_promoted"
+        if value.get(required) is not False or any(
+            key in value and value[key] is not False
+            for key in ("gameplay_promoted", "gameplay_primitive_promoted")
+        ):
             raise ValueError(name+" attempted gameplay promotion")
     if story["original_commands_sha_verified"]!=1445 or control["source_sha_verified_command_count"]!=1445:
         raise ValueError("incomplete original source command census")

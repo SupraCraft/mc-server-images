@@ -114,6 +114,28 @@ class MechanismIrTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"promotion"):
             compile_ir(s,c)
 
+    def test_contradictory_promotion_fields_fail_closed(self):
+        s,c=fixtures()
+        s["gameplay_primitive_promoted"]=True
+        with self.assertRaisesRegex(ValueError,"promotion"):
+            compile_ir(s,c)
+        s,c=fixtures()
+        c["gameplay_promoted"]=True
+        with self.assertRaisesRegex(ValueError,"promotion"):
+            compile_ir(s,c)
+
+    def test_missing_schema_owned_promotion_flag_cannot_use_other_flag(self):
+        s,c=fixtures()
+        del s["gameplay_promoted"]
+        s["gameplay_primitive_promoted"]=False
+        with self.assertRaisesRegex(ValueError,"promotion"):
+            compile_ir(s,c)
+        s,c=fixtures()
+        del c["gameplay_primitive_promoted"]
+        c["gameplay_promoted"]=False
+        with self.assertRaisesRegex(ValueError,"promotion"):
+            compile_ir(s,c)
+
     def test_wrong_source_census_prevents_ir_publication(self):
         s,c=fixtures()
         s["qualified_sensor_to_command_route_count"]=89
