@@ -303,6 +303,34 @@ class LegacySourceCreatorSceneTests(unittest.TestCase):
         self.assertEqual(out["source_spawn_and_kill_type_compatible"],1)
         self.assertNotIn("source_type_join_UNRESOLVED",out)
 
+    def test_foreign_summon_actor_cannot_become_188_chess_armorstand(self):
+        foreign=source_command_families(
+            'summon outsider:ArmorStand ~ ~ ~ {Equipment:[{id:"minecraft:skull",Count:1b}]}')
+        self.assertIn("summon_other_or_unspecified",foreign)
+        self.assertNotIn("summon_armorstand",foreign)
+        self.assertNotIn("armor_stand_summon_with_skull_token",foreign)
+        self.assertIn("skull_token_in_action",foreign)  # mention only
+        native=source_command_families(
+            'summon minecraft:ArmorStand ~ ~ ~ {Equipment:[{id:"minecraft:skull",Count:1b}]}')
+        self.assertIn("summon_armorstand",native)
+        self.assertIn("armor_stand_summon_with_skull_token",native)
+
+    def test_selector_foreign_or_negated_actor_not_a_vanilla_join(self):
+        from tools.reconstruct_legacy_core_author_scenes import (
+            safe_entity_type, source_selector_signature)
+        for invalid in ("outsider:Villager","!Villager",
+                        "!minecraft:ArmorStand","minecraft:!ArmorStand",
+                        "other:ArmorStand","minecraft:ArmorStand:extra"):
+            self.assertEqual(safe_entity_type(invalid), "other_or_unspecified")
+        self.assertEqual(safe_entity_type("minecraft:ArmorStand"),"armorstand")
+        self.assertEqual(safe_entity_type("Villager"),"villager")
+        negative=source_selector_signature(
+            "testfor @e[name=StageActor,type=!Villager]")
+        self.assertEqual(negative,{("StageActor","other_or_unspecified")})
+        foreign=source_selector_signature(
+            "testfor @e[name=StageActor,type=outsider:Villager]")
+        self.assertEqual(foreign,{("StageActor","other_or_unspecified")})
+
     def test_unsupported_namespace_syntax_does_not_become_actor_type(self):
         for invalid in ("minecraft:", "minecraft:Villager:Other",
                         "other:Villager", "minecraft:Villager!"):
