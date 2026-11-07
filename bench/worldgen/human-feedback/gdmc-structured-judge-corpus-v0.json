@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "gdmc.settlement-generation.structured-human-judges.v0",
+  "source": {
+    "name": "Generative Design in Minecraft (GDMC) Settlement Generation Challenge",
+    "methodology_ref": "https://gendesignmc.wikidot.com/wiki:evaluation",
+    "license_note": "Wikidot evaluation/page content is published under the site's CC BY-SA 3.0 notice; generated-map and submission-code rights vary and must be checked per artifact."
+  },
+  "evaluation_protocol": {
+    "human_judged": true,
+    "unknown_input_maps": true,
+    "same_input_maps_within_cohort": true,
+    "judge_mode": "Minecraft creative mode; judges encouraged to walk from an embodied/survival perspective",
+    "score_range": [
+      0,
+      10
+    ],
+    "aggregation": "published aggregate category scores per generator",
+    "source_caveat": "Judges retain interpretive freedom and may have preferences; this benchmark is human evidence, not an objective oracle.",
+    "generated_maps": "publicly linked by GDMC after competition evaluation",
+    "comments": "2024 source states a full table including comments is published separately; comments are not yet ingested into this corpus."
+  },
+  "dimensions": [
+    {
+      "id": "adaptability",
+      "source_label": "Adaptability",
+      "concept_id": "research.game_world.environmental_adaptation",
+      "description_ref": "https://gendesignmc.wikidot.com/wiki:evaluation#toc9"
+    },
+    {
+      "id": "functionality",
+      "source_label": "Functionality",
+      "concept_id": "research.game_world.embodied_functionality",
+      "description_ref": "https://gendesignmc.wikidot.com/wiki:evaluation#toc10"
+    },
+    {
+      "id": "narrative",
+      "source_label": "Evocative Narrative",
+      "concept_id": "research.game_world.evocative_environmental_narrative",
+      "description_ref": "https://gendesignmc.wikidot.com/wiki:evaluation#toc11"
+    },
+    {
+      "id": "aesthetics",
+      "source_label": "Maintaining Aesthetics",
+      "concept_id": "research.game_world.visual_design_coherence",
+      "description_ref": "https://gendesignmc.wikidot.com/wiki:evaluation#toc12"
+    }
+  ],
+  "cohorts": [
+    {
+      "year": 2024,
+      "minecraft_version": "1.20.2",
+      "source_ref": "https://gendesignmc.wikidot.com/wiki:2024-settlement-generation-competition",
+      "generated_maps_ref": "https://www.dropbox.com/scl/fo/vyjmptplst406o9ha3k3l/AMlMsL64GXgGSTn_Kpwy0MQ?dl=0&rlkey=ivb61r9zsr9v3vvpyyzrbb4t0",
+      "generation_design": "one large map; three generated settlement locations per submission",
+      "entries": [
+        {
+          "entry": 1,
+          "team": "SpecificProtagonist",
+          "scores": {
+            "adaptability": 5.32,
+            "functionality": 5.57,
+            "narrative": 7.11,
+            "aesthetics": 6.41
+          },
+          "external_final_score": 6.1,
+          "external_rank": 1,
+          "source_code_ref": "https://github.com/SpecificProtagonist/frightful_hobgoblin"
+        },
+        {
+          "entry": 2,
+          "team": "Last Minute",
+          "scores": {
+            "adaptability": 2.77,
+            "functionality": 1.82,
+            "narrative": 1.91,
+            "aesthetics": 4.05
+          },
+          "external_final_score": 2.64,
+          "external_rank": 5,
+          "source_code_ref": "https://github.com/Xeon0X/GDMC-2024"
+        },
+        {
+          "entry": 3,
+          "team": "PanderWorld",
+          "scores": {
+            "adaptability": 2.8,
+            "functionality": 5.45,
+            "narrative": 5.55,
+            "aesthetics": 5.23
+          },
+          "external_final_score": 4.76,
+          "external_rank": 3,
+          "source_code_ref": "https://github.com/GDMC-Group2/PanderWorld"
+        },
+        {
+          "entry": 4,
+          "team": "Shadow Wizard Money Gang (SWMG)",
+          "scores": {
+            "adaptability": 5.02,
+            "functionality": 5.08,
+            "narrative": 4.45,
+            "aesthetics": 5.45
+          },
+          "external_final_score": 5,
+          "external_rank": 2,
+          "source_code_ref": "https://github.com/Jandhi/grimoire"
+        },
+        {
+          "entry": 5,
+          "team": "Niels-NTG",
+          "scores": {
+            "adaptability": 2.55,
+            "functionality": 4.68,
+            "narrative": 4.43,
+            "aesthetics": 5.7
+          },
+          "external_final_score": 4.34,
+          "external_rank": 4,
+          "source_code_ref": "https://github.com/Niels-NTG/GDMC2024"
+        }
+      ]
+    },
+    {
+      "year": 2025,
+      "minecraft_version": "1.21.4",
+      "source_ref": "https://gendesignmc.wikidot.com/wiki:2025-settlement-generation-competition",
+      "generated_maps_ref": "https://www.dropbox.com/scl/fo/e4m1v14n16h00tejlmxse/AMifJyWJIftlM3mU_DTR0Lk?dl=0&rlkey=t9ilq8eb9vvi56hqt1i1xk0au",
+      "entries": [
+        {
+          "entry": 1,
+          "team": "University of Tsukuba, Laboratory of Evolutionary Computation",
+          "scores": {
+            "adaptability": 3.96,
+            "functionality": 3.67,
+            "narrative": 3.46,
+            "aesthetics": 3.67
+          },
+          "external_final_score": 3.69,
+          "source_code_ref": "https://github.com/Xabi08YT/GDMC2025-MX"
+        },
+        {
+          "entry": 2,
+          "team": "DustBeam",
+          "scores": {
+            "adaptability": 5,
+            "functionality": 3.69,
+            "narrative": 2.77,
+            "aesthetics": 4.81
+          },
+          "external_final_score": 4.07,
+          "source_code_ref": "https://github.com/DustBeam/Procedural-Minecraft"
+        },
+        {
+          "entry": 3,
+          "team": "Slothlab",
+          "scores": {
+            "adaptability": 2.96,
+            "functionality": 2.6,
+            "narrative": 2,
+            "aesthetics": 2.44
+          },
+          "external_final_score": 2.5,
+          "source_code_ref": "https://github.com/yawgmoth/GDMC25"
+        },
+        {
+          "entry": 4,
+          "team": "Panda_Revival",
+          "scores": {
+            "adaptability": 2.27,
+            "functionality": 5.52,
+            "narrative": 5.31,
+            "aesthetics": 5.37
+          },
+          "external_final_score": 4.62,
+          "source_code_ref": "https://github.com/GDMC-Group2/Panda_Revival"
+        },
+        {
+          "entry": 5,
+          "team": "Gaussianly Filtered",
+          "scores": {
+            "adaptability": 5.69,
+            "functionality": 5.65,
+            "narrative": 5.92,
+            "aesthetics": 6.54
+          },
+          "external_final_score": 5.95,
+          "source_code_ref": "https://github.com/IsaacBraamGit/gdcm2025"
+        },
+        {
+          "entry": 6,
+          "team": "Shadow Wizard Money Gang",
+          "scores": {
+            "adaptability": 5.32,
+            "functionality": 4.33,
+            "narrative": 3.97,
+            "aesthetics": 5.21
+          },
+          "external_final_score": 4.71,
+          "source_code_ref": "https://github.com/Jandhi/Tome"
+        }
+      ]
+    }
+  ],
+  "guardrails": [
+    "Use the four published category dimensions independently; do not train or optimize toward the external final score or rank.",
+    "Freeze SupraCraft automated metrics before comparing them with GDMC human scores.",
+    "Treat published human scores as noisy expert/volunteer judgments with judge-preference variance, not canonical truth.",
+    "Do not infer causal generator quality from a single cohort or Minecraft version.",
+    "Generated maps must be bound to exact downloaded file hashes before running SupraCraft analysis.",
+    "Source code and generated-map licenses/redistribution rights must be evaluated separately from public availability.",
+    "Do not map GDMC Maintaining Aesthetics to generic beauty; its rubric includes consistency, proportion, appropriate variation and avoidance of jarring procedural artifacts.",
+    "Do not map GDMC Functionality to simple mechanical validity; it explicitly includes embodied accessibility, navigation, safety, mob spawning, food/resources, crafting and player-scale affordances."
+  ]
+}

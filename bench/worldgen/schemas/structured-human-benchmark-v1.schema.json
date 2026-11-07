@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/SupraCraft/mc-server-images/bench/worldgen/schemas/structured-human-benchmark-v1.schema.json",
+  "title": "Structured External Human Benchmark v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","benchmark_id","source","evaluation_protocol","dimensions","cohorts","guardrails"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "benchmark_id": {"type":"string","minLength":3},
+    "source": {
+      "type":"object","additionalProperties":false,
+      "required":["name","methodology_ref"],
+      "properties":{
+        "name":{"type":"string","minLength":1},
+        "methodology_ref":{"type":"string","minLength":1},
+        "license_note":{"type":["string","null"]}
+      }
+    },
+    "evaluation_protocol": {
+      "type":"object","additionalProperties":true,
+      "required":["human_judged","unknown_input_maps","score_range"]
+    },
+    "dimensions": {
+      "type":"array","minItems":1,
+      "items":{
+        "type":"object","additionalProperties":false,
+        "required":["id","source_label","concept_id","description_ref"],
+        "properties":{
+          "id":{"type":"string","minLength":1},
+          "source_label":{"type":"string","minLength":1},
+          "concept_id":{"type":"string","pattern":"^research\\.game_world\\."},
+          "description_ref":{"type":"string","minLength":1}
+        }
+      }
+    },
+    "cohorts": {
+      "type":"array","minItems":1,
+      "items":{
+        "type":"object","additionalProperties":true,
+        "required":["year","minecraft_version","source_ref","entries"]
+      }
+    },
+    "guardrails":{"type":"array","minItems":1,"items":{"type":"string","minLength":1}}
+  }
+}

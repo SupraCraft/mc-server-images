@@ -1,0 +1,33 @@
+{
+  "schema": "supracraft-exact-version-source-evidence/1",
+  "subject": "Minecraft Java 1.8.8 redstone-wire power into a command block directly below",
+  "minecraft_version": "1.8.8",
+  "source": {
+    "repository": "ZeroedInOnTech/1.8.8",
+    "commit": "47c636a70ff7fc60c52ac3ac4bca426e8b55743a",
+    "mcp_build": 918,
+    "files": [
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneWire.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/world/World.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockCommandBlock.java"
+    ]
+  },
+  "observed_source_semantics": {
+    "command_block_neighbor_update": "BlockCommandBlock.onNeighborBlockChange evaluates World.isBlockPowered(commandPos) before scheduling command execution.",
+    "world_vertical_query": "World.isBlockPowered(commandPos) explicitly queries getRedstonePower(commandPos.up(), EnumFacing.UP).",
+    "wire_power_query": "World.getRedstonePower delegates a non-normal-cube redstone-wire neighbor to BlockRedstoneWire.getWeakPower(world, wirePos, wireState, facing).",
+    "wire_up_side": "BlockRedstoneWire.getWeakPower returns the wire POWER value when the queried side is EnumFacing.UP."
+  },
+  "supported_relation": {
+    "source": "powered redstone wire",
+    "relative_target": [0, -1, 0],
+    "target": "legacy command_block",
+    "edge": "legacy_dust_downward_command_power",
+    "certainty": "strong"
+  },
+  "inference_boundary": [
+    "This receipt supports only redstone wire immediately above a Minecraft 1.8.8 legacy command block.",
+    "It does not establish generic vertical redstone adjacency, arbitrary dust-to-component power, opaque-solid conduction, quasi-connectivity, or repeating/chain command-block behavior.",
+    "Static causal support remains distinct from runtime command execution, client delivery, player perception, comprehension, and qualitative value."
+  ]
+}

@@ -1,0 +1,111 @@
+name: worldgen persona metric controls
+
+on:
+  pull_request:
+    paths:
+      - 'bench/worldgen/personas/**'
+      - 'bench/worldgen/schemas/persona-trace-v1.schema.json'
+      - 'tools/analyze_persona_trace.py'
+      - 'tests/test_worldgen_persona_trace.py'
+      - '.github/workflows/worldgen-persona-metric-controls.yml'
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'bench/worldgen/personas/**'
+      - 'bench/worldgen/schemas/persona-trace-v1.schema.json'
+      - 'tools/analyze_persona_trace.py'
+      - 'tests/test_worldgen_persona_trace.py'
+      - '.github/workflows/worldgen-persona-metric-controls.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || {
+            echo "::error::Persona metric controls are authorized only in public repositories."
+            exit 78
+          }
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Run persona analyzer controls
+        run: python -m unittest -v tests.test_worldgen_persona_trace
+
+      - name: Materialize control receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          for name in direct-legible confused-loop hard-progressing; do
+            python tools/analyze_persona_trace.py \
+              --trace "bench/worldgen/personas/fixtures/$name.json" \
+              --output "out/$name.json"
+          done
+
+      - name: Falsify hard-equals-confusing collapse
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          out=pathlib.Path("out")
+          direct=json.loads((out/"direct-legible.json").read_text())
+          confused=json.loads((out/"confused-loop.json").read_text())
+          hard=json.loads((out/"hard-progressing.json").read_text())
+
+          assert direct["objective_complete"] is True
+          assert direct["progress"]["stall_window_count"] == 0
+
+          assert confused["objective_complete"] is False
+          assert confused["progress"]["stall_window_count"] >= 1
+          assert confused["actions"]["unproductive_action_rate"] > direct["actions"]["unproductive_action_rate"]
+
+          # Key hard negative: failures/retries can be high while progress remains legible.
+          assert hard["objective_complete"] is True
+          assert hard["recovery"]["failure_count"] == 2
+          assert hard["progress"]["stall_window_count"] == 0
+          assert hard["progress"]["progress_event_count"] > direct["progress"]["progress_event_count"]
+
+          summary={
+            "schema":"supracraft-persona-metric-control-comparison/1",
+            "direct":{"stall":direct["progress"]["stall_window_count"],"failed":direct["recovery"]["failure_count"],"complete":direct["objective_complete"]},
+            "confused":{"stall":confused["progress"]["stall_window_count"],"unproductive":confused["actions"]["unproductive_action_rate"],"complete":confused["objective_complete"]},
+            "hard":{"stall":hard["progress"]["stall_window_count"],"failed":hard["recovery"]["failure_count"],"complete":hard["objective_complete"]},
+            "hard_not_collapsed_into_confusion": True,
+            "note":"Behavioral proxies only; no fairness, fun, frustration, or boredom judgment."
+          }
+          pathlib.Path("out/control-comparison.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-persona-metric-controls
+          path: out/
+          retention-days: 14

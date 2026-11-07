@@ -1,0 +1,52 @@
+{
+  "schema": "supracraft-exact-version-source-evidence/1",
+  "subject": "Minecraft Java 1.8.8 pressure-plate redstone semantics",
+  "version": "1.8.8",
+  "source": {
+    "repository": "felix-homelab/MCP-decompiled",
+    "commit": "e8c02acd165c953d790b62e464678ba27b447814",
+    "files": [
+      "src/minecraft/net/minecraft/block/BlockBasePressurePlate.java",
+      "src/minecraft/net/minecraft/block/BlockPressurePlate.java",
+      "src/minecraft/net/minecraft/block/BlockPressurePlateWeighted.java",
+      "src/minecraft/net/minecraft/block/Block.java"
+    ]
+  },
+  "observed_semantics": {
+    "base": {
+      "weak_power": "current redstone strength on every queried side",
+      "strong_power": "current redstone strength only toward EnumFacing.UP, corresponding to the supporting block below",
+      "neighbor_updates": ["plate position", "support position below"],
+      "activation": "entity collision/occupancy causes the plate to compute its own redstone strength"
+    },
+    "ordinary": {
+      "stone_pressure_plate": {
+        "sensitivity": "living entities only",
+        "stored_metadata": "0 or 1",
+        "emitted_strength": "0 or 15"
+      },
+      "wooden_pressure_plate": {
+        "sensitivity": "all triggering entities",
+        "stored_metadata": "0 or 1",
+        "emitted_strength": "0 or 15"
+      }
+    },
+    "weighted": {
+      "light_weighted_pressure_plate": {
+        "entity_capacity": 15,
+        "stored_metadata": "0..15",
+        "emitted_strength": "stored 0..15 analog level"
+      },
+      "heavy_weighted_pressure_plate": {
+        "entity_capacity": 150,
+        "stored_metadata": "0..15",
+        "emitted_strength": "stored 0..15 analog level"
+      }
+    }
+  },
+  "inference_boundary": [
+    "This evidence supports a direct pressure-plate-to-support strong-power edge only.",
+    "It does not establish arbitrary opaque-solid conduction beyond the directly powered support.",
+    "Runtime qualification remains separate from player comprehension and qualitative judgment."
+  ]
+}

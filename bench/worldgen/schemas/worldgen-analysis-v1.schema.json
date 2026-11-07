@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/SupraCraft/mc-server-images/bench/worldgen/schemas/worldgen-analysis-v1.schema.json",
+  "title": "Worldgen Analysis v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "feasibility", "dimensions"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "minLength": 3},
+    "feasibility": {
+      "type": "object",
+      "required": ["status", "checks"],
+      "properties": {
+        "status": {"type": "string", "enum": ["pass", "fail", "unknown"]},
+        "checks": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "dimensions": {
+      "type": "object",
+      "required": ["terrain", "biomes", "resources", "structures", "spawns", "affordances", "playability", "performance", "saliency"],
+      "properties": {
+        "terrain": {"type": "object"},
+        "biomes": {"type": "object"},
+        "resources": {"type": "object"},
+        "structures": {"type": "object"},
+        "spawns": {"type": "object"},
+        "affordances": {"type": "object"},
+        "playability": {"type": "object"},
+        "performance": {"type": "object"},
+        "saliency": {"type": "object"}
+      }
+    }
+  }
+}

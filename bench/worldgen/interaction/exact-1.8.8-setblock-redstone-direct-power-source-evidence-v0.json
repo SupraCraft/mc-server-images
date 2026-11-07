@@ -1,0 +1,53 @@
+{
+  "schema": "supracraft-exact-version-source-evidence/1",
+  "subject": "Minecraft Java 1.8.8 setblock-authored redstone block direct power into adjacent command blocks and diode rear inputs",
+  "minecraft_version": "1.8.8",
+  "source": {
+    "repository": "ZeroedInOnTech/1.8.8",
+    "commit": "47c636a70ff7fc60c52ac3ac4bca426e8b55743a",
+    "mcp_build": 918,
+    "files": [
+      "1.8.8/Build 918/src/minecraft/net/minecraft/command/server/CommandSetBlock.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockCompressedPowered.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/world/World.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockCommandBlock.java",
+      "1.8.8/Build 918/src/minecraft/net/minecraft/block/BlockRedstoneDiode.java"
+    ]
+  },
+  "observed_source_semantics": {
+    "setblock_write_and_notify": "CommandSetBlock writes the requested block state and then calls World.notifyNeighborsRespectDebug on the authored coordinate.",
+    "powered_block_output": "BlockCompressedPowered.canProvidePower returns true and getWeakPower returns 15 on every queried side.",
+    "world_power_query": "A power-providing redstone block is not treated as a normal cube by Block.isNormalCube; World.getRedstonePower therefore delegates to its weak-power output.",
+    "command_block_rising_edge": "BlockCommandBlock.onNeighborBlockChange calls World.isBlockPowered and schedules command execution on an untriggered powered rising edge.",
+    "diode_rear_input": "BlockRedstoneDiode.calculateInputStrength reads World.getRedstonePower at pos.offset(FACING), so only the exact decoded rear-input coordinate qualifies."
+  },
+  "supported_relations": [
+    {
+      "edge": "legacy_setblock_redstone_block_direct_command_power",
+      "source": "executing legacy setblock command whose compact authored state is redstone_block",
+      "target": "legacy command_block immediately adjacent to the authored coordinate",
+      "certainty": "strong"
+    },
+    {
+      "edge": "legacy_setblock_redstone_block_diode_rear_input",
+      "source": "executing legacy setblock command whose compact authored state is redstone_block",
+      "target": "repeater/comparator whose exact decoded rear-input coordinate equals the authored coordinate",
+      "certainty": "strong"
+    }
+  ],
+  "compact_state_boundary": {
+    "retained_state_classes": [
+      "redstone_block",
+      "air"
+    ],
+    "purpose": "redstone_block qualifies the power-producing write; air permits text-free recognition of the corresponding reset without creating a power edge",
+    "raw_command_arguments_retained": false
+  },
+  "inference_boundary": [
+    "The relation requires exact resolution of the setblock coordinate and compact redstone_block state class.",
+    "No edge is created from an air write or an unclassified authored block state.",
+    "No generic setblock-to-feedback, command-to-command, physical-adjacency, dust, opaque-solid-conduction, or quasi-connectivity relation is implied.",
+    "A direct power relation still presumes execution of the source command; static recoverability is not a runtime execution receipt.",
+    "Client delivery, perception, comprehension, legibility, and qualitative value remain separate."
+  ]
+}

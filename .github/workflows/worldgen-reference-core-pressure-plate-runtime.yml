@@ -1,0 +1,354 @@
+name: worldgen CORE exact 1.8.8 pressure-plate runtime probes
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE v1.4 intake run
+        required: true
+        default: "36559943983"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/select_legacy_runtime_probes.py'
+      - 'tools/probe_legacy_reference_mechanisms.py'
+      - 'tools/legacy_pressure_plate_player.js'
+      - 'tests/test_worldgen_causal_machinery.py'
+      - 'bench/worldgen/interaction/exact-1.8.8-pressure-plate-source-evidence-v0.json'
+      - '.github/workflows/worldgen-reference-core-pressure-plate-runtime.yml'
+
+concurrency:
+  group: worldgen-core-pressure-runtime-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded NBT dependency
+        run: python -m pip install --disable-pip-version-check nbtlib==2.0.4
+
+      - name: Pin exact player-actor dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pressure-player-runtime
+          cd pressure-player-runtime
+          npm init -y >/dev/null
+          npm install --save-exact mineflayer@4.39.0
+          echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
+
+      - name: Run pressure-plate structural controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/legacy_pressure_plate_player.js
+          python -m py_compile tools/probe_legacy_reference_mechanisms.py
+          python -m unittest -v tests.test_worldgen_causal_machinery
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Build current feedback-blind causal graph
+        run: |
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py \
+            --world-zip source/original-world.zip \
+            --output out/core-v1.4-causal-machinery.json
+
+      - name: Select pressure-plate probes without human feedback
+        run: |
+          python tools/select_legacy_runtime_probes.py \
+            --graph out/core-v1.4-causal-machinery.json \
+            --sensor-mode pressure_plates \
+            --limit 3 \
+            --output out/pressure-plate-selection.json
+
+      - name: Run paired fresh-world control versus occupied trials
+        run: |
+          python tools/probe_legacy_reference_mechanisms.py \
+            --version 1.8.8 \
+            --world-zip source/original-world.zip \
+            --selection out/pressure-plate-selection.json \
+            --limit 3 \
+            --player-client-script tools/legacy_pressure_plate_player.js \
+            --output out/pressure-plate-paired-probes.json
+
+      - name: Validate compact receipts and preserve negative outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          selected=json.loads(pathlib.Path("out/pressure-plate-selection.json").read_text())
+          d=json.loads(pathlib.Path("out/pressure-plate-paired-probes.json").read_text())
+          families={
+              "stone_pressure_plate","wooden_pressure_plate",
+              "light_weighted_pressure_plate","heavy_weighted_pressure_plate",
+          }
+          assert selected["sensor_mode"]=="pressure_plates"
+          assert 1 <= selected["selected_count"] <= 3
+          assert d["paired_control_design"] is True
+          assert d["minecraft_version"]=="1.8.8"
+          assert d["probe_count"]==selected["selected_count"]
+          for row in d["results"]:
+              assert row["probe"]["family"] in families
+              assert row["activation_method"]=="paired_exact_1.8.8_player_occupancy"
+              actors=row["player_actor"]
+              for arm in ("control","activated"):
+                  assert actors[arm]["status"]=="ready"
+                  assert actors[arm]["minecraft_version"]=="1.8.8"
+                  assert actors[arm]["protocol_version"]==47
+              sensor=row["sensor_state"]
+              assert sensor["control"]["observed"] is True
+              assert sensor["activated"]["observed"] is True
+              assert sensor["control"]["legacy_block_id"]==sensor["activated"]["legacy_block_id"]
+              assert sensor["control"]["legacy_metadata"]==0
+              live=row["live_sensor_query"]
+              assert live["control"]["expected_legacy_metadata"]==0
+              assert live["control"]["matched"] is True
+              assert live["activated"]["expected_legacy_metadata"]==1
+              observations=row["player_sensor_observation"]
+              assert observations["control"]["schema"]=="supracraft-legacy-player-block-observation/1"
+              assert observations["activated"]["schema"]=="supracraft-legacy-player-block-observation/1"
+              assert observations["control"]["sample_count"] > 0
+              assert observations["activated"]["sample_count"] > 0
+              assert observations["control"]["positive_metadata_observed"] is False
+              assert observations["activated"]["positive_metadata_observed"] is True
+              assert observations["activated"]["max_legacy_metadata"] >= 1
+              for arm in ("control","activated"):
+                  feedback=observations[arm]["client_feedback"]
+                  assert set(feedback)=={
+                      "message_events","protocol_chat_events",
+                      "self_effect_events","truncated"
+                  }
+                  for message in feedback["message_events"]:
+                      assert set(message)=={
+                          "sha256","position","observed_at_epoch_ms"
+                      }
+                      assert len(message["sha256"])==64
+                      assert isinstance(message["observed_at_epoch_ms"],int)
+                  for protocol_chat in feedback["protocol_chat_events"]:
+                      assert set(protocol_chat)=={
+                          "sha256","position","component_kind",
+                          "semantic_class","command_verb","observed_at_epoch_ms",
+                      }
+                      assert len(protocol_chat["sha256"])==64
+                      assert protocol_chat["position"] is None or isinstance(
+                          protocol_chat["position"],int
+                      )
+                      assert protocol_chat["component_kind"] in {
+                          "unparsed","string","array","translate","text","object"
+                      }
+                      assert protocol_chat["semantic_class"] in {
+                          "unparsed","literal_text","composite","command_feedback",
+                          "death","achievement","chat","gamemode","multiplayer",
+                          "translated_other","other_component",
+                      }
+                      assert protocol_chat["command_verb"] is None or isinstance(
+                          protocol_chat["command_verb"],str
+                      )
+                      assert isinstance(
+                          protocol_chat["observed_at_epoch_ms"],int
+                      )
+                  for effect in feedback["self_effect_events"]:
+                      assert set(effect)=={
+                          "event","id","amplifier","duration",
+                          "observed_at_epoch_ms"
+                      }
+                      assert effect["event"] in {"start","end"}
+                      assert all(
+                          isinstance(effect[field],int)
+                          for field in (
+                              "id","amplifier","duration","observed_at_epoch_ms"
+                          )
+                      )
+              assert row["evidence"]["live_sensor_activation_observed"] is True
+
+              scope=set(row.get("world_target_source_scope",[]))
+              assert scope
+              assert all(
+                  change.get("source") in scope
+                  for change in row["delta"]["world_target_changes"]
+              )
+
+              receipt=row["execution_receipt"]
+              assert receipt["schema"]=="supracraft-legacy-execution-receipt/1"
+              assert receipt["command_scope"]==row["world_target_source_scope"]
+              assert receipt["outcome_class"] in {
+                  "observable_world_target_actuation",
+                  "selected_command_state_change_without_observable_target_delta",
+                  "other_runtime_state_change_without_observable_target_delta",
+                  "no_observed_runtime_effect",
+              }
+              allowed_command_fields={
+                  "verb","sha256","success_count","condition_met",
+                  "powered","last_execution","last_output_sha256",
+              }
+              for command in receipt["commands"]:
+                  assert set(command["control"])==allowed_command_fields
+                  assert set(command["activated"])==allowed_command_fields
+
+              feedback_changes=row["presentation_feedback_command_state_changes"]
+              assert row["evidence"]["presentation_feedback_command_state_change_count"]==len(feedback_changes)
+              assert row["evidence"]["presentation_feedback_success_count_change_count"]==sum(
+                  1 for change in feedback_changes if change["success_count_changed"]
+              )
+              for change in feedback_changes:
+                  assert change["node_id"] in scope
+                  assert change["verb"] in {
+                      "effect","particle","playsound","title","tellraw","say"
+                  }
+                  assert change["changed_fields"]
+                  assert set(change)=={
+                      "node_id","verb","changed_fields","success_count_changed",
+                      "control_success_count","activated_success_count",
+                  }
+
+              client_delta=row["client_feedback_delta"]
+              assert set(client_delta)=={
+                  "message_events_added","message_events_removed",
+                  "protocol_chat_events_added","protocol_chat_events_removed",
+                  "self_effect_events_added","self_effect_events_removed",
+                  "control_truncated","activated_truncated",
+              }
+              assert client_delta["control_truncated"] is False
+              assert client_delta["activated_truncated"] is False
+              for item in (
+                  client_delta["message_events_added"]+
+                  client_delta["message_events_removed"]
+              ):
+                  assert set(item)=={"sha256","position","count"}
+                  assert len(item["sha256"])==64
+                  assert item["count"] > 0
+              for item in (
+                  client_delta["protocol_chat_events_added"]+
+                  client_delta["protocol_chat_events_removed"]
+              ):
+                  assert set(item)=={
+                      "sha256","position","component_kind","semantic_class",
+                      "command_verb","count",
+                  }
+                  assert len(item["sha256"])==64
+                  assert item["count"] > 0
+              for item in (
+                  client_delta["self_effect_events_added"]+
+                  client_delta["self_effect_events_removed"]
+              ):
+                  assert set(item)=={
+                      "event","id","amplifier","duration","count"
+                  }
+                  assert item["event"] in {"start","end"}
+                  assert item["count"] > 0
+              assert row["evidence"]["client_message_delta_observed"]==bool(
+                  client_delta["message_events_added"] or
+                  client_delta["message_events_removed"]
+              )
+              assert row["evidence"]["client_protocol_chat_delta_observed"]==bool(
+                  client_delta["protocol_chat_events_added"] or
+                  client_delta["protocol_chat_events_removed"]
+              )
+              assert row["evidence"]["client_self_effect_delta_observed"]==bool(
+                  client_delta["self_effect_events_added"] or
+                  client_delta["self_effect_events_removed"]
+              )
+              assert row["evidence"]["client_feedback_delta_observed"]==bool(
+                  client_delta["message_events_added"] or
+                  client_delta["message_events_removed"] or
+                  client_delta["protocol_chat_events_added"] or
+                  client_delta["protocol_chat_events_removed"] or
+                  client_delta["self_effect_events_added"] or
+                  client_delta["self_effect_events_removed"]
+              )
+
+          print(json.dumps({
+              "selected":[
+                  {
+                      "node_id":x["node_id"],
+                      "family":x["family"],
+                      "candidate_component_command_blocks":x["candidate_component_command_blocks"],
+                  }
+                  for x in selected["selected"]
+              ],
+              "results":[
+                  {
+                      "node_id":x["probe"]["node_id"],
+                      "family":x["probe"]["family"],
+                      "player_actor":x["player_actor"],
+                      "live_sensor_query":x["live_sensor_query"],
+                      "player_sensor_observation":x["player_sensor_observation"],
+                      "saved_sensor_state":x["sensor_state"],
+                      "command_block_change_count":x["evidence"]["command_block_change_count"],
+                      "world_target_change_count":x["evidence"]["world_target_change_count"],
+                      "presentation_feedback_command_state_changes":x["presentation_feedback_command_state_changes"],
+                      "client_feedback_delta":x["client_feedback_delta"],
+                      "outcome_class":x["execution_receipt"]["outcome_class"],
+                  }
+                  for x in d["results"]
+              ],
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reference-core-v1.4-pressure-plate-runtime
+          path: |
+            out/pressure-plate-selection.json
+            out/pressure-plate-paired-probes.json
+          retention-days: 14

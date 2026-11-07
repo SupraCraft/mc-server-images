@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "trace_id": "fixture.confused-loop",
+  "world_ref": "fixture",
+  "artifact_version_ref": null,
+  "persona": "progression_optimizer",
+  "objective": "reach objective",
+  "profile": "authored_adventure",
+  "events": [
+    {
+      "t": 0,
+      "position": [
+        0,
+        64,
+        0
+      ],
+      "kind": "observation",
+      "action": null,
+      "target": null,
+      "success": null,
+      "progress_id": null,
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 5,
+      "position": [
+        8,
+        64,
+        0
+      ],
+      "kind": "move",
+      "action": "walk",
+      "target": "door",
+      "success": true,
+      "progress_id": null,
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 10,
+      "position": [
+        8,
+        64,
+        0
+      ],
+      "kind": "interaction",
+      "action": "use",
+      "target": "door",
+      "success": false,
+      "progress_id": null,
+      "failure_class": "no_effect",
+      "notes": null
+    },
+    {
+      "t": 16,
+      "position": [
+        0,
+        64,
+        0
+      ],
+      "kind": "move",
+      "action": "backtrack",
+      "target": null,
+      "success": true,
+      "progress_id": null,
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 22,
+      "position": [
+        8,
+        64,
+        0
+      ],
+      "kind": "interaction",
+      "action": "use",
+      "target": "door",
+      "success": false,
+      "progress_id": null,
+      "failure_class": "no_effect",
+      "notes": null
+    },
+    {
+      "t": 29,
+      "position": [
+        0,
+        64,
+        0
+      ],
+      "kind": "move",
+      "action": "backtrack",
+      "target": null,
+      "success": true,
+      "progress_id": null,
+      "failure_class": null,
+      "notes": null
+    },
+    {
+      "t": 36,
+      "position": [
+        8,
+        64,
+        0
+      ],
+      "kind": "interaction",
+      "action": "use",
+      "target": "door",
+      "success": false,
+      "progress_id": null,
+      "failure_class": "no_effect",
+      "notes": null
+    },
+    {
+      "t": 44,
+      "position": [
+        0,
+        64,
+        0
+      ],
+      "kind": "failure",
+      "action": null,
+      "target": "objective",
+      "success": false,
+      "progress_id": null,
+      "failure_class": "stalled",
+      "notes": null
+    }
+  ]
+}

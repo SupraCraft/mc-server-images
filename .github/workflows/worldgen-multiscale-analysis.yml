@@ -1,0 +1,107 @@
+name: worldgen multiscale analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Public bootstrap run containing canonical worlds
+        required: true
+        default: "36409836466"
+  push:
+    branches:
+      - plan/worldgen-benchmark-agent-dispatch
+    paths:
+      - 'tools/probe_worldgen_multiscale.py'
+      - '.github/workflows/worldgen-multiscale-analysis.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - normal
+          - flat-null-control
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36409836466"
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.repository.private }}" != "false" ]]; then
+            echo "::error::Worldgen benchmark execution is authorized only in public repositories."
+            exit 78
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py             --repository-private "${{ github.event.repository.private }}"             --runner-label "$WORLDGEN_RUNNER_LABEL"             --scan-workflows .github/workflows
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          if [[ -z "$run_id" ]]; then
+            run_id="$DEFAULT_SOURCE_RUN_ID"
+          fi
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: worldgen-bootstrap-${{ matrix.profile }}
+          path: source
+
+      - name: Run disposable multi-scale analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/probe_worldgen_multiscale.py             --world-zip source/world.zip             --release-evidence probes/26.3-release-identity.json             --run-id "bootstrap-${{ matrix.profile }}-260928"             --output-dir "out/${{ matrix.profile }}"
+
+      - name: Validate nominated site categories
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("out/${{ matrix.profile }}/tour/manifest.json")
+          data=json.loads(p.read_text())
+          cats={s["category"] for s in data["sites"]}
+          required={"top-interest","bottom-dull","representative","spawn-progression","random-control"}
+          missing=sorted(required-cats)
+          print(json.dumps({"categories":sorted(cats),"missing":missing},indent=2))
+          if missing:
+              raise SystemExit("missing required bootstrap site categories: "+", ".join(missing))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldgen-multiscale-${{ matrix.profile }}
+          path: out/${{ matrix.profile }}/
+          retention-days: 14

@@ -1,0 +1,321 @@
+name: worldgen CORE exact 1.8.8 pressure payload execution
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful CORE v1.4 intake run
+        required: true
+        default: "36559943983"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/analyze_legacy_causal_machinery.py'
+      - 'tools/select_legacy_runtime_probes.py'
+      - 'tools/probe_legacy_reference_mechanisms.py'
+      - 'tools/legacy_pressure_plate_player.js'
+      - 'bench/worldgen/interaction/exact-1.8.8-repeater-command-block-conduction-source-evidence-v0.json'
+      - '.github/workflows/worldgen-reference-core-pressure-payload-execution.yml'
+
+concurrency:
+  group: worldgen-core-pressure-payload-execution-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WORLDGEN_RUNNER_LABEL: ubuntu-latest
+      DEFAULT_SOURCE_RUN_ID: "36559943983"
+
+    steps:
+      - name: Fail closed outside public standard runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ github.event.repository.private }}" == "false" ]] || exit 78
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Enforce public/free execution policy
+        run: |
+          python tools/check_worldgen_public_policy.py \
+            --repository-private "${{ github.event.repository.private }}" \
+            --runner-label "$WORLDGEN_RUNNER_LABEL" \
+            --scan-workflows .github/workflows
+
+      - name: Install bounded runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check nbtlib==2.0.4
+          mkdir -p pressure-player-runtime
+          cd pressure-player-runtime
+          npm init -y >/dev/null
+          npm install --save-exact mineflayer@4.39.0
+          echo "NODE_PATH=$PWD/node_modules" >> "$GITHUB_ENV"
+
+      - name: Run structural controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/legacy_pressure_plate_player.js
+          python -m py_compile tools/probe_legacy_reference_mechanisms.py
+          python -m unittest -v tests.test_worldgen_causal_machinery
+
+      - name: Resolve source run
+        shell: bash
+        env:
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          [[ -n "$run_id" ]] || run_id="$DEFAULT_SOURCE_RUN_ID"
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v5
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          name: reference-core-v1.4-original
+          path: source
+
+      - name: Build graph and isolate the prior feedback-blind probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python tools/analyze_legacy_causal_machinery.py \
+            --world-zip source/original-world.zip \
+            --output out/core-v1.4-causal-machinery.json
+          python tools/select_legacy_runtime_probes.py \
+            --graph out/core-v1.4-causal-machinery.json \
+            --sensor-mode pressure_plates \
+            --limit 3 \
+            --output out/pressure-plate-selection.json
+          python - <<'PY'
+          import json,pathlib
+          src=json.loads(pathlib.Path("out/pressure-plate-selection.json").read_text())
+          target=next(
+              row for row in src["selected"]
+              if row["node_id"]=="392,109,-86"
+          )
+          out={
+              "schema":src.get("schema"),
+              "sensor_mode":src["sensor_mode"],
+              "selected_count":1,
+              "selected":[target],
+              "selection_origin":"prior_feedback_blind_selection_fixed_followup",
+          }
+          pathlib.Path("out/payload-execution-selection.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          PY
+
+      - name: Run paired execution-attribution trial
+        run: |
+          python tools/probe_legacy_reference_mechanisms.py \
+            --version 1.8.8 \
+            --world-zip source/original-world.zip \
+            --selection out/payload-execution-selection.json \
+            --limit 1 \
+            --player-client-script tools/legacy_pressure_plate_player.js \
+            --diagnostic-command-node-id 388,85,-75 \
+            --diagnostic-command-node-id 392,86,-63 \
+            --output out/pressure-payload-execution.json
+
+      - name: Validate compact runtime attribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          graph=json.loads(pathlib.Path(
+              "out/core-v1.4-causal-machinery.json"
+          ).read_text())
+          runtime=json.loads(pathlib.Path(
+              "out/pressure-payload-execution.json"
+          ).read_text())
+
+          diagnostics={"388,85,-75","392,86,-63"}
+          assert runtime["probe_count"]==1
+          row=runtime["results"][0]
+          assert row["probe"]["node_id"]=="392,109,-86"
+          assert row["activation_method"]=="paired_exact_1.8.8_player_occupancy"
+          assert set(row["diagnostic_command_node_ids"])==diagnostics
+          assert row["evidence"]["live_sensor_activation_observed"] is True
+
+          commands={
+              item["node_id"]:item
+              for item in row["execution_receipt"]["commands"]
+          }
+          for node_id in diagnostics:
+              command=commands[node_id]
+              assert command["control"]["verb"]=="tellraw"
+              assert command["activated"]["verb"]=="tellraw"
+
+          timeline=row["diagnostic_success_observation"]
+          assert set(timeline)=={"control","activated"}
+          checkpoints=("pre_trigger","t250ms","t1000ms","t3500ms","t15000ms")
+          sentinel=2147483647
+          for arm in ("control","activated"):
+              assert set(timeline[arm])==set(checkpoints)
+              for checkpoint in checkpoints:
+                  assert set(timeline[arm][checkpoint])==diagnostics
+                  for node_id in diagnostics:
+                      obs=timeline[arm][checkpoint][node_id]
+                      assert obs["query_kind"]==(
+                          "exact_1.8.8_testforblock_nbt_success_count"
+                      )
+                      assert obs["matched_known_value"] is True
+                      assert obs["success_count"] in {sentinel,0,1}
+                      assert obs["attempts"]
+
+          def first_execution_checkpoint(arm,node_id):
+              for checkpoint in checkpoints:
+                  value=timeline[arm][checkpoint][node_id]["success_count"]
+                  if value != sentinel:
+                      return checkpoint,value
+              return None,None
+
+          temporal_classification={}
+          order={name:i for i,name in enumerate(checkpoints)}
+          for node_id in diagnostics:
+              cpt,cval=first_execution_checkpoint("control",node_id)
+              apt,aval=first_execution_checkpoint("activated",node_id)
+              if cpt=="pre_trigger" or apt=="pre_trigger":
+                  cls="pretrigger_ambient_or_timer_execution"
+              elif apt is None and cpt is None:
+                  cls="no_execution_observed_in_window"
+              elif apt is not None and cpt is None:
+                  cls="activation_only_execution_observed"
+              elif apt is None and cpt is not None:
+                  cls="control_only_execution_observed"
+              elif order[apt] < order[cpt]:
+                  cls="activation_accelerated_execution_observed"
+              elif order[apt] == order[cpt]:
+                  cls="same_checkpoint_execution_ambiguous"
+              else:
+                  cls="control_precedes_activation_execution"
+              temporal_classification[node_id]={
+                  "classification":cls,
+                  "control_first_checkpoint":cpt,
+                  "control_first_value":cval,
+                  "activated_first_checkpoint":apt,
+                  "activated_first_value":aval,
+              }
+
+          nodes={n["node_id"]:n for n in graph["nodes"]}
+          expected_hash_by_node={
+              node_id:nodes[node_id]["command"][
+                  "presentation_payload_fingerprints"
+              ]["literal_text_sha256"]
+              for node_id in diagnostics
+          }
+          assert all(expected_hash_by_node.values())
+          expected_hashes=set(expected_hash_by_node.values())
+          added_hashes={
+              item["sha256"]
+              for item in row["client_feedback_delta"]["message_events_added"]
+          }
+          matched_payload_hashes=expected_hashes & added_hashes
+
+          trigger=row["trigger_epoch_ms"]
+          assert set(trigger)=={"control","activated"}
+          assert all(isinstance(trigger[arm],int) for arm in trigger)
+
+          raw=row["player_sensor_observation"]
+          payload_delivery_timing={}
+          for node_id,digest in expected_hash_by_node.items():
+              control_events=[
+                  event for event in raw["control"]["client_feedback"][
+                      "message_events"
+                  ]
+                  if event["sha256"]==digest
+              ]
+              activated_events=[
+                  event for event in raw["activated"]["client_feedback"][
+                      "message_events"
+                  ]
+                  if event["sha256"]==digest
+              ]
+              assert not control_events
+              assert len(activated_events)==1
+              event=activated_events[0]
+              assert isinstance(event["observed_at_epoch_ms"],int)
+              delta_ms=event["observed_at_epoch_ms"]-trigger["activated"]
+              payload_delivery_timing[node_id]={
+                  "sha256":digest,
+                  "observed_at_epoch_ms":event["observed_at_epoch_ms"],
+                  "trigger_epoch_ms":trigger["activated"],
+                  "delta_ms_from_trigger":delta_ms,
+                  "timing_class":(
+                      "pretrigger_delivery"
+                      if delta_ms < 0
+                      else "posttrigger_delivery"
+                  ),
+              }
+
+          literal_count=sum(
+              int(item["count"])
+              for item in row["client_feedback_delta"][
+                  "protocol_chat_events_added"
+              ]
+              if item["semantic_class"]=="literal_text"
+          )
+          assert literal_count >= 0
+
+          print(json.dumps({
+              "probe_node_id":row["probe"]["node_id"],
+              "diagnostic_command_node_ids":sorted(diagnostics),
+              "temporal_execution_classification":temporal_classification,
+              "payload_delivery_timing":payload_delivery_timing,
+              "final_success_count_state":{
+                  node_id:{
+                      "control":commands[node_id]["control"]["success_count"],
+                      "activated":commands[node_id]["activated"]["success_count"],
+                  }
+                  for node_id in sorted(diagnostics)
+              },
+              "matched_payload_hash_count":len(matched_payload_hashes),
+              "literal_protocol_event_count":literal_count,
+              "outcome_class":row["execution_receipt"]["outcome_class"],
+              "interpretation_boundary":(
+                  "temporal SuccessCount and compact event timestamps separate "
+                  "execution timing from payload delivery timing; neither establishes "
+                  "message semantics, perception, comprehension, or qualitative value"
+              ),
+          },indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reference-core-v1.4-pressure-payload-execution
+          path: |
+            out/core-v1.4-causal-machinery.json
+            out/pressure-plate-selection.json
+            out/payload-execution-selection.json
+            out/pressure-payload-execution.json
+          retention-days: 14
