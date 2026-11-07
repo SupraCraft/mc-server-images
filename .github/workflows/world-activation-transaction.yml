@@ -2,9 +2,15 @@ name: World activation contract
 on: [push, pull_request]
 permissions:
   contents: read
+concurrency:
+  group: world-activation-contract-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - run: python3 tools/validate_world_activation_transaction.py

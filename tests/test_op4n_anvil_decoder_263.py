@@ -1,6 +1,7 @@
 """Source-only negative checks for opt-in, public-safe real 26.3 decoder diagnostic."""
 import hashlib
 import json
+import os
 import pathlib
 import tempfile
 import sys
@@ -12,7 +13,49 @@ from qualify_vanilla_datapack_player_263 import (
     stopped_real_anvil_diagnostic, bounded_public_failure, Refused
 )
 
+HAS_SECURE_REGION_IO = (
+    all(hasattr(os, name) for name in ("O_DIRECTORY", "O_NOFOLLOW", "O_NONBLOCK"))
+    and os.open in os.supports_dir_fd
+)
+requires_secure_region_io = unittest.skipUnless(
+    HAS_SECURE_REGION_IO,
+    "requires directory-relative O_DIRECTORY/O_NOFOLLOW region reads",
+)
+
+
+def create_symlink_or_skip(test, link, target, *, target_is_directory=False):
+    try:
+        link.symlink_to(target, target_is_directory=target_is_directory)
+    except NotImplementedError:
+        test.skipTest("filesystem does not support symlinks")
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 1314:
+            test.skipTest("Windows symlink creation privilege unavailable")
+        raise
+
+
 class SourceSafetyTests(unittest.TestCase):
+    def test_missing_nofollow_refuses_before_open_or_decode(self):
+        with tempfile.TemporaryDirectory() as d:
+            decoder = mock.Mock()
+            with mock.patch.dict(op3c.os.__dict__):
+                op3c.os.__dict__.pop("O_NOFOLLOW", None)
+                with mock.patch.object(op3c.os, "open") as opened:
+                    result = stopped_real_anvil_diagnostic(
+                        pathlib.Path(d), "preaction", decoder)
+            self.assertEqual(result["classification"], "DECODER_REFUSED")
+            self.assertEqual(result["reason"], "UNCLASSIFIED")
+            self.assertFalse(result["native_truenas_g4_pass"])
+            self.assertFalse(result["region_bytes_published"])
+            opened.assert_not_called()
+            decoder.assert_not_called()
+
+    def test_invalid_stage_refused_without_region_io(self):
+        with mock.patch.object(op3c.os, "open") as opened:
+            result = stopped_real_anvil_diagnostic(pathlib.Path("unused"), "unknown", None)
+        self.assertEqual(result["classification"], "BAD_STAGE")
+        opened.assert_not_called()
+
     def test_top_level_failure_receipt_never_publishes_arbitrary_text(self):
         for raised in (
             RuntimeError("auth_token=SECRET /mnt/foreign/secret-world"),
@@ -57,12 +100,14 @@ class SourceSafetyTests(unittest.TestCase):
             self.assertNotIn("PRIVATE", out.read_text())
             self.assertNotIn("/mnt/", out.read_text())
 
+    @requires_secure_region_io
     def test_no_read_of_missing_world(self):
         with tempfile.TemporaryDirectory() as d:
             observed=stopped_real_anvil_diagnostic(pathlib.Path(d), "preaction",lambda blob,stage: {})
             self.assertEqual(observed["classification"],"REGION_UNAVAILABLE")
             self.assertFalse(observed["native_truenas_g4_pass"])
-    def test_invalid_stage_and_malformed_region(self):
+    @requires_secure_region_io
+    def test_malformed_region(self):
         with tempfile.TemporaryDirectory() as d:
             world=pathlib.Path(d)
             self.assertEqual(stopped_real_anvil_diagnostic(world,"unknown",None)["classification"],"BAD_STAGE")
@@ -70,6 +115,7 @@ class SourceSafetyTests(unittest.TestCase):
             fixed.parent.mkdir(parents=True)
             fixed.write_bytes(b"bad")
             self.assertEqual(stopped_real_anvil_diagnostic(world,"preaction",lambda blob,stage: {})["classification"],"REGION_FILE_BOUNDS")
+    @requires_secure_region_io
     def test_only_fixed_exception_code_crosses(self):
         with tempfile.TemporaryDirectory() as d:
             world=pathlib.Path(d)
@@ -92,7 +138,7 @@ class SourceSafetyTests(unittest.TestCase):
             fixed.parent.mkdir(parents=True)
             outside=world/"outside-region.mca"
             outside.write_bytes(b"X"*8192)
-            fixed.symlink_to(outside)
+            create_symlink_or_skip(self, fixed, outside)
             invoked=[]
             result=stopped_real_anvil_diagnostic(
                 world, "preaction",
@@ -109,7 +155,7 @@ class SourceSafetyTests(unittest.TestCase):
             (foreign / "r.0.0.mca").write_bytes(b"X" * 8192)
             parent = world / "dimensions/minecraft/overworld/region"
             parent.parent.mkdir(parents=True)
-            parent.symlink_to(foreign, target_is_directory=True)
+            create_symlink_or_skip(self, parent, foreign, target_is_directory=True)
             called = []
             row = stopped_real_anvil_diagnostic(
                 world, "rollback", lambda blob,stage:called.append(stage))
@@ -117,6 +163,7 @@ class SourceSafetyTests(unittest.TestCase):
             self.assertFalse(row["native_truenas_g4_pass"])
             self.assertEqual(called, [])
 
+    @requires_secure_region_io
     def test_mismatched_decoder_digest_and_stage_refused(self):
         with tempfile.TemporaryDirectory() as d:
             world=pathlib.Path(d)
@@ -153,6 +200,7 @@ class SourceSafetyTests(unittest.TestCase):
                 self.assertEqual(result["classification"],
                                  "DECODER_UNEXPECTED_VERDICT")
 
+    @requires_secure_region_io
     def test_positive_does_not_promote_truenas(self):
         with tempfile.TemporaryDirectory() as d:
             world=pathlib.Path(d)

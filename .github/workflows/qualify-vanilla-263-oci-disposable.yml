@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 24
     steps:
       - name: Checkout candidate exactly
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - name: Cheap red and blue source qualification
@@ -67,7 +67,7 @@ jobs:
           PY
       - name: Retain digest and qualified runtime receipt, never world/JAR
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: op4a-vanilla263-java25-oci-world-retention
           path: ${{ runner.temp }}/op4a/oci-receipt.json

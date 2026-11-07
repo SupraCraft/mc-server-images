@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - name: Source contract and negative tests
@@ -52,7 +52,7 @@ jobs:
             --output "$RUNNER_TEMP/operational/candidate-discovery.json"
       - name: Retain causal release observation
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: operational-26-3-release-candidates
           path: ${{ runner.temp }}/operational/
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -86,7 +86,7 @@ jobs:
             --discovery "$RUNNER_TEMP/operational/candidate-discovery.json" \
             --output "$RUNNER_TEMP/operational/paper-26.3-runtime.json"
       - if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: paper-26-3-runtime-receipt
           path: ${{ runner.temp }}/operational/paper-26.3-runtime.json
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -117,7 +117,7 @@ jobs:
             --discovery "$RUNNER_TEMP/operational/candidate-discovery.json" \
             --output "$RUNNER_TEMP/operational/velocity-4.2.0-runtime.json"
       - if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: velocity-4-2-0-runtime-receipt
           path: ${{ runner.temp }}/operational/velocity-4.2.0-runtime.json

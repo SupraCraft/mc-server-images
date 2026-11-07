@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from filesystem_capabilities import require_symlink
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -92,7 +93,8 @@ class WorldCandidateTests(unittest.TestCase):
             with self.assertRaisesRegex(Refused, "MEMBER_SET_DRIFT"):
                 validate_candidate(outer, fake)
 
-    def test_refuse_symlink_candidate_and_traversal_zip(self):
+    def test_refuse_symlink_candidate(self):
+        require_symlink(self)
         with tempfile.TemporaryDirectory() as td:
             root = pathlib.Path(td)
             z, m = self.fixture(root)
@@ -100,6 +102,10 @@ class WorldCandidateTests(unittest.TestCase):
             link.symlink_to(z)
             with self.assertRaisesRegex(Refused, "REGULAR_FILE"):
                 validate_candidate(link, m)
+
+    def test_refuse_traversal_zip(self):
+        with tempfile.TemporaryDirectory() as td:
+            z, m = self.fixture(pathlib.Path(td))
             with zipfile.ZipFile(z, "a") as out:
                 out.writestr("../escape", "bad")
             m["sha256"] = hashlib.sha256(z.read_bytes()).hexdigest()

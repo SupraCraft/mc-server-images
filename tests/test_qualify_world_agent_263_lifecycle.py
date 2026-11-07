@@ -1,9 +1,11 @@
 """S5 fail-closed world-agent ownership and transaction tests (cheap, no Java)."""
+import os
 import pathlib
 import sys
 import tempfile
 import unittest
 from types import SimpleNamespace
+from filesystem_capabilities import require_symlink
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"tools"))
@@ -30,6 +32,7 @@ class WorldAgentS5Tests(unittest.TestCase):
             self.assertNotIn("/home",classification)
 
     def test_real_stage_activate_hash_restore_identity(self):
+        require_symlink(self, target_is_directory=True)
         with tempfile.TemporaryDirectory() as d:
             root=pathlib.Path(d)
             agent=root/"agent"
@@ -51,7 +54,7 @@ class WorldAgentS5Tests(unittest.TestCase):
             self.assertNotEqual((home/"world").readlink(),agent/"active")
             state=world_agent(agent,"status")
             assert_agent_receipt("status",state)
-            self.assertEqual(state["active"],"releases/prior")
+            self.assertEqual(pathlib.Path(state["active"]),pathlib.Path("releases/prior"))
             record=world_agent(agent,"hash")
             assert_agent_receipt("hash",record,sha=sha)
             world_agent(agent,"stage","snapshot",original)
@@ -71,7 +74,8 @@ class WorldAgentS5Tests(unittest.TestCase):
             prefix=admit_owned_world_symlink(home,root,agent)
             content=(home/"allowed_symlinks.txt").read_text()
             self.assertEqual(content.splitlines()[-1],"[prefix]"+prefix)
-            self.assertTrue(prefix.endswith("/owned-world/"))
+            self.assertEqual(pathlib.Path(prefix),agent.resolve())
+            self.assertTrue(prefix.endswith(os.sep))
             self.assertNotIn("[regex].*",content)
             self.assertNotEqual(content.splitlines()[-1],"[prefix]/tmp/")
             outside=root/"outside"
@@ -80,6 +84,7 @@ class WorldAgentS5Tests(unittest.TestCase):
                 admit_owned_world_symlink(outside,home,agent)
 
     def test_binding_never_replaces_real_world_or_foreign_active(self):
+        require_symlink(self, target_is_directory=True)
         with tempfile.TemporaryDirectory() as d:
             root=pathlib.Path(d)
             home=root/"home"
@@ -108,12 +113,13 @@ class WorldAgentS5Tests(unittest.TestCase):
                 safe_switch(root,"stage","prior",None)
 
     def test_foreign_symlink_or_unstaged_release_refused(self):
+        require_symlink(self, target_is_directory=True)
         with tempfile.TemporaryDirectory() as d:
             root=pathlib.Path(d)
             (root/"releases").mkdir()
             foreign=root/"foreign"
             foreign.mkdir()
-            (root/"active").symlink_to(foreign)
+            (root/"active").symlink_to(foreign,target_is_directory=True)
             with self.assertRaisesRegex(Refused,"S5_ACTIVE_OWNER_MISMATCH"):
                 owned_active(root,"candidate")
             with self.assertRaisesRegex(Refused,"S5_RELEASE_ID_INVALID"):
@@ -136,18 +142,35 @@ class WorldAgentS5Tests(unittest.TestCase):
                 assert_agent_receipt("stage",forged,"baseline","a"*64)
 
     def test_symlink_stage_source_and_path_traversal_refused(self):
+        require_symlink(self, target_is_directory=True)
         with tempfile.TemporaryDirectory() as d:
             root=pathlib.Path(d)
             src=root/"src"
             src.mkdir()
             link=root/"outside"
-            link.symlink_to(src)
+            link.symlink_to(src,target_is_directory=True)
             agent=root/"agent"
             agent.mkdir()
             with self.assertRaisesRegex(Refused,"S5_STAGE_SOURCE_NOT_OWNED_DIRECTORY"):
                 world_agent(agent,"stage","candidate",link)
             with self.assertRaisesRegex(Refused,"S5_RELEASE_ID_INVALID"):
                 world_agent(agent,"stage","../escape",src)
+
+    def test_stage_and_invalid_release_without_symlink_capability(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=pathlib.Path(d)
+            agent=root/"agent"
+            agent.mkdir()
+            source=root/"source"
+            source.mkdir()
+            (source/"level.dat").write_bytes(b"source fixture")
+            record=world_agent(agent,"stage","prior",source)
+            assert_agent_receipt("stage",record,"prior",tree_hash(source))
+            self.assertEqual(tree_hash(agent/"releases/prior"),tree_hash(source))
+            with self.assertRaisesRegex(Refused,"S5_RELEASE_ID_INVALID"):
+                world_agent(agent,"stage","../escape",source)
+            with self.assertRaisesRegex(Refused,"S5_RELEASE_ID_INVALID"):
+                owned_active(agent,"../../foreign")
 
 if __name__=="__main__":
     unittest.main()
