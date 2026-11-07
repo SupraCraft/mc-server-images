@@ -1,0 +1,48 @@
+{
+  "schema": "supracraft.fixture-assisted-mcbuild-acceptance/v0.1",
+  "accepted_at_utc": "2026-09-28T15:01:33Z",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3",
+    "protocol": 777,
+    "world_version": 5023
+  },
+  "qualification": {
+    "run_id": 36440234191,
+    "job_id": 108988523939,
+    "qualified_code_head_sha": "2829e33ce7c3a942bfc3fdaebbddf8f684b14403",
+    "plan_schema": "mcbuild/v0.1-public-fixture",
+    "plan_sha256": "f5e947a028ef4cb5e5526a4353e7015f7f639f3f437f777a015b61fb9d45ee88",
+    "result": "qualified"
+  },
+  "retained_artifact": {
+    "artifact_id": 10978230684,
+    "name": "mcbuild-fixture-assisted-sequential-26.3",
+    "digest": "sha256:e80c8c6593d630751ba97bda045d559377cfa0ae1c825ecd8778e7a8e921a970",
+    "expires_at": "2026-10-05T15:01:33Z"
+  },
+  "observed": {
+    "controller_receipts": 12,
+    "worker_action_count": 12,
+    "worker_actions_qualified": 12,
+    "worker_packet_count": 6480,
+    "official_server_verified_actions": 12,
+    "official_server_verified_block_entities": 1
+  },
+  "qualified_capabilities": [
+    "execution.position.fixture-controller",
+    "inventory.provision.fixture-controller",
+    "plan.execute.sequential"
+  ],
+  "explicit_exclusions": [
+    "pathfinding",
+    "survival-resource-acquisition",
+    "autonomous-inventory-planning"
+  ],
+  "evidence_notes": [
+    "Prior run 36436293406 is retained as harness-failure evidence and is not a Minecraft placement semantic falsification.",
+    "The unchanged 12-action plan was qualified once after the bounded rendezvous repair; no retry-until-green loop was used for the accepted code head.",
+    "Observed qualification-step wall time was approximately 32.7 seconds and includes server/runtime startup and final validation; it is not per-action/controller latency evidence.",
+    "This compact record is an acceptance summary. The uploaded workflow artifact is the original full qualification receipt."
+  ]
+}

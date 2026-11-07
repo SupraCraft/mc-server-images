@@ -1,0 +1,1756 @@
+{
+  "schema": "mcbuild/v0.1-public-fixture",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3",
+    "protocol": 777,
+    "world_version": 5023
+  },
+  "purpose": "measure sustained single-builder fixture-assisted ordinary-stone throughput before any parallel-builder decision",
+  "initial_condition": {
+    "authority": "synthetic-bounded",
+    "bootstrap_support": {
+      "at": [
+        0,
+        69,
+        0
+      ],
+      "block": "minecraft:stone"
+    }
+  },
+  "execution_contract": {
+    "placement_actor": "one persistent Mineflayer bot",
+    "positioning": "fixture controller via server console teleport with temporary support",
+    "inventory_provisioning": "fixture controller clears and gives one item per action",
+    "retries": 0,
+    "acceptance": "48 qualified bot placements plus independent official-server exact-state and fixture-support-cleanup predicates"
+  },
+  "actions": [
+    {
+      "id": "stone-y70-z0-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          69,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "external-bootstrap"
+      },
+      "depends_on": [],
+      "bot_position": [
+        0,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z0-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x0"
+      ],
+      "bot_position": [
+        1,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z0-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x1"
+      ],
+      "bot_position": [
+        2,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z0-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x2"
+      ],
+      "bot_position": [
+        3,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z0-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x3"
+      ],
+      "bot_position": [
+        4,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z0-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x4"
+      ],
+      "bot_position": [
+        5,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z1-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        70,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          0,
+          1
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x5"
+      ],
+      "bot_position": [
+        5,
+        70,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z1-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        70,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          70,
+          1
+        ],
+        "face": [
+          -1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x5"
+      ],
+      "bot_position": [
+        4,
+        70,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z1-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        70,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          70,
+          1
+        ],
+        "face": [
+          -1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x4"
+      ],
+      "bot_position": [
+        3,
+        70,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z1-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        70,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          70,
+          1
+        ],
+        "face": [
+          -1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x3"
+      ],
+      "bot_position": [
+        2,
+        70,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z1-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        70,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          70,
+          1
+        ],
+        "face": [
+          -1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x2"
+      ],
+      "bot_position": [
+        1,
+        70,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y70-z1-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        70,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          70,
+          1
+        ],
+        "face": [
+          -1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x1"
+      ],
+      "bot_position": [
+        0,
+        70,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z0-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        71,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x0"
+      ],
+      "bot_position": [
+        0,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z0-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        71,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x1"
+      ],
+      "bot_position": [
+        1,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z0-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        71,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x2"
+      ],
+      "bot_position": [
+        2,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z0-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        71,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x3"
+      ],
+      "bot_position": [
+        3,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z0-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        71,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x4"
+      ],
+      "bot_position": [
+        4,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z0-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        71,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z0-x5"
+      ],
+      "bot_position": [
+        5,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z1-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        71,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          70,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x5"
+      ],
+      "bot_position": [
+        5,
+        71,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z1-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        71,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          70,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x4"
+      ],
+      "bot_position": [
+        4,
+        71,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z1-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        71,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          70,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x3"
+      ],
+      "bot_position": [
+        3,
+        71,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z1-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        71,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          70,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x2"
+      ],
+      "bot_position": [
+        2,
+        71,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z1-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        71,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          70,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x1"
+      ],
+      "bot_position": [
+        1,
+        71,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y71-z1-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        71,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          70,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y70-z1-x0"
+      ],
+      "bot_position": [
+        0,
+        71,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z0-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        72,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          71,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z0-x0"
+      ],
+      "bot_position": [
+        0,
+        72,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z0-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        72,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          71,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z0-x1"
+      ],
+      "bot_position": [
+        1,
+        72,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z0-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        72,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          71,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z0-x2"
+      ],
+      "bot_position": [
+        2,
+        72,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z0-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        72,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          71,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z0-x3"
+      ],
+      "bot_position": [
+        3,
+        72,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z0-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        72,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          71,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z0-x4"
+      ],
+      "bot_position": [
+        4,
+        72,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z0-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        72,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          71,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z0-x5"
+      ],
+      "bot_position": [
+        5,
+        72,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z1-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        72,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          71,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z1-x5"
+      ],
+      "bot_position": [
+        5,
+        72,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z1-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        72,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          71,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z1-x4"
+      ],
+      "bot_position": [
+        4,
+        72,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z1-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        72,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          71,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z1-x3"
+      ],
+      "bot_position": [
+        3,
+        72,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z1-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        72,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          71,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z1-x2"
+      ],
+      "bot_position": [
+        2,
+        72,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z1-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        72,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          71,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z1-x1"
+      ],
+      "bot_position": [
+        1,
+        72,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y72-z1-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        72,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          71,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y71-z1-x0"
+      ],
+      "bot_position": [
+        0,
+        72,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z0-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        73,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          72,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z0-x0"
+      ],
+      "bot_position": [
+        0,
+        73,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z0-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        73,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          72,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z0-x1"
+      ],
+      "bot_position": [
+        1,
+        73,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z0-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        73,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          72,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z0-x2"
+      ],
+      "bot_position": [
+        2,
+        73,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z0-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        73,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          72,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z0-x3"
+      ],
+      "bot_position": [
+        3,
+        73,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z0-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        73,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          72,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z0-x4"
+      ],
+      "bot_position": [
+        4,
+        73,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z0-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        73,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          72,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z0-x5"
+      ],
+      "bot_position": [
+        5,
+        73,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z1-x5",
+      "kind": "place-block",
+      "at": [
+        5,
+        73,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          72,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z1-x5"
+      ],
+      "bot_position": [
+        5,
+        73,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z1-x4",
+      "kind": "place-block",
+      "at": [
+        4,
+        73,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          4,
+          72,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z1-x4"
+      ],
+      "bot_position": [
+        4,
+        73,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z1-x3",
+      "kind": "place-block",
+      "at": [
+        3,
+        73,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          72,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z1-x3"
+      ],
+      "bot_position": [
+        3,
+        73,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z1-x2",
+      "kind": "place-block",
+      "at": [
+        2,
+        73,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          72,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z1-x2"
+      ],
+      "bot_position": [
+        2,
+        73,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z1-x1",
+      "kind": "place-block",
+      "at": [
+        1,
+        73,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          72,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z1-x1"
+      ],
+      "bot_position": [
+        1,
+        73,
+        3
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "stone-y73-z1-x0",
+      "kind": "place-block",
+      "at": [
+        0,
+        73,
+        1
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          72,
+          1
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "stone-y72-z1-x0"
+      ],
+      "bot_position": [
+        0,
+        73,
+        3
+      ],
+      "bot_yaw": 180
+    }
+  ]
+}

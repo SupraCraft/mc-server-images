@@ -1,0 +1,465 @@
+{
+  "schema": "mcbuild/v0.1-public-fixture",
+  "minecraft": {
+    "edition": "java",
+    "version": "26.3",
+    "protocol": 777,
+    "world_version": 5023
+  },
+  "purpose": "qualify fixture-assisted sequential execution composition without private world content",
+  "initial_condition": {
+    "authority": "synthetic-bounded",
+    "bootstrap_support": {
+      "at": [
+        0,
+        69,
+        0
+      ],
+      "block": "minecraft:stone"
+    }
+  },
+  "execution_contract": {
+    "placement_actor": "one persistent Mineflayer bot",
+    "positioning": "fixture controller via server console teleport",
+    "inventory_provisioning": "fixture controller clears and gives one item per action",
+    "retries": 0,
+    "acceptance": "independent official-server exact-state predicates after terminal execution"
+  },
+  "actions": [
+    {
+      "id": "foundation-0",
+      "kind": "place-block",
+      "at": [
+        0,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "reference": {
+        "at": [
+          0,
+          69,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "external-bootstrap"
+      },
+      "depends_on": [],
+      "bot_position": [
+        0,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "foundation-1",
+      "kind": "place-block",
+      "at": [
+        1,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "reference": {
+        "at": [
+          0,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-0"
+      ],
+      "bot_position": [
+        1,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "foundation-2",
+      "kind": "place-block",
+      "at": [
+        2,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "reference": {
+        "at": [
+          1,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-1"
+      ],
+      "bot_position": [
+        2,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "foundation-3",
+      "kind": "place-block",
+      "at": [
+        3,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "reference": {
+        "at": [
+          2,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-2"
+      ],
+      "bot_position": [
+        3,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "foundation-4",
+      "kind": "place-block",
+      "at": [
+        4,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "reference": {
+        "at": [
+          3,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-3"
+      ],
+      "bot_position": [
+        4,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "foundation-5",
+      "kind": "place-block",
+      "at": [
+        5,
+        70,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "reference": {
+        "at": [
+          4,
+          70,
+          0
+        ],
+        "face": [
+          1,
+          0,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-4"
+      ],
+      "bot_position": [
+        5,
+        70,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "grass-default",
+      "kind": "place-block",
+      "at": [
+        0,
+        71,
+        0
+      ],
+      "item": "grass_block",
+      "desired_state": "minecraft:grass_block[snowy=false]",
+      "expected_block": "grass_block",
+      "expected_properties": {
+        "snowy": "false"
+      },
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          0,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-0"
+      ],
+      "bot_position": [
+        0,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "gravel-supported",
+      "kind": "place-block",
+      "at": [
+        1,
+        71,
+        0
+      ],
+      "item": "gravel",
+      "desired_state": "minecraft:gravel",
+      "expected_block": "gravel",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          1,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-1"
+      ],
+      "bot_position": [
+        1,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "lantern-upright",
+      "kind": "place-block",
+      "at": [
+        2,
+        71,
+        0
+      ],
+      "item": "lantern",
+      "desired_state": "minecraft:lantern[hanging=false,waterlogged=false]",
+      "expected_block": "lantern",
+      "expected_properties": {
+        "hanging": "false",
+        "waterlogged": "false"
+      },
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          2,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-2"
+      ],
+      "bot_position": [
+        2,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "lamp-unlit",
+      "kind": "place-block",
+      "at": [
+        3,
+        71,
+        0
+      ],
+      "item": "redstone_lamp",
+      "desired_state": "minecraft:redstone_lamp[lit=false]",
+      "expected_block": "redstone_lamp",
+      "expected_properties": {
+        "lit": "false"
+      },
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          3,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-3"
+      ],
+      "bot_position": [
+        3,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "chest-south-single",
+      "kind": "place-block",
+      "at": [
+        4,
+        71,
+        0
+      ],
+      "item": "chest",
+      "desired_state": "minecraft:chest[facing=south,type=single,waterlogged=false]",
+      "expected_block": "chest",
+      "expected_properties": {
+        "facing": "south",
+        "type": "single",
+        "waterlogged": "false"
+      },
+      "require_block_entity": true,
+      "reference": {
+        "at": [
+          4,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-4"
+      ],
+      "bot_position": [
+        4,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    },
+    {
+      "id": "ordinary-top",
+      "kind": "place-block",
+      "at": [
+        5,
+        71,
+        0
+      ],
+      "item": "stone",
+      "desired_state": "minecraft:stone",
+      "expected_block": "stone",
+      "expected_properties": {},
+      "require_block_entity": false,
+      "reference": {
+        "at": [
+          5,
+          70,
+          0
+        ],
+        "face": [
+          0,
+          1,
+          0
+        ],
+        "kind": "prior-target"
+      },
+      "depends_on": [
+        "foundation-5"
+      ],
+      "bot_position": [
+        5,
+        71,
+        2
+      ],
+      "bot_yaw": 180
+    }
+  ]
+}
