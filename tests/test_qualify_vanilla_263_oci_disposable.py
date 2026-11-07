@@ -9,6 +9,7 @@ import tempfile
 import subprocess
 import unittest
 from unittest.mock import patch
+from filesystem_capabilities import require_symlink
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "tools"))
 from qualify_vanilla_263_oci_disposable import (
@@ -89,11 +90,20 @@ class OciCandidateTests(unittest.TestCase):
             target.write_bytes(b"x" * 7)
             observe("REGION_OUT_OF_BOUNDS")
             target.unlink()
-            target.symlink_to(root / "foreign")
-            observe("REGION_NOT_REGULAR_FILE")
-            target.unlink()
             target.mkdir()
             observe("REGION_NOT_REGULAR_FILE")
+
+    def test_region_witness_refuses_symlink(self):
+        require_symlink(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            region = root / "dimensions" / "minecraft" / "overworld" / "region"
+            region.mkdir(parents=True)
+            (region / "r.0.0.mca").symlink_to(root / "foreign")
+            record = stopped_world_region_witness(root)
+            self.assertEqual(record["classification"], "REGION_NOT_REGULAR_FILE")
+            self.assertFalse(record["region_bytes_published"])
+            self.assertFalse(record["native_truenas_oracle_pass"])
 
     def test_region_witness_is_not_a_fallback_or_authoritative_oracle(self):
         with tempfile.TemporaryDirectory() as tmp:
