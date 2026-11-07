@@ -71,7 +71,8 @@
   "release_status": {
     "component_s1_s5": "SCOPED_QUALIFICATIONS_ACCEPTED",
     "combined_managed_end_to_end_smoke": "OPEN",
-    "native_truenas_s7_guest": "OPEN",
+    "native_truenas_s7_guest": "HISTORICAL_SCOPED_OP4P_023_ACCEPTED_RUN_40119184140",
+    "native_request_replay_allowed": false,
     "physical_truenas_s8_apply": "HOLD",
     "account_identity_vip_realm_admission": "OPEN",
     "stock_mojang_client": "OPEN",
