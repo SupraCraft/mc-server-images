@@ -30,8 +30,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
+          package-manager-cache: false
           node-version: '22'
       - name: Cheap source and red-blue negatives before runtime
         run: |
