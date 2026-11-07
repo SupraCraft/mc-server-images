@@ -8,55 +8,66 @@ on:
         required: true
         default: "26.3"
   push:
-    branches:
-      - probe/mojang-release-identity
+    branches: [probe/mojang-release-identity]
     paths:
       - .github/workflows/mojang-release-probe.yml
       - tools/probe_mojang_release.py
+      - tools/mojang_probe_publication.py
+      - tests/test_mojang_probe_publication.py
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: mojang-release-probe-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   probe:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - name: Resolve probe version
-        shell: bash
-        run: |
-          version="${{ inputs.version }}"
-          if [[ -z "$version" ]]; then
-            version="26.3"
-          fi
-          echo "MC_VERSION=$version" >> "$GITHUB_ENV"
-
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: python tools/mojang_probe_publication.py resolve
       - name: Probe official Mojang metadata and server artifact
-        shell: bash
-        run: |
-          python tools/probe_mojang_release.py "$MC_VERSION"             --output "probes/$MC_VERSION-release-identity.json"
-
+        run: python tools/probe_mojang_release.py "$MC_VERSION" --output "probes/$MC_VERSION-release-identity.json"
       - name: Publish compact evidence to job summary
         shell: bash
         run: |
+          set -euo pipefail
           {
-            echo "## Minecraft $MC_VERSION official release identity"
-            echo
-            echo '~~~json'
+            printf '## Minecraft %s official release identity\n\n~~~json\n' "$MC_VERSION"
             cat "probes/$MC_VERSION-release-identity.json"
-            echo '~~~'
+            printf '\n~~~\n'
           } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mojang-release-identity
+          path: probes/${{ env.MC_VERSION }}-release-identity.json
+          if-no-files-found: error
+          retention-days: 7
 
-      - name: Retain proving result on probe branch
-        if: github.event_name == 'push' && github.ref_name == 'probe/mojang-release-identity'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "probes/$MC_VERSION-release-identity.json"
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "probe: record Mojang $MC_VERSION release identity"
-          git push origin "HEAD:$GITHUB_REF_NAME"
+  persist:
+    needs: probe
+    if: github.event_name == 'push' && github.ref == 'refs/heads/probe/mojang-release-identity'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: mojang-release-identity
+          path: ${{ runner.temp }}/mojang-release-identity
+      - name: Retain validated result on unchanged probe branch
+        env:
+          PROBE_RESULT: ${{ runner.temp }}/mojang-release-identity/26.3-release-identity.json
+        run: python tools/mojang_probe_publication.py persist
