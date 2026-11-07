@@ -78,8 +78,13 @@ def persist() -> str:
     git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
     git("add", "--", target.as_posix())
     git("commit", "-m", f"probe: record Mojang {DEFAULT_VERSION} release identity")
-    # Ordinary fast-forward push rejects concurrent updates; never force/overwrite them.
-    git("push", "origin", f"HEAD:refs/heads/{BRANCH}")
+    # The expected ref must still match atomically at the receiver, including
+    # owner resets/deletions after the preflight. Prove the proposed update is
+    # exactly one fast-forward child before using Git's explicit lease flag.
+    if git("rev-list", "--parents", "-n", "1", "HEAD").split()[1:] != [expected]:
+        raise ValueError("publication commit is not a direct event child")
+    git("push", f"--force-with-lease=refs/heads/{BRANCH}:{expected}",
+        "origin", f"HEAD:refs/heads/{BRANCH}")
     return "PUBLISHED"
 
 
