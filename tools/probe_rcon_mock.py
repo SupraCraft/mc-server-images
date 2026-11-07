@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, socket, struct, subprocess, threading
+import json, socket, struct, subprocess, sys, threading
 seen=[]
 def rx(c,n):
     out=b""
@@ -21,7 +21,7 @@ def serve(s):
             c.sendall(struct.pack("<i",len(out))+out)
 s=socket.socket(); s.bind(("127.0.0.1",0)); s.listen()
 threading.Thread(target=serve,args=(s,),daemon=True).start()
-cmd=["python3","tools/minecraft_rcon_lifecycle.py","quiesce","--port",str(s.getsockname()[1]),"--password","fixture"]
+cmd=[sys.executable,"tools/minecraft_rcon_lifecycle.py","quiesce","--port",str(s.getsockname()[1]),"--password","fixture"]
 p=subprocess.run(cmd,text=True,capture_output=True,check=True)
 assert json.loads(p.stdout)["verb"]=="quiesce"
 assert seen==[[3,"fixture"],[2,"save-all flush"],[2,"save-off"]],seen
