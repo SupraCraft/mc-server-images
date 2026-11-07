@@ -53,8 +53,9 @@ jobs:
             echo '~~~'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
+          archive: true
           name: minecraft-26.3-block-catalog-summary
           path: probes/block-catalog/26.3-summary.json
           if-no-files-found: error
