@@ -1,0 +1,59 @@
+name: Barsoom exact 26.3 vanilla player and canal qualification
+on:
+  pull_request:
+    paths:
+      - 'fixtures/barsoom/**'
+      - 'tools/qualify_barsoom_263.py'
+      - 'tools/probe_mineflayer_barsoom_263.js'
+      - '.github/workflows/qualify-barsoom-263.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barsoom-vanilla-263-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  qualify-candidate:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Reuse prior validated offline synthetic client transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile fixtures/barsoom/build_barsoom.py tools/qualify_barsoom_263.py
+          node --check tools/probe_mineflayer_barsoom_263.js
+          bash tools/install_experimental_prismarine_26_3.sh "$RUNNER_TEMP/prismarine"
+          echo "NODE_PATH=$RUNNER_TEMP/prismarine/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Bounded exact-original candidate, real player, recovery and persistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/barsoom"
+          python3 tools/qualify_barsoom_263.py \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/barsoom/receipt.json"
+      - name: Retain minimal public-safe evidence and original first failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: barsoom-263-original-candidate-qualification
+          path: ${{ runner.temp }}/barsoom/receipt.json
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Scope qualification
+        if: always()
+        run: |
+          echo 'Official vanilla 26.3, controlled offline Mineflayer 26.3, exact original Barsoom pack, disposable temporary server only.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Human Mojang-client visual quality, true novel fauna, new geography and production deployment not asserted.' >> "$GITHUB_STEP_SUMMARY"
