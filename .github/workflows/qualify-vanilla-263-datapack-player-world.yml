@@ -19,18 +19,18 @@ jobs:
     timeout-minutes: 22
     steps:
       - name: Checkout exact candidate consumer
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - name: Checkout exact accepted immutable producer
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: SupraCraft/mc-server-images
           ref: 7f888b5829f4e5576d5ce512d86327348c43f01e
           path: .deps/accepted-producer
           persist-credentials: false
       - name: Checkout immutable public Agent Dispatch Anvil decoder (NOT a native request)
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: SemperSupra/agent-dispatch
           ref: 3d761a11dbabfdb5de6aa059a2aedc954759179a
@@ -122,7 +122,7 @@ jobs:
           PY
       - name: Retain only compact public-safe receipt
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: op3c-vanilla26-3-player-world-artifact-rollback
           path: ${{ runner.temp }}/op3c/player-world-receipt.json
