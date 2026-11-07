@@ -2,10 +2,9 @@ name: Source safety regressions
 on:
   pull_request:
     paths:
-      - 'tools/mojang_probe_publication.py'
-      - 'tests/test_mojang_probe_publication.py'
-      - 'tests/filesystem_capabilities.py'
-      - 'tests/test_filesystem_capabilities.py'
+      - 'tools/**'
+      - 'tests/**'
+      - 'spec/**'
       - '.github/workflows/mojang-release-probe.yml'
       - '.github/workflows/source-safety-regressions.yml'
   workflow_dispatch:
@@ -25,7 +24,12 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12'
-      - name: Publication and filesystem capability regressions
+      - name: Install pinned source-test dependency
+        run: python -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
+      - name: Offline regressions and executable contracts
         run: |
-          python -B -m unittest discover -s tests -p 'test_mojang_probe_publication.py' -v
-          python -B -m unittest discover -s tests -p 'test_filesystem_capabilities.py' -v
+          python -B -m unittest discover -s tests -v
+          python -B tools/validate_minecraft_hosting_stack.py
+          python -B tools/validate_world_activation_transaction.py
+          python -B tools/probe_rcon_packet.py
+          python -B tools/probe_rcon_mock.py
