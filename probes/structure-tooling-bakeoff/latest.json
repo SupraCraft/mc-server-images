@@ -1,0 +1,191 @@
+{
+  "fixture": "synthetic-public-unit-cube",
+  "results": [
+    {
+      "artifact": {
+        "bytes": 394516,
+        "extents": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "format": "blend"
+      },
+      "available": true,
+      "deterministic_input": true,
+      "elapsed_ms": 2772.399,
+      "fixture": {
+        "block": "minecraft:stone",
+        "kind": "unit-cube",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "voxel_id": "probe/voxel/0001"
+      },
+      "geometry_roundtrip": true,
+      "headless": true,
+      "notes": [],
+      "schema": "supracraft.structure-tooling-probe/v0.1",
+      "semantic_roundtrip": true,
+      "semantic_strategy": "Blender custom properties; glTF extras is a candidate interchange projection",
+      "tool": "blender",
+      "version": "Blender 4.0.2"
+    },
+    {
+      "artifact": {
+        "bytes": 15492,
+        "extents": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "format": "step"
+      },
+      "available": true,
+      "deterministic_input": true,
+      "elapsed_ms": 1988.134,
+      "fixture": {
+        "block": "minecraft:stone",
+        "kind": "unit-cube",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "voxel_id": "probe/voxel/0001"
+      },
+      "geometry_roundtrip": true,
+      "headless": true,
+      "notes": [],
+      "schema": "supracraft.structure-tooling-probe/v0.1",
+      "semantic_roundtrip": false,
+      "semantic_strategy": "MCVOX sidecar/stable object mapping unless native metadata path is qualified",
+      "tool": "cadquery",
+      "version": "2.8.0"
+    },
+    {
+      "available": false,
+      "deterministic_input": true,
+      "elapsed_ms": 0.658,
+      "fixture": {
+        "block": "minecraft:stone",
+        "kind": "unit-cube",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "voxel_id": "probe/voxel/0001"
+      },
+      "geometry_roundtrip": false,
+      "headless": true,
+      "notes": [
+        "FreeCAD executable not found after package install"
+      ],
+      "schema": "supracraft.structure-tooling-probe/v0.1",
+      "semantic_roundtrip": false,
+      "semantic_strategy": "unknown",
+      "tool": "freecad"
+    },
+    {
+      "artifact": {
+        "bytes": 1449,
+        "extents": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "format": "stl"
+      },
+      "available": true,
+      "deterministic_input": true,
+      "elapsed_ms": 227.02,
+      "fixture": {
+        "block": "minecraft:stone",
+        "kind": "unit-cube",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "voxel_id": "probe/voxel/0001"
+      },
+      "geometry_roundtrip": true,
+      "headless": true,
+      "notes": [],
+      "schema": "supracraft.structure-tooling-probe/v0.1",
+      "semantic_roundtrip": false,
+      "semantic_strategy": "sidecar required for STL; SCAD source can carry comments/parameters but not Minecraft semantics portably",
+      "tool": "openscad",
+      "version": "OpenSCAD version 2021.01"
+    },
+    {
+      "artifact": {
+        "bytes": 1012,
+        "extents": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "format": "glb"
+      },
+      "available": true,
+      "deterministic_input": true,
+      "elapsed_ms": 164.943,
+      "fixture": {
+        "block": "minecraft:stone",
+        "kind": "unit-cube",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "voxel_id": "probe/voxel/0001"
+      },
+      "geometry_roundtrip": true,
+      "headless": true,
+      "notes": [],
+      "schema": "supracraft.structure-tooling-probe/v0.1",
+      "semantic_roundtrip": false,
+      "semantic_strategy": "scene/node metadata; glTF extras require explicit validation",
+      "tool": "trimesh",
+      "version": "5.1.0"
+    },
+    {
+      "available": true,
+      "capabilities": {
+        "blockbench_bbmodel": false,
+        "gltf_or_glb": false,
+        "minecraft_region_or_world": true,
+        "minecraft_schematic": false
+      },
+      "deterministic_input": true,
+      "distribution": "v0.5.0-emscripten-fallback",
+      "elapsed_ms": 270.96,
+      "fixture": {
+        "block": "minecraft:stone",
+        "kind": "unit-cube",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "voxel_id": "probe/voxel/0001"
+      },
+      "format_probe_exit_code": 1,
+      "geometry_roundtrip": false,
+      "headless": true,
+      "notes": [
+        "e)){throw new FS.ErrnoError(31)}if(!FS.isFile(node.mode)){throw new FS.ErrnoError(28)}var errCode=FS.nodePermissions(node,\"w\");if(errCode){throw new FS.ErrnoError(errCode)}node.node_ops.setattr(node,{size:len,timestamp:Date.now()})},ftruncate(fd,len){var stream=FS.getStreamChecked(fd);if((stream.flags&2097155)===0){throw new FS.ErrnoError(28)}FS.truncate(stream.node,len)},utime(path,atime,mtime){var lookup=FS.lookupPath(path,{follow:true});var node=lookup.node;node.node_ops.setattr(node,{timestamp:Math.max(atime,mtime)})},open(path,flags,mode=438){if(path===\"\"){throw new FS.ErrnoError(44)}flags=typeof flags==\"string\"?FS_modeStringToFlags(flags):flags;if(flags&64){mode=mode&4095|32768}else{mode=0}var node;if(typeof path==\"object\"){node=path}else{path=PATH.normalize(path);try{var lookup=FS.lookupPath(path,{follow:!(flags&131072)});node=lookup.node}catch(e){}}var created=false;if(flags&64){if(node){if(flags&128){throw new FS.ErrnoError(20)}}else{node=FS.mknod(path,mode,0);created=true}}if(!node){throw new FS.ErrnoError(44)}if(FS.isChrdev(node.mode)){flags&=~512}if(flags&65536&&!FS.isDir(node.mode)){throw new FS.ErrnoError(54)}if(!created){var errCode=FS.mayOpen(node,flags);if(errCode){throw new FS.ErrnoError(errCode)}}if(flags&512&&!created){FS.truncate(node,0)}flags&=~(128|512|131072);var stream=FS.createStream({node,path:FS.getPath(node),flags,seekable:true,position:0,stream_ops:node.stream_ops,ungotten:[],error:false});if(stream.stream_ops.open){stream.stream_ops.open(stream)"
+      ],
+      "schema": "supracraft.structure-tooling-probe/v0.1",
+      "semantic_roundtrip": false,
+      "semantic_strategy": "voxel-format conversion bridge; Minecraft semantic fidelity must be qualified per source/target format",
+      "tool": "vengi",
+      "version": "/tmp/vengi-wasm/voxconvert/vengi-voxconvert.js:1"
+    }
+  ],
+  "schema": "supracraft.structure-tooling-bakeoff/v0.1"
+}
