@@ -13,7 +13,9 @@
     },
     "paper": {
       "minecraft_version": "26.3",
-      "build_selection": "approved_exact_build_177_sha256_580c266b6526bb34752e9c2c274be025f763af1ce5b3fa662fa2b3006f966c13",
+      "build_selection": "latest_stable_candidate_only",
+      "qualified_build": 177,
+      "qualified_sha256": "580c266b6526bb34752e9c2c274be025f763af1ce5b3fa662fa2b3006f966c13",
       "qualification": "S4 direct_and_proxied_causal_gameplay_pass_mc_server_images_pr_88_run_38471052681",
       "operationally_selected": false,
       "qualify_separately": true,
@@ -38,7 +40,9 @@
     "enabled_for": "isolated_rdte_only",
     "stable_release_required_for_operations": true,
     "auto_promote": false,
-    "max_snapshot_claim": "snapshot-7_observed_2026-11-07_run_42345175470",
+    "max_snapshot_claim": "snapshot-3",
+    "observed_snapshot": "snapshot-7",
+    "observation_is_runtime_qualification": false,
     "known_snapshot_datapack_format": 123,
     "known_snapshot_resourcepack_format": 100,
     "notes": [
