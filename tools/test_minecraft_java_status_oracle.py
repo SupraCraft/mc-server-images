@@ -93,6 +93,19 @@ class TestStatusOracle(unittest.TestCase):
         self.assertEqual(result["server_implementation"], "paper")
         self.assertEqual(result["status_name_contract"], "paper_brand_exact")
 
+    def test_paper_1214_protocol769_strict_boundary(self):
+        # Public synthetic proxy for the separate private Gym direct-Paper control.
+        with FakeServer(status_frame(version="Paper 1.21.4", protocol=769)) as server:
+            result = oracle.query_java_status(
+                server.port, "1.21.4", implementation="paper", expected_protocol=769)
+        self.assertTrue(result["oracleSatisfied"])
+        self.assertEqual(result["server_protocol"], 769)
+        self.assertEqual(result["server_implementation"], "paper")
+        with FakeServer(status_frame(version="Paper 1.21.4", protocol=774)) as server:
+            with self.assertRaisesRegex(oracle.OracleFailure, "protocol mismatch"):
+                oracle.query_java_status(
+                    server.port, "1.21.4", implementation="paper", expected_protocol=769)
+
     def test_paper_requires_explicit_protocol_pin(self):
         with self.assertRaisesRegex(oracle.OracleFailure, "needs exact protocol pin"):
             oracle.query_java_status(25565, "1.21.11", implementation="paper")

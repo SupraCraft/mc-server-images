@@ -4,6 +4,13 @@ p=pathlib.Path(__file__).resolve().parents[1]/"spec"/"minecraft-hosting-stack-v1
 d=json.loads(p.read_text())
 errors=[]
 wa=d["world_agent"]; fb=d["foundry_boundary"]; ws=d["world_storage"]; be=d["backends"]
+ingress=d["ingress"]
+if ingress["service"] != "velocity" or ingress["player_facing"] is not True:
+    errors.append("Velocity must remain sole player-facing ingress")
+if "modern_forwarding" not in ingress["capabilities"]:
+    errors.append("Velocity modern forwarding capability missing")
+if ws["mutable_runtime_mount"] is not True:
+    errors.append("World runtime mount must remain explicit")
 if wa["docker_socket"]: errors.append("world-agent must not receive Docker socket")
 if wa["policy_authority"] or wa["game_semantics"]: errors.append("world-agent must remain mechanism-only")
 for forbidden in ("world_release_policy","world_promotion","game_semantics","two_rivers_state"):
