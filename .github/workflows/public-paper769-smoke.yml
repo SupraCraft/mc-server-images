@@ -1,0 +1,91 @@
+name: Public-safe Paper 1.21.4 protocol 769 smoke (research)
+
+on:
+  push:
+    branches: [workcell/public-hosting-contract-rep-20261112]
+    paths:
+      - .github/workflows/public-paper769-smoke.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-paper769-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  paper-status:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Start isolated public Paper service
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/paper769"
+          docker pull itzg/minecraft-server:java21
+          docker image inspect --format '{{.Id}}' itzg/minecraft-server:java21 > "$RUNNER_TEMP/paper769/image-id.txt"
+          docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' itzg/minecraft-server:java21 > "$RUNNER_TEMP/paper769/image-repodigests.txt"
+          docker run --detach --name mc-paper769-public-smoke \
+            --publish 127.0.0.1:25565:25565 \
+            --mount type=tmpfs,destination=/data,tmpfs-size=3221225472 \
+            --memory=6g --cpus=3 \
+            -e EULA=TRUE -e TYPE=PAPER -e VERSION=1.21.4 \
+            -e PAPER_BUILD=225 -e MEMORY=2G -e ONLINE_MODE=FALSE \
+            -e ENABLE_RCON=FALSE -e SPAWN_PROTECTION=0 \
+            itzg/minecraft-server:java21
+          docker inspect --format '{{.Image}}' mc-paper769-public-smoke > "$RUNNER_TEMP/paper769/container-image-id.txt"
+          docker port mc-paper769-public-smoke > "$RUNNER_TEMP/paper769/published-ports.txt"
+          grep -Fx '25565/tcp -> 127.0.0.1:25565' "$RUNNER_TEMP/paper769/published-ports.txt"
+
+      - name: Prove real Paper status protocol without private bots
+        shell: bash
+        run: |
+          set -euo pipefail
+          outcome=not_ready
+          for attempt in $(seq 1 45); do
+            if python3 tools/minecraft_java_status_oracle.py \
+                --port 25565 --expected-version 1.21.4 \
+                --implementation paper --expected-protocol 769 \
+                --timeout 3 --out "$RUNNER_TEMP/paper769/status-oracle.json" >/dev/null 2>&1; then
+              outcome=pass
+              break
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' mc-paper769-public-smoke)" != true ]; then
+              outcome=container_stopped
+              break
+            fi
+            sleep 8
+          done
+          printf '%s\n' "$outcome" > "$RUNNER_TEMP/paper769/outcome.txt"
+          if [ "$outcome" != pass ]; then
+            docker logs --tail 60 mc-paper769-public-smoke 2>&1 | tail -60
+            exit 1
+          fi
+          python3 - "$RUNNER_TEMP/paper769/status-oracle.json" <<'PY'
+          import json, sys
+          receipt = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert receipt["oracleSatisfied"] is True
+          assert receipt["server_protocol"] == 769
+          assert receipt["server_implementation"] == "paper"
+          assert receipt["java_version"] == "1.21.4"
+          print("REAL_PAPER769_STATUS_PASS")
+          PY
+
+      - name: Preserve bounded public evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: public-paper769-status-receipt
+          path: ${{ runner.temp }}/paper769/
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Destroy disposable service
+        if: always()
+        shell: bash
+        run: docker rm -fv mc-paper769-public-smoke || true
