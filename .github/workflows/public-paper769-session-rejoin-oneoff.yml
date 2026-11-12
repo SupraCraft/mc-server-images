@@ -72,7 +72,7 @@ jobs:
           'use strict'
           const fs = require('node:fs')
           const mc = require('minecraft-protocol')
-          const attempts = []
+          const attempts = []\n          if ('pub_alpha'.length > 16) throw new Error('synthetic username over protocol limit')
           const now = () => new Date().toISOString()
           const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
           async function session(label, holdMs=1300) {
@@ -89,7 +89,7 @@ jobs:
               }
               const timer=setTimeout(()=>finish('TIMEOUT'),25000)
               try {
-                c=mc.createClient({host:'127.0.0.1',port:25565,username:'public_probe_alpha',
+                c=mc.createClient({host:'127.0.0.1',port:25565,username:'pub_alpha',
                                    auth:'offline',version:'1.21.4'})
                 c.on('login', () => {
                   logged=true; rec.loginPlay=true
