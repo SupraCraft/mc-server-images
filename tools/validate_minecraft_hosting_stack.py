@@ -47,7 +47,7 @@ def validate_stack(data: dict) -> list[str]:
         if ingress.get("service") != "velocity" or ingress.get("player_facing") is not True:
             errors.append("Velocity must remain sole player-facing ingress")
         caps = ingress.get("capabilities", [])
-        if not isinstance(caps, list) or "modern_forwarding" not in caps:
+        if not isinstance(caps, list) or not all(isinstance(c, str) for c in caps) or "modern_forwarding" not in caps:
             errors.append("Velocity modern forwarding capability missing")
 
     # World storage validation
@@ -71,13 +71,27 @@ def validate_stack(data: dict) -> list[str]:
             errors.append("world-agent must not receive Docker socket")
         if wa.get("policy_authority") is not False or wa.get("game_semantics") is not False:
             errors.append("world-agent must remain mechanism-only")
+        if wa.get("optional") is not True:
+            errors.append("world-agent optional must be Boolean true")
+        verbs = wa.get("verbs")
+        required_verbs = {"status", "quiesce", "snapshot", "stage", "activate", "clone", "restore", "resume", "hash"}
+        if not isinstance(verbs, list) or not all(isinstance(x, str) for x in verbs) or not required_verbs.issubset(verbs):
+            errors.append("world-agent required mechanism verbs missing or malformed")
 
     # Foundry boundary
     fb = data.get("foundry_boundary", {})
     if not isinstance(fb, dict):
         errors.append("foundry_boundary must be a JSON object")
     else:
-        must_not_own = set(fb.get("must_not_own", []))
+        owns = fb.get("owns")
+        required_owns = {"compose_materialization", "service_wiring", "storage_attachment", "secrets_injection", "health_lifecycle"}
+        if not isinstance(owns, list) or not all(isinstance(x, str) for x in owns) or not required_owns.issubset(owns):
+            errors.append("Foundry required ownership missing or malformed")
+        exclusions = fb.get("must_not_own")
+        if not isinstance(exclusions, list) or not all(isinstance(x, str) for x in exclusions):
+            errors.append("Foundry exclusion list must contain strings")
+            exclusions = []
+        must_not_own = set(exclusions)
         for forbidden in ("world_release_policy", "world_promotion", "game_semantics", "two_rivers_state"):
             if forbidden not in must_not_own:
                 errors.append(f"Foundry exclusion missing: {forbidden}")
@@ -97,6 +111,10 @@ def validate_stack(data: dict) -> list[str]:
             errors.append("Paper must not inherit Two Rivers semantic authority")
         if not all(isinstance(v, dict) and v.get("independent_qualification") is True for v in be.values()):
             errors.append("backend qualification must remain independent")
+        if isinstance(vanilla, dict) and vanilla.get("proxy_adapter") != "SupraCraft/VanillaCord":
+            errors.append("vanilla proxy adapter identity drift")
+        if isinstance(paper, dict) and paper.get("proxy_adapter") != "native_velocity_forwarding":
+            errors.append("Paper proxy adapter identity drift")
 
     # Acceptance ladder
     expected_ladder = [
