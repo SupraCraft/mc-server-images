@@ -30,4 +30,5 @@ jobs:
         with:
           python-version: '3.13'
       - run: python tools/validate_minecraft_hosting_stack.py
+      - run: python -m unittest -v tools/test_validate_minecraft_hosting_stack.py
       - run: python -m unittest -v tools/test_minecraft_java_status_oracle.py
