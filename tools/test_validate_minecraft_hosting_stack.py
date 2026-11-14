@@ -109,7 +109,7 @@ class TestHostingStackBoundaries(unittest.TestCase):
                 # Preserve every required contract field; only add one
                 # invalid JSON constant that default json.loads would accept.
                 mutated = raw.replace(
-                    anchor, anchor + '\\n  "untrusted_extension": ' + token + ','
+                    anchor, anchor + '\n  "untrusted_extension": ' + token + ','
                 )
                 result = self.run_raw_text(mutated)
                 self.assertNotEqual(result.returncode, 0, token)
