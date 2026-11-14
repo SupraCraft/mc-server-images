@@ -16,8 +16,15 @@ def parse_strict_json(path: pathlib.Path) -> dict:
             res[k] = v
         return res
 
+    def reject_nonfinite_constant(value):
+        # CPython accepts NaN/Infinity extensions by default; they are not
+        # valid JSON and can create cross-parser policy ambiguity.
+        raise ValueError(f"non-standard JSON constant rejected: {value}")
+
     text = path.read_text(encoding="utf-8")
-    return json.loads(text, object_pairs_hook=check_pairs)
+    return json.loads(
+        text, object_pairs_hook=check_pairs, parse_constant=reject_nonfinite_constant
+    )
 
 
 def validate_stack(data: dict) -> list[str]:
