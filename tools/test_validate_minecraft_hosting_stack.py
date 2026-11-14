@@ -98,6 +98,23 @@ class TestHostingStackBoundaries(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0, label)
                 self.assertIn(expected, result.stdout)
 
+    def test_nonfinite_json_constants_are_rejected(self):
+        raw = (ROOT / "spec/minecraft-hosting-stack-v1.json").read_text(
+            encoding="utf-8"
+        )
+        anchor = '"schema_version": "1",'
+        self.assertEqual(1, raw.count(anchor), "fixture changed")
+        for token in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(token=token):
+                # Preserve every required contract field; only add one
+                # invalid JSON constant that default json.loads would accept.
+                mutated = raw.replace(
+                    anchor, anchor + '\\n  "untrusted_extension": ' + token + ','
+                )
+                result = self.run_raw_text(mutated)
+                self.assertNotEqual(result.returncode, 0, token)
+                self.assertIn("non-standard JSON constant rejected", result.stdout)
+
     def test_duplicate_json_keys_are_rejected(self):
         # Root duplicate
         raw_duplicate = (ROOT / "spec/minecraft-hosting-stack-v1.json").read_text(encoding="utf-8")
