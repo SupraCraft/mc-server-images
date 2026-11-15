@@ -16,8 +16,15 @@ def parse_strict_json(path: pathlib.Path) -> dict:
             res[k] = v
         return res
 
+    def reject_nonfinite_constant(value):
+        # CPython accepts NaN/Infinity extensions by default; they are not
+        # valid JSON and can create cross-parser policy ambiguity.
+        raise ValueError(f"non-standard JSON constant rejected: {value}")
+
     text = path.read_text(encoding="utf-8")
-    return json.loads(text, object_pairs_hook=check_pairs)
+    return json.loads(
+        text, object_pairs_hook=check_pairs, parse_constant=reject_nonfinite_constant
+    )
 
 
 def validate_stack(data: dict) -> list[str]:
@@ -92,6 +99,10 @@ def validate_stack(data: dict) -> list[str]:
             errors.append("Foundry exclusion list must contain strings")
             exclusions = []
         must_not_own = set(exclusions)
+        if isinstance(owns, list) and all(isinstance(x, str) for x in owns):
+            conflict = sorted(set(owns) & must_not_own)
+            if conflict:
+                errors.append(f"Foundry ownership/exclusion conflict: {conflict}")
         for forbidden in ("world_release_policy", "world_promotion", "game_semantics", "two_rivers_state"):
             if forbidden not in must_not_own:
                 errors.append(f"Foundry exclusion missing: {forbidden}")
