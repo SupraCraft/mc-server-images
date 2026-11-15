@@ -1,5 +1,6 @@
 """Synthetic adversarial examples; these tests do not establish game behavior."""
 import unittest
+import copy
 from tools.check_core_custody_trace import CARRIERS, SCHEMA, TraceError, check_trace
 
 IDENTITY = "source-marked:synthetic-fixture"
@@ -107,6 +108,39 @@ class Admission(unittest.TestCase):
         t["observations"][3] = snapshot(3, "transfer")
         with self.assertRaisesRegex(TraceError, "objective disappeared without recorded loss"):
             check_trace(t)
+
+
+    def test_bounded_adversarial_mutation_matrix(self):
+        baseline = admitted_trace()
+        rejected = 0
+        for i, row in enumerate(baseline["observations"]):
+            for carrier in CARRIERS:
+                for field, mutation in (
+                    ("scope", lambda r: r.update(scope_complete=False)),
+                    ("origin", lambda r: r.update(origin="bot_guess")),
+                    ("identity", lambda r: r.update(core_identity="wrong_objective")),
+                    ("missing", lambda r, k=carrier: r["carriers"].pop(k)),
+                    ("negative", lambda r, k=carrier: r["carriers"].update({k: -1})),
+                ):
+                    with self.subTest(row=i, carrier=carrier, mutation=field):
+                        candidate = copy.deepcopy(baseline)
+                        mutation(candidate["observations"][i])
+                        with self.assertRaises(TraceError):
+                            check_trace(candidate)
+                        rejected += 1
+                if row["carriers"][carrier] == 0 and sum(row["carriers"].values()) == 1:
+                    candidate = copy.deepcopy(baseline)
+                    candidate["observations"][i]["carriers"][carrier] = 1
+                    with self.assertRaisesRegex(TraceError, "duplicate objective"):
+                        check_trace(candidate)
+                    rejected += 1
+        for i in range(1, len(baseline["observations"])):
+            candidate = copy.deepcopy(baseline)
+            candidate["observations"][i]["reissues"] += 1
+            with self.assertRaises(TraceError):
+                check_trace(candidate)
+            rejected += 1
+        self.assertEqual(376, rejected)
 
 
 if __name__ == "__main__":
