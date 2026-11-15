@@ -2,14 +2,16 @@
 import hashlib
 import json
 import pathlib
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from export_core_restoration_datapack_26_3 import export, exact_source_commit
+from export_core_restoration_datapack_26_3 import export, exact_source_commit, SOURCE_INPUTS
 
 
 class ExportTests(unittest.TestCase):
@@ -48,6 +50,37 @@ class ExportTests(unittest.TestCase):
                     self.assertEqual(metadata["pack"]["max_format"], [121, 0])
             self.assertEqual(receipts[0], receipts[1])
             self.assertEqual(payloads[0], payloads[1])
+
+    def test_dirty_generator_source_rejected_before_artifact_creation(self):
+        # Isolated real Git fixture, never mutate the checkout under test.
+        with tempfile.TemporaryDirectory() as td:
+            repo = pathlib.Path(td) / "source"
+            repo.mkdir()
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            for relative in SOURCE_INPUTS:
+                path = repo / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("baseline\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "add", "--", *SOURCE_INPUTS],
+                           check=True)
+            subprocess.run(
+                ["git", "-C", str(repo), "-c", "user.name=Fixture",
+                 "-c", "user.email=fixture@example.invalid", "commit",
+                 "-qm", "immutable source fixture"], check=True)
+            out = pathlib.Path(td) / "candidate.zip"
+            manifest = pathlib.Path(td) / "candidate.json"
+            with mock.patch("export_core_restoration_datapack_26_3.REPO", repo):
+                self.assertRegex(exact_source_commit(), r"^[0-9a-f]{40}$")
+                for relative in SOURCE_INPUTS:
+                    with self.subTest(path=relative):
+                        source = repo / relative
+                        source.write_text("locally modified\n", encoding="utf-8")
+                        with self.assertRaisesRegex(RuntimeError, "dirty datapack source"):
+                            export(out, manifest, world_id="lantern-rdte",
+                                   release_id="core-restore-26-3")
+                        self.assertFalse(out.exists())
+                        self.assertFalse(manifest.exists())
+                        source.write_text("baseline\n", encoding="utf-8")
 
     def test_invalid_identity_refused_without_output(self):
         with tempfile.TemporaryDirectory() as td:
