@@ -103,6 +103,52 @@ class Admission(unittest.TestCase):
         with self.assertRaisesRegex(TraceError, "no installed objective"):
             check_trace(t)
 
+    def test_chest_to_socket_instant_install_is_rejected(self):
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "install", "installed_socket", restored=True),
+        ]}
+        with self.assertRaisesRegex(TraceError, "previously held objective"):
+            check_trace(t)
+
+    def test_cursor_cannot_physically_install_without_equipping(self):
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "transfer", "cursor"),
+            snapshot(2, "install", "installed_socket", restored=True),
+        ]}
+        with self.assertRaisesRegex(TraceError, "previously held objective"):
+            check_trace(t)
+
+    def test_socket_cannot_appear_earlier_as_generic_transfer(self):
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "transfer", "hotbar"),
+            snapshot(2, "transfer", "installed_socket"),
+            snapshot(3, "install", "installed_socket", restored=True),
+        ]}
+        with self.assertRaisesRegex(TraceError, "socket appeared without installation"):
+            check_trace(t)
+
+    def test_repeated_install_event_is_rejected(self):
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "transfer", "offhand"),
+            snapshot(2, "install", "installed_socket", restored=True),
+            snapshot(3, "install", "installed_socket", restored=True),
+        ]}
+        with self.assertRaisesRegex(TraceError, "previously held objective"):
+            check_trace(t)
+
+    def test_realistic_first_install_from_hotbar_is_consistent(self):
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "transfer", "hotbar"),
+            snapshot(2, "install", "installed_socket", restored=True),
+            snapshot(3, "post_restart", "installed_socket", restored=True),
+        ]}
+        self.assertEqual(check_trace(t)["result"], "CONSISTENT_REPORTED_TRACE")
+
     def test_restart_regression_is_rejected(self):
         t = admitted_trace()
         t["observations"][7]["restored"] = False

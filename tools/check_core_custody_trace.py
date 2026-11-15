@@ -104,9 +104,20 @@ def check_trace(doc):
             if not prev or prev["count"] != 1 or count != 0 or restored:
                 raise TraceError(f"{prefix}: loss must transition from one objective to zero")
             saw_real_loss = True
-        if event == "install" and (not restored or carriers["installed_socket"] != 1):
-            raise TraceError(f"{prefix}: install must prove physical socket and restoration")
-        prev = {"count": count, "reissues": reissues, "restored": restored}
+        # An installed core cannot appear via an ordinary transfer, and an
+        # installation is a change of custody from a player-held item. A
+        # chest-to-socket jump or a second install of an existing socket is
+        # not evidence of a player placing the objective.
+        if prev and prev["carriers"]["installed_socket"] == 0 and carriers["installed_socket"] == 1 and event != "install":
+            raise TraceError(f"{prefix}: socket appeared without installation event")
+        if event == "install":
+            if not prev or prev["restored"] or prev["count"] != 1 or (
+                prev["carriers"]["hotbar"] + prev["carriers"]["offhand"] != 1
+            ):
+                raise TraceError(f"{prefix}: install requires previously held objective")
+            if not restored or carriers["installed_socket"] != 1:
+                raise TraceError(f"{prefix}: install must prove physical socket and restoration")
+        prev = {"count": count, "reissues": reissues, "restored": restored, "carriers": carriers.copy()}
     return {"result": "CONSISTENT_REPORTED_TRACE", "observations": len(rows),
             "final_restored": prev["restored"], "final_reissues": prev["reissues"],
             "warning": "Reported trace only; official server provenance and physical gameplay are not verified"}
