@@ -35,6 +35,24 @@ class Admission(unittest.TestCase):
         self.assertTrue(out["final_restored"])
         self.assertIn("not verified", out["warning"])
 
+    def test_forged_single_row_install_is_rejected(self):
+        doc = admitted_trace()
+        doc["observations"] = [snapshot(0, "install", "installed_socket", restored=True)]
+        with self.assertRaisesRegex(TraceError, "untouched chest baseline"):
+            check_trace(doc)
+
+    def test_baseline_must_start_with_one_chest_objective_and_zero_reissues(self):
+        for event, carrier, reissues in (
+            ("transfer", "cursor", 0),
+            ("baseline", None, 0),
+            ("baseline", "chest", 1),
+        ):
+            with self.subTest(event=event, carrier=carrier, reissues=reissues):
+                doc = admitted_trace()
+                doc["observations"][0] = snapshot(0, event, carrier, reissues=reissues)
+                with self.assertRaisesRegex(TraceError, "untouched chest baseline"):
+                    check_trace(doc)
+
     def test_cursor_duplicate_without_real_loss_is_rejected(self):
         t = admitted_trace()
         t["observations"][2] = snapshot(2, "reissue", "chest", reissues=1)

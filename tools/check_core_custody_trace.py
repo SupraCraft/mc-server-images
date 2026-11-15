@@ -69,6 +69,12 @@ def check_trace(doc):
             raise TraceError(f"{prefix}: restored must be boolean")
         if restored and carriers["installed_socket"] != 1:
             raise TraceError(f"{prefix}: restored claimed with no installed objective")
+        # This bounded checker starts *before* the keeper chest acquisition.
+        # A single asserted install/post-restart row must not be admitted as a
+        # complete custody history, even if its terminal snapshot is plausible.
+        if i == 0 and (event != "baseline" or count != 1 or
+                       carriers["chest"] != 1 or reissues != 0 or restored):
+            raise TraceError(f"{prefix}: require an untouched chest baseline")
         if event == "baseline" and i != 0:
             raise TraceError(f"{prefix}: baseline may occur only at start")
         if event == "post_restart" and prev is None:
