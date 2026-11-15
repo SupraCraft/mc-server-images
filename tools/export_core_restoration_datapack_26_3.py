@@ -21,6 +21,12 @@ from probe_core_restoration_datapack_26_3 import write_datapack
 REPO = pathlib.Path(__file__).resolve().parents[1]
 IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 FIXED_DATE = (1980, 1, 1, 0, 0, 0)
+# Include transitive generator input; generated outputs/pycache are not source.
+SOURCE_INPUTS = (
+    "tools/export_core_restoration_datapack_26_3.py",
+    "tools/probe_core_restoration_datapack_26_3.py",
+    "tools/smoke_vanilla_runtime.py",
+)
 EXPECTED_MEMBERS = (
     "pack.mcmeta",
     "data/minecraft/tags/function/tick.json",
@@ -38,6 +44,12 @@ def exact_source_commit() -> str:
     sha = p.stdout.strip()
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise RuntimeError("unqualified source revision")
+    dirty = subprocess.run(
+        ["git", "-C", str(REPO), "status", "--porcelain=v1",
+         "--untracked-files=no", "--", *SOURCE_INPUTS],
+        capture_output=True, text=True, timeout=10, check=True)
+    if dirty.stdout.strip():
+        raise RuntimeError("dirty datapack source: Git HEAD is not its byte provenance")
     return sha
 
 
@@ -47,6 +59,8 @@ def export(out: pathlib.Path, manifest: pathlib.Path, *,
         raise ValueError("world_id/release_id must be bounded identifiers")
     if out.resolve() == manifest.resolve() or out.suffix != ".zip":
         raise ValueError("distinct .zip artifact and manifest paths required")
+    # Fail before creating an output artifact if source differs from pinned HEAD.
+    source_commit = exact_source_commit()
 
     with tempfile.TemporaryDirectory(prefix="supracraft-datapack-export-") as td:
         root = pathlib.Path(td)
@@ -80,7 +94,7 @@ def export(out: pathlib.Path, manifest: pathlib.Path, *,
         "release_id": release_id,
         "minecraft_version": "26.3",
         "backend": "vanilla",
-        "producer": "SupraCraft/mc-server-images@" + exact_source_commit(),
+        "producer": "SupraCraft/mc-server-images@" + source_commit,
         "relative_path": out.name,
         "sha256": sha256(content),
         "archive_size": len(content),
