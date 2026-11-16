@@ -41,6 +41,20 @@ bot.once('spawn', async () => {
   fs.writeFileSync(files.ready, 'ready\n')
   try {
     await awaitGate(files.start, 'official source and player setup')
+    // The controller's teleport command and source readiness marker may
+    // precede the client-side position update. Do not open a remote chest.
+    const positionedDeadline = Date.now() + 30000
+    let positioned = false
+    while (Date.now() < positionedDeadline) {
+      const p = bot.entity.position
+      if (Math.abs(p.x - 0.5) < 3 && Math.abs(p.z - 2.5) < 3) {
+        positioned = true
+        break
+      }
+      await bot.waitForTicks(2)
+    }
+    if (!positioned) throw new Error('controller teleport not observed by player')
+    await bot.waitForTicks(3)
     const chest = bot.blockAt(new Vec3(0, 70, 0))
     if (!chest || chest.name !== 'chest') throw new Error('keeper chest missing')
     const window = await bot.openContainer(chest)
