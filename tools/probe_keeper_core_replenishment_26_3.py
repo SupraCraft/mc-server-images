@@ -83,6 +83,11 @@ def write_datapack(root: Path) -> dict[str, Any]:
         f"unless items entity @a[limit=1] inventory.* {CORE} "
         f"unless items entity @a[limit=1] hotbar.* {CORE} "
         f"unless items entity @a[limit=1] weapon.offhand {CORE} "
+        # Java 26.3 player cursor and crafting slots must remain custody carriers.
+        # Without these guards, a transient inventory click can mint a second
+        # objective in the keeper chest during the same cursor-transfer tick.
+        f"unless items entity @a[limit=1] player.cursor {CORE} "
+        f"unless items entity @a[limit=1] player.crafting.* {CORE} "
         f"unless items block {CHEST[0]} {CHEST[1]} {CHEST[2]} container.0 {CORE} "
         f"run item replace block {CHEST[0]} {CHEST[1]} {CHEST[2]} "
         f"container.0 with {CORE} 1"
@@ -476,6 +481,8 @@ def main() -> int:
             "limitations": [
                 "qualifies one exact Java 26.3 single-player keeper-source policy",
                 "controller positions the player and introduces the loss treatment",
+                "guards player cursor and crafting custody in the datapack command",
+                "does not actively exercise held cursor or crafting custody transitions",
                 "does not track dropped core item entities or other storage",
                 "does not establish autonomous navigation or narrative legibility",
                 "datapack is the source replenishment realization",
