@@ -25,6 +25,15 @@ from probe_keeper_core_replenishment_26_3 import (
 SCHEMA = "supracraft.keeper-cursor-hold-263/v0.1"
 
 
+def await_bot_receipt(path: Path, bot: subprocess.Popen[str], receipt: Path, timeout: int) -> None:
+    """Preserve the worker's first failure, not just its empty stdout."""
+    try:
+        wait_file(path, bot, timeout)
+    except Exception as exc:
+        detail = receipt.read_text("utf-8", errors="replace")[-2200:] if receipt.exists() else "NO_BOT_RECEIPT"
+        raise RuntimeError(f"{exc}; bot_receipt={detail}") from exc
+
+
 def cursor_predicate(*, held: bool) -> str:
     return f"execute {'if' if held else 'unless'} items entity {BOT_NAME} player.cursor {CORE}"
 
@@ -86,14 +95,14 @@ def execute(evidence: dict[str, Any], variant: str) -> dict[str, Any]:
                     cwd=Path(__file__).resolve().parents[1], env=env,
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                 )
-                wait_file(files["ready"], bot, 45)
+                await_bot_receipt(files["ready"], bot, receipt, 45)
                 send(server, f"gamemode survival {BOT_NAME}")
                 send(server, f"tp {BOT_NAME} 0.5 70.0 2.5 180 0")
                 source_attempts, source_seconds = wait_for_predicate(
                     server, log_path, marker="CURSOR_SOURCE_READY", predicate=source_has_core(), timeout=15.0,
                 )
                 files["start"].write_text("source-ready\n", "utf-8")
-                wait_file(files["held"], bot, 45)
+                await_bot_receipt(files["held"], bot, receipt, 45)
                 cursor_attempts, cursor_seconds = wait_for_predicate(
                     server, log_path, marker="CURSOR_OBSERVED", predicate=cursor_predicate(held=True), timeout=12.0,
                 )
@@ -112,7 +121,7 @@ def execute(evidence: dict[str, Any], variant: str) -> dict[str, Any]:
                                   predicate=source_has_core(), settle=1.5)
                     source_while_held = False
                 files["release"].write_text("server-verified\n", "utf-8")
-                wait_file(files["done"], bot, 30)
+                await_bot_receipt(files["done"], bot, receipt, 30)
                 after_attempts, after_seconds = wait_for_predicate(
                     server, log_path, marker="CURSOR_DEPOSITED_INVENTORY", predicate=inventory_has_core(),
                     timeout=12.0,
