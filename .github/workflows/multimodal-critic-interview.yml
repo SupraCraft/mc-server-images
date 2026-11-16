@@ -1,0 +1,90 @@
+name: Multimodal critic interview preflight (public RDTE)
+on:
+  pull_request:
+    paths:
+      - 'tools/critic_*'
+      - 'tests/test_critic_*'
+      - 'docs/multimodal-critic-interview-v0.md'
+      - '.github/workflows/multimodal-critic-interview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: multimodal-critic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evidence-contract:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Independently falsify source/media observation gates
+        run: python -B -m unittest discover -s tests -p 'test_critic_*.py' -v
+
+  image-video:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Generate and inspect public-safe synthetic still/video
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v ffmpeg
+          command -v ffprobe
+          mkdir -p "$RUNNER_TEMP/critic-interview"
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=blue:s=128x128:r=2' -t 2 -c:v libx264 -pix_fmt yuv420p -an "$RUNNER_TEMP/critic-interview/blue.mp4"
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=red:s=64x64' -frames:v 1 "$RUNNER_TEMP/critic-interview/red.png"
+          python -B tools/critic_media_probe.py --kind video --media "$RUNNER_TEMP/critic-interview/blue.mp4" --out "$RUNNER_TEMP/critic-interview/video.json"
+          python -B tools/critic_media_probe.py --kind image --media "$RUNNER_TEMP/critic-interview/red.png" --out "$RUNNER_TEMP/critic-interview/image.json"
+          if python -B tools/critic_media_probe.py --kind video --media "$RUNNER_TEMP/critic-interview/blue.mp4" --require-audio; then
+            echo 'FAIL: no-audio negative incorrectly admitted'
+            exit 1
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: critic-image-video-source-receipts
+          path: ${{ runner.temp }}/critic-interview/*.json
+          retention-days: 1
+          if-no-files-found: error
+
+  audio:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Generate and inspect public-safe synthetic acoustic evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v ffmpeg
+          command -v ffprobe
+          mkdir -p "$RUNNER_TEMP/critic-interview"
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'sine=frequency=440:sample_rate=44100' -t 2 -c:a pcm_s16le "$RUNNER_TEMP/critic-interview/tone.wav"
+          ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'anullsrc=r=44100:cl=mono' -t 2 -c:a pcm_s16le "$RUNNER_TEMP/critic-interview/silence.wav"
+          python -B tools/critic_media_probe.py --kind audio --media "$RUNNER_TEMP/critic-interview/tone.wav" --out "$RUNNER_TEMP/critic-interview/tone.json"
+          python -B tools/critic_media_probe.py --kind audio --media "$RUNNER_TEMP/critic-interview/silence.wav" --out "$RUNNER_TEMP/critic-interview/silence.json"
+          if python -B tools/critic_media_probe.py --kind video --media "$RUNNER_TEMP/critic-interview/tone.wav"; then
+            echo 'FAIL: audio-only incorrectly admitted as video'
+            exit 1
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: critic-audio-source-receipts
+          path: ${{ runner.temp }}/critic-interview/*.json
+          retention-days: 1
+          if-no-files-found: error
