@@ -68,14 +68,19 @@ bot.once('spawn', async () => {
     await bot.waitForTicks(3)
     const chest = bot.blockAt(new Vec3(0, 70, 0))
     if (!chest || chest.name !== 'chest') throw new Error('keeper chest missing')
-    receipt.preopen = {
-      at: Date.now(),
+    // Diagnostics must not change the interaction's pass/fail behavior.
+    try {
+      receipt.preopen = {
+        at: Date.now(),
       player_position: bot.entity.position.toArray(),
       chest_position: chest.position.toArray(),
       chest_name: chest.name,
       above_chest_name: (bot.blockAt(new Vec3(0, 71, 0)) || {}).name || null,
       distance_to_chest_block: bot.entity.position.distanceTo(chest.position),
       can_see_chest: typeof bot.canSeeBlock === 'function' ? bot.canSeeBlock(chest) : null
+      }
+    } catch (diagnosticError) {
+      receipt.preopen = { at: Date.now(), diagnostic_error: String(diagnosticError) }
     }
     receipt.milestones.open_attempt = Date.now()
     store()
