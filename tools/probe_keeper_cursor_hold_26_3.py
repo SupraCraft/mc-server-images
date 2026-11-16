@@ -70,9 +70,8 @@ def execute(evidence: dict[str, Any], variant: str) -> dict[str, Any]:
                 send(server, "fill -2 69 -2 3 69 4 minecraft:stone")
                 send(server, "fill -2 70 -2 3 72 4 minecraft:air")
                 send(server, "setblock 0 70 0 minecraft:chest[facing=south]")
-                source_attempts, source_seconds = wait_for_predicate(
-                    server, log_path, marker="CURSOR_SOURCE_READY", predicate=source_has_core(), timeout=15.0,
-                )
+                # This datapack deliberately selects one present player.
+                # Admit the player before expecting automatic source refill.
                 env = dict(os.environ)
                 env.update({
                     "CURSOR_BOT_READY": str(files["ready"]),
@@ -90,6 +89,9 @@ def execute(evidence: dict[str, Any], variant: str) -> dict[str, Any]:
                 wait_file(files["ready"], bot, 45)
                 send(server, f"gamemode survival {BOT_NAME}")
                 send(server, f"tp {BOT_NAME} 0.5 70.0 2.5 180 0")
+                source_attempts, source_seconds = wait_for_predicate(
+                    server, log_path, marker="CURSOR_SOURCE_READY", predicate=source_has_core(), timeout=15.0,
+                )
                 files["start"].write_text("source-ready\n", "utf-8")
                 wait_file(files["held"], bot, 45)
                 cursor_attempts, cursor_seconds = wait_for_predicate(
