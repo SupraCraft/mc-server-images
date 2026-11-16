@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'tools/critic_*'
+      - 'tools/interview_cpu_vlm.py'
       - 'tests/test_critic_*'
       - 'docs/multimodal-critic-interview-v0.md'
       - '.github/workflows/multimodal-critic-interview.yml'
@@ -94,3 +95,37 @@ jobs:
           path: ${{ runner.temp }}/critic-interview/*.json
           retention-days: 1
           if-no-files-found: error
+
+  cpu-vlm-interview:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Install pinned CPU-only inference runtime (no API credential)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu 'torch==2.6.0+cpu'
+          python -m pip install --disable-pip-version-check 'transformers==4.53.3' 'accelerate==1.8.1' 'pillow==11.2.1'
+      - name: Single source-pinned visual interview (two synthetic fixtures)
+        shell: bash
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/critic-cpu"
+          python -B tools/interview_cpu_vlm.py --out "$RUNNER_TEMP/critic-cpu/model-receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: critic-cpu-vlm-first-interview-receipt
+          path: ${{ runner.temp }}/critic-cpu/model-receipt.json
+          retention-days: 1
+          if-no-files-found: warn
