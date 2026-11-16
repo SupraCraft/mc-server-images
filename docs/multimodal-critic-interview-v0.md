@@ -22,6 +22,10 @@ OpenRouter zero-price discovery 2026-11-16:
 
 **All unqualified.** Free API access still requires a credential and its availability must be independently checked. No billed fallbacks, no reusable secrets in public artifacts or logs, and no automatic uncontrolled retries. GitHub Models inference is unavailable following the July 2026 retirement. Never infer execution from a catalog listing. Retain a model's exact ID and actual provider response when a candidate is run.
 
+
+## Actual no-key model interview candidate, source-pinned
+A fourth, independent CPU-only public GHA lane runs original red/blue square images against the Apache-2.0 Hugging Face model HuggingFaceTB/SmolVLM-256M-Instruct at exact repository revision d039ab0d4b9311b617e8ffec1d06c8464364aeb3. This is a **real image-language model**, not a text-only or stub critic. Its fixture PNG hashes, loaded weight SHA256, raw outputs, inferred color, CPU/RSS metrics and first errors are retained. Python/Torch/Transformers are pinned; no GPU/billed runner, API key or private media is used. A color test is only a model-runtime/advisory baseline and **never** proof of Minecraft image or video criticism. No automatic retry or promotion.
+
 ## Receipt contract
 Run tools/critic_media_probe.py on an original media file. It emits bytes SHA256, tracks and duration; source and stock-client authority always false. A candidate observation document must match that SHA256, name the provider/model/family and express each finding with severity, falsifiable evidence text, confidence and video/audio time_ms or normalized still-image region [x1,y1,x2,y2]. The tools/critic_observation_gate.py enforces limits/track presence and permits explicit abstention. Accepted documents are **EVIDENCE_ADMISSIBLE_REVIEW_REQUIRED**, *not* validated observations or a qualified model. Text length and exact hashes do not establish that a claim is true; human/reference oracle adjudication remains required.
 
