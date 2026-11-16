@@ -152,6 +152,53 @@ class Admission(unittest.TestCase):
         ]}
         self.assertEqual(check_trace(t)["result"], "CONSISTENT_REPORTED_TRACE")
 
+
+    def test_keeper_chest_loss_without_player_custody_is_not_complete_recovery(self):
+        # First failure: direct untouched chest -> loss -> reissue
+        # previously received a complete chain despite no original custody.
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "loss"),
+            snapshot(2, "reissue", "chest", reissues=1),
+            snapshot(3, "transfer", "hotbar", reissues=1),
+            snapshot(4, "install", "installed_socket", reissues=1, restored=True),
+            snapshot(5, "post_restart", "installed_socket", reissues=1, restored=True),
+        ]}
+        result = check_trace(t)
+        self.assertEqual(result["result"], "CONSISTENT_REPORTED_TRACE")
+        self.assertEqual(result["reported_milestones"],
+                         {"loss": True, "reissue": True, "install": True, "post_restart": True})
+        self.assertFalse(result["original_player_custody_before_loss"])
+        self.assertFalse(result["complete_reported_recovery_chain"])
+
+    def test_cursor_acquisition_before_original_loss_counts_as_reported_recovery(self):
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "transfer", "cursor"),
+            snapshot(2, "loss"),
+            snapshot(3, "reissue", "chest", reissues=1),
+            snapshot(4, "transfer", "hotbar", reissues=1),
+            snapshot(5, "install", "installed_socket", reissues=1, restored=True),
+            snapshot(6, "post_restart", "installed_socket", reissues=1, restored=True),
+        ]}
+        result = check_trace(t)
+        self.assertTrue(result["original_player_custody_before_loss"])
+        self.assertTrue(result["complete_reported_recovery_chain"])
+
+    def test_reissued_custody_does_not_backfill_original_acquisition(self):
+        t = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "loss"),
+            snapshot(2, "reissue", "chest", reissues=1),
+            snapshot(3, "transfer", "cursor", reissues=1),
+            snapshot(4, "transfer", "offhand", reissues=1),
+            snapshot(5, "install", "installed_socket", reissues=1, restored=True),
+            snapshot(6, "post_restart", "installed_socket", reissues=1, restored=True),
+        ]}
+        result = check_trace(t)
+        self.assertFalse(result["original_player_custody_before_loss"])
+        self.assertFalse(result["complete_reported_recovery_chain"])
+
     def test_restored_without_loss_or_reissue_is_not_complete_recovery_chain(self):
         doc = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
             snapshot(0, "baseline", "chest"),

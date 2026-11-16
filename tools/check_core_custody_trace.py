@@ -39,6 +39,8 @@ def check_trace(doc):
 
     prev = None
     saw_real_loss = False
+    saw_original_player_custody = False
+    original_player_custody_before_loss = False
     milestones = {"loss": False, "reissue": False, "install": False, "post_restart": False}
     original_identity = doc["core_identity"]
     for i, row in enumerate(rows):
@@ -102,10 +104,20 @@ def check_trace(doc):
                 raise TraceError(f"{prefix}: new objective appeared without reissue event")
             if prev["count"] == 1 and count == 0 and event != "loss":
                 raise TraceError(f"{prefix}: objective disappeared without recorded loss")
+        # Track acquisition of the *original* objective before its loss. A
+        # keeper chest may itself be lost, but that does not prove the player
+        # withdrew the core before the recovery story. Reissued custody must
+        # not retroactively qualify the original acquisition.
+        if reissues == 0 and not restored and any(
+            carriers[k] for k in ("main_inventory", "hotbar", "offhand", "cursor", "crafting")
+        ):
+            saw_original_player_custody = True
         if event == "loss":
             if not prev or prev["count"] != 1 or count != 0 or restored:
                 raise TraceError(f"{prefix}: loss must transition from one objective to zero")
             saw_real_loss = True
+            if reissues == 0 and saw_original_player_custody:
+                original_player_custody_before_loss = True
             milestones["loss"] = True
         # An installed core cannot appear via an ordinary transfer, and an
         # installation is a change of custody from a player-held item. A
@@ -127,7 +139,11 @@ def check_trace(doc):
     return {"result": "CONSISTENT_REPORTED_TRACE", "observations": len(rows),
             "final_restored": prev["restored"], "final_reissues": prev["reissues"],
             "reported_milestones": milestones,
-            "complete_reported_recovery_chain": prev["restored"] and all(milestones.values()),
+            "original_player_custody_before_loss": original_player_custody_before_loss,
+            "complete_reported_recovery_chain": (
+                prev["restored"] and all(milestones.values()) and
+                original_player_custody_before_loss
+            ),
             "warning": "Reported trace only; official server provenance and physical gameplay are not verified"}
 
 
