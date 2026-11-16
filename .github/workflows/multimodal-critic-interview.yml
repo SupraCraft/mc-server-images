@@ -41,8 +41,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg
           command -v ffmpeg
           command -v ffprobe
+          ffmpeg -version | head -n 1
           mkdir -p "$RUNNER_TEMP/critic-interview"
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=blue:s=128x128:r=2' -t 2 -c:v libx264 -pix_fmt yuv420p -an "$RUNNER_TEMP/critic-interview/blue.mp4"
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=red:s=64x64' -frames:v 1 "$RUNNER_TEMP/critic-interview/red.png"
@@ -71,8 +74,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg
           command -v ffmpeg
           command -v ffprobe
+          ffmpeg -version | head -n 1
           mkdir -p "$RUNNER_TEMP/critic-interview"
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'sine=frequency=440:sample_rate=44100' -t 2 -c:a pcm_s16le "$RUNNER_TEMP/critic-interview/tone.wav"
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'anullsrc=r=44100:cl=mono' -t 2 -c:a pcm_s16le "$RUNNER_TEMP/critic-interview/silence.wav"
