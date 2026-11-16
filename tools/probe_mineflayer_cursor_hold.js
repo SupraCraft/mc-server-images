@@ -17,6 +17,17 @@ for (const [key, value] of Object.entries(files)) {
 const receipt = { schema: 'supracraft.cursor-hold-probe/v0.1', milestones: {}, version: '26.3' }
 function store () { fs.writeFileSync(files.receipt, JSON.stringify(receipt, null, 2) + '\n') }
 const bot = mineflayer.createBot({host: '127.0.0.1', port: 25575, username: 'SupraCraftProbe', auth: 'offline', version: '26.3'})
+// Bounded metadata-only diagnostics: no packet payloads, credentials or worlds.
+receipt.interaction_packets = []
+if (bot._client) {
+  bot._client.on('packet', (_data, meta) => {
+    const name = meta && meta.name
+    if (!name || !/window|screen|container|block|position|teleport|slot/i.test(name)) return
+    receipt.interaction_packets.push({ name, state: meta.state, at: Date.now() })
+    if (receipt.interaction_packets.length > 24) receipt.interaction_packets.shift()
+  })
+}
+bot.on('windowOpen', w => { receipt.window_open_event = { at: Date.now(), type: w.type || null }; store() })
 let finished = false
 function finish (code) {
   if (finished) return
@@ -57,7 +68,20 @@ bot.once('spawn', async () => {
     await bot.waitForTicks(3)
     const chest = bot.blockAt(new Vec3(0, 70, 0))
     if (!chest || chest.name !== 'chest') throw new Error('keeper chest missing')
+    receipt.preopen = {
+      at: Date.now(),
+      player_position: bot.entity.position.toArray(),
+      chest_position: chest.position.toArray(),
+      chest_name: chest.name,
+      above_chest_name: (bot.blockAt(new Vec3(0, 71, 0)) || {}).name || null,
+      distance_to_chest_block: bot.entity.position.distanceTo(chest.position),
+      can_see_chest: typeof bot.canSeeBlock === 'function' ? bot.canSeeBlock(chest) : null
+    }
+    receipt.milestones.open_attempt = Date.now()
+    store()
     const window = await bot.openContainer(chest)
+    receipt.milestones.open_returned = Date.now()
+    store()
     const original = (typeof window.containerItems === 'function' ? window.containerItems() : window.items())
       .find(item => item.name === 'redstone_block')
     if (!original || original.slot !== 0) throw new Error('core not in chest slot 0: ' + JSON.stringify(original || null))
