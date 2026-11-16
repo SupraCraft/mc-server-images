@@ -1,0 +1,72 @@
+name: Java 26.3 official server cursor-held replenishment RED BLUE
+on:
+  push:
+    branches:
+      - review/h93-keeper-cursor-held-rdte-20261116
+    paths:
+      - '.github/workflows/keeper-cursor-held-26.3.yml'
+      - 'tools/probe_keeper_cursor_hold_26_3.py'
+      - 'tools/probe_mineflayer_cursor_hold.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: java263-cursor-custody-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualify:
+    name: ${{ matrix.variant }} official-server custody
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [legacy, guarded]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Assemble pinned public experimental Prismarine stack
+        run: |
+          bash tools/install_experimental_prismarine_26_3.sh /tmp/supracraft-prismarine-26.3
+          echo 'NODE_PATH=/tmp/supracraft-prismarine-26.3/runtime/node_modules' >> "$GITHUB_ENV"
+      - name: Static validation before official server execution
+        run: |
+          python -m py_compile tools/probe_keeper_cursor_hold_26_3.py
+          node --check tools/probe_mineflayer_cursor_hold.js
+      - name: Observe real cursor custody and chest replenishment
+        run: |
+          mkdir -p out
+          python tools/probe_keeper_cursor_hold_26_3.py \
+            --evidence probes/26.3-release-identity.json \
+            --variant '${{ matrix.variant }}' \
+            --output 'out/cursor-${{ matrix.variant }}.json'
+      - name: Record bounded terminal receipt
+        if: always()
+        run: |
+          echo '## Java 26.3 cursor-held official-server probe: ${{ matrix.variant }}' >> "$GITHUB_STEP_SUMMARY"
+          if test -f 'out/cursor-${{ matrix.variant }}.json'; then
+            echo 'JSON RECEIPT:' >> "$GITHUB_STEP_SUMMARY"
+            cat 'out/cursor-${{ matrix.variant }}.json' >> "$GITHUB_STEP_SUMMARY"
+            echo 'END RECEIPT' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'NO TERMINAL RECEIPT (FAIL CLOSED)' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cursor-hold-${{ matrix.variant }}
+          path: out/cursor-${{ matrix.variant }}.json
+          if-no-files-found: warn
+          retention-days: 7
