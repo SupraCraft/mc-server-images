@@ -39,6 +39,7 @@ def check_trace(doc):
 
     prev = None
     saw_real_loss = False
+    milestones = {"loss": False, "reissue": False, "install": False, "post_restart": False}
     original_identity = doc["core_identity"]
     for i, row in enumerate(rows):
         prefix = f"observations[{i}]"
@@ -94,6 +95,7 @@ def check_trace(doc):
                 if count != 1 or carriers["chest"] != 1:
                     raise TraceError(f"{prefix}: reissue must create exactly one chest objective")
                 saw_real_loss = False
+                milestones["reissue"] = True
             elif reissues != prev["reissues"]:
                 raise TraceError(f"{prefix}: unrecorded reissue increment")
             if prev["count"] == 0 and count == 1 and event != "reissue":
@@ -104,6 +106,7 @@ def check_trace(doc):
             if not prev or prev["count"] != 1 or count != 0 or restored:
                 raise TraceError(f"{prefix}: loss must transition from one objective to zero")
             saw_real_loss = True
+            milestones["loss"] = True
         # An installed core cannot appear via an ordinary transfer, and an
         # installation is a change of custody from a player-held item. A
         # chest-to-socket jump or a second install of an existing socket is
@@ -117,9 +120,14 @@ def check_trace(doc):
                 raise TraceError(f"{prefix}: install requires previously held objective")
             if not restored or carriers["installed_socket"] != 1:
                 raise TraceError(f"{prefix}: install must prove physical socket and restoration")
+            milestones["install"] = True
+        if event == "post_restart":
+            milestones["post_restart"] = True
         prev = {"count": count, "reissues": reissues, "restored": restored, "carriers": carriers.copy()}
     return {"result": "CONSISTENT_REPORTED_TRACE", "observations": len(rows),
             "final_restored": prev["restored"], "final_reissues": prev["reissues"],
+            "reported_milestones": milestones,
+            "complete_reported_recovery_chain": prev["restored"] and all(milestones.values()),
             "warning": "Reported trace only; official server provenance and physical gameplay are not verified"}
 
 

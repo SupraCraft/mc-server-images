@@ -33,6 +33,9 @@ class Admission(unittest.TestCase):
         out = check_trace(admitted_trace())
         self.assertEqual(out["result"], "CONSISTENT_REPORTED_TRACE")
         self.assertTrue(out["final_restored"])
+        self.assertTrue(out["complete_reported_recovery_chain"])
+        self.assertEqual(out["reported_milestones"],
+                         {"loss": True, "reissue": True, "install": True, "post_restart": True})
         self.assertIn("not verified", out["warning"])
 
     def test_forged_single_row_install_is_rejected(self):
@@ -148,6 +151,28 @@ class Admission(unittest.TestCase):
             snapshot(3, "post_restart", "installed_socket", restored=True),
         ]}
         self.assertEqual(check_trace(t)["result"], "CONSISTENT_REPORTED_TRACE")
+
+    def test_restored_without_loss_or_reissue_is_not_complete_recovery_chain(self):
+        doc = {"schema": SCHEMA, "core_identity": IDENTITY, "observations": [
+            snapshot(0, "baseline", "chest"),
+            snapshot(1, "transfer", "hotbar"),
+            snapshot(2, "install", "installed_socket", restored=True),
+            snapshot(3, "post_restart", "installed_socket", restored=True),
+        ]}
+        out = check_trace(doc)
+        self.assertEqual(out["result"], "CONSISTENT_REPORTED_TRACE")
+        self.assertTrue(out["final_restored"])
+        self.assertFalse(out["complete_reported_recovery_chain"])
+        self.assertEqual(out["reported_milestones"],
+                         {"loss": False, "reissue": False, "install": True, "post_restart": True})
+
+    def test_restored_without_restart_is_not_complete_recovery_chain(self):
+        doc = admitted_trace()
+        doc["observations"] = doc["observations"][:-1]
+        out = check_trace(doc)
+        self.assertTrue(out["final_restored"])
+        self.assertFalse(out["complete_reported_recovery_chain"])
+        self.assertEqual(out["reported_milestones"]["post_restart"], False)
 
     def test_restart_regression_is_rejected(self):
         t = admitted_trace()
