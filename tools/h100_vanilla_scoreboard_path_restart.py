@@ -26,7 +26,7 @@ LEGACY = "world/data/scoreboard.dat"
 SCORE_OBJECTIVE = "h100"
 SCORE_HOLDER = "#restored"
 SCORE_VALUE = 1
-LOG_ACCEPT = re.compile(r"\[Server\]:\s*H100_SCORE_(PRE|POST)_VERIFIED\b")
+LOG_ACCEPT = re.compile(r"\[Server thread/INFO\]: \[Not Secure\] \[Server\] H100_SCORE_(PRE|POST)_VERIFIED\b")
 LIMIT = 2_000_000
 
 
