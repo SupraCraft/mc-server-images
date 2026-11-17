@@ -126,7 +126,10 @@ def require_score(proc,log_path,phase):
         time.sleep(0.5)
         if marker_present(log_path,phase):
             return round(time.monotonic()-start,3)
-    raise RuntimeError(f"AUTHORITATIVE_SCORE_RELOAD_NOT_OBSERVED:{phase}")
+    # Public disposable server only: diagnostic content is safe to expose, but
+    # keep bounded. The first RED remains immutable at GHA run 44200346356.
+    tail = log_path.read_text(encoding="utf-8", errors="replace")[-4500:]
+    raise RuntimeError(f"AUTHORITATIVE_SCORE_RELOAD_NOT_OBSERVED:{phase}:SERVER_LOG_TAIL={tail!r}")
 
 
 def stop(proc):
@@ -166,6 +169,7 @@ def run(evidence):
                 if phase=="PRE":
                     command(proc,f"scoreboard objectives add {SCORE_OBJECTIVE} dummy")
                     command(proc,f"scoreboard players set {SCORE_HOLDER} {SCORE_OBJECTIVE} {SCORE_VALUE}")
+                    command(proc,f"scoreboard players get {SCORE_HOLDER} {SCORE_OBJECTIVE}")
                 phase_times[phase]=require_score(proc,log_path,phase)
                 stop(proc)
             finally:
