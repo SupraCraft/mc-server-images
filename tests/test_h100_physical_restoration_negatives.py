@@ -64,7 +64,7 @@ class H100NegativeAdmissionTests(unittest.TestCase):
             log=Path(t)/"server.log"
             log.write_text("stdin> execute if block 0 70 0 gold_block run say H100_WRONG_ITEM_REJECTED\n")
             self.assertEqual(exact_marker_count(log,"H100_WRONG_ITEM_REJECTED"),0)
-            log.write_text("[23:01:00] [Server thread/INFO]: [Not Secure] [Server]: H100_WRONG_ITEM_REJECTED\n")
+            log.write_text("[23:01:00] [Server thread/INFO]: [Not Secure] [Server] H100_WRONG_ITEM_REJECTED\n")
             self.assertEqual(exact_marker_count(log,"H100_WRONG_ITEM_REJECTED"),1)
             self.assertEqual(exact_marker_count(log,"H100_VALID_CORE_INSTALLED"),0)
     def test_config_adds_explicit_loopback(self):
