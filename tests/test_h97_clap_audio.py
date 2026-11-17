@@ -1,6 +1,7 @@
 """The H97 acoustic fixtures are synthetic, deterministic and mutually distinct."""
 import hashlib
 import importlib.util
+import importlib.util
 from pathlib import Path
 import unittest
 
@@ -16,6 +17,7 @@ class FrozenAudioTests(unittest.TestCase):
         self.assertEqual(m.WEIGHTS_SHA256,"1cd3c601bc4afe0fa87be3de4c13dd2cfadd249fac1e29acf74a9b296c3219bb")
         self.assertEqual(len(m.CAPTIONS),4)
         self.assertEqual(m.SR,48000)
+    @unittest.skipUnless(importlib.util.find_spec('numpy') is not None, 'optional NumPy: dedicated audio-fixture-contract job pins and runs this test')
     def test_audio_generation_reproducible_and_distinguishable(self):
         import numpy as np
         one=m.produce_frozen_fixtures()
