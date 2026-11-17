@@ -18,6 +18,18 @@ def inspect(path, kind, require_audio=False):
     size = path.stat().st_size
     if not 0 < size <= MAX_BYTES:
         raise ValueError("MEDIA_EMPTY_OR_OVER_LIMIT")
+    with path.open("rb") as media_stream:
+        header = media_stream.read(16)
+    is_still = (header.startswith(b"\x89PNG\r\n\x1a\n")
+                or header.startswith(b"\xff\xd8\xff")
+                or (header.startswith(b"RIFF") and header[8:12] == b"WEBP")
+                or header.startswith(b"BM")
+                or header.startswith(b"II*\x00")
+                or header.startswith(b"MM\x00*"))
+    if kind == "image" and not is_still:
+        raise ValueError("STILL_IMAGE_SIGNATURE_REQUIRED")
+    if kind == "video" and is_still:
+        raise ValueError("VIDEO_MUST_NOT_BE_STILL_IMAGE")
     try:
         result = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries",
@@ -35,13 +47,22 @@ def inspect(path, kind, require_audio=False):
     if not isinstance(streams, list) or not streams:
         raise ValueError("MEDIA_NO_TRACKS")
     tracks = sorted({stream.get("codec_type") for stream in streams})
+    if kind == "image" and (
+        len(streams) != 1 or streams[0].get("codec_type") != "video"
+        or streams[0].get("codec_name") not in {"png", "mjpeg", "webp", "bmp", "tiff"}
+    ):
+        raise ValueError("STILL_IMAGE_STREAM_INVALID")
     if kind in ("image", "video") and "video" not in tracks:
         raise ValueError("NO_VIDEO_TRACK")
     if kind == "audio" and "audio" not in tracks:
         raise ValueError("NO_AUDIO_TRACK")
     if require_audio and "audio" not in tracks:
         raise ValueError("NO_AUDIO_TRACK")
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    hasher = hashlib.sha256()
+    with path.open("rb") as media_stream:
+        for chunk in iter(lambda: media_stream.read(1 << 20), b""):
+            hasher.update(chunk)
+    digest = hasher.hexdigest()
     duration = decoded.get("format", {}).get("duration")
     try:
         duration_ms = round(float(duration) * 1000) if duration not in (None, "N/A") else None
