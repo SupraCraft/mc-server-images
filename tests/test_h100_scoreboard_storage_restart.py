@@ -61,7 +61,7 @@ class ScoreboardPathTests(unittest.TestCase):
         log=self.root/"game.log"
         log.write_text("console> execute if score #restored h100 matches 1 run say H100_SCORE_PRE_VERIFIED\n")
         self.assertFalse(marker_present(log,"PRE"))
-        log.write_text("[12:01:01] [Server thread/INFO]: [Not Secure] [Server]: H100_SCORE_PRE_VERIFIED\n")
+        log.write_text("[12:01:01] [Server thread/INFO]: [Not Secure] [Server] H100_SCORE_PRE_VERIFIED\n")
         self.assertTrue(marker_present(log,"PRE"))
         self.assertFalse(marker_present(log,"POST"))
     def test_invalid_gzip_refused(self):
