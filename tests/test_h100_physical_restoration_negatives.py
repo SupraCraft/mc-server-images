@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import hashlib
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
@@ -75,6 +76,26 @@ class H100NegativeAdmissionTests(unittest.TestCase):
             self.assertIn("server-ip=127.0.0.1\n",txt)
             self.assertIn("online-mode=false\n",txt)
             self.assertIn("enable-rcon=false\n",txt)
+
+
+class FirstRealBlueSnapshotTests(unittest.TestCase):
+    def test_original_real_unprivileged_player_blue_log_is_immutable(self):
+        raw=(Path(__file__).resolve().parents[1]/"evidence/h100/official-26.3-physical-negative-first-blue.json").read_bytes()
+        blob=b"blob "+str(len(raw)).encode()+b"\x00"+raw
+        self.assertEqual(hashlib.sha1(blob).hexdigest(),"68f43463f3280d912c86b0c17c2d100d62acaaad")
+        data=json.loads(raw)
+        self.assertEqual(data["status"],"PUBLIC_26_3_SYNTHETIC_NEGATIVES_AND_POSITIVE_ACCEPTED_BOUNDED")
+        self.assertTrue(data["negative_wrong_object"]["rejected"])
+        self.assertEqual(data["negative_wrong_object"]["source"],"fixture_console_injected")
+        self.assertTrue(data["negative_wrong_support"]["refused"])
+        self.assertEqual(data["negative_wrong_support"]["source"],
+                         "real_connected_unprivileged_mineflayer_player")
+        self.assertEqual(data["valid_install"]["before"],"air")
+        self.assertEqual(data["valid_install"]["after"],"redstone_block")
+        self.assertTrue(data["restart_same_world_consequence"])
+        self.assertFalse(data["unique_marked_core_custody_verified"])
+        self.assertFalse(data["lantern_authored_story_verified"])
+        self.assertFalse(data["human_or_stock_client_accepted"])
 
 
 if __name__=="__main__":
