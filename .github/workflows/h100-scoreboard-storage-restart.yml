@@ -1,0 +1,51 @@
+name: H100 official vanilla 26.3 scoreboard path/restart (public)
+on:
+  pull_request:
+    paths:
+      - 'tools/h100_vanilla_scoreboard_path_restart.py'
+      - 'tests/test_h100_scoreboard_storage_restart.py'
+      - '.github/workflows/h100-scoreboard-storage-restart.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h100-scoreboard-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  deterministic-source-falsifiers:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Refuse legacy path, symlinks, malformed NBT and forged console log
+        run: python3 -B -m unittest discover -s tests -p 'test_h100_scoreboard_storage_restart.py' -v
+  exact-official-runtime-restart:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Run exact pinned official Java 26.3 scoreboard save/stop/restart oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h100-scoreboard"
+          python3 -B tools/h100_vanilla_scoreboard_path_restart.py \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/h100-scoreboard/receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: h100-exact-263-scoreboard-path-restart-receipt
+          path: ${{ runner.temp }}/h100-scoreboard/receipt.json
+          retention-days: 3
+          if-no-files-found: warn
