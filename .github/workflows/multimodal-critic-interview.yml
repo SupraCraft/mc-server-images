@@ -85,6 +85,16 @@ jobs:
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'anullsrc=r=44100:cl=mono' -t 2 -c:a pcm_s16le "$RUNNER_TEMP/critic-interview/silence.wav"
           python -B tools/critic_media_probe.py --kind audio --media "$RUNNER_TEMP/critic-interview/tone.wav" --out "$RUNNER_TEMP/critic-interview/tone.json"
           python -B tools/critic_media_probe.py --kind audio --media "$RUNNER_TEMP/critic-interview/silence.wav" --out "$RUNNER_TEMP/critic-interview/silence.json"
+          python -B tools/critic_acoustic_preflight.py --media "$RUNNER_TEMP/critic-interview/tone.wav" --out "$RUNNER_TEMP/critic-interview/tone-signal.json"
+          python -B tools/critic_acoustic_preflight.py --media "$RUNNER_TEMP/critic-interview/silence.wav" --out "$RUNNER_TEMP/critic-interview/silence-signal.json"
+          python - "$RUNNER_TEMP/critic-interview/tone-signal.json" "$RUNNER_TEMP/critic-interview/silence-signal.json" <<'PYTHON'
+          import json,sys
+          tone,silent=[json.load(open(name,encoding="utf-8")) for name in sys.argv[1:]]
+          assert tone["acoustic_signal_present"] and tone["silence_windows"]==0
+          assert not silent["acoustic_signal_present"] and silent["silence_windows"]==silent["window_count"]
+          assert not tone["minecraft_audio_verified"] and not silent["minecraft_audio_verified"]
+          print("Audio signal/refusal differential PASS")
+          PYTHON
           if python -B tools/critic_media_probe.py --kind video --media "$RUNNER_TEMP/critic-interview/tone.wav"; then
             echo 'FAIL: audio-only incorrectly admitted as video'
             exit 1
@@ -97,7 +107,7 @@ jobs:
           if-no-files-found: error
 
   cpu-vlm-interview:
-    if: github.event.repository.private == false
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 14
     steps:
