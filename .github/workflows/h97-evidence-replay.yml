@@ -1,0 +1,65 @@
+name: H97 independent critic evidence replay and falsifiers
+on:
+  pull_request:
+    paths:
+      - 'tools/score_critic_interview_h97.py'
+      - 'tests/test_h97_critic_score.py'
+      - '.github/workflows/h97-evidence-replay.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h97-evidence-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  red-team-tests:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Run source-neutral paired-oracle falsifiers
+        run: python3 -B -m unittest discover -s tests -p 'test_h97_critic_score.py' -v
+  cli-independent:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Emit and independently check fixed CLI test receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h97-score"
+          python3 - "$RUNNER_TEMP/h97-score" <<'PY'
+          import json,sys
+          from pathlib import Path
+          root=Path(sys.argv[1])
+          cases=[{"id":"x1","sha256":"a"*64,"expected":"left","allowed_labels":["left","right"],"pair_id":"p"},
+                 {"id":"x2","sha256":"b"*64,"expected":"right","allowed_labels":["left","right"],"pair_id":"p"}]
+          source={"schema":"supracraft-critic-frozen-manifest/v1","campaign":"public-synthetic","cases":cases}
+          report={"schema":"supracraft-critic-raw-output/v1","actor":{"provider":"test","model":"stub","family":"oracle","version":"1"},
+                  "observations":[{"id":"x1","input_sha256":"a"*64,"raw_response":"left","parsed_label":"left"},
+                                  {"id":"x2","input_sha256":"b"*64,"raw_response":"left","parsed_label":"left"}]}
+          (root/"manifest.json").write_text(json.dumps(source,sort_keys=True))
+          (root/"output.json").write_text(json.dumps(report,sort_keys=True))
+          PY
+          python3 -B tools/score_critic_interview_h97.py --manifest "$RUNNER_TEMP/h97-score/manifest.json" --candidate "$RUNNER_TEMP/h97-score/output.json" --out "$RUNNER_TEMP/h97-score/score.json"
+          python3 - "$RUNNER_TEMP/h97-score/score.json" <<'PY'
+          import json,sys
+          rec=json.load(open(sys.argv[1]))
+          assert rec["correct"]==1 and rec["counterfactual_pairs_correct"]==0
+          assert rec["status"]=="REVIEW_REQUIRED_NO_MODEL_PROMOTION"
+          assert rec["qualified_critic"] is False and rec["minecraft_gameplay_verified"] is False
+          print("independent score receipt PASS; model withheld")
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: h97-scorer-independent-source-neutral-receipt
+          path: ${{ runner.temp }}/h97-score/*.json
+          retention-days: 3
+          if-no-files-found: error
