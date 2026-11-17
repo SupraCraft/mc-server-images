@@ -42,8 +42,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          # First H99 RED run 44196249173 hung in apt-get update until GHA
+          # 5-minute job cancellation. Fail closed within bounded network time.
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            echo 'FFmpeg missing on this runner; strict 70s update / 85s install ceilings'
+            timeout -k 5s 70s sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 update -qq
+            timeout -k 5s 85s sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 install -y -qq --no-install-recommends ffmpeg
+          fi
           command -v ffmpeg
           command -v ffprobe
           ffmpeg -version | head -n 1
@@ -75,8 +80,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          # First H99 RED run 44196249173 hung in apt-get update until GHA
+          # 5-minute job cancellation. Fail closed within bounded network time.
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            echo 'FFmpeg missing on this runner; strict 70s update / 85s install ceilings'
+            timeout -k 5s 70s sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 update -qq
+            timeout -k 5s 85s sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 install -y -qq --no-install-recommends ffmpeg
+          fi
           command -v ffmpeg
           command -v ffprobe
           ffmpeg -version | head -n 1
