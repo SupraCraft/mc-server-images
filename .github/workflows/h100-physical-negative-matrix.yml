@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/h100_physical_restoration_negative_matrix.py'
       - 'tests/test_h100_physical_restoration_negatives.py'
+      - 'evidence/h100/official-26.3-physical-negative-first-blue.json'
       - '.github/workflows/h100-physical-negative-matrix.yml'
   workflow_dispatch:
 permissions:
@@ -24,7 +25,9 @@ jobs:
         run: python3 -B -m unittest discover -s tests -p 'test_h100_physical_restoration_negatives.py' -v
 
   real-unprivileged-player-negatives:
-    if: github.event.repository.private == false
+    # First genuine live official-26.3 result retained in GHA 44201118391.
+    # Repeat heavyweight live worlds only on explicit dispatch; preserve first REDs.
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
