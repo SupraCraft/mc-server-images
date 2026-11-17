@@ -20,7 +20,7 @@ from smoke_vanilla_runtime import download_verified_server
 SCHEMA = "supracraft-h100-vanilla-physical-negative-matrix/v1"
 PROTOCOL = 777
 PORT = base.PORT
-MARK = re.compile(r"\[Server\]:\s*(H100_[A-Z_]+)\b")
+MARK = re.compile(r"\[Server thread/INFO\]: \[Not Secure\] \[Server\] (H100_[A-Z_]+)\b")
 WRONG_ITEM = "H100_WRONG_ITEM_REJECTED"
 WRONG_SUPPORT = "H100_WRONG_SUPPORT_REJECTED"
 VALID = "H100_VALID_CORE_INSTALLED"
