@@ -1,0 +1,35 @@
+{
+  "authoritative_predicate_durations": {
+    "initial": 0.45,
+    "same_save_restart": 0.45,
+    "valid_player": 0.45,
+    "wrong_object": 0.45,
+    "wrong_support": 0.45
+  },
+  "disposable_world": true,
+  "human_or_stock_client_accepted": false,
+  "lantern_authored_story_verified": false,
+  "negative_wrong_object": {
+    "rejected": true,
+    "source": "fixture_console_injected"
+  },
+  "negative_wrong_support": {
+    "player_reported_error": "Error: core socket support block is not stone\n    at EventEmitter.<anonymous> (/home/runner/work/mc-server-images/mc-server-images/tools/probe_mineflayer_core_place.js:137:13)\n    at process.processTi",
+    "refused": true,
+    "source": "real_connected_unprivileged_mineflayer_player"
+  },
+  "official_server_sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64",
+  "protocol": 777,
+  "restart_same_world_consequence": true,
+  "schema": "supracraft-h100-vanilla-physical-negative-matrix/v1",
+  "status": "PUBLIC_26_3_SYNTHETIC_NEGATIVES_AND_POSITIVE_ACCEPTED_BOUNDED",
+  "unique_marked_core_custody_verified": false,
+  "valid_install": {
+    "after": "redstone_block",
+    "before": "air",
+    "first_item_reused_after_negative": true,
+    "source": "real_connected_unprivileged_mineflayer_player"
+  },
+  "version": "26.3",
+  "world_private": false
+}
