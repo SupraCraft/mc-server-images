@@ -1,0 +1,68 @@
+name: H98 content-addressed CLAP model-logit admission adapter
+on:
+  pull_request:
+    paths:
+      - 'tools/adapt_clap_h98_to_critic_score.py'
+      - 'tests/test_h98_clap_logit_adapter.py'
+      - '.github/workflows/h98-logit-adapter.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h98-logit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  independent-falsifiers:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Run pure-stdlib source/model-score tamper tests
+        run: python3 -B -m unittest discover -s tests -p 'test_h98_clap_logit_adapter.py' -v
+
+  independent-cli:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Execute standalone synthetic receipt through real CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h98-adapter"
+          python3 - "$RUNNER_TEMP/h98-adapter" <<'PY'
+          import json,sys
+          from pathlib import Path
+          root=Path(sys.argv[1])
+          sys.path.insert(0, "tests")
+          from test_h98_clap_logit_adapter import fake_frozen_pair
+          manifest, candidate=fake_frozen_pair()
+          (root/"manifest.json").write_text(json.dumps(manifest,sort_keys=True))
+          (root/"candidate.json").write_text(json.dumps(candidate,sort_keys=True))
+          PY
+          python3 -B tools/adapt_clap_h98_to_critic_score.py \
+            --manifest "$RUNNER_TEMP/h98-adapter/manifest.json" \
+            --candidate "$RUNNER_TEMP/h98-adapter/candidate.json" \
+            --out "$RUNNER_TEMP/h98-adapter/admission.json"
+          python3 - "$RUNNER_TEMP/h98-adapter/admission.json" <<'PY'
+          import json,sys
+          x=json.load(open(sys.argv[1]))
+          assert x["correct"]==2 and x["counterfactual_pairs_correct"]==1
+          assert not x["qualified_critic"] and not x["raw_logit_receipt_authenticated"]
+          assert not x["minecraft_gameplay_verified"] and not x["model_promoted"]
+          assert len(x["candidate_sha256"])==64
+          print("CLI synthetic double PASS; model-authenticity NOT established")
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: h98-synthetic-logit-adapter-contract
+          path: ${{ runner.temp }}/h98-adapter/*.json
+          retention-days: 2
+          if-no-files-found: error
