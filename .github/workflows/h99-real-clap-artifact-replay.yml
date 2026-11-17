@@ -1,0 +1,95 @@
+name: H99 independent archived CLAP first-RED artifact replay
+on:
+  pull_request:
+    paths:
+      - 'tools/replay_real_clap_artifact_h99.py'
+      - 'tests/test_h99_real_artifact_ingest.py'
+      - 'tests/test_h99_preserved_clap_model_receipt.py'
+      - 'evidence/critic/h98-clap-temporal-first-model-receipt.json'
+      - '.github/workflows/h99-real-clap-artifact-replay.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: h99-replay-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-and-artifact-falsifiers:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pure-stdlib immutable archive identity and negative tests
+        run: python3 -B -m unittest discover -s tests -p 'test_h99_real_artifact_ingest.py' -v
+
+  original-log-snapshot-falsifiers:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Re-score original source-log evidence without expiring artifact or model
+        run: python3 -B -m unittest discover -s tests -p 'test_h99_preserved_clap_model_receipt.py' -v
+
+  real-archive-independent-replay:
+    # The first actual GitHub artifact readback is preserved at run 44196254373.
+    # Its short-lived source ZIP must not create retry-until-green or false red after expiry.
+    # Only explicit manual dispatch is permitted to attempt a NEW archive ingestion.
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Install fixed input-reproduction dependency (no model weights)
+        run: python -m pip install --disable-pip-version-check 'numpy==1.26.4'
+      - name: Verify independently authored reference pairs
+        run: python3 -B -m unittest discover -s tests -p 'test_h99_real_artifact_ingest.py' -v
+      - name: Retrieve exact existing public GHA run+artifact without token exposure
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h99-replay"
+          gh api /repos/SupraCraft/mc-server-images/actions/runs/44194189722 > "$RUNNER_TEMP/h99-replay/run.json"
+          gh api /repos/SupraCraft/mc-server-images/actions/artifacts/14378655909 > "$RUNNER_TEMP/h99-replay/artifact.json"
+          gh api /repos/SupraCraft/mc-server-images/actions/artifacts/14378655909/zip > "$RUNNER_TEMP/h99-replay/artifact.zip"
+          echo "Downloaded existing public immutable run/receipt; no new model inference"
+      - name: Verify artifact bytes and independently re-score all eight actual model results
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B tools/replay_real_clap_artifact_h99.py \
+            --run-json "$RUNNER_TEMP/h99-replay/run.json" \
+            --artifact-json "$RUNNER_TEMP/h99-replay/artifact.json" \
+            --artifact-zip "$RUNNER_TEMP/h99-replay/artifact.zip" \
+            --out "$RUNNER_TEMP/h99-replay/replay-receipt.json"
+          python3 - "$RUNNER_TEMP/h99-replay/replay-receipt.json" <<'PY'
+          import json,sys
+          result=json.load(open(sys.argv[1]))
+          assert result["source_receipt_authenticated_to_github_artifact"] is True
+          assert result["score_total"]==8 and result["complete_order_pairs_total"]==4
+          assert result["model_promoted"] is False
+          assert result["minecraft_audio_verified"] is False
+          assert result["model_weights_independently_reexecuted"] is False
+          print("Authenticated original H98 public model artifact replay, model still NOT QUALIFIED")
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: h99-independent-real-clap-artifact-score-receipt
+          path: ${{ runner.temp }}/h99-replay/replay-receipt.json
+          retention-days: 2
+          if-no-files-found: warn

@@ -1,0 +1,261 @@
+{
+  "audio_origin": "original_synthetic_only",
+  "audio_seed": 20261117,
+  "authentic_minecraft_audio": false,
+  "billed_usd": 0,
+  "correct": 3,
+  "counterfactual_pairs_total": 4,
+  "elapsed_seconds": 10.217,
+  "fixture_plan_sha256": "4db881bdad1bbfbe22f5df8ceef2b5243cad18c5b3ead2a57221c05d2b712b52",
+  "fully_correct_counterfactual_pairs": 0,
+  "human_accepted": false,
+  "max_rss_kib": 1734244,
+  "model": "laion/clap-htsat-unfused",
+  "pairs": [
+    {
+      "both_correct": false,
+      "changed_prediction_when_audio_reversed": true,
+      "pair_id": "tone_noise"
+    },
+    {
+      "both_correct": false,
+      "changed_prediction_when_audio_reversed": false,
+      "pair_id": "beep_noise"
+    },
+    {
+      "both_correct": false,
+      "changed_prediction_when_audio_reversed": false,
+      "pair_id": "tone_quiet"
+    },
+    {
+      "both_correct": false,
+      "changed_prediction_when_audio_reversed": false,
+      "pair_id": "beep_quiet"
+    }
+  ],
+  "prompt_order_invariant_count": 8,
+  "qualified_model": false,
+  "results": [
+    {
+      "captions": [
+        "A continuous electronic tone, followed by white noise.",
+        "White noise, followed by a continuous electronic tone."
+      ],
+      "correct": false,
+      "expected": "first_a",
+      "first_sound": "tone",
+      "id": "tone_noise_ab",
+      "input_sha256": "bc6f93d6087ccd8b78d78006db81570dd2dd4a5797f87cd66f83e6353bc69982",
+      "pair_id": "tone_noise",
+      "predicted_forward_order": "first_b",
+      "predicted_reverse_order": "first_b",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 10.821629524230957,
+        "first_b": 11.200580596923828
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 10.821629524230957,
+        "first_b": 11.200579643249512
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "noise",
+      "seconds": 0.273
+    },
+    {
+      "captions": [
+        "A continuous electronic tone, followed by white noise.",
+        "White noise, followed by a continuous electronic tone."
+      ],
+      "correct": false,
+      "expected": "first_b",
+      "first_sound": "noise",
+      "id": "tone_noise_ba",
+      "input_sha256": "3e5c9123d8d3b1b166e2dc33a8ccaa9dd05749eae5390bddd8c99b8be6915b36",
+      "pair_id": "tone_noise",
+      "predicted_forward_order": "first_a",
+      "predicted_reverse_order": "first_a",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 11.772710800170898,
+        "first_b": 11.741241455078125
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 11.772710800170898,
+        "first_b": 11.741241455078125
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "tone",
+      "seconds": 0.261
+    },
+    {
+      "captions": [
+        "Short electronic beeps, followed by white noise.",
+        "White noise, followed by short electronic beeps."
+      ],
+      "correct": true,
+      "expected": "first_a",
+      "first_sound": "beeps",
+      "id": "beep_noise_ab",
+      "input_sha256": "862f9ae30f49b3f3f42cde006e2f43e42224ad758c5684a703d529e9283ac13e",
+      "pair_id": "beep_noise",
+      "predicted_forward_order": "first_a",
+      "predicted_reverse_order": "first_a",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 10.47205924987793,
+        "first_b": 9.053279876708984
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 10.472057342529297,
+        "first_b": 9.053278923034668
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "noise",
+      "seconds": 0.319
+    },
+    {
+      "captions": [
+        "Short electronic beeps, followed by white noise.",
+        "White noise, followed by short electronic beeps."
+      ],
+      "correct": false,
+      "expected": "first_b",
+      "first_sound": "noise",
+      "id": "beep_noise_ba",
+      "input_sha256": "31f66cef3ca6ded196873ca3179b863932918b14ff99bb59622c673ec03ddf18",
+      "pair_id": "beep_noise",
+      "predicted_forward_order": "first_a",
+      "predicted_reverse_order": "first_a",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 10.7317533493042,
+        "first_b": 9.719747543334961
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 10.731754302978516,
+        "first_b": 9.719747543334961
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "beeps",
+      "seconds": 0.737
+    },
+    {
+      "captions": [
+        "An electronic tone, followed by complete silence.",
+        "Complete silence, followed by an electronic tone."
+      ],
+      "correct": false,
+      "expected": "first_a",
+      "first_sound": "tone",
+      "id": "tone_quiet_ab",
+      "input_sha256": "4271564bfa683a01a59dbe9996475538e98e49e251b030e905cec556a0b24bef",
+      "pair_id": "tone_quiet",
+      "predicted_forward_order": "first_b",
+      "predicted_reverse_order": "first_b",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 10.075072288513184,
+        "first_b": 10.430262565612793
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 10.075071334838867,
+        "first_b": 10.430264472961426
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "quiet",
+      "seconds": 0.255
+    },
+    {
+      "captions": [
+        "An electronic tone, followed by complete silence.",
+        "Complete silence, followed by an electronic tone."
+      ],
+      "correct": true,
+      "expected": "first_b",
+      "first_sound": "quiet",
+      "id": "tone_quiet_ba",
+      "input_sha256": "f57b6e2535c0b34ea512cc1bf538343aedd6bc360ffe47956332f3d2ca533e57",
+      "pair_id": "tone_quiet",
+      "predicted_forward_order": "first_b",
+      "predicted_reverse_order": "first_b",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 10.4232177734375,
+        "first_b": 10.511223793029785
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 10.4232177734375,
+        "first_b": 10.511222839355469
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "tone",
+      "seconds": 0.253
+    },
+    {
+      "captions": [
+        "Electronic beeps, followed by silence.",
+        "Silence, followed by electronic beeps."
+      ],
+      "correct": false,
+      "expected": "first_a",
+      "first_sound": "beeps",
+      "id": "beep_quiet_ab",
+      "input_sha256": "4fbd4bf4fe51bb79fb7cec6480d212c71f9e8a375103744011a2332e19bed84f",
+      "pair_id": "beep_quiet",
+      "predicted_forward_order": "first_b",
+      "predicted_reverse_order": "first_b",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 8.623104095458984,
+        "first_b": 9.434188842773438
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 8.623104095458984,
+        "first_b": 9.434188842773438
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "quiet",
+      "seconds": 0.252
+    },
+    {
+      "captions": [
+        "Electronic beeps, followed by silence.",
+        "Silence, followed by electronic beeps."
+      ],
+      "correct": true,
+      "expected": "first_b",
+      "first_sound": "quiet",
+      "id": "beep_quiet_ba",
+      "input_sha256": "7b849f550062ca0199e2f90cc61c73d6ce2643e9affca56a5d713205630d89f3",
+      "pair_id": "beep_quiet",
+      "predicted_forward_order": "first_b",
+      "predicted_reverse_order": "first_b",
+      "prompt_order_invariant": true,
+      "raw_logits_forward_order": {
+        "first_a": 9.771021842956543,
+        "first_b": 10.627371788024902
+      },
+      "raw_logits_reverse_order": {
+        "first_a": 9.771021842956543,
+        "first_b": 10.627371788024902
+      },
+      "sample_rate": 48000,
+      "samples": 192000,
+      "second_sound": "beeps",
+      "seconds": 0.254
+    }
+  ],
+  "revision": "8fa0f1c6d0433df6e97c127f64b2a1d6c0dcda8a",
+  "schema": "supracraft-h98-clap-temporal-counterfactual/v1",
+  "status": "FIRST_FROZEN_REAL_MODEL_OUTPUT_REVIEW_REQUIRED",
+  "total": 8,
+  "weights_sha256": "1cd3c601bc4afe0fa87be3de4c13dd2cfadd249fac1e29acf74a9b296c3219bb"
+}
