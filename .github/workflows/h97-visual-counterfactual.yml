@@ -1,0 +1,58 @@
+name: H97 independent frozen visual counterfactual interview
+on:
+  pull_request:
+    paths:
+      - 'tools/interview_siglip_counterfactual_h97.py'
+      - 'tests/test_h97_visual_counterfactual.py'
+      - '.github/workflows/h97-visual-counterfactual.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h97-visual-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  preregistration:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate frozen mirrored control plan
+        run: python3 -B -m unittest discover -s tests -p 'test_h97_visual_counterfactual.py' -v
+  siglip-r2:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Install pinned CPU-only dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu 'torch==2.6.0+cpu'
+          python -m pip install --disable-pip-version-check 'transformers==4.53.3' 'pillow==11.2.1' 'sentencepiece==0.2.1' 'protobuf==5.29.5'
+      - name: Execute frozen two-object spatial counterfactuals (first rep only)
+        shell: bash
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_HUB_DISABLE_IMPLICIT_TOKEN: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h97-visual"
+          python -B tools/interview_siglip_counterfactual_h97.py --out "$RUNNER_TEMP/h97-visual/receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: h97-visual-frozen-first-rep
+          path: ${{ runner.temp }}/h97-visual/receipt.json
+          retention-days: 3
+          if-no-files-found: warn
