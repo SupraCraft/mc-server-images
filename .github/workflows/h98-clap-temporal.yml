@@ -30,7 +30,9 @@ jobs:
         run: python -B -m unittest discover -s tests -p 'test_h98_clap_temporal.py' -v
 
   clap-first-blind-rep:
-    if: github.event.repository.private == false
+    # The H98 first frozen interview is preserved at GHA run 44194189722.
+    # Further model invocation requires an explicit manual dispatch, never a PR retry.
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
