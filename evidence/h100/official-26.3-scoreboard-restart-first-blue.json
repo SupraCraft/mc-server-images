@@ -1,0 +1,45 @@
+{
+  "after_restart": {
+    "compressed_bytes": 141,
+    "decompressed_bytes": 161,
+    "file_sha256": "584d313c80853a2d0560919d75e77f2cdffccb566ca8dbafb02e587c51bc5e48",
+    "legacy_path_absent": true,
+    "nbt_marker_only_not_value_validation": true,
+    "relative_path": "world/data/minecraft/scoreboard.dat"
+  },
+  "authoritative_oracles": [
+    {
+      "marker": "H100_SCORE_PRE_VERIFIED",
+      "phase": "PRE",
+      "score_observed_from_server": true
+    },
+    {
+      "marker": "H100_SCORE_POST_VERIFIED",
+      "phase": "POST",
+      "score_observed_from_server": true
+    }
+  ],
+  "disposable_world": true,
+  "first": {
+    "compressed_bytes": 141,
+    "decompressed_bytes": 161,
+    "file_sha256": "584d313c80853a2d0560919d75e77f2cdffccb566ca8dbafb02e587c51bc5e48",
+    "legacy_path_absent": true,
+    "nbt_marker_only_not_value_validation": true,
+    "relative_path": "world/data/minecraft/scoreboard.dat"
+  },
+  "human_accepted": false,
+  "latency_seconds": {
+    "POST": 0.5,
+    "PRE": 0.5
+  },
+  "marked_core_custody_verified": false,
+  "official_server_sha256": "d052f14d7a173734fba553711e5b570162e2f2a313267ee31a21b975a679be64",
+  "protocol": 777,
+  "real_official_server_executed": true,
+  "restoration_story_verified": false,
+  "schema": "supracraft-h100-vanilla-scoreboard-restart/v1",
+  "status": "OFFICIAL_26_3_SCOREBOARD_PATH_AND_RESTART_ACCEPTED_BOUNDED",
+  "stock_client_verified": false,
+  "version": "26.3"
+}
