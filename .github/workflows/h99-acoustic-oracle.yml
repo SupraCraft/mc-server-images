@@ -1,0 +1,61 @@
+name: H99 deterministic acoustic event-order oracle (public)
+on:
+  pull_request:
+    paths:
+      - 'tools/critic_acoustic_sequence_h99.py'
+      - 'tests/test_h99_acoustic_sequence.py'
+      - '.github/workflows/h99-acoustic-oracle.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h99-acoustic-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  stdlib-oracle-falsification:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Freeze and evaluate eight A/B reversed PCM controls, invalid and unknown sources
+        run: python3 -B -m unittest discover -s tests -p 'test_h99_acoustic_sequence.py' -v
+  independent-cli-source:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Emit real original synthetic WAV and run production CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h99-oracle"
+          python3 - "$RUNNER_TEMP/h99-oracle/sample.wav" <<'PYTHON'
+          import sys
+          sys.path.insert(0, "tests")
+          from test_h99_acoustic_sequence import make_wav
+          make_wav(sys.argv[1], "beeps", "noise")
+          PYTHON
+          python3 -B tools/critic_acoustic_sequence_h99.py \
+            --media "$RUNNER_TEMP/h99-oracle/sample.wav" \
+            --out "$RUNNER_TEMP/h99-oracle/receipt.json"
+          python3 - "$RUNNER_TEMP/h99-oracle/receipt.json" <<'PYTHON'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          assert r["ordered_labels"] == ["beeps", "noise"]
+          assert r["model_inference_performed"] is False
+          assert r["authentic_minecraft_audio"] is False
+          assert r["temporal_model_qualified"] is False
+          print("H99 bounded deterministic chronology BLUE; game authority withheld")
+          PYTHON
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: h99-real-synthetic-wav-stdlib-oracle-receipt
+          path: ${{ runner.temp }}/h99-oracle/receipt.json
+          retention-days: 2
+          if-no-files-found: error
