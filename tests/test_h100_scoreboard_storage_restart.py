@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import json
+import hashlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/"tools"))
 from h100_vanilla_scoreboard_path_restart import qualify_scoreboard_storage, GOOD, LEGACY, marker_present
@@ -68,6 +70,23 @@ class ScoreboardPathTests(unittest.TestCase):
         self.good.write_bytes(b"\x1f\x8b"+b"X"*100)
         with self.assertRaisesRegex(ValueError,"SCOREBOARD_NBT_DECODE_REFUSED"):
             qualify_scoreboard_storage(self.root)
+
+
+class FirstRealBlueSnapshotTests(unittest.TestCase):
+    def test_original_official_server_blue_log_is_immutable(self):
+        raw=(Path(__file__).resolve().parents[1]/"evidence/h100/official-26.3-scoreboard-restart-first-blue.json").read_bytes()
+        blob=b"blob "+str(len(raw)).encode()+b"\x00"+raw
+        self.assertEqual(hashlib.sha1(blob).hexdigest(),"a6592cf2bc80c0ad3eec64a4ae4ef8b16da2ed5b")
+        data=json.loads(raw)
+        self.assertEqual(data["status"],"OFFICIAL_26_3_SCOREBOARD_PATH_AND_RESTART_ACCEPTED_BOUNDED")
+        self.assertEqual(data["first"]["relative_path"],"world/data/minecraft/scoreboard.dat")
+        self.assertEqual(data["after_restart"]["relative_path"],"world/data/minecraft/scoreboard.dat")
+        self.assertEqual(data["first"]["file_sha256"],data["after_restart"]["file_sha256"])
+        self.assertEqual({x["marker"] for x in data["authoritative_oracles"]},
+                         {"H100_SCORE_PRE_VERIFIED","H100_SCORE_POST_VERIFIED"})
+        self.assertTrue(all(x["score_observed_from_server"] for x in data["authoritative_oracles"]))
+        self.assertFalse(data["restoration_story_verified"])
+        self.assertFalse(data["stock_client_verified"])
 
 
 if __name__=="__main__":
