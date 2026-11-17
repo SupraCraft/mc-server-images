@@ -28,7 +28,8 @@ jobs:
       - name: Falsify frozen audio control generation
         run: python -B -m unittest discover -s tests -p 'test_h97_clap_audio.py' -v
   clap-cpu:
-    if: github.event.repository.private == false
+    # Frozen first rep already recorded at run 44116333718. Re-run only by explicit dispatch.
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
