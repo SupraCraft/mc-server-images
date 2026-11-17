@@ -4,6 +4,8 @@ on:
     paths:
       - 'tools/replay_real_clap_artifact_h99.py'
       - 'tests/test_h99_real_artifact_ingest.py'
+      - 'tests/test_h99_preserved_clap_model_receipt.py'
+      - 'evidence/critic/h98-clap-temporal-first-model-receipt.json'
       - '.github/workflows/h99-real-clap-artifact-replay.yml'
   workflow_dispatch:
 permissions:
@@ -25,8 +27,22 @@ jobs:
       - name: Pure-stdlib immutable archive identity and negative tests
         run: python3 -B -m unittest discover -s tests -p 'test_h99_real_artifact_ingest.py' -v
 
-  real-archive-independent-replay:
+  original-log-snapshot-falsifiers:
     if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Re-score original source-log evidence without expiring artifact or model
+        run: python3 -B -m unittest discover -s tests -p 'test_h99_preserved_clap_model_receipt.py' -v
+
+  real-archive-independent-replay:
+    # The first actual GitHub artifact readback is preserved at run 44196254373.
+    # Its short-lived source ZIP must not create retry-until-green or false red after expiry.
+    # Only explicit manual dispatch is permitted to attempt a NEW archive ingestion.
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     steps:
