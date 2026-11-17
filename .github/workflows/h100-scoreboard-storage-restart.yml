@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/h100_vanilla_scoreboard_path_restart.py'
       - 'tests/test_h100_scoreboard_storage_restart.py'
+      - 'evidence/h100/official-26.3-scoreboard-restart-first-blue.json'
       - '.github/workflows/h100-scoreboard-storage-restart.yml'
   workflow_dispatch:
 permissions:
@@ -23,7 +24,9 @@ jobs:
       - name: Refuse legacy path, symlinks, malformed NBT and forged console log
         run: python3 -B -m unittest discover -s tests -p 'test_h100_scoreboard_storage_restart.py' -v
   exact-official-runtime-restart:
-    if: github.event.repository.private == false
+    # First genuine live official-26.3 result retained in GHA 44201106346.
+    # Repeat heavyweight live worlds only on explicit dispatch; preserve first REDs.
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     steps:
