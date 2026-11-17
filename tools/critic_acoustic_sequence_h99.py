@@ -43,6 +43,7 @@ def classify(samples):
         raise ValueError("SEGMENT_LENGTH_INVALID")
     active = 0
     ratios = []
+    lag_correlations = []
     peaks = 0
     for start in range(0, len(samples), WINDOW_SAMPLES):
         block = samples[start:start + WINDOW_SAMPLES]
@@ -52,8 +53,13 @@ def classify(samples):
         if rms >= 0.012:
             active += 1
             ratios.append(_goertzel_ratio(block))
+            # A true broadband noise segment is not an arbitrary non-440Hz tone.
+            lag_energy = sum(float(x) * x for x in block[:-1])
+            adjacent = sum(float(block[i]) * block[i + 1] for i in range(len(block) - 1))
+            lag_correlations.append(adjacent / lag_energy if lag_energy else 0.0)
     fraction = active / (len(samples) / WINDOW_SAMPLES)
     mean_tone = sum(ratios) / len(ratios) if ratios else 0.0
+    mean_lag1 = sum(lag_correlations) / len(lag_correlations) if lag_correlations else 0.0
     if peaks >= 32760:
         raise ValueError("CLIPPED_SOURCE_UNQUALIFIED")
     if fraction <= 0.02:
@@ -62,12 +68,13 @@ def classify(samples):
         kind = "tone"
     elif mean_tone >= 0.70 and 0.08 <= fraction <= 0.75:
         kind = "beeps"
-    elif mean_tone < 0.15 and fraction >= 0.80:
+    elif mean_tone < 0.15 and abs(mean_lag1) < 0.10 and fraction >= 0.80:
         kind = "noise"
     else:
         kind = "unknown"
     return {"class": kind, "active_window_fraction": round(fraction, 5),
-            "tone_440hz_ratio": round(mean_tone, 5)}
+            "tone_440hz_ratio": round(mean_tone, 5),
+            "lag1_correlation": round(mean_lag1, 5)}
 
 
 def read_pcm(path):
