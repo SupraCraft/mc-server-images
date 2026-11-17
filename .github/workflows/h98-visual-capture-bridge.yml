@@ -1,0 +1,68 @@
+name: H98 official-26.3 camera claim correlation contract
+on:
+  pull_request:
+    paths:
+      - 'tools/bridge_visual_capture_claim_h98.py'
+      - 'tests/test_h98_visual_capture_claim.py'
+      - 'docs/h98-26.3-visual-capture-bridge.md'
+      - '.github/workflows/h98-visual-capture-bridge.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h98-capture-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  claim-constraint-falsifiers:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Run no-dependency client-authority forgery adversarial tests
+        run: python3 -B -m unittest discover -s tests -p 'test_h98_visual_capture_claim.py' -v
+  cli-only-contract:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Correlate two synthetic JSON claims, never assert official authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h98-capture"
+          python3 - "$RUNNER_TEMP/h98-capture" <<'PY'
+          import json,sys
+          from pathlib import Path
+          root=Path(sys.argv[1])
+          sys.path.insert(0, "tests")
+          from test_h98_visual_capture_claim import fixtures
+          media,route=fixtures()
+          (root/"media.json").write_text(json.dumps(media,sort_keys=True))
+          (root/"claim.json").write_text(json.dumps(route,sort_keys=True))
+          PY
+          python3 -B tools/bridge_visual_capture_claim_h98.py \
+            --media-receipt "$RUNNER_TEMP/h98-capture/media.json" \
+            --route-claim "$RUNNER_TEMP/h98-capture/claim.json" \
+            --out "$RUNNER_TEMP/h98-capture/claim-result.json"
+          python3 - "$RUNNER_TEMP/h98-capture/claim-result.json" <<'PY'
+          import json,sys
+          x=json.load(open(sys.argv[1]))
+          assert x["status"]=="CORRELATED_SOURCE_CLAIMS_REVIEW_REQUIRED"
+          assert not x["source_run_independently_authenticated"]
+          assert not x["stock_client_verified"] and not x["official_server_verified"]
+          assert not x["human_story_acceptance"]
+          print("Source metadata correlation PASS; authentic game/HIL NOT asserted")
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: h98-visual-capture-claim-only-synthetic-receipt
+          path: ${{ runner.temp }}/h98-capture/*.json
+          retention-days: 2
+          if-no-files-found: error
