@@ -16,6 +16,8 @@ from score_critic_interview_h97 import score, MANIFEST_SCHEMA
 SCHEMA = "supracraft-h98-clap-temporal-counterfactual/v1"
 ADAPTER = "supracraft-h98-clap-logit-adapter/v1"
 KEYS = ("first_a", "first_b")
+# H97 source-neutral scorer accepts alphabetic labels only: lossless fixed mapping.
+SCORER_LABELS = {"first_a": "alpha", "first_b": "beta"}
 MODEL_FIELDS = ("model", "revision", "weights_sha256", "fixture_plan_sha256")
 
 
@@ -101,8 +103,8 @@ def adapt(manifest, receipt):
         # Only exact argmax; a tie is a real abstention and never a correct answer.
         transformed.append({
             "id": cid, "input_sha256": case["sha256"],
-            "raw_response": a if a is not None else "abstain",
-            "parsed_label": a,
+            "raw_response": SCORER_LABELS[a] if a is not None else "abstain",
+            "parsed_label": SCORER_LABELS[a] if a is not None else None,
         })
     actor = {
         "provider": "local_open_weights",
@@ -115,7 +117,16 @@ def adapt(manifest, receipt):
         "actor": actor,
         "observations": transformed,
     }
-    report = score(manifest, model_input)
+    # This is a semantics-preserving alphabetic encoding for the H97 scorer,
+    # not a rewrite of the independent source evidence or the original manifest.
+    scorer_manifest = json.loads(json.dumps(manifest))
+    for item in scorer_manifest["cases"]:
+        if item["expected"] not in SCORER_LABELS:
+            raise ValueError("REFERENCE_LABEL_UNEXPECTED")
+        item["expected"] = SCORER_LABELS[item["expected"]]
+        item["allowed_labels"] = [SCORER_LABELS[k] for k in KEYS]
+    report = score(scorer_manifest, model_input)
+    report["source_label_to_scorer_label"] = dict(SCORER_LABELS)
     report["adapter_schema"] = ADAPTER
     report["raw_logit_receipt_authenticated"] = False
     report["model_promoted"] = False
