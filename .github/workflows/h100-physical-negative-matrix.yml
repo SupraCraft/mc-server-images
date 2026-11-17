@@ -1,0 +1,66 @@
+name: H100 vanilla 26.3 wrong-object/support then real player and restart (public)
+on:
+  pull_request:
+    paths:
+      - 'tools/h100_physical_restoration_negative_matrix.py'
+      - 'tests/test_h100_physical_restoration_negatives.py'
+      - '.github/workflows/h100-physical-negative-matrix.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: h100-physical-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-admission-guards:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Falsify wrong support, forged bot result, protocol and console echo
+        run: python3 -B -m unittest discover -s tests -p 'test_h100_physical_restoration_negatives.py' -v
+
+  real-unprivileged-player-negatives:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@d7c49a9b5187c4e52d9bcbe3f85c78b4bc5e65f9
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Assemble existing source-pinned experimental 26.3 Prismarine client stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_root="$RUNNER_TEMP/h100-prismarine"
+          bash tools/install_experimental_prismarine_26_3.sh "$runtime_root"
+          echo "NODE_PATH=$runtime_root/runtime/node_modules" >> "$GITHUB_ENV"
+      - name: Execute official 26.3 wrong object and wrong support, then real player/stop/restart
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/h100-physical"
+          python3 -B tools/h100_physical_restoration_negative_matrix.py \
+            --evidence probes/26.3-release-identity.json \
+            --out "$RUNNER_TEMP/h100-physical/receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: h100-vanilla-unprivileged-player-negative-matrix
+          path: ${{ runner.temp }}/h100-physical/receipt.json
+          retention-days: 3
+          if-no-files-found: warn
